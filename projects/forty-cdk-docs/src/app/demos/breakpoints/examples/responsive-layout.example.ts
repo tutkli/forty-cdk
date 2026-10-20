@@ -13,12 +13,12 @@ interface Card {
     <div class="bp-shell-wrap">
       <div class="bp-shell">
         @if (showSidebar()) {
-          <aside class="bp-sidebar">
+          <div class="bp-sidebar">
             <span class="bp-sidebar-title">Sidebar</span>
             <span class="bp-sidebar-note">mounted ≥ lg</span>
-          </aside>
+          </div>
         }
-        <main class="bp-main">
+        <div class="bp-main">
           <div
             class="bp-cards"
             [style.grid-template-columns]="'repeat(' + columns() + ', minmax(0, 1fr))'"
@@ -30,7 +30,7 @@ interface Card {
               </article>
             }
           </div>
-        </main>
+        </div>
       </div>
     </div>
   `,

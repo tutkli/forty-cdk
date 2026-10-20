@@ -1,11 +1,13 @@
 import { ChangeDetectionStrategy, Component, computed } from '@angular/core';
 import { forBreakpointsTailwind, injectBreakpoints } from 'forty-cdk/breakpoints';
+import { ForVisuallyHidden } from 'forty-cdk/visually-hidden';
 
 type TailwindName = keyof typeof forBreakpointsTailwind;
 
 @Component({
   selector: 'app-breakpoints-active-example',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [ForVisuallyHidden],
   template: `
     <div class="bp-demo">
       <div class="bp-readout">
@@ -20,8 +22,16 @@ type TailwindName = keyof typeof forBreakpointsTailwind;
             <span class="bp-name">{{ row.name }}</span>
             <span class="bp-min">≥ {{ row.min }}px</span>
             <span class="bp-flags">
-              <span class="bp-flag" [class.bp-flag--on]="row.up()">up</span>
-              <span class="bp-flag" [class.bp-flag--on]="row.only()">only</span>
+              <span class="bp-flag" [class.bp-flag--on]="row.up()">
+                <span aria-hidden="true">{{ row.up() ? '✓' : '✕' }}</span>
+                up
+                <span forVisuallyHidden>{{ row.up() ? 'matches' : 'does not match' }}</span>
+              </span>
+              <span class="bp-flag" [class.bp-flag--on]="row.only()">
+                <span aria-hidden="true">{{ row.only() ? '✓' : '✕' }}</span>
+                only
+                <span forVisuallyHidden>{{ row.only() ? 'matches' : 'does not match' }}</span>
+              </span>
             </span>
           </li>
         }
@@ -89,14 +99,10 @@ type TailwindName = keyof typeof forBreakpointsTailwind;
       border: 1px solid var(--ex-border, #e5e0d6);
       border-radius: var(--ex-radius-sm, 14px);
       background: var(--ex-surface, #ffffff);
-      opacity: 0.5;
-      transition:
-        opacity 0.15s ease,
-        border-color 0.15s ease;
+      transition: border-color 0.15s ease;
     }
 
     .bp-cell--on {
-      opacity: 1;
       border-color: var(--ex-accent, #0e7c6b);
     }
 
@@ -120,6 +126,8 @@ type TailwindName = keyof typeof forBreakpointsTailwind;
     }
 
     .bp-flag {
+      display: inline-flex;
+      gap: 0.25rem;
       padding: 0.12rem 0.5rem;
       border-radius: 999px;
       font-family: var(--ex-font-mono, ui-monospace, monospace);
