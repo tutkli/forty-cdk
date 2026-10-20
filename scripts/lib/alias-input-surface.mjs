@@ -19,7 +19,7 @@
  * exactly the consumers who asked for the strictest checking, and hand the rest
  * an identical `.d.ts`.
  *
- * So the 56 fields below stay public, and the point of the roster is that they
+ * So the fields below stay public, and the point of the roster is that they
  * are a 1.0 commitment made **by decision** rather than by default.
  * `check-alias-input-surface.mjs` reads it in both directions:
  * it fails when a new `_`-prefixed public member appears without an entry here,
