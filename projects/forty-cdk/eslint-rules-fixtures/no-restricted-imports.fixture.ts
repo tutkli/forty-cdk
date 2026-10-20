@@ -40,8 +40,11 @@ import * as ng from '@angular/core';
 // Expected: 1× no-restricted-imports — a re-export.
 export { NgZone as Zone } from '@angular/core';
 
+// Expected: 2× no-restricted-imports — `ControlValueAccessor` / `NG_VALUE_ACCESSOR`, even as types.
+import type { ControlValueAccessor, NG_VALUE_ACCESSOR as Accessor } from '@angular/forms';
+
 export const used = [In, Output, HostBinding, Listen, Module, ng];
-export type Used = NgZone;
+export type Used = [NgZone, ControlValueAccessor, typeof Accessor];
 
 // Allowed: the framework itself, and the signal APIs whose names differ only in case.
 import '@angular/core';

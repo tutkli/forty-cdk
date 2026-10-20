@@ -19,7 +19,9 @@ default `pnpm lint` ignores this directory (configured at the top of `eslint.con
 intentional violations never reach it.
 
 The rule a fixture exercises is its file name: `<rule>.fixture.ts` exercises `forty-cdk/<rule>`, or
-the core rule `<rule>` when the plugin has no rule by that name. For each fixture the check asserts:
+the core rule `<rule>` when the plugin has no rule by that name. A rule a file name cannot spell, such
+as `@typescript-eslint/no-restricted-imports`, is named in the header as
+`` Exercises `<rule>` ``, which overrides the file name. For each fixture the check asserts:
 
 - **Every `// Expected: N× <rule>` marker gets exactly N reports.** A report belongs to the nearest
   marker above it, or to the first `Expected:` marker when it sits above all of them (a rule that
