@@ -92,6 +92,8 @@ const PROBE_FILES = [
 }
 interface ForProbeGrownContext extends ProbeBase {
   readonly c: Signal<number>;
+}
+interface ForProbeGrownContext {
   readonly d: Signal<number>;
   readonly e: Signal<number>;
 }
@@ -128,7 +130,7 @@ if (probeMissing.length || probeFailures.length !== PROBE_EXPECTED.length) {
     console.error(`  reported: ${failure}`);
   }
   console.error(
-    `\nThe probe is a synthetic emit whose contexts inherit two members from a base declared in another file: one grown past its exception, one below it, one over the ceiling with no exception. Restore the detection rather than the probe.`,
+    `\nThe probe is a synthetic emit whose contexts inherit two members from a base declared in another file: one grown past its exception across two merged declarations, one below it, one over the ceiling with no exception. Restore the detection rather than the probe.`,
   );
   process.exit(1);
 }

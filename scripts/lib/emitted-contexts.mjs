@@ -77,12 +77,13 @@ export function indexEmittedContexts(entries) {
     }
   }
 
-  function declarationOf(name, file) {
+  function declarationsOf(name, file) {
     const declared = declarations.get(name);
     if (!declared) {
-      return null;
+      return [];
     }
-    return declared.find((d) => d.file === file) ?? declared[0];
+    const home = declared.some((d) => d.file === file) ? file : declared[0].file;
+    return declared.filter((d) => d.file === home);
   }
 
   function collect(name, file, seen, members) {
@@ -90,23 +91,23 @@ export function indexEmittedContexts(entries) {
       return;
     }
     seen.add(name);
-    const declaration = declarationOf(name, file);
-    if (!declaration) {
-      return;
-    }
-    const { stmt } = declaration;
-    for (const clause of stmt.heritageClauses ?? []) {
-      for (const type of clause.types) {
-        const base = heritageName(type);
-        if (base) {
-          collect(base, declaration.file, seen, members);
+    const declared = declarationsOf(name, file);
+    for (const { file: home, stmt } of declared) {
+      for (const clause of stmt.heritageClauses ?? []) {
+        for (const type of clause.types) {
+          const base = heritageName(type);
+          if (base) {
+            collect(base, home, seen, members);
+          }
         }
       }
     }
-    for (const member of stmt.members) {
-      const key = memberName(member);
-      if (key !== null) {
-        members.set(key, { owner: name, member });
+    for (const { stmt } of declared) {
+      for (const member of stmt.members) {
+        const key = memberName(member);
+        if (key !== null) {
+          members.set(key, { owner: name, member });
+        }
       }
     }
   }
