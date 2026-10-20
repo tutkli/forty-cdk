@@ -106,7 +106,17 @@ exports[`document structure > docs/selection-value-type-contract.md declares the
   {
     "headings": [],
     "slug": "the-value-is-always-a-readonly-array",
-    "tables": [],
+    "tables": [
+      {
+        "columns": [
+          "Root",
+          "value",
+          "Form control",
+        ],
+        "role": "plain",
+        "rows": 7,
+      },
+    ],
     "title": "The value is always a \`readonly\` array",
   },
   {
