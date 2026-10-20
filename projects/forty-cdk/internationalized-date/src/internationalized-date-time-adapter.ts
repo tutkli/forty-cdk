@@ -60,7 +60,7 @@ export class InternationalizedDateTimeAdapter implements DateAdapter<CalendarDat
   }
 
   getDayOfWeek(date: CalendarDateTime): number {
-    return date.toDate(getLocalTimeZone()).getDay();
+    return date.toDate('UTC').getUTCDay();
   }
 
   getDaysInMonth(date: CalendarDateTime): number {
@@ -115,14 +115,17 @@ export class InternationalizedDateTimeAdapter implements DateAdapter<CalendarDat
   }
 
   /**
-   * Formats through `locale` (else {@link locale}, else the runtime's default
-   * locale) and the runtime time zone. Subject to the SSR/hydration caveat on
-   * {@link DateAdapter.format}.
+   * Formats the wall-clock fields `date` holds through `locale` (else
+   * {@link locale}, else the runtime's default locale). The result does not
+   * depend on the runtime time zone, so a day or time that zone skips is shown
+   * as held, and a `timeZone` in `options` is ignored. Subject to the locale
+   * half of the SSR/hydration caveat on {@link DateAdapter.format}.
    */
   format(date: CalendarDateTime, options: Intl.DateTimeFormatOptions, locale?: string): string {
-    return this.#formatter(locale ?? this.locale() ?? undefined, options).format(
-      date.toDate(getLocalTimeZone()),
-    );
+    return this.#formatter(locale ?? this.locale() ?? undefined, {
+      ...options,
+      timeZone: 'UTC',
+    }).format(date.toDate('UTC'));
   }
 
   supportsTime(): boolean {

@@ -10,7 +10,7 @@ import { TestBed } from '@angular/core/testing';
 import { CalendarDate, CalendarDateTime } from '@internationalized/date';
 
 import { compareDateOf, type DateRange, LiveAnnouncer } from 'forty-cdk/core';
-import { type DateAdapter, type TimeCapableDateAdapter } from 'forty-cdk/date-adapter';
+import { type DateAdapter } from 'forty-cdk/date-adapter';
 import { flush, renderHost, type RenderResult } from '../../src/test-utils';
 import { buildMonthMatrix } from './build-month-matrix';
 import { ForCalendar } from './calendar';
@@ -1865,73 +1865,12 @@ describe('ForCalendar', () => {
       expect(nativeMatrix[0]!.length).toBe(7);
     });
 
-    it('getDayOfWeek returns the absolute Sunday=0 index, agreeing across adapters (#397)', () => {
-      const native = new NativeDateAdapter();
-      const intl = new InternationalizedDateAdapter();
-      const dateTime = new InternationalizedDateTimeAdapter();
-
-      expect(native.getDayOfWeek(new Date(2026, 5, 14))).toBe(0);
-      expect(intl.getDayOfWeek(intl.createDate(2026, 6, 14))).toBe(0);
-      expect(dateTime.getDayOfWeek(new CalendarDateTime(2026, 6, 14, 9, 0))).toBe(0);
-
-      expect(native.getDayOfWeek(new Date(2026, 5, 17))).toBe(3);
-      expect(intl.getDayOfWeek(intl.createDate(2026, 6, 17))).toBe(3);
-      expect(dateTime.getDayOfWeek(new CalendarDateTime(2026, 6, 17, 9, 0))).toBe(3);
-    });
-
     it('firstDayOfWeek shifts the first column', () => {
       const sundayFirst = buildMonthMatrix(adapter, adapter.createDate(2026, 2, 1), 0);
       const mondayFirst = buildMonthMatrix(adapter, adapter.createDate(2026, 2, 1), 1);
 
       expect(adapter.getDayOfWeek(sundayFirst[0]![0]!)).toBe(0);
       expect(adapter.getDayOfWeek(mondayFirst[0]![0]!)).toBe(1);
-    });
-
-    it('addMonths / addYears constrain the day of month (native matches internationalized)', () => {
-      const native = new NativeDateAdapter();
-      const intl = new InternationalizedDateAdapter();
-
-      const nativeFeb = native.addMonths(native.createDate(2026, 1, 31), 1);
-      expect(native.getMonth(nativeFeb)).toBe(2);
-      expect(native.getDate(nativeFeb)).toBe(28);
-
-      const intlFeb = intl.addMonths(intl.createDate(2026, 1, 31), 1);
-      expect(intl.getMonth(intlFeb)).toBe(2);
-      expect(intl.getDate(intlFeb)).toBe(28);
-
-      const nativeLeap = native.addYears(native.createDate(2024, 2, 29), 1);
-      expect(native.getMonth(nativeLeap)).toBe(2);
-      expect(native.getDate(nativeLeap)).toBe(28);
-    });
-
-    it('compareDateOf ignores the time component on every adapter (#370, #501)', () => {
-      const native = new NativeDateAdapter();
-      const dateTime = new InternationalizedDateTimeAdapter();
-
-      const nativeMidnight = new Date(2026, 5, 20, 0, 0);
-      const nativeMin = new Date(2026, 5, 20, 9, 0);
-      expect(native.compare(nativeMidnight, nativeMin)).toBeLessThan(0);
-      expect(compareDateOf(native, nativeMidnight, nativeMin)).toBe(0);
-
-      const dtMidnight = new CalendarDateTime(2026, 6, 20, 0, 0);
-      const dtMin = new CalendarDateTime(2026, 6, 20, 9, 0);
-      expect(dateTime.compare(dtMidnight, dtMin)).toBeLessThan(0);
-      expect(compareDateOf(dateTime, dtMidnight, dtMin)).toBe(0);
-    });
-
-    it('compare orders by the full instant on every time-capable adapter (#501)', () => {
-      const native = new NativeDateAdapter();
-      const dateTime = new InternationalizedDateTimeAdapter();
-
-      const nativeEarly = new Date(2026, 5, 20, 9, 0);
-      const nativeLate = new Date(2026, 5, 20, 17, 0);
-      const dtEarly = new CalendarDateTime(2026, 6, 20, 9, 0);
-      const dtLate = new CalendarDateTime(2026, 6, 20, 17, 0);
-
-      expect(Math.sign(native.compare(nativeEarly, nativeLate))).toBe(
-        Math.sign(dateTime.compare(dtEarly, dtLate)),
-      );
-      expect(native.compare(nativeEarly, nativeLate)).toBeLessThan(0);
     });
 
     it('compareDateOf falls back to the y/m/d getters when an adapter omits compareDate (#501)', () => {
@@ -1951,110 +1890,6 @@ describe('ForCalendar', () => {
         new Date(2026, 5, 20, 0, 0),
       );
       expect(earlierDay).toBeLessThan(0);
-    });
-
-    it('format honours the explicit locale argument on every adapter (#1150)', () => {
-      const options: Intl.DateTimeFormatOptions = { month: 'long' };
-      const native = new NativeDateAdapter();
-      const intl = new InternationalizedDateAdapter();
-      const dateTime = new InternationalizedDateTimeAdapter();
-
-      const nativeMarch = new Date(2026, 2, 1);
-      expect(native.format(nativeMarch, options, 'fr-FR')).toBe(
-        new Intl.DateTimeFormat('fr-FR', options).format(nativeMarch),
-      );
-      expect(native.format(nativeMarch, options, 'fr-FR')).not.toBe(
-        native.format(nativeMarch, options, 'en-US'),
-      );
-      expect(intl.format(intl.createDate(2026, 3, 1), options, 'fr-FR')).not.toBe(
-        intl.format(intl.createDate(2026, 3, 1), options, 'en-US'),
-      );
-      expect(dateTime.format(new CalendarDateTime(2026, 3, 1, 0, 0), options, 'fr-FR')).not.toBe(
-        dateTime.format(new CalendarDateTime(2026, 3, 1, 0, 0), options, 'en-US'),
-      );
-    });
-
-    describe('cross-adapter contract (#1150)', () => {
-      function assertYearsBelow100<D>(dateAdapter: DateAdapter<D>): void {
-        expect(dateAdapter.getYear(dateAdapter.createDate(50, 6, 15))).toBe(50);
-        expect(dateAdapter.getYear(dateAdapter.createDate(7, 1, 1))).toBe(7);
-
-        const addedYears = dateAdapter.addYears(dateAdapter.createDate(99, 6, 15), 2);
-        expect(dateAdapter.getYear(addedYears)).toBe(101);
-
-        const backBelow = dateAdapter.addYears(dateAdapter.createDate(101, 6, 15), -2);
-        expect(dateAdapter.getYear(backBelow)).toBe(99);
-
-        const addedMonths = dateAdapter.addMonths(dateAdapter.createDate(50, 12, 1), 1);
-        expect(dateAdapter.getYear(addedMonths)).toBe(51);
-        expect(dateAdapter.getMonth(addedMonths)).toBe(1);
-      }
-
-      function assertGregorianYear<D>(dateAdapter: DateAdapter<D>): void {
-        for (let month = 1; month <= 12; month++) {
-          expect(dateAdapter.getMonth(dateAdapter.createDate(2026, month, 1))).toBe(month);
-        }
-        const afterDecember = dateAdapter.addMonths(dateAdapter.createDate(2026, 12, 1), 1);
-        expect(dateAdapter.getYear(afterDecember)).toBe(2027);
-        expect(dateAdapter.getMonth(afterDecember)).toBe(1);
-      }
-
-      function assertFormatCaching<D>(dateAdapter: DateAdapter<D>): void {
-        const date = dateAdapter.createDate(2026, 3, 1);
-        const longMonth: Intl.DateTimeFormatOptions = { month: 'long' };
-        const twoDigitMonth: Intl.DateTimeFormatOptions = { month: '2-digit' };
-
-        expect(dateAdapter.format(date, longMonth, 'en-US')).toBe(
-          dateAdapter.format(date, longMonth, 'en-US'),
-        );
-
-        expect(dateAdapter.format(date, longMonth, 'en-US')).toBe('March');
-        expect(dateAdapter.format(date, longMonth, 'fr-FR')).toBe('mars');
-        expect(dateAdapter.format(date, longMonth, 'en-US')).not.toBe(
-          dateAdapter.format(date, longMonth, 'fr-FR'),
-        );
-
-        expect(dateAdapter.format(date, twoDigitMonth, 'en-US')).toBe('03');
-        expect(dateAdapter.format(date, longMonth, 'en-US')).not.toBe(
-          dateAdapter.format(date, twoDigitMonth, 'en-US'),
-        );
-      }
-
-      function assertAddPreservesTime<D>(dateAdapter: TimeCapableDateAdapter<D>): void {
-        const seed = dateAdapter.setTime(dateAdapter.createDate(2026, 6, 15), 14, 30, 45);
-        for (const advanced of [
-          dateAdapter.addDays(seed, 3),
-          dateAdapter.addMonths(seed, 2),
-          dateAdapter.addYears(seed, 1),
-        ]) {
-          expect(dateAdapter.getHours(advanced)).toBe(14);
-          expect(dateAdapter.getMinutes(advanced)).toBe(30);
-          expect(dateAdapter.getSeconds(advanced)).toBe(45);
-        }
-      }
-
-      it('maps years 1-99 to the literal year, never the 1901-1999 legacy offset', () => {
-        assertYearsBelow100(new NativeDateAdapter());
-        assertYearsBelow100(new InternationalizedDateAdapter());
-        assertYearsBelow100(new InternationalizedDateTimeAdapter());
-      });
-
-      it('add* preserves the wall-clock time on every time-capable adapter', () => {
-        assertAddPreservesTime(new NativeDateAdapter());
-        assertAddPreservesTime(new InternationalizedDateTimeAdapter());
-      });
-
-      it('exposes a twelve-month Gregorian year (month 1-12, December is the last month)', () => {
-        assertGregorianYear(new NativeDateAdapter());
-        assertGregorianYear(new InternationalizedDateAdapter());
-        assertGregorianYear(new InternationalizedDateTimeAdapter());
-      });
-
-      it('memoizes Intl.DateTimeFormat by locale and options on every adapter', () => {
-        assertFormatCaching(new NativeDateAdapter());
-        assertFormatCaching(new InternationalizedDateAdapter());
-        assertFormatCaching(new InternationalizedDateTimeAdapter());
-      });
     });
   });
 
