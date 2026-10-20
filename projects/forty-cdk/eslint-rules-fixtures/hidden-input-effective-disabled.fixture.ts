@@ -99,3 +99,57 @@ export class WrappedGoodControl {
     });
   }
 }
+
+// Expected: 1× forty-cdk/hidden-input-effective-disabled
+export class MissingDisabledControl {
+  declare readonly name: Signal<string>;
+  declare readonly value: Signal<readonly string[]>;
+
+  constructor() {
+    injectHiddenInput({ name: this.name, values: this.value });
+  }
+}
+
+// Expected: 1× forty-cdk/hidden-input-effective-disabled
+export class VariableConfigMissingDisabledControl {
+  declare readonly name: Signal<string>;
+  declare readonly value: Signal<readonly string[]>;
+
+  constructor() {
+    const config = { name: this.name, values: this.value };
+    injectHiddenInput(config);
+  }
+}
+
+// Expected: 1× forty-cdk/hidden-input-effective-disabled
+export class VariableConfigRawDisabledControl {
+  declare readonly name: Signal<string>;
+  declare readonly value: Signal<readonly string[]>;
+  declare readonly disabled: Signal<boolean>;
+
+  constructor() {
+    const config = { name: this.name, values: this.value, disabled: this.disabled };
+    injectHiddenInput(config);
+  }
+}
+
+// Expected: 1× forty-cdk/hidden-input-effective-disabled
+export class OpaqueConfigControl {
+  declare readonly config: () => Parameters<typeof injectHiddenInput>[0];
+
+  constructor() {
+    injectHiddenInput(this.config());
+  }
+}
+
+// Allowed: a same-function `const` bound to a literal that passes `effectiveDisabled`.
+export class VariableConfigGoodControl extends FormUiControlBase {
+  declare readonly name: Signal<string>;
+  declare readonly value: Signal<readonly string[]>;
+
+  constructor() {
+    super();
+    const config = { name: this.name, values: this.value, disabled: this.effectiveDisabled };
+    injectHiddenInput(config);
+  }
+}

@@ -17,3 +17,15 @@ export { resolveZzz as injectZzzItemContext } from './zzz-item-context';
 
 // Allowed: the token and the context interface are the public surface.
 export { FOR_ZZZ_CONTEXT, type ForZzzContext } from './zzz-context';
+
+// Expected: 1× forty-cdk/no-barrel-inject-context-export
+export * from './zzz-context';
+
+// Expected: 1× forty-cdk/no-barrel-inject-context-export
+export * as zzzPanelContext from './zzz-panel-context';
+
+// Expected: 1× forty-cdk/no-barrel-inject-context-export
+export function injectZzzRootContext(): void {}
+
+// Expected: 1× forty-cdk/no-barrel-inject-context-export
+export const injectZzzTriggerContext = (): void => undefined;
