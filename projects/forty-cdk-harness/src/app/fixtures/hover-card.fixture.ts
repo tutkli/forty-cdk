@@ -45,7 +45,7 @@ import { ForHoverCard, ForHoverCardContent, ForHoverCardTrigger } from 'forty-cd
     <input data-testid="far-before" placeholder="before-far-trigger" />
     <div style="height:150vh"></div>
     <span forHoverCard [(open)]="farOpen" [openDelay]="300" [closeDelay]="0">
-      <a data-testid="far-trigger" forHoverCardTrigger href="#far">Far</a>
+      <a data-testid="far-trigger" forHoverCardTrigger href="#far" tabindex="0">Far</a>
       @if (farOpen()) {
         <div forHoverCardContent data-testid="far-card">Far card</div>
       }

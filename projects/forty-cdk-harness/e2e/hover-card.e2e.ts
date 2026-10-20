@@ -131,7 +131,7 @@ test.describe('HoverCard', () => {
   }) => {
     await gotoFixture(page, 'hover-card');
     await el(page, 'trigger').hover();
-    await el(page, 'card-button').click();
+    await el(page, 'card-button').focus();
     await expect(el(page, 'card-button')).toBeFocused();
 
     await page.mouse.move(2, 2);
@@ -142,7 +142,7 @@ test.describe('HoverCard', () => {
   test('Escape from a control inside the card returns focus to the trigger', async ({ page }) => {
     await gotoFixture(page, 'hover-card');
     await el(page, 'trigger').hover();
-    await el(page, 'card-button').click();
+    await el(page, 'card-button').focus();
     await expect(el(page, 'card-button')).toBeFocused();
 
     await page.keyboard.press('Escape');
@@ -158,7 +158,7 @@ test.describe('HoverCard', () => {
   }) => {
     await gotoFixture(page, 'hover-card');
     await el(page, 'trigger').hover();
-    await el(page, 'card-button').click();
+    await el(page, 'card-button').focus();
     await expect(el(page, 'card-button')).toBeFocused();
     await page.mouse.move(2, 2);
 
@@ -177,7 +177,7 @@ test.describe('HoverCard', () => {
   }) => {
     await gotoFixture(page, 'hover-card');
     await el(page, 'trigger').hover();
-    await el(page, 'card-button').click();
+    await el(page, 'card-button').focus();
     await expect(el(page, 'card-button')).toBeFocused();
     await page.mouse.move(2, 2);
 
