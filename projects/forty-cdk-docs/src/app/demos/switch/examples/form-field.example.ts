@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
-import { form, FormField, requiredError, validate } from '@angular/forms/signals';
+import { form, FormField, required } from '@angular/forms/signals';
 import { ForField, ForFieldError } from 'forty-cdk/field';
 import { ForSwitch } from 'forty-cdk/switch';
 
@@ -104,10 +104,6 @@ interface Consent {
 export class SwitchFormFieldExample {
   protected readonly model = signal<Consent>({ privacy: false });
   protected readonly consentForm = form(this.model, (path) => {
-    validate(path.privacy, (ctx) =>
-      ctx.value()
-        ? undefined
-        : requiredError({ message: 'You must accept the privacy policy to continue.' }),
-    );
+    required(path.privacy, { message: 'You must accept the privacy policy to continue.' });
   });
 }
