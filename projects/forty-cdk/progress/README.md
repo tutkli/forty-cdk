@@ -2,7 +2,6 @@
 title: Progress
 group: primitives
 archetype: [composable-ui]
-apgUrl: https://www.w3.org/WAI/ARIA/apg/patterns/meter/
 ---
 
 # Progress
@@ -78,13 +77,13 @@ A `null` value puts the bar in indeterminate mode, for loading states whose dura
 
 ### `ForProgress`
 
-| Property             | Type                                      | Description                                                                                                                                 |
-| -------------------- | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| `value`              | `input<number \| null>`                   | Current progress in `[0, max]` (one-way; display-only). `null` = indeterminate.<br>**Default:** `null`                                      |
-| `max`                | `input<number>`                           | Upper bound. A non-positive `max` is clamped to `1` for ARIA so `aria-valuemax` always exceeds `aria-valuemin` (`0`).<br>**Default:** `100` |
-| `getValueLabel`      | `input<((value, max) => string) \| null>` | Override for `aria-valuetext` (e.g. "Step 3 of 5").<br>**Default:** —                                                                       |
-| `announceCompletion` | `input<boolean>`                          | Announce `Complete` (or the label) once via `aria-live` on the loading→complete transition.<br>**Default:** —                               |
-| `ariaLabel`          | `input<string \| null>`                   | Accessible name for the progressbar. Prefer a visible label referenced via `aria-labelledby` when one exists.<br>**Default:** `null`        |
+| Property             | Type                                      | Description                                                                                                                                               |
+| -------------------- | ----------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `value`              | `input<number \| null>`                   | Current progress in `[0, max]` (one-way; display-only). `null` = indeterminate.<br>**Default:** `null`                                                    |
+| `max`                | `input<number>`                           | Upper bound. A non-positive or non-finite `max` falls back to `1` for ARIA so `aria-valuemax` always exceeds `aria-valuemin` (`0`).<br>**Default:** `100` |
+| `getValueLabel`      | `input<((value, max) => string) \| null>` | Override for `aria-valuetext` (e.g. "Step 3 of 5").<br>**Default:** —                                                                                     |
+| `announceCompletion` | `input<boolean>`                          | Announce `Complete` (or the label) once via `aria-live` on the loading→complete transition.<br>**Default:** —                                             |
+| `ariaLabel`          | `input<string \| null>`                   | Accessible name for the progressbar. Prefer a visible label referenced via `aria-labelledby` when one exists.<br>**Default:** `null`                      |
 
 | Data attribute    | Values                                     |
 | ----------------- | ------------------------------------------ |
@@ -108,7 +107,7 @@ Visual fill paired with `[forProgress]`. Reflects the same state so width / tran
 
 ## Accessibility
 
-Implements the [WAI-ARIA Meter pattern](https://www.w3.org/WAI/ARIA/apg/patterns/meter/), using the [`progressbar` role](https://www.w3.org/TR/wai-aria-1.2/#progressbar).
+Implements the WAI-ARIA [`progressbar` role](https://www.w3.org/TR/wai-aria-1.2/#progressbar). The APG has no progress bar pattern, and its Meter pattern is not one: a meter must not be used to show progress.
 
 - **`role="progressbar"`** is announced as "progressbar" with the current value as a percentage (or your `aria-valuetext` if `getValueLabel` is set).
 - **Name the bar.** `role="progressbar"` requires an accessible name and the directive binds none on its own: reference the visible caption with `aria-labelledby` (the file name of an upload, say), or set `ariaLabel` when nothing on screen says what is progressing.

@@ -64,7 +64,7 @@ export class SeparatorDefaultExample {}
 
 ## Accessibility
 
-Implements the static [WAI-ARIA Separator pattern](https://www.w3.org/WAI/ARIA/apg/patterns/separator/).
+Implements the static WAI-ARIA [`separator` role](https://www.w3.org/TR/wai-aria-1.2/#separator). The APG has no separator pattern.
 
 - **Static is the only mode.** `[forSeparator]` keeps `role="separator"` and (for vertical) `aria-orientation="vertical"`. Horizontal omits the attribute because it is the ARIA default.
 - **Use `decorative` when redundant.** If the section split is already announced (e.g. headings on either side), set `decorative` so the separator becomes `role="none"` and AT skips it.

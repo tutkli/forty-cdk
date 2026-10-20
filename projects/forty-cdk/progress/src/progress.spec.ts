@@ -94,6 +94,43 @@ describe('ForProgress', () => {
       expect(el.getAttribute('aria-valuemax')).toBe('1');
     });
 
+    it('keeps a positive max below 1 as is, so a fractional task reaches complete', async () => {
+      const { fixture, query, flush } = renderHost(ProgressHost);
+      fixture.componentInstance.max.set(0.5);
+      fixture.componentInstance.value.set(0.25);
+      await flush();
+
+      const el = query<HTMLElement>('[forProgress]')!;
+      const indicator = query<HTMLElement>('[forProgressIndicator]')!;
+      expect(el.getAttribute('aria-valuemax')).toBe('0.5');
+      expect(el.getAttribute('data-max')).toBe('0.5');
+      expect(indicator.getAttribute('data-max')).toBe('0.5');
+      expect(el.getAttribute('data-percentage')).toBe('50');
+      expect(el.getAttribute('data-state')).toBe('loading');
+
+      fixture.componentInstance.value.set(0.5);
+      await flush();
+      expect(el.getAttribute('aria-valuenow')).toBe('0.5');
+      expect(el.getAttribute('data-percentage')).toBe('100');
+      expect(el.getAttribute('data-state')).toBe('complete');
+    });
+
+    it('falls back to a max of 1 when max is not a finite number', async () => {
+      const { fixture, query, flush } = renderHost(ProgressHost);
+      fixture.componentInstance.max.set(Number.NaN);
+      fixture.componentInstance.value.set(0.5);
+      await flush();
+
+      const el = query<HTMLElement>('[forProgress]')!;
+      expect(el.getAttribute('aria-valuemax')).toBe('1');
+      expect(el.getAttribute('data-percentage')).toBe('50');
+
+      fixture.componentInstance.max.set(Number.POSITIVE_INFINITY);
+      await flush();
+      expect(el.getAttribute('aria-valuemax')).toBe('1');
+      expect(el.getAttribute('data-percentage')).toBe('50');
+    });
+
     it('reflects data-percentage / data-min / data-max on the root, matching meter', async () => {
       const { fixture, query, flush } = renderHost(ProgressHost);
       fixture.componentInstance.value.set(25);
@@ -297,6 +334,22 @@ describe('ForProgress', () => {
 
       const region = document.querySelector<HTMLElement>('[aria-live="polite"]');
       expect(region!.textContent).toBe('Done: 100/100');
+    });
+
+    it('announces completion for a positive max below 1', async () => {
+      const { fixture, flush } = renderHost(ProgressHost);
+      fixture.componentInstance.announce.set(true);
+      fixture.componentInstance.max.set(0.5);
+      fixture.componentInstance.value.set(0.25);
+      await flush();
+      await nextMacrotask();
+
+      fixture.componentInstance.value.set(0.5);
+      await flush();
+      await nextMacrotask();
+
+      const region = document.querySelector<HTMLElement>('[aria-live="polite"]');
+      expect(region!.textContent).toBe('Complete');
     });
 
     it('does nothing when announceCompletion is false', async () => {

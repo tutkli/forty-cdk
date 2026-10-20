@@ -14,9 +14,9 @@ export interface ForProgressContext {
   /** Current max as written by the consumer. */
   readonly max: Signal<number>;
   /**
-   * `max` clamped to a strictly positive value, used for every ARIA / visual
-   * reflection. Descendant pieces mirror this instead of the raw {@link max}
-   * so root and indicator never diverge for a non-positive `max`.
+   * `max` with a non-positive or non-finite value replaced by `1`, used for
+   * every ARIA / visual reflection. Descendant pieces mirror this instead of
+   * the raw {@link max} so root and indicator never diverge for an invalid `max`.
    */
   readonly effectiveMax: Signal<number>;
   /** `null` when indeterminate; otherwise `0..100`. */
