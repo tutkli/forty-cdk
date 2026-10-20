@@ -77,7 +77,6 @@ import {
               <span><b>128</b> notes</span>
               <span><b>1.8k</b> followers</span>
             </div>
-            <button class="hovercard-follow" type="button">Follow</button>
             <span forHoverCardArrow class="hovercard-arrow"></span>
           </div>
         }

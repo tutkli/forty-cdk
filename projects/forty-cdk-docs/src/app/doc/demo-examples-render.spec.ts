@@ -1,5 +1,7 @@
 import { ErrorHandler, provideZonelessChangeDetection, reflectComponentType } from '@angular/core';
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
+import { ForHoverCard } from 'forty-cdk/hover-card';
 import { installObserverPolyfills, pressKey } from 'forty-cdk/testing';
 
 import { flush } from '../../../../forty-cdk/src/test-utils/flush';
@@ -55,6 +57,9 @@ const PAGE_LEVEL_LANDMARKS: ReadonlySet<string> = new Set([
   'banner',
   'contentinfo',
 ]);
+
+const FOCUSABLE =
+  'a[href], button, input, select, textarea, summary, [tabindex], [contenteditable]';
 
 type Example = (typeof DEMO_EXAMPLES)[number];
 
@@ -325,6 +330,17 @@ describe('the docs examples', () => {
       .map(({ el }) => accessibleName(el).name);
     expect(named).toEqual(['Grace Hopper']);
     expect(query(host, '[forAvatarFallback]').textContent!.trim()).toBe('GH');
+  });
+
+  it('keep the hover card hero a preview, with nothing in the card a keyboard user would have to reach', async () => {
+    const { fixture } = await render('hover-card/examples/default.example.ts');
+    fixture.debugElement
+      .query(By.directive(ForHoverCard))
+      .injector.get(ForHoverCard)
+      .open.set(true);
+    await flush(fixture);
+    const content = query(document.body, '[forHoverCardContent]');
+    expect([...content.querySelectorAll(FOCUSABLE)].map(describeElement)).toEqual([]);
   });
 
   it('reopen the virtualized combobox at the top of its list', async () => {

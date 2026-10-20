@@ -38,7 +38,6 @@ import {
               <span><b>128</b> notes</span>
               <span><b>1.8k</b> followers</span>
             </div>
-            <button class="hovercard-follow" type="button">Follow</button>
             <span forHoverCardArrow class="hovercard-arrow"></span>
           </div>
         }
@@ -133,26 +132,6 @@ import {
 
     .hovercard-stats b {
       color: var(--ex-text, #17191c);
-    }
-
-    .hovercard-follow {
-      width: 100%;
-      margin-top: 0.9rem;
-      appearance: none;
-      font: inherit;
-      font-weight: 600;
-      font-size: 0.9rem;
-      padding: 0.5rem 0.9rem;
-      border-radius: var(--ex-radius-sm, 14px);
-      border: 1px solid var(--ex-accent, #0e7c6b);
-      background: var(--ex-accent, #0e7c6b);
-      color: var(--ex-accent-contrast, #ffffff);
-      cursor: pointer;
-    }
-
-    .hovercard-follow:hover {
-      background: var(--ex-accent-hover, #0a5a4d);
-      border-color: var(--ex-accent-hover, #0a5a4d);
     }
 
     .hovercard-arrow {
