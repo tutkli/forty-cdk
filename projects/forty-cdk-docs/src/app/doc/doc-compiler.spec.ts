@@ -1,4 +1,8 @@
-import { cellsOf, type DocApiTable } from '../../../../../scripts/docs/doc-model.mjs';
+import {
+  cellsOf,
+  type DocApiTable,
+  type DocTable,
+} from '../../../../../scripts/docs/doc-model.mjs';
 import { compile, problemsOf } from './testing/compile';
 import { PRIMITIVE_DOCS, SITE_DOCS } from './testing/doc-corpus';
 
@@ -270,9 +274,12 @@ describe('what a compiled document guarantees its renderer', () => {
  * second time — #1806's last acceptance criterion.
  *
  * The case rebuilds one for `accordion` out of nothing but the model: the title,
- * the intro, each section's prose as authored, and the API tables re-emitted
- * from records. It asserts the *inputs are reachable*, not that this is the
- * README's final shape — the shape is the generated-README issue's to decide.
+ * the lede, the intro, the Examples caption, and every section's blocks — prose
+ * as authored, tables re-emitted from records. Every line the source holds
+ * outside a table has to reach that text, so a section whose prose the model
+ * stopped carrying is named rather than passed over. It asserts the *inputs are
+ * reachable*, not that this is the README's final shape — the shape is the
+ * generated-README issue's to decide.
  *
  * **One ingredient the criterion names is not in the corpus at all.** It asks
  * for "intro, install, anatomy, API"; no entry-point README has an installation
@@ -281,37 +288,59 @@ describe('what a compiled document guarantees its renderer', () => {
  * the content — which is a finding about the criterion, not a gap in the model.
  */
 describe('deriving a README from the model alone', () => {
-  it('reaches the title, the intro, every section’s prose and every API table', () => {
+  it('reaches the title, the lede, the intro, every section’s prose and every API table', () => {
     const accordion = PRIMITIVE_DOCS.find((doc) => doc.slug === 'accordion')!;
     const document = compile(accordion);
-    const proseOf = (slug: string) =>
-      document.sections
-        .find((section) => section.slug === slug)!
-        .blocks.filter((block) => block.kind === 'prose')
-        .map((block) => block.markdown)
-        .join('\n\n');
+    const tableMarkdown = (table: DocTable) => {
+      const { columns, rows } = cellsOf(table);
+      return [
+        `| ${columns.join(' | ')} |`,
+        `| ${columns.map(() => '---').join(' | ')} |`,
+        ...rows.map((row) => `| ${row.join(' | ')} |`),
+      ].join('\n');
+    };
     const apiTables = document.sections
       .find((section) => section.slug === 'api')!
-      .blocks.filter((block) => block.kind === 'table')
-      .map((block) => cellsOf(block.table));
+      .blocks.filter((block) => block.kind === 'table');
 
     const readme = [
       `# ${document.title}`,
+      document.lede ?? '',
       ...document.intro.map((block) => block.markdown),
-      '## Anatomy',
-      proseOf('anatomy'),
-      '## API',
-      ...apiTables.map((table) =>
-        [
-          `| ${table.columns.join(' | ')} |`,
-          `| ${table.columns.map(() => '---').join(' | ')} |`,
-          ...table.rows.map((row) => `| ${row.join(' | ')} |`),
-        ].join('\n'),
-      ),
+      ...document.sections.flatMap((section) => [
+        `## ${section.title}`,
+        ...(section.slug === 'examples' && document.caption !== null ? [document.caption] : []),
+        ...section.blocks.map((block) =>
+          block.kind === 'prose' ? block.markdown : tableMarkdown(block.table),
+        ),
+      ]),
     ].join('\n\n');
 
+    const sourceRuns: { heading: string; prose: string[] }[] = [];
+    let inFence = false;
+    for (const line of accordion.markdown.split(/\r?\n/)) {
+      if (!inFence && /^##? /.test(line)) {
+        sourceRuns.push({ heading: line, prose: [] });
+      } else if (sourceRuns.length > 0 && (inFence || !/^\s*(\||$)/.test(line))) {
+        sourceRuns.at(-1)!.prose.push(line.trimEnd());
+      }
+      if (/^\s*```/.test(line)) {
+        inFence = !inFence;
+      }
+    }
+    const [intro, ...sourceSections] = sourceRuns;
+    const unreached = sourceRuns.flatMap(({ heading, prose }) =>
+      prose.filter((line) => !readme.includes(line)).map((line) => `${heading}: ${line}`),
+    );
+
+    expect(intro!.heading).toBe('# Accordion');
+    expect(intro!.prose).toContain(document.lede);
+    expect(sourceSections.map(({ heading }) => heading.slice('## '.length))).toEqual(
+      document.sections.map((section) => section.title),
+    );
+    expect(sourceSections.filter(({ prose }) => prose.length > 0).length).toBeGreaterThan(6);
+    expect(unreached).toEqual([]);
     expect(readme).toContain('# Accordion');
-    expect(readme).toContain('<div forAccordion>');
     expect(apiTables.length).toBeGreaterThan(0);
     expect(readme).toContain('| Property | Type | Description |');
   });
