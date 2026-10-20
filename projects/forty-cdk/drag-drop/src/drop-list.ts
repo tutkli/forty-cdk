@@ -142,7 +142,10 @@ export class ForDropList implements ForDropListContext {
   readonly _dirInput = input<WritingDirection | null>(null, { alias: 'dir' });
   readonly dir = injectTextDirection(this._dirInput);
 
-  /** When true, the entire list and all its items are disabled. */
+  /**
+   * When true, the entire list and all its items are disabled. Turning it on while an item is
+   * keyboard-lifted does not end the lift: the lifted keys still move, drop and cancel it.
+   */
   readonly disabled = input(false, { transform: booleanAttribute });
 
   /**

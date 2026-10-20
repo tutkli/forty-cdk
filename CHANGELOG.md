@@ -31,6 +31,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `[decorative]` binding, and wrap the options on each side in a `[forSelectGroup]` /
   `[forComboboxGroup]` with a group label where the split must be announced.
 
+### Fixed
+
+- **Drag and drop, Virtual Reorder.** Disabling an item or a list stops a lift from starting and
+  nothing else ([#2369](https://github.com/tutkli/forty-cdk/issues/2369)). In a
+  `[forVirtualReorder]` list, Home / End from a focused `[dragDisabled]` row now reach the first /
+  last item of the dataset instead of the edge of the rendered window. A `[forDraggable]` that was
+  keyboard-lifted when it or its `[forDropList]` became disabled now still answers Escape, Space /
+  Enter and the arrows, so the gesture no longer stays lifted until focus leaves.
+
 ## [0.39.0] - 2026-10-18
 
 ### Added

@@ -177,6 +177,11 @@ unchecks the item's own and no cloned media plays or frame reloads.
 Arrow direction follows the list's `orientation` and respects RTL via `dir`. In
 `orientation="mixed"` every arrow key steps the lifted item linearly in DOM order.
 
+`[dragDisabled]` and a disabled `[forDropList]` stop a lift from starting, nothing else. A
+`[dragDisabled]` item still takes the idle arrow and Home / End keys (only a disabled list stops
+those), and an item that was already lifted when it or its list became disabled keeps every lifted
+key, so Escape always ends the gesture.
+
 ## Accessibility
 
 Keyboard lifting, stepping, dropping, and cancellation are announced via ARIA live regions. Override the default messages at any injector scope via `provideForDragDropDefaults` (see Announcement customisation below). Free-drag is pointer-only. There is no WAI-ARIA pattern for "reposition an element", so `[forFreeDrag]` owns no role or ARIA state; the consumer is responsible for keeping the moved element fully usable at its default position.

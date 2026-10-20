@@ -283,12 +283,7 @@ export class ForVirtualReorder {
   #jumpToEdge(event: KeyboardEvent, edge: 'first' | 'last'): void {
     const draggable = this.#list.items().find((h) => h.host === event.target);
     const count = this.count();
-    if (
-      draggable === undefined ||
-      draggable.disabled() ||
-      this.#list.effectiveDisabled() ||
-      count === 0
-    ) {
+    if (draggable === undefined || this.#list.effectiveDisabled() || count === 0) {
       return;
     }
     event.preventDefault();

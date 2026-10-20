@@ -1025,6 +1025,66 @@ describe('ForDropList + ForDraggable', () => {
     });
   });
 
+  describe('a keyboard lift disabled while it is live', () => {
+    afterEach(() => {
+      vi.useRealTimers();
+      document.querySelectorAll('[aria-live]').forEach((n) => n.remove());
+    });
+
+    function liftThenDisable(disable: (comp: SingleListHost) => void) {
+      const r = renderHost(SingleListHost);
+      const first = itemEl(r.el, 1);
+      first.focus();
+      pressKey(first, ' ');
+      r.fixture.detectChanges();
+      expect(first.hasAttribute('data-dragging')).toBe(true);
+      disable(r.fixture.componentInstance);
+      r.fixture.detectChanges();
+      expect(first.hasAttribute('data-disabled')).toBe(true);
+      return { ...r, first, comp: r.fixture.componentInstance };
+    }
+
+    it('Escape cancels it once the list is disabled', () => {
+      vi.useFakeTimers();
+      const { fixture, first, comp } = liftThenDisable((c) => c.listDisabled.set(true));
+
+      const escape = pressKey(first, 'Escape');
+      vi.runAllTimers();
+      fixture.detectChanges();
+
+      expect(escape.defaultPrevented).toBe(true);
+      expect(first.hasAttribute('data-dragging')).toBe(false);
+      expect(comp.lastDrop()).toBeNull();
+      expect(document.querySelector('[aria-live="assertive"]')?.textContent).toContain(
+        'Alpha, movement cancelled.',
+      );
+    });
+
+    it('Escape cancels it once the item is dragDisabled', () => {
+      const { fixture, first, comp } = liftThenDisable((c) =>
+        c.rows.update(([row, ...rest]) => [{ ...row!, disabled: true }, ...rest]),
+      );
+
+      pressKey(first, 'Escape');
+      fixture.detectChanges();
+
+      expect(first.hasAttribute('data-dragging')).toBe(false);
+      expect(comp.lastDrop()).toBeNull();
+    });
+
+    it('arrows still step it and Space still drops it once the list is disabled', () => {
+      const { fixture, first, comp } = liftThenDisable((c) => c.listDisabled.set(true));
+
+      pressKey(first, 'ArrowDown');
+      pressKey(first, ' ');
+      fixture.detectChanges();
+
+      expect(comp.lastDrop()?.previousIndex).toBe(0);
+      expect(comp.lastDrop()?.currentIndex).toBe(1);
+      expect(first.hasAttribute('data-dragging')).toBe(false);
+    });
+  });
+
   describe('RTL axis', () => {
     it('ArrowLeft moves "next" in horizontal RTL', async () => {
       const { el, fixture } = renderHost(SingleListHost);

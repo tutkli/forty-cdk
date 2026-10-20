@@ -99,7 +99,8 @@ export class ForDraggable implements ForDraggableContext {
    * `[forTableColumnReorder]` header row inside a grid) it can still be the group's single
    * tab stop. It also acts as a hard fence for the `liveSort` placeholder: a sibling being
    * dragged cannot move its placeholder across a pinned item (the committed drop index is
-   * unaffected).
+   * unaffected). Turning it on while this item is keyboard-lifted does not end the lift: the
+   * lifted keys still move, drop and cancel it.
    */
   readonly dragDisabled = input(false, { transform: booleanAttribute });
 
@@ -338,12 +339,6 @@ export class ForDraggable implements ForDraggableContext {
       return;
     }
     const host = this.#host.nativeElement;
-    if (this.effectiveDisabled()) {
-      if (!this.lifted() && event.target === host) {
-        this.#navigate(event);
-      }
-      return;
-    }
     if (this.lifted()) {
       if (event.key === ' ' || event.key === 'Enter') {
         event.preventDefault();
@@ -367,6 +362,10 @@ export class ForDraggable implements ForDraggableContext {
       return;
     }
     if (event.target !== host) {
+      return;
+    }
+    if (this.effectiveDisabled()) {
+      this.#navigate(event);
       return;
     }
     if (event.key === ' ' || event.key === 'Enter') {
