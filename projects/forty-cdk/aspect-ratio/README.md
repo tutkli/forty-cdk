@@ -39,7 +39,7 @@ If your ratio is a literal constant, prefer the CSS property directly and keep t
 
 ## Examples
 
-Resize the preview and watch the frame hold its 16 / 9 ratio. The primitive writes the ratio and nothing else, so every border, colour and inset below is your own CSS.
+Narrow the browser window until the frame shrinks and watch it hold its 16 / 9 ratio. The primitive writes the ratio and nothing else, so every border, colour and inset below is your own CSS.
 
 ```ts
 import { ChangeDetectionStrategy, Component } from '@angular/core';

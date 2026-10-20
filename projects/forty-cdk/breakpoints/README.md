@@ -29,17 +29,10 @@ Providing it again on a component injector replaces the map for that subtree onl
 
 ## Examples
 
-Resize the preview and watch the matched breakpoint change: `injectBreakpoints()` hands back signals, so the template re-renders without a listener of your own.
+Resize the browser window and watch the matched breakpoint change: the breakpoints follow the viewport, not the preview frame. `injectBreakpoints()` hands back signals, so the template, width range included, re-renders without a listener of your own.
 
 ```ts
-import {
-  afterNextRender,
-  ChangeDetectionStrategy,
-  Component,
-  DestroyRef,
-  inject,
-  signal,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed } from '@angular/core';
 import { forBreakpointsTailwind, injectBreakpoints } from 'forty-cdk/breakpoints';
 
 type TailwindName = keyof typeof forBreakpointsTailwind;
@@ -52,7 +45,7 @@ type TailwindName = keyof typeof forBreakpointsTailwind;
       <div class="bp-readout">
         <span class="bp-readout-label">active breakpoint</span>
         <span class="bp-active">{{ active() ?? 'below sm' }}</span>
-        <span class="bp-width">viewport ≈ {{ width() }}px</span>
+        <span class="bp-width">viewport {{ range() }}</span>
       </div>
 
       <ul class="bp-grid">
@@ -81,17 +74,12 @@ export class BreakpointsActiveExample {
     only: this.bp.only(name),
   }));
 
-  protected readonly width = signal(0);
-
-  constructor() {
-    const destroyRef = inject(DestroyRef);
-    afterNextRender(() => {
-      const onResize = (): void => this.width.set(globalThis.innerWidth);
-      onResize();
-      globalThis.addEventListener('resize', onResize, { passive: true });
-      destroyRef.onDestroy(() => globalThis.removeEventListener('resize', onResize));
-    });
-  }
+  protected readonly range = computed(() => {
+    const index = this.rows.findIndex((row) => row.name === this.active());
+    const from = this.rows[index]?.min ?? 0;
+    const to = this.rows[index + 1]?.min;
+    return to === undefined ? `${from}px and up` : `${from}px to ${to - 1}px`;
+  });
 }
 ```
 
