@@ -15,7 +15,11 @@ import * as motionFixtures from './fixtures/motion';
 import * as overlayFixtures from './fixtures/overlay';
 import * as tableFixtures from './fixtures/table';
 
+import { entryPointOf, LIBRARY_CODE } from '../../test-utils/source-scan';
+
 import {
+  StepperCompletedFixture,
+  StepperFixture,
   StepperServerFixture,
   TabsServerFixture,
   TabsServerRepeatFixture,
@@ -52,7 +56,7 @@ import {
  * cases below run over that registry, so a new primitive owes a fixture and a
  * registry entry, never a new hand-written `it`.
  *
- * The six sweeps, and what each one alone would miss:
+ * The seven sweeps, and what each one alone would miss:
  *
  * - **renders without throwing** — the primitive constructs and paints on the
  *   server at all. Blind to markup that renders but says nothing.
@@ -66,6 +70,12 @@ import {
  *   primitive loses a server-side reference — the failure #1409 (tabs shipped
  *   no trigger↔panel pairing) and #1377 (stepper painted the completed state)
  *   both walked past.
+ * - **claims every tab stop and id reference it emits** — the previous sweep
+ *   asserts only what an entry declared, so this one derives what it owes: every
+ *   id reference in the render resolves and is covered by a `pairs` claim (or an
+ *   `unpairedReferences` reason), and every rendered item of a single-tab-stop
+ *   group is selected by a `tabStop` (or excused by a `noTabStop`). Blind to a
+ *   claim made through anything else.
  * - **leaves `<body>` untouched** — no portal appends a node, no scroll lock
  *   writes `style`, and no `InertSiblingsStack` mark on the branch holding the
  *   fixture (asserted beside the snapshot, which structurally cannot see it —
@@ -285,6 +295,182 @@ function assertSingleTabStop(host: HTMLElement, selector: string): void {
   expect(stops.length, `${selector} tab stops`).toBe(1);
 }
 
+function tabStopSelectors(fixture: SsrFixture): readonly string[] {
+  if (fixture.tabStop === undefined) return [];
+  return typeof fixture.tabStop === 'string' ? [fixture.tabStop] : fixture.tabStop;
+}
+
+interface SingleTabStopGroup {
+  /** The source declaring the group's root. */
+  readonly source: string;
+  /** Every element able to hold the group's tab stop. */
+  readonly items: string;
+}
+
+/**
+ * Every group owning a single tab stop. A fixture whose server render contains
+ * one of a group's items owes a `tabStop` selecting at least one of them, or a
+ * `noTabStop` saying why the render holds none, so a new fixture cannot skip
+ * the claim a deferred registration breaks
+ * ([#2135](https://github.com/tutkli/forty-cdk/issues/2135)).
+ *
+ * The roster is checked against source in both directions: a root constructing
+ * a `RovingTabindex`, or the range-field composer that builds one per endpoint,
+ * is a member by construction, and {@link DECLARED_SINGLE_TAB_STOP_SOURCES}
+ * names the roots that resolve their stop without one.
+ */
+const SINGLE_TAB_STOP_GROUPS: readonly SingleTabStopGroup[] = [
+  {
+    source: 'calendar/src/calendar.ts',
+    items: '[forCalendarCell], [forCalendarMonthCell], [forCalendarYearCell]',
+  },
+  { source: 'carousel/src/carousel.ts', items: '[forCarouselIndicator]' },
+  { source: 'date-field/src/date-field.ts', items: '[forDateFieldSegment]' },
+  { source: 'date-field/src/date-range-field.ts', items: '[forDateRangeFieldSegment]' },
+  { source: 'drag-drop/src/drop-list.ts', items: '[forDraggable]' },
+  { source: 'listbox/src/listbox.ts', items: '[forListboxOption]' },
+  { source: 'menubar/src/menubar.ts', items: '[forMenubarTrigger]' },
+  { source: 'radio-group/src/radio-group.ts', items: '[forRadio]' },
+  { source: 'stepper/src/stepper.ts', items: '[forStepperTrigger]' },
+  { source: 'table/src/table.ts', items: '[forTableHeaderCell], [forTableCell]' },
+  { source: 'tabs/src/tabs.ts', items: '[forTabsTrigger]' },
+  { source: 'time-field/src/time-field.ts', items: '[forTimeFieldSegment]' },
+  { source: 'time-field/src/time-range-field.ts', items: '[forTimeRangeFieldSegment]' },
+  { source: 'toggle/src/toggle-group.ts', items: '[forToggleGroupItem]' },
+  { source: 'toolbar/src/toolbar.ts', items: '[forToolbarButton], [forToolbarLink]' },
+  { source: 'tree/src/tree.ts', items: '[forTreeItem]' },
+];
+
+/** The roots owning a single tab stop that construct no tracker, and why. */
+const DECLARED_SINGLE_TAB_STOP_SOURCES: ReadonlyMap<string, string> = new Map([
+  [
+    'calendar/src/calendar.ts',
+    'each cell binds its tab stop to the focused date, month or year rather than to a tracker',
+  ],
+  [
+    'carousel/src/carousel.ts',
+    'the current dot holds the stop through the shared selectionTabStop ladder',
+  ],
+  [
+    'radio-group/src/radio-group.ts',
+    'the checked radio holds the stop through the shared selectionTabStop ladder',
+  ],
+]);
+
+const TRACKER_CONSTRUCTION = /new (?:RovingTabindex|RangeFieldComposer)\b/;
+
+function trackerSources(): readonly string[] {
+  return [...LIBRARY_CODE]
+    .filter(([path, code]) => entryPointOf(path) !== 'core' && TRACKER_CONSTRUCTION.test(code))
+    .map(([path]) => path);
+}
+
+function declaredSelectorAttributes(): ReadonlySet<string> {
+  const names = new Set<string>();
+  for (const code of LIBRARY_CODE.values()) {
+    for (const selector of code.matchAll(/selector:\s*'([^']+)'/g)) {
+      for (const attribute of selector[1]!.matchAll(/\[([A-Za-z]+)\]/g)) {
+        names.add(attribute[1]!);
+      }
+    }
+  }
+  return names;
+}
+
+/** Every attribute whose value is one or more element ids. */
+const ID_REFERENCE_ATTRIBUTES = [
+  'aria-activedescendant',
+  'aria-controls',
+  'aria-describedby',
+  'aria-details',
+  'aria-errormessage',
+  'aria-flowto',
+  'aria-labelledby',
+  'aria-owns',
+  'for',
+] as const;
+
+function describeElement(el: Element): string {
+  const pieces = el.getAttributeNames().filter((name) => /^for[a-z]/.test(name));
+  return `${el.tagName.toLowerCase()}${pieces.map((name) => `[${name}]`).join('')}`;
+}
+
+function assertTabStopsClaimed(host: HTMLElement, fixture: SsrFixture): void {
+  const rendered = SINGLE_TAB_STOP_GROUPS.map((group) => ({
+    group,
+    items: Array.from(host.querySelectorAll(group.items)),
+  })).filter(({ items }) => items.length > 0);
+
+  if (fixture.noTabStop !== undefined) {
+    expect(fixture.tabStop, 'declare `tabStop` or `noTabStop`, never both').toBeUndefined();
+    expect(
+      rendered.map(({ group }) => group.source),
+      '`noTabStop` on a fixture rendering no single-tab-stop group',
+    ).not.toEqual([]);
+    const stops = rendered
+      .flatMap(({ items }) => items)
+      .filter((item) => item.getAttribute('tabindex') === '0');
+    expect(
+      stops.map(describeElement),
+      `${fixture.noTabStop} — yet an item holds a tab stop`,
+    ).toEqual([]);
+    return;
+  }
+
+  const claimed = new Set(
+    tabStopSelectors(fixture).flatMap((selector) => Array.from(host.querySelectorAll(selector))),
+  );
+  const unclaimed = rendered
+    .filter(({ items }) => !items.some((item) => claimed.has(item)))
+    .map(({ group }) => `${group.source} (${group.items})`);
+  expect(
+    unclaimed,
+    'the render holds the items of a single-tab-stop group — declare a `tabStop` selecting them, or a `noTabStop` saying why none holds the stop',
+  ).toEqual([]);
+}
+
+function assertReferencesPaired(host: HTMLElement, fixture: SsrFixture): void {
+  const paired = new Map<Element, Set<string>>();
+  for (const expectation of fixture.markup ?? []) {
+    const el = host.querySelector(expectation.select);
+    if (el === null) continue;
+    const names = paired.get(el) ?? new Set<string>();
+    for (const name of Object.keys(expectation.pairs ?? {})) names.add(name);
+    paired.set(el, names);
+  }
+
+  const optOuts = fixture.unpairedReferences ?? {};
+  const optedOut = new Set<string>();
+  const dangling: string[] = [];
+  const uncovered: string[] = [];
+  for (const el of Array.from(host.querySelectorAll('*'))) {
+    for (const name of ID_REFERENCE_ATTRIBUTES) {
+      const value = el.getAttribute(name)?.trim();
+      if (!value) continue;
+      const reference = `${describeElement(el)} [${name}="${value}"]`;
+      if (value.split(/\s+/).some((id) => document.getElementById(id) === null)) {
+        dangling.push(reference);
+      }
+      if (paired.get(el)?.has(name)) continue;
+      if (optOuts[name] !== undefined) {
+        optedOut.add(name);
+        continue;
+      }
+      uncovered.push(reference);
+    }
+  }
+
+  expect(dangling, 'an id reference resolves to no element in the server render').toEqual([]);
+  expect(
+    uncovered,
+    'an id reference no `pairs` claim covers — declare the pairing, or list the attribute in `unpairedReferences` with the case that asserts it',
+  ).toEqual([]);
+  expect(
+    Object.keys(optOuts).filter((name) => !optedOut.has(name)),
+    '`unpairedReferences` lists an attribute the render no longer leaves uncovered',
+  ).toEqual([]);
+}
+
 /**
  * Everything a server render must leave alone on `<body>`: its own attributes,
  * plus the identity and attribute set of each child. That covers two of the
@@ -452,9 +638,41 @@ describe('SSR smoke tests', () => {
           assertMarkup(host, expectation);
         }
 
-        if (fixture.tabStop !== undefined) {
-          assertSingleTabStop(host, fixture.tabStop);
+        for (const selector of tabStopSelectors(fixture)) {
+          assertSingleTabStop(host, selector);
         }
+      });
+    }
+  });
+
+  it('derives the single-tab-stop groups from source', () => {
+    const tracked = trackerSources();
+    expect(tracked.length, 'no source constructs a roving tracker').toBeGreaterThan(10);
+
+    const expected = [...tracked, ...DECLARED_SINGLE_TAB_STOP_SOURCES.keys()].sort();
+    expect(SINGLE_TAB_STOP_GROUPS.map(({ source }) => source).sort()).toEqual(expected);
+
+    const constructsTracker = [...DECLARED_SINGLE_TAB_STOP_SOURCES.keys()].filter((source) =>
+      tracked.some((path) => entryPointOf(path) === entryPointOf(source)),
+    );
+    expect(constructsTracker, 'a declared group now constructs a tracker').toEqual([]);
+
+    const attributes = declaredSelectorAttributes();
+    const unknown = SINGLE_TAB_STOP_GROUPS.flatMap(({ items }) =>
+      [...items.matchAll(/\[([A-Za-z]+)\]/g)].map((match) => match[1]!),
+    ).filter((name) => !attributes.has(name));
+    expect(unknown, 'a group item no library selector declares').toEqual([]);
+  });
+
+  describe('server render claims every tab stop and id reference it emits', () => {
+    for (const fixture of SSR_FIXTURES) {
+      it(`${fixture.component.name} claims its single tab stops and id references`, () => {
+        const f = TestBed.createComponent(fixture.component);
+        f.detectChanges();
+        const host = f.nativeElement as HTMLElement;
+
+        assertTabStopsClaimed(host, fixture);
+        assertReferencesPaired(host, fixture);
       });
     }
   });
@@ -861,6 +1079,25 @@ describe('SSR smoke tests', () => {
 
       expect(progress.getAttribute('aria-valuetext')).toBe('Step 1 of 2');
     });
+
+    for (const component of [StepperFixture, StepperCompletedFixture, StepperServerFixture]) {
+      it(`wires every trigger/panel aria pairing of ${component.name} server-side`, () => {
+        const f = TestBed.createComponent(component);
+        f.detectChanges();
+        const root = f.nativeElement as HTMLElement;
+
+        const triggers = Array.from(root.querySelectorAll<HTMLElement>('[forStepperTrigger]'));
+        const panels = Array.from(root.querySelectorAll<HTMLElement>('[forStepperContent]'));
+
+        expect(triggers.length).toBeGreaterThan(1);
+        expect(panels.length).toBe(triggers.length);
+        for (const [i, panel] of panels.entries()) {
+          const trigger = triggers[i]!;
+          expect(panel.getAttribute('aria-labelledby'), `panel ${i}`).toBe(trigger.id);
+          expect(trigger.getAttribute('aria-controls'), `trigger ${i}`).toBe(panel.id);
+        }
+      });
+    }
   });
 
   describe('ForTabs server markup', () => {
