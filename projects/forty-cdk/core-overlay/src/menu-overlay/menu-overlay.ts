@@ -8,9 +8,9 @@ import {
   type OverlayTransitionOptions,
 } from '../overlay-controller/overlay-controller';
 import {
-  MenuOpenerRegistry,
-  type MenuOpenerOptions,
+  type MenuOpenerHandle,
   type MenuOpenerPositioning,
+  MenuOpenerRegistry,
 } from './menu-opener-registry';
 import type { ForMenuCloseReason } from './menu-context';
 import { createMenuItemList, type MenuItemHandle, type MenuItemList } from './menu-item-list';
@@ -35,6 +35,7 @@ export interface MenuOverlayHooks extends OverlayEmitTargets {
   readonly disabled: Signal<boolean>;
   readonly dismissible: Signal<boolean>;
   readonly loop: Signal<boolean>;
+  readonly openers: Signal<readonly MenuOpenerHandle[]>;
 
   /**
    * Optional side effect run after `openMenu` resolves the open, receiving the
@@ -173,7 +174,7 @@ export class MenuOverlay<H extends MenuItemHandle = MenuItemHandle> {
     this.#controller = new OverlayController<'first' | 'last', ForMenuCloseReason>({
       idPrefix,
       createTrigger: (mintId) => {
-        openers = new MenuOpenerRegistry(mintId());
+        openers = new MenuOpenerRegistry(mintId(), hooks.openers);
         return openers;
       },
       defaultInitialFocus: 'first',
@@ -203,22 +204,6 @@ export class MenuOverlay<H extends MenuItemHandle = MenuItemHandle> {
 
   setInitialFocus(target: 'first' | 'last'): void {
     this.#controller.setInitialFocus(target);
-  }
-
-  registerTrigger(el: HTMLElement): void {
-    this.#controller.registerTrigger(el);
-  }
-
-  unregisterTrigger(el: HTMLElement): void {
-    this.#controller.unregisterTrigger(el);
-  }
-
-  registerOpener(element: HTMLElement, options?: MenuOpenerOptions): void {
-    this.#openers.register(element, options);
-  }
-
-  unregisterOpener(element: HTMLElement): void {
-    this.#openers.unregister(element);
   }
 
   activateOpener(element: HTMLElement, returnFocusTarget: HTMLElement | null = null): void {

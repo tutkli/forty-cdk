@@ -1231,6 +1231,55 @@ describe('ForContextMenu', () => {
       expect(document.querySelector('[forMenuContent]')).toBeNull();
       expect(region.getAttribute('data-state')).toBe('closed');
     });
+
+    @Component({
+      imports: [...IMPORTS, NgTemplateOutlet],
+      template: `
+        <ng-template #chip let-root="root">
+          <div id="region" [forContextMenuTrigger]="root">Right-click here</div>
+        </ng-template>
+
+        <div forContextMenu [(open)]="openA" #a="forContextMenu">
+          @if (openA()) {
+            <div forMenuContent data-testid="content-a">
+              <button forMenuItem>Cut</button>
+            </div>
+          }
+        </div>
+        <div forContextMenu [(open)]="openB" #b="forContextMenu">
+          @if (openB()) {
+            <div forMenuContent data-testid="content-b">
+              <button forMenuItem>Copy</button>
+            </div>
+          }
+        </div>
+
+        <ng-container
+          [ngTemplateOutlet]="chip"
+          [ngTemplateOutletContext]="{ root: useB() ? b : a }"
+        />
+      `,
+    })
+    class RetargetedHost {
+      readonly openA = signal(false);
+      readonly openB = signal(false);
+      readonly useB = signal(false);
+    }
+
+    it('follows an explicit root swapped at runtime', async () => {
+      const r = renderHost(RetargetedHost);
+      const region = r.query<HTMLElement>('#region')!;
+
+      r.instance.useB.set(true);
+      await flush(r.fixture);
+      rightClick(region, 10, 10);
+      await flush(r.fixture);
+
+      expect(r.query('#region')).toBe(region);
+      expect(r.instance.openA()).toBe(false);
+      expect(r.instance.openB()).toBe(true);
+      expect(region.getAttribute('data-state')).toBe('open');
+    });
   });
 
   describe('subclassed root', () => {

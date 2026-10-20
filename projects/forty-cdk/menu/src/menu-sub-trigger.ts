@@ -1,16 +1,27 @@
-import { booleanAttribute, computed, Directive, ElementRef, inject, input } from '@angular/core';
+import {
+  booleanAttribute,
+  computed,
+  Directive,
+  ElementRef,
+  inject,
+  input,
+  signal,
+} from '@angular/core';
 
 import {
   fortyError,
   hostButtonType,
+  hostId,
   isHoverCapablePointer,
   preventPointerFocus,
   registerHandle,
   resolveListNavigation,
 } from 'forty-cdk/core';
 import {
+  createMenuOpenerHandle,
   type ForMenuContext,
   injectMenuContext,
+  MENU_OPENERS,
   type MenuActivationModality,
 } from 'forty-cdk/core-overlay';
 import { createMenuItemInteraction } from './menu-item-interaction';
@@ -67,7 +78,7 @@ import { handleMenuTabOut } from './menu-tab-out';
     role: 'menuitem',
     '[attr.type]': 'buttonType()',
     tabindex: '-1',
-    '[id]': 'submenu.triggerId()',
+    '[id]': 'id()',
     '[attr.aria-haspopup]': '"menu"',
     '[attr.aria-expanded]': 'submenu.open() ? "true" : "false"',
     '[attr.aria-controls]': 'submenu.open() ? submenu.contentId() : null',
@@ -89,6 +100,7 @@ export class ForMenuSubTrigger {
 
   private readonly submenu = injectMenuContext('ForMenuSubTrigger');
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
+  private readonly id = hostId('for-menu-sub-trigger');
   #pointerActivation = false;
 
   /**
@@ -112,10 +124,15 @@ export class ForMenuSubTrigger {
 
   constructor() {
     preventPointerFocus(() => this.effectiveDisabled());
+    const openers = inject(MENU_OPENERS);
     registerHandle(
-      this.#host.nativeElement,
-      (el) => this.submenu.registerTrigger(el),
-      (el) => this.submenu.unregisterTrigger(el),
+      createMenuOpenerHandle(
+        this.#host.nativeElement,
+        signal<object | null>(this.submenu).asReadonly(),
+        { id: this.id, labelsMenu: true },
+      ),
+      (handle) => openers.add(handle),
+      (handle) => openers.remove(handle),
     );
   }
 

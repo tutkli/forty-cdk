@@ -15,7 +15,6 @@ import {
   type VetoableEvent,
   type VetoableNativeEvent,
 } from 'forty-cdk/core';
-import { IdentifiedElementSlot } from './element-registry';
 import {
   OverlayController,
   type OverlayEmitTargets,
@@ -45,14 +44,14 @@ interface Harness {
   readonly dismissals: number[];
   readonly setOpenCalls: boolean[];
   readonly seededTriggerIds: string[];
+  readonly triggerElement: WritableSignal<HTMLElement | null>;
   /** How many ids the controller's construction minted off the shared generator. */
   readonly idsMinted: number;
 }
 
 /**
- * An element side that brings its own id — the shape `[forMenubar]`'s multiplexed
- * context and `[forCombobox]`'s trigger supply, so the controller mints nothing
- * for it.
+ * A content side that brings its own id — the shape `[forMenubar]`'s multiplexed
+ * context supplies, so the controller mints nothing for it.
  */
 function suppliedSlot(id: Signal<string>): OverlaySlot {
   const el = signal<HTMLElement | null>(null);
@@ -106,6 +105,7 @@ function createHarness(opts: { withDismissHook?: boolean; suppliedIds?: boolean 
   const dismissals: number[] = [];
   const setOpenCalls: boolean[] = [];
   const seededTriggerIds: string[] = [];
+  const triggerElement = signal<HTMLElement | null>(null);
 
   let harness!: Harness;
   TestBed.runInInjectionContext(() => {
@@ -115,11 +115,11 @@ function createHarness(opts: { withDismissHook?: boolean; suppliedIds?: boolean 
     const controller = new OverlayController<Focus, CloseReason>({
       idPrefix: 'for-test-overlay',
       createTrigger: opts.suppliedIds
-        ? () => suppliedSlot(signal('supplied-trigger'))
+        ? () => ({ id: signal('supplied-trigger'), element: triggerElement.asReadonly() })
         : (mintId) => {
             const id = mintId();
             seededTriggerIds.push(id());
-            return new IdentifiedElementSlot(id);
+            return { id, element: triggerElement.asReadonly() };
           },
       createContent: opts.suppliedIds ? () => suppliedSlot(signal('supplied-content')) : undefined,
       defaultInitialFocus: 'selected',
@@ -149,6 +149,7 @@ function createHarness(opts: { withDismissHook?: boolean; suppliedIds?: boolean 
       dismissals,
       setOpenCalls,
       seededTriggerIds,
+      triggerElement,
       idsMinted: probe() - before - 1,
     };
   });
@@ -170,15 +171,14 @@ describe('OverlayController', () => {
       expect(triggerSeq).toBeLessThan(contentSeq);
     });
 
-    it('exposes the trigger slot the deps built and adopts a consumer static id', () => {
-      const { controller } = createHarness();
+    it('exposes the element and id the trigger side derives', () => {
+      const { controller, seededTriggerIds, triggerElement } = createHarness();
       const trigger = document.createElement('button');
-      trigger.id = 'my-trigger';
-      controller.registerTrigger(trigger);
+      triggerElement.set(trigger);
       expect(controller.trigger()).toBe(trigger);
-      expect(controller.triggerId()).toBe('my-trigger');
+      expect(controller.triggerId()).toBe(seededTriggerIds[0]);
 
-      controller.unregisterTrigger(trigger);
+      triggerElement.set(null);
       expect(controller.trigger()).toBeNull();
     });
 
@@ -201,22 +201,17 @@ describe('OverlayController', () => {
       expect(controller.contentId()).toBe('supplied-content');
     });
 
-    it('registers both supplied sides and unwinds them by identity', () => {
+    it('registers the supplied content side and unwinds it by identity', () => {
       const { controller } = createHarness({ suppliedIds: true });
-      const trigger = document.createElement('button');
       const content = document.createElement('div');
-      controller.registerTrigger(trigger);
       controller.registerContent(content);
-      expect(controller.trigger()).toBe(trigger);
       expect(controller.content()).toBe(content);
 
       controller.unregisterContent(document.createElement('div'));
       expect(controller.content()).toBe(content);
 
       controller.unregisterContent(content);
-      controller.unregisterTrigger(trigger);
       expect(controller.content()).toBeNull();
-      expect(controller.trigger()).toBeNull();
     });
 
     it('rests at the configured default initial-focus target', () => {

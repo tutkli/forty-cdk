@@ -175,8 +175,6 @@ export interface ForMenuContext {
    * that element while it is still in the document.
    */
   readonly trigger: Signal<HTMLElement | null>;
-  registerTrigger(el: HTMLElement): void;
-  unregisterTrigger(el: HTMLElement): void;
 
   /** The mounted `[forMenuContent]` element. Submenus exempt their parent's content. */
   readonly content: Signal<HTMLElement | null>;

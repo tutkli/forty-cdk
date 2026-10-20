@@ -2,18 +2,25 @@ import {
   booleanAttribute,
   computed,
   Directive,
-  effect,
   ElementRef,
   inject,
   input,
   type Signal,
 } from '@angular/core';
 
-import { hostButtonType, hostId, reflectDisabled, unresolvedRootError } from 'forty-cdk/core';
+import {
+  hostButtonType,
+  hostId,
+  reflectDisabled,
+  registerHandle,
+  unresolvedRootError,
+} from 'forty-cdk/core';
 import {
   asMenuOpenerRegistration,
+  createMenuOpenerHandle,
   FOR_MENU_CONTEXT,
   type ForMenuContext,
+  MENU_OPENERS,
   type MenuActivationModality,
   type MenuOpenerPositioning,
 } from 'forty-cdk/core-overlay';
@@ -21,20 +28,22 @@ import {
 /**
  * Resolves the trigger's menu root: the explicit reference when the
  * `[forDropdownMenuTrigger]` input carries one, the injected `FOR_MENU_CONTEXT`
- * otherwise. The orphan error only fires when neither resolves, on first read
- * of the returned signal. Must be called in an injection context.
+ * otherwise. `root` is `null` while neither resolves; `ctx` throws the orphan
+ * error on read in that state. Must be called in an injection context.
  */
-function injectDropdownMenuTriggerContext(
-  explicitRoot: Signal<ForMenuContext | ''>,
-): Signal<ForMenuContext> {
+function injectDropdownMenuTriggerContext(explicitRoot: Signal<ForMenuContext | ''>): {
+  readonly root: Signal<ForMenuContext | null>;
+  readonly ctx: Signal<ForMenuContext>;
+} {
   const injected = inject(FOR_MENU_CONTEXT, { optional: true });
-  return computed(() => {
+  const root = computed(() => {
     const explicit = explicitRoot();
-    if (explicit !== '') {
-      return explicit;
-    }
-    if (injected) {
-      return injected;
+    return explicit === '' ? injected : explicit;
+  });
+  const ctx = computed(() => {
+    const resolved = root();
+    if (resolved) {
+      return resolved;
     }
     throw unresolvedRootError({
       code: 'FORCDK-DROPDOWN-MENU-001',
@@ -44,6 +53,7 @@ function injectDropdownMenuTriggerContext(
       exportAs: 'forDropdownMenu',
     });
   });
+  return { root, ctx };
 }
 
 /**
@@ -125,7 +135,8 @@ export class ForDropdownMenuTrigger {
    */
   readonly forDropdownMenuTrigger = input<ForMenuContext | ''>('');
 
-  private readonly ctx = injectDropdownMenuTriggerContext(this.forDropdownMenuTrigger);
+  readonly #resolved = injectDropdownMenuTriggerContext(this.forDropdownMenuTrigger);
+  private readonly ctx = this.#resolved.ctx;
 
   readonly #openerRegistration = computed(() => asMenuOpenerRegistration(this.ctx()));
 
@@ -158,26 +169,17 @@ export class ForDropdownMenuTrigger {
   readonly effectiveDisabled = computed(() => this.disabled() || this.ctx().disabled());
 
   constructor() {
-    const el = this.#host.nativeElement;
-    // Registration is an imperative call into the resolved root's registry,
-    // not state derivation — the effect only re-registers the element when the
-    // resolved root changes (explicit reference swapped at runtime).
-    effect((onCleanup) => {
-      const ctx = this.ctx();
-      const openers = this.#openerRegistration();
-      if (openers === null) {
-        ctx.registerTrigger(el);
-        onCleanup(() => ctx.unregisterTrigger(el));
-        return;
-      }
-      openers.registerOpener(el, {
+    const openers = inject(MENU_OPENERS);
+    registerHandle(
+      createMenuOpenerHandle(this.#host.nativeElement, this.#resolved.root, {
         id: this.id,
         dismissibleExempt: true,
         labelsMenu: true,
         positioning: this.menuPositioning,
-      });
-      onCleanup(() => openers.unregisterOpener(el));
-    });
+      }),
+      (handle) => openers.add(handle),
+      (handle) => openers.remove(handle),
+    );
     reflectDisabled(this.effectiveDisabled);
   }
 

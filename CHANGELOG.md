@@ -28,6 +28,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   A provider of `FOR_TIME_PICKER_CONTEXT` that is not the root now also fails in dev mode with
   `FORCDK-CORE-007` when it reaches `[forTimePickerTrigger]`.
 
+- **Menu, Dropdown menu, Context menu — BREAKING.** `ForMenuContext` (`forty-cdk/shared`),
+  `ForContextMenuContext` and the `ForDropdownMenu`, `ForContextMenu`, `ForMenu` and `ForMenuSub`
+  roots no longer declare `registerTrigger` / `unregisterTrigger`
+  ([#2399](https://github.com/tutkli/forty-cdk/issues/2399)). `[forDropdownMenuTrigger]`,
+  `[forContextMenuTrigger]` and `[forMenuSubTrigger]` register themselves as openers and the menu
+  resolves the one that opened it, so **drop any call** made through an injected context or a root
+  reference.
+
 - **Listbox** — `[forListboxController]`'s `forListboxController` is no longer `input.required`
   ([#2399](https://github.com/tutkli/forty-cdk/issues/2399)). A binding written in a template is
   still checked against `ForListboxContext<T>`, but a controller composed through `hostDirectives`

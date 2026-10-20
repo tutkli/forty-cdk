@@ -334,8 +334,6 @@ export class ForCombobox<T = string>
     createTrigger: () => ({
       id: this.#inputSlot.id,
       element: computed(() => this.#latestTrigger()?.host ?? null),
-      register: () => {},
-      unregister: () => {},
     }),
     defaultInitialFocus: 'first',
     disabled: this.effectiveDisabled,

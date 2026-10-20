@@ -4,7 +4,6 @@ import { AnchoredOverlayPositioningBase } from '../floating/anchored-overlay-pos
 import { type ListNavigationAction, type VetoableNativeEvent } from 'forty-cdk/core';
 import type { ForMenuCloseReason } from './menu-context';
 import type { MenuItemHandle } from './menu-item-list';
-import type { MenuOpenerOptions } from './menu-opener-registry';
 import type { MenuActivationModality, MenuOverlay } from './menu-overlay';
 
 /**
@@ -12,9 +11,8 @@ import type { MenuActivationModality, MenuOverlay } from './menu-overlay';
  * root re-exposes — `[forDropdownMenu]`, `[forContextMenu]`, `[forMenu]` and
  * `[forMenuSub]` all extend it. Each subclass owns its own `MenuOverlay`
  * instance (created with its own id prefix and lifecycle hooks) and exposes it
- * through the abstract `_overlay` accessor; the base implements the trigger /
- * content / item registration, navigation, open/close, and veto pass-throughs
- * once.
+ * through the abstract `_overlay` accessor; the base implements the content /
+ * item registration, navigation, open/close, and veto pass-throughs once.
  *
  * This is the single place to add a member that is a pure pass-through to
  * `MenuOverlay`: declaring it here gives all four directives the method
@@ -67,29 +65,12 @@ export abstract class MenuOverlayHost<
     this._overlay.setInitialFocus(target);
   }
 
-  registerTrigger(el: HTMLElement): void {
-    this._overlay.registerTrigger(el);
-  }
-
-  unregisterTrigger(el: HTMLElement): void {
-    this._overlay.unregisterTrigger(el);
-  }
-
   /**
    * The `MenuOpenerRegistration` protocol, forwarded once for every root. Kept
-   * `protected` on purpose: it is the piece-registration protocol, so it
-   * must stay out of the roots' emitted `.d.ts` while remaining callable at
-   * runtime — which is what the trigger directives' `asMenuOpenerRegistration`
-   * narrowing relies on.
+   * `private` on purpose: it is the piece protocol, so it must stay out of the
+   * roots' emitted `.d.ts` while remaining callable at runtime — which is what
+   * the trigger directives' `asMenuOpenerRegistration` narrowing relies on.
    */
-  private registerOpener(element: HTMLElement, options?: MenuOpenerOptions): void {
-    this._overlay.registerOpener(element, options);
-  }
-
-  private unregisterOpener(element: HTMLElement): void {
-    this._overlay.unregisterOpener(element);
-  }
-
   private activateOpener(element: HTMLElement, returnFocusTarget?: HTMLElement | null): void {
     this._overlay.activateOpener(element, returnFocusTarget);
   }

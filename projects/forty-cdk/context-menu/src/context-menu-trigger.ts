@@ -18,12 +18,15 @@ import {
   fortyWarn,
   hostId,
   injectPointerMove,
+  registerHandle,
   resolveActiveElement,
 } from 'forty-cdk/core';
 import {
   asMenuOpenerRegistration,
   createDebouncedAction,
+  createMenuOpenerHandle,
   type DebouncedAction,
+  MENU_OPENERS,
   type MenuActivationModality,
   type MenuOpenerPositioning,
 } from 'forty-cdk/core-overlay';
@@ -151,7 +154,8 @@ export class ForContextMenuTrigger {
    */
   readonly forContextMenuTrigger = input<ForContextMenuContext | ''>('');
 
-  private readonly ctx = injectContextMenuContext(this.forContextMenuTrigger);
+  readonly #resolved = injectContextMenuContext(this.forContextMenuTrigger);
+  private readonly ctx = this.#resolved.ctx;
 
   readonly #openerRegistration = computed(() => asMenuOpenerRegistration(this.ctx()));
 
@@ -182,25 +186,16 @@ export class ForContextMenuTrigger {
   readonly effectiveDisabled = computed(() => this.disabled() || this.ctx().disabled());
 
   constructor() {
-    const el = this.#host.nativeElement;
-    // Registration is an imperative call into the resolved root's registry,
-    // not state derivation — the effect only re-registers the element when
-    // the resolved root changes (explicit reference swapped at runtime).
-    effect((onCleanup) => {
-      const ctx = this.ctx();
-      const openers = this.#openerRegistration();
-      if (openers === null) {
-        ctx.registerTrigger(el);
-        onCleanup(() => ctx.unregisterTrigger(el));
-        return;
-      }
-      openers.registerOpener(el, {
+    const openers = inject(MENU_OPENERS);
+    registerHandle(
+      createMenuOpenerHandle(this.#host.nativeElement, this.#resolved.root, {
         id: this.id,
         labelsMenu: false,
         positioning: this.menuPositioning,
-      });
-      onCleanup(() => openers.unregisterOpener(el));
-    });
+      }),
+      (handle) => openers.add(handle),
+      (handle) => openers.remove(handle),
+    );
     effect(() => {
       if (!this.ctx().open()) {
         untracked(() => this.#releaseTrailingGuard?.());

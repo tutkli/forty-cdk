@@ -1,8 +1,8 @@
-import { computed, signal, type Signal, type WritableSignal } from '@angular/core';
+import { computed, InjectionToken, signal, type Signal, type WritableSignal } from '@angular/core';
 import type { ReferenceElement, VirtualElement } from '@floating-ui/dom';
 
 import type { FloatingAlign, FloatingSide } from '../floating/floating';
-import { adoptHostId } from 'forty-cdk/core';
+import { type RootedHandle, RootedRegistry } from 'forty-cdk/core';
 import type { ForMenuContext } from './menu-context';
 
 /**
@@ -57,13 +57,8 @@ export interface MenuOpenerPositioning {
 
 /** What an opener declares about itself when it registers with a menu root. */
 export interface MenuOpenerOptions {
-  /**
-   * The opener's own aria-wiring id. Openers that own an id (`hostId`) pass it
-   * so two openers on one root never emit the same `id`; omitting it falls the
-   * opener back to the root's seeded trigger id, which is the single-opener
-   * shape `[forMenuSubTrigger]` / `[forMenubarTrigger]` still use.
-   */
-  readonly id?: Signal<string>;
+  /** The opener's own aria-wiring id, so two openers on one root never emit the same `id`. */
+  readonly id: Signal<string>;
   /**
    * Whether a pointer-down on this opener counts as "inside" the menu. A
    * toggle-style opener (a `[forDropdownMenuTrigger]` button) must be exempt,
@@ -92,20 +87,45 @@ export interface MenuOpenerOptions {
   readonly positioning?: Signal<MenuOpenerPositioning | null>;
 }
 
+export interface MenuOpenerHandle extends RootedHandle<object> {
+  readonly host: HTMLElement;
+  readonly id: Signal<string>;
+  readonly dismissibleExempt: boolean;
+  readonly labelsMenu: boolean;
+  readonly positioning: Signal<MenuOpenerPositioning | null> | null;
+  readonly virtualAnchor: WritableSignal<ReferenceElement | null>;
+}
+
+export const MENU_OPENERS = new InjectionToken<RootedRegistry<object, MenuOpenerHandle>>(
+  'MENU_OPENERS',
+  { providedIn: 'root', factory: () => new RootedRegistry() },
+);
+
+export function createMenuOpenerHandle(
+  host: HTMLElement,
+  root: Signal<object | null>,
+  options: MenuOpenerOptions,
+): MenuOpenerHandle {
+  return {
+    host,
+    root,
+    id: options.id,
+    dismissibleExempt: options.dismissibleExempt ?? false,
+    labelsMenu: options.labelsMenu ?? false,
+    positioning: options.positioning ?? null,
+    virtualAnchor: signal<ReferenceElement | null>(null),
+  };
+}
+
 /**
- * The opener-registration protocol a multi-opener menu root exposes. Deliberately
- * **not** part of `ForMenuContext`: how openers wire themselves into a root is
- * the piece-registration protocol the library refactors freely, whereas
- * `ForMenuContext` is the blessed consumer read surface. It stays out of every
- * stable entry point's barrel and out of every public signature — the trigger
- * directives resolve it by narrowing their already-resolved root with
- * {@link asMenuOpenerRegistration}.
+ * The opener protocol a multi-opener menu root exposes. Deliberately **not**
+ * part of `ForMenuContext`: how openers drive a root is the piece protocol the
+ * library refactors freely, whereas `ForMenuContext` is the blessed consumer
+ * read surface. It stays out of every stable entry point's barrel and out of
+ * every public signature — the trigger directives resolve it by narrowing their
+ * already-resolved root with {@link asMenuOpenerRegistration}.
  */
 export interface MenuOpenerRegistration {
-  /** Registers `element` as an opener of this menu. Re-registering replaces the entry. */
-  registerOpener(element: HTMLElement, options?: MenuOpenerOptions): void;
-  /** Removes `element` from the opener registry, clearing it as active if it was. */
-  unregisterOpener(element: HTMLElement): void;
   /**
    * Marks `element` as the opener driving the current open. Return-focus, the
    * surface's `aria-labelledby` fallback, and the anchor all resolve against it.
@@ -126,16 +146,14 @@ export interface MenuOpenerRegistration {
 }
 
 /**
- * Narrows a resolved menu root to its opener-registration protocol, or `null`
- * when the root does not implement one. Every root built on `MenuOverlayHost`
- * does; `[forMenubar]`'s multiplexed context does not, because the bar owns its
- * own trigger multiplexing. A trigger that gets `null` falls back to the
- * single-opener `registerTrigger` path, which is exactly the behaviour it had
- * before multi-opener support existed.
+ * Narrows a resolved menu root to its opener protocol, or `null` when the root
+ * does not implement one. Every root built on `MenuOverlayHost` does;
+ * `[forMenubar]`'s multiplexed context does not, because the bar owns its own
+ * trigger multiplexing.
  */
 export function asMenuOpenerRegistration(root: object): MenuOpenerRegistration | null {
   const candidate = root as Partial<MenuOpenerRegistration>;
-  return typeof candidate.registerOpener === 'function'
+  return typeof candidate.activateOpener === 'function'
     ? (candidate as MenuOpenerRegistration)
     : null;
 }
@@ -147,15 +165,6 @@ export function asMenuOpenerRegistration(root: object): MenuOpenerRegistration |
 export function menuReturnFocusTarget(ctx: Pick<ForMenuContext, 'trigger'>): HTMLElement | null {
   const openers = asMenuOpenerRegistration(ctx);
   return openers ? openers.returnFocusTarget() : ctx.trigger();
-}
-
-interface MenuOpenerEntry {
-  readonly element: HTMLElement;
-  readonly id: Signal<string>;
-  readonly virtualAnchor: WritableSignal<ReferenceElement | null>;
-  readonly dismissibleExempt: boolean;
-  readonly labelsMenu: boolean;
-  readonly positioning: Signal<MenuOpenerPositioning | null> | null;
 }
 
 /**
@@ -176,22 +185,22 @@ interface MenuOpenerEntry {
  * own element.
  */
 export class MenuOpenerRegistry {
-  readonly #seedId: WritableSignal<string>;
-  readonly #entries = signal<readonly MenuOpenerEntry[]>([]);
+  readonly #seedId: Signal<string>;
+  readonly #openers: Signal<readonly MenuOpenerHandle[]>;
   readonly #activeElement = signal<HTMLElement | null>(null);
   #returnFocusTarget: HTMLElement | null = null;
   #activatedSinceMount = false;
 
-  readonly #active = computed<MenuOpenerEntry | null>(() => {
-    const entries = this.#entries();
+  readonly #active = computed<MenuOpenerHandle | null>(() => {
+    const openers = this.#openers();
     const active = this.#activeElement();
     if (active !== null) {
-      const match = entries.find((entry) => entry.element === active);
+      const match = openers.find((opener) => opener.host === active);
       if (match !== undefined) {
         return match;
       }
     }
-    return entries.length === 1 ? (entries[0] ?? null) : null;
+    return openers.length === 1 ? (openers[0] ?? null) : null;
   });
 
   /**
@@ -206,7 +215,7 @@ export class MenuOpenerRegistry {
    * The active opener's element — the return-focus target, unless the open
    * recorded one of its own (see {@link returnFocusTarget}).
    */
-  readonly element = computed<HTMLElement | null>(() => this.#active()?.element ?? null);
+  readonly element = computed<HTMLElement | null>(() => this.#active()?.host ?? null);
 
   /**
    * The active opener's floating-ui anchor: its virtual anchor when it set one
@@ -217,7 +226,7 @@ export class MenuOpenerRegistry {
     if (active === null) {
       return null;
     }
-    return active.virtualAnchor() ?? active.element;
+    return active.virtualAnchor() ?? active.host;
   });
 
   /**
@@ -232,9 +241,9 @@ export class MenuOpenerRegistry {
 
   /** Every registered opener that asked to count as "inside" the menu. */
   readonly dismissibleExemptions = computed<readonly HTMLElement[]>(() =>
-    this.#entries()
-      .filter((entry) => entry.dismissibleExempt)
-      .map((entry) => entry.element),
+    this.#openers()
+      .filter((opener) => opener.dismissibleExempt)
+      .map((opener) => opener.host),
   );
 
   /**
@@ -263,44 +272,10 @@ export class MenuOpenerRegistry {
     () => this.#active()?.positioning?.() ?? null,
   );
 
-  constructor(seedId: WritableSignal<string>) {
+  constructor(seedId: Signal<string>, openers: Signal<readonly MenuOpenerHandle[]>) {
     this.#seedId = seedId;
+    this.#openers = openers;
     this.id = computed(() => this.#active()?.id() ?? this.#seedId());
-  }
-
-  /**
-   * Registers `element`, adopting a consumer-set static `id` into the seed when
-   * the opener owns no id of its own.
-   *
-   * Reads no signal: openers register from inside their trigger's
-   * `effect`, so touching `#entries` here would make that effect depend on the
-   * very signal it writes and spin forever.
-   */
-  register(element: HTMLElement, options: MenuOpenerOptions = {}): void {
-    const id = options.id;
-    if (id === undefined) {
-      adoptHostId(element, this.#seedId);
-    }
-    const entry: MenuOpenerEntry = {
-      element,
-      id: id ?? this.#seedId,
-      virtualAnchor: signal<ReferenceElement | null>(null),
-      dismissibleExempt: options.dismissibleExempt ?? false,
-      labelsMenu: options.labelsMenu ?? false,
-      positioning: options.positioning ?? null,
-    };
-    this.#entries.update((entries) => [
-      ...entries.filter((existing) => existing.element !== element),
-      entry,
-    ]);
-  }
-
-  unregister(element: HTMLElement): void {
-    this.#entries.update((entries) => entries.filter((entry) => entry.element !== element));
-    if (this.#activeElement() === element) {
-      this.#activeElement.set(null);
-      this.#returnFocusTarget = null;
-    }
   }
 
   activate(element: HTMLElement, returnFocusTarget: HTMLElement | null = null): void {
@@ -318,13 +293,17 @@ export class MenuOpenerRegistry {
 
   /**
    * The return-focus target of the current open: the one {@link activate}
-   * recorded for it while it is still in the document, else the active opener.
-   * Read at close time rather than derived, because a menu action may remove
-   * the recorded element from the document.
+   * recorded for it while it is still in the document and its opener is still
+   * the active one, else the active opener. Read at close time rather than
+   * derived, because a menu action may remove the recorded element from the
+   * document.
    */
   returnFocusTarget(): HTMLElement | null {
+    const element = this.element();
     const target = this.#returnFocusTarget;
-    return target !== null && target.isConnected ? target : this.element();
+    return target !== null && target.isConnected && element === this.#activeElement()
+      ? target
+      : element;
   }
 
   setVirtualAnchor(x: number, y: number): void {

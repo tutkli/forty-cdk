@@ -6,9 +6,8 @@ import { type ForMenuCloseReason, type MenuActivationModality } from 'forty-cdk/
 /**
  * Coordination contract `[forContextMenuTrigger]` resolves from its enclosing
  * `[forContextMenu]` root. It exposes exactly the slice of the root the
- * trigger consumes: open / disabled state, trigger registration (for
- * return-focus on close), the pointer / keyboard virtual-anchor setters, and
- * the open entry point.
+ * trigger consumes: open / disabled state, the pointer / keyboard
+ * virtual-anchor setters, and the open entry point.
  *
  * `ForContextMenu` provides it via `useExisting`, so a subclassed root (the
  * standard design-system wrapping pattern) only has to re-provide tokens —
@@ -38,12 +37,6 @@ export interface ForContextMenuContext {
    * the consumer's own references and test selectors.
    */
   readonly triggerId: Signal<string>;
-
-  /** Registers the trigger element so it receives return-focus on close. */
-  registerTrigger(el: HTMLElement): void;
-
-  /** Unregisters a previously registered trigger element. */
-  unregisterTrigger(el: HTMLElement): void;
 
   /** Updates the virtual anchor to a 0×0 rect at (`x`, `y`) in viewport coordinates. */
   setVirtualAnchor(x: number, y: number): void;
@@ -102,17 +95,21 @@ export const FOR_CONTEXT_MENU_CONTEXT = new InjectionToken<ForContextMenuContext
 /**
  * Resolves the trigger's root context: the explicit reference when the
  * `[forContextMenuTrigger]` input carries one, the injected
- * `FOR_CONTEXT_MENU_CONTEXT` otherwise. The orphan error only fires when
- * neither resolves, on first read of the returned signal. Must be called in
- * an injection context.
+ * `FOR_CONTEXT_MENU_CONTEXT` otherwise. `root` is `null` while neither
+ * resolves; `ctx` throws the orphan error on read in that state. Must be
+ * called in an injection context.
  */
-export function injectContextMenuContext(
-  explicitRoot: Signal<ForContextMenuContext | ''>,
-): Signal<ContextMenuContext> {
+export function injectContextMenuContext(explicitRoot: Signal<ForContextMenuContext | ''>): {
+  readonly root: Signal<ForContextMenuContext | null>;
+  readonly ctx: Signal<ContextMenuContext>;
+} {
   const injected = inject(FOR_CONTEXT_MENU_CONTEXT, { optional: true });
-  return computed(() => {
+  const root = computed(() => {
     const explicit = explicitRoot();
-    const resolved = explicit === '' ? injected : explicit;
+    return explicit === '' ? injected : explicit;
+  });
+  const ctx = computed(() => {
+    const resolved = root();
     if (!resolved) {
       throw unresolvedRootError({
         code: 'FORCDK-CONTEXT-MENU-001',
@@ -132,4 +129,5 @@ export function injectContextMenuContext(
     });
     return widened;
   });
+  return { root, ctx };
 }

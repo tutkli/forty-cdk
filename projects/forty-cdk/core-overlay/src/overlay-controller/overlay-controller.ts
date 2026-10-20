@@ -38,10 +38,9 @@ export interface OverlayEmitTargets {
  * trigger is the newest one registered with its root, a menu overlay's is a
  * registry of openers resolving one active element and its id, and
  * `[forMenubar]`'s multiplexed context resolves both sides off whichever bar
- * trigger is — or was last — active. All of them answer the same four
- * questions, which is all the shared machine asks of them.
+ * trigger is — or was last — active.
  */
-export interface OverlaySlot {
+export interface OverlaySide {
   /**
    * The element's aria-wiring id. Non-empty for a slot minting its own; the
    * menubar's multiplexed sources resolve `''` until a trigger has been active,
@@ -50,6 +49,9 @@ export interface OverlaySlot {
   readonly id: Signal<string>;
   /** The registered element, or `null` while none is registered. */
   readonly element: Signal<HTMLElement | null>;
+}
+
+export interface OverlaySlot extends OverlaySide {
   /** Register the element. */
   register(el: HTMLElement): void;
   /** Deregister the element. */
@@ -121,7 +123,7 @@ export interface OverlayControllerDeps<Focus, CloseReason> {
    * hydration's id adoption depends on both renders repeating it. It may
    * `inject()`, and so may the factory.
    */
-  readonly createTrigger: (mintId: () => WritableSignal<string>) => OverlaySlot;
+  readonly createTrigger: (mintId: () => WritableSignal<string>) => OverlaySide;
   /**
    * Builds the content side, same contract as {@link createTrigger} and called
    * immediately after it. Optional: omitted, the controller registers its own
@@ -197,7 +199,7 @@ export interface OverlayControllerDeps<Focus, CloseReason> {
 export class OverlayController<Focus, CloseReason> {
   readonly #deps: OverlayControllerDeps<Focus, CloseReason>;
 
-  readonly #triggerSlot: OverlaySlot;
+  readonly #triggerSlot: OverlaySide;
   readonly #contentSlot: OverlaySlot;
 
   readonly #initialFocusState: InitialFocusState<Focus>;
@@ -277,16 +279,6 @@ export class OverlayController<Focus, CloseReason> {
    */
   consumeInitialHighlight(): boolean {
     return this.#initialFocusState.consumeHighlight();
-  }
-
-  /** Register the trigger element. */
-  registerTrigger(el: HTMLElement): void {
-    this.#triggerSlot.register(el);
-  }
-
-  /** Deregister the trigger element (no-op unless the same node registered). */
-  unregisterTrigger(el: HTMLElement): void {
-    this.#triggerSlot.unregister(el);
   }
 
   /** Register the mounted content element. */

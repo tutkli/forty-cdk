@@ -188,8 +188,6 @@ export class MenubarMenuContext implements ForMenuContext {
       createTrigger: () => ({
         id: computed(() => host.lastTrigger()?.triggerId() ?? ''),
         element: host.lastTriggerHost,
-        register: () => {},
-        unregister: () => {},
       }),
       createContent: () => ({
         id: computed(() => host.lastTrigger()?.contentId() ?? ''),
@@ -250,13 +248,6 @@ export class MenubarMenuContext implements ForMenuContext {
   ): void {
     this.#controller.open(initialFocus, { highlight: modality === 'keyboard' });
     this.#suppressOpenFocus = suppressOpenFocus;
-  }
-
-  registerTrigger(el: HTMLElement): void {
-    this.#controller.registerTrigger(el);
-  }
-  unregisterTrigger(el: HTMLElement): void {
-    this.#controller.unregisterTrigger(el);
   }
 
   registerContent(el: HTMLElement): void {
