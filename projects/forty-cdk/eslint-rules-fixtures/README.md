@@ -38,7 +38,8 @@ check must reject before it reports success.
 A rule that keys on a path the fixtures directory cannot have (a primitive barrel, a library file
 name), or that the fixtures override below switches off, is checked by linting the fixture's text
 under the real config at a virtual path. Its header names that path as
-`` Linted as `projects/forty-cdk/…` ``.
+`` Linted as `projects/forty-cdk/…` ``. A rule that reads the file name can list several, one
+`Linted as` line per path, and the fixture must report what its markers say at every one of them.
 
 Each fixture opens with a block-comment header naming the rule it exercises, why the rule exists,
 and which shapes it deliberately leaves compliant. Read that header rather than a summary here — it

@@ -12,7 +12,7 @@ const PLUGIN = 'forty-cdk';
 
 const EXPECTED_MARKER = /\bExpected:\s*(\d+)\s*×/;
 const ALLOWED_MARKER = /^\s*(?:\/\/|\/?\*+)\s*Allowed\b[^:\n]*:/;
-const LINTED_AS = /\bLinted as `([^`]+)`/;
+const LINTED_AS = /\bLinted as `([^`]+)`/g;
 
 const linter = new ESLint({
   cwd: repoRoot,
@@ -176,22 +176,27 @@ for (const file of files) {
   fixtures += 1;
   const name = basename(file, '.fixture.ts');
   const ruleId = pluginRules.includes(name) ? `${PLUGIN}/${name}` : name;
-  const lintPath = LINTED_AS.exec(source)?.[1] ?? realPath;
-  const label = lintPath === realPath ? realPath : `${realPath} (linted as ${lintPath})`;
-  const options = await ruleOptions(lintPath, ruleId);
-  const config = await linter.calculateConfigForFile(join(repoRoot, lintPath));
+  const lintPaths = [...source.matchAll(LINTED_AS)].map((match) => match[1]);
 
-  if (!config.rules?.[ruleId] || [0, 'off'].includes(config.rules[ruleId][0])) {
-    problems.push(`${label}: ${ruleId} is not enabled at ${lintPath}, so the fixture cannot fire`);
-    continue;
+  for (const lintPath of lintPaths.length > 0 ? lintPaths : [realPath]) {
+    const label = lintPath === realPath ? realPath : `${realPath} (linted as ${lintPath})`;
+    const options = await ruleOptions(lintPath, ruleId);
+    const config = await linter.calculateConfigForFile(join(repoRoot, lintPath));
+
+    if (!config.rules?.[ruleId] || [0, 'off'].includes(config.rules[ruleId][0])) {
+      problems.push(
+        `${label}: ${ruleId} is not enabled at ${lintPath}, so the fixture cannot fire`,
+      );
+      continue;
+    }
+
+    const messages = await lint(source, lintPath);
+    covered.add(ruleId);
+    reports += messages.filter((message) => message.ruleId === ruleId).length;
+    problems.push(
+      ...verify({ path: label, ruleId, source, messages, options }).map((problem) => problem.text),
+    );
   }
-
-  const messages = await lint(source, lintPath);
-  covered.add(ruleId);
-  reports += messages.filter((message) => message.ruleId === ruleId).length;
-  problems.push(
-    ...verify({ path: label, ruleId, source, messages, options }).map((problem) => problem.text),
-  );
 }
 
 for (const rule of pluginRules) {
