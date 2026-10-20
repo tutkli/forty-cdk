@@ -13,7 +13,7 @@ export class RootedRegistry<R extends object, H extends RootedHandle<R>> {
     const index = new WeakMap<R, H[]>();
     for (const handle of this.#handles()) {
       const root = handle.root();
-      if (root === null) {
+      if (typeof root !== 'object' || root === null) {
         continue;
       }
       const bucket = index.get(root);

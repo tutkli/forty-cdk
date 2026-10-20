@@ -65,6 +65,17 @@ describe('RootedRegistry', () => {
     expect(ofA()).toEqual([pending]);
   });
 
+  it('lists a handle whose root is not an object under no root, and keeps indexing the rest', () => {
+    const registry = new RootedRegistry<Root, Handle>();
+    const [stray, resolved] = makeHandle('stray', null);
+    const [kept] = makeHandle('kept', a);
+    registry.add(stray);
+    registry.add(kept);
+    resolved.set('' as unknown as Root);
+
+    expect(registry.of(a)()).toEqual([kept]);
+  });
+
   it('drops a removed handle and ignores one it never held', () => {
     const registry = new RootedRegistry<Root, Handle>();
     const [kept] = makeHandle('kept', a);
