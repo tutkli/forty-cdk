@@ -262,7 +262,7 @@ Declaratively the same recipe is the four vetoable outputs on `[forDrawer]`: `(i
 
 ## Examples
 
-Open the drawer, drag it by its edge and let go past the threshold. `data-state` drives the transition, and `data-dragging` is set for the gesture itself.
+Open the drawer, drag it by its edge and let go past the threshold. `animate.enter` / `animate.leave` drive the enter and exit, and `data-dragging` marks the gesture, so a release short of the threshold springs back through the surface's `translate` transition.
 
 ```ts
 import { ChangeDetectionStrategy, Component, computed, signal } from '@angular/core';
@@ -454,13 +454,13 @@ Pass them in **strictly increasing** order (closest-to-edge first); in dev mode 
 <div
   forDrawer
   class="sheet"
-  [snapPoints]="['148px', '50%', 1]"
+  [snapPoints]="['25%', '50%', 1]"
   [(activeSnapPoint)]="snap"
   [fadeFromIndex]="1"
 ></div>
 ```
 
-The three snaps read peek → mid → full; `snap` is the current one, written on every release that changes the snap; the backdrop fades once the active snap reaches the second index.
+The three snaps read peek → mid → full; `snap` is the current one, written on every release that changes the snap; the backdrop fades once the active snap reaches the second index. All three are fractions of the sheet, so their order holds at any viewport height. A `'148px'` peek beside `'50%'` would only stay below the mid snap while the sheet is taller than 296px, so the `80vh` sheet below would throw `FORCDK-DRAWER-010` on a viewport shorter than 370px.
 
 The `model<>()` change emitter (`(activeSnapPointChange)`) fires on internal transitions (the mount-time default and every release that changes the snap), and stays silent on consumer writes through `[(activeSnapPoint)]`.
 
@@ -486,8 +486,8 @@ For a seamless release, transition **both** `translate` and your snap-position p
 .sheet[data-active-snap-point][data-dragging] {
   transition: none; /* the drag follows the pointer 1:1 */
 }
-.sheet[data-active-snap-point='148px'] {
-  bottom: calc(148px - 80vh);
+.sheet[data-active-snap-point='25%'] {
+  bottom: -60vh;
 }
 .sheet[data-active-snap-point='50%'] {
   bottom: -40vh;

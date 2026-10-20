@@ -109,7 +109,9 @@ import {
         0 20px 40px -18px rgba(0, 0, 0, 0.2)
       );
       translate: var(--for-drawer-swipe-movement-x, 0px) var(--for-drawer-swipe-movement-y, 0px);
-      transition: transform 0.5s cubic-bezier(0.32, 0.72, 0, 1);
+      transition:
+        transform 0.5s cubic-bezier(0.32, 0.72, 0, 1),
+        translate 0.5s cubic-bezier(0.32, 0.72, 0, 1);
       user-select: none;
       -webkit-user-select: none;
       left: 0;
@@ -118,6 +120,10 @@ import {
       height: 85vh;
       border-radius: var(--ex-radius, 22px);
       corner-shape: squircle;
+    }
+
+    .scale-drawer[data-dragging] {
+      transition: none;
     }
 
     .scale-drawer-handle {
@@ -180,6 +186,10 @@ import {
 
       .scale-btn:active {
         transform: none;
+      }
+
+      .scale-drawer {
+        transition-duration: 0.01ms;
       }
 
       .scale-drawer-in,

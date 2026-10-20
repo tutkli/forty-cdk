@@ -150,8 +150,8 @@ import {
       transition: none;
     }
 
-    .snap-drawer[data-active-snap-point='148px'] {
-      bottom: calc(148px - 72vh);
+    .snap-drawer[data-active-snap-point='0.25'] {
+      bottom: calc(72vh * -0.75);
     }
 
     .snap-drawer[data-active-snap-point='0.5'] {
@@ -242,7 +242,7 @@ import {
   `,
 })
 export class DrawerSnapPointsExample {
-  protected readonly peek: ForDrawerSnapPoint = '148px';
+  protected readonly peek: ForDrawerSnapPoint = 0.25;
   protected readonly half: ForDrawerSnapPoint = 0.5;
   protected readonly full: ForDrawerSnapPoint = 1;
   protected readonly snapPoints: ReadonlyArray<ForDrawerSnapPoint> = [
