@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
-import { form, FormField, requiredError, validate } from '@angular/forms/signals';
+import { form, FormField, required } from '@angular/forms/signals';
 import { ForCheckbox } from 'forty-cdk/checkbox';
 import { ForField, ForFieldError } from 'forty-cdk/field';
 
@@ -100,10 +100,6 @@ interface Signup {
 export class CheckboxFormFieldExample {
   protected readonly model = signal<Signup>({ terms: false });
   protected readonly signupForm = form(this.model, (path) => {
-    validate(path.terms, (ctx) =>
-      ctx.value()
-        ? undefined
-        : requiredError({ message: 'You must accept the terms to create an account.' }),
-    );
+    required(path.terms, { message: 'You must accept the terms to create an account.' });
   });
 }

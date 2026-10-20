@@ -98,11 +98,19 @@ const SIGNAL_FORMS_DEMOS: readonly SignalFormsDemo[] = [
     control: '[forListbox]',
     message: 'Choose at least one topic.',
   },
+  {
+    path: 'field/examples/validation.example.ts',
+    control: '[forCheckbox]',
+    message: 'You must accept the terms to continue',
+  },
 ];
 
 const REQUIRED_DEMOS: readonly RequiredDemo[] = [
   { path: 'listbox/examples/form-field.example.ts', control: '[forListbox]' },
   { path: 'select/examples/form-field.example.ts', control: '[forSelectTrigger]' },
+  { path: 'checkbox/examples/form-field.example.ts', control: '[forCheckbox]' },
+  { path: 'switch/examples/form-field.example.ts', control: '[forSwitch]' },
+  { path: 'field/examples/validation.example.ts', control: '[forCheckbox]' },
 ];
 
 const RANGE_DEMOS: readonly RangeDemo[] = [
@@ -233,7 +241,7 @@ describe('the Signal Forms demos', () => {
   );
 
   it.each(REQUIRED_DEMOS)(
-    '$path tells assistive tech the selection is required before it is left',
+    '$path tells assistive tech the control is required before it is left',
     async ({ path, control }) => {
       const { host } = await mount(path);
 
