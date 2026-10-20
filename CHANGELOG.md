@@ -1389,8 +1389,9 @@ segments being edited, a carousel hides only the slides outside the viewport, ne
 field defaults merge their label records, the documented breakpoint augmentation compiles, the
 scroll area's stylesheet ships in the server render with the CSP nonce, a free-dragged element keeps
 its own transform, an avatar reports each load state once, and infinite scroll recovers after a slow
-or failed load. `ForScrollAreaContext.registerViewport` no longer accepts `null`, and
-`ForFileUploadContext.disabled` is now `effectiveDisabled`. Five changes arrive without binding
+or failed load. `ForScrollAreaContext.registerViewport` no longer accepts `null`,
+`ForFileUploadContext.disabled` is now `effectiveDisabled`, and `ForNavigationMenu.previousValue`
+is read-only. Five changes arrive without binding
 anything: pagination previous / next are no longer natively disabled at the bounds, so a `:disabled`
 rule stops matching them; an inverted slider flips only the arrows on its visual axis; Tab out of a
 popover or a non-modal date picker lands at the trigger's place and closes it with reason `'tab'`; a
@@ -1428,6 +1429,11 @@ moves its element through the `translate` property instead of `transform`.
   **Code that implements or reads either context through `FOR_SCROLL_AREA_CONTEXT` /
   `FOR_FILE_UPLOAD_CONTEXT` must follow the new members.**
 
+- **Navigation menu** — `ForNavigationMenu.previousValue` is a read-only `Signal<string | null>`
+  instead of a writable signal ([#2133](https://github.com/tutkli/forty-cdk/issues/2133)). The menu
+  derives it from each `value` transition, so a `.set()` or `.update()` on it through a template
+  reference or `viewChild` no longer compiles. **Drop the write and change `[(value)]` instead.**
+
 - **Pagination** — previous / next reflect `aria-disabled` at the bounds instead of the native
   `disabled` attribute ([#2147](https://github.com/tutkli/forty-cdk/issues/2147)). At the first or
   last page, and while the root is disabled, `[forPaginationPrevious]` / `[forPaginationNext]` carry
@@ -1444,7 +1450,7 @@ moves its element through the `translate` property instead of `transform`.
   layer instead of keeping it on the dismissible stack, where it swallowed the Escape and outside
   press of a non-modal overlay beneath it. `previousValue` is `null` for an open that follows a
   close instead of reporting the panel open before it, so `data-motion` is absent when a panel opens
-  from a closed menu. `previousValue` is now a read-only `Signal`.
+  from a closed menu. `previousValue` is now read-only, as the Changed entry above records.
 
 - **Field**, **File upload** — the consumer's labelling wins, and a disabled fieldset reaches the
   upload zone ([#2134](https://github.com/tutkli/forty-cdk/issues/2134)). A static `aria-labelledby`
@@ -1567,11 +1573,13 @@ a control inside it holds focus and returns focus when it closes, a sub-trigger 
 instead of toggling it, a dismissed toast hands focus to its neighbour, select and time-picker
 triggers open on Home / End, an inline completion reaches the combobox query, a cascade tree toggles
 from the state it shows, and a virtualized table or list follows its dataset instead of its rendered
-window. `[forVirtualReorder]` no longer accepts `animateReorder` or `liveSort`. Five changes arrive
+window. `[forVirtualReorder]` no longer accepts `animateReorder` or `liveSort`, and a stepper or
+virtual viewport context provided by anything but the root fails in dev mode. Six changes arrive
 without binding anything: select-all keeps the values it does not cover, a drawer with snap points
 drags between them whatever `swipeToDismiss` and `dismissible` say and no longer throws on an
 invalid snap config in production, a number input commits the value it displays, a masked OTP input
-is a password field, and `(rangeChange)` fires only on a committed range.
+is a password field, `(rangeChange)` fires only on a committed range, and every listbox host carries
+a generated `id`.
 
 ### Added
 
@@ -1621,6 +1629,22 @@ is a password field, and `(rangeChange)` fires only on a committed range.
   or a table row outside `aggregateValues` (another page of a page-scoped `[selectableValues]`). The
   select half adds the enabled rendered values to the selection and the deselect half removes only
   those.
+
+- **Stepper**, **Virtualization** — a `FOR_STEPPER_CONTEXT` or `FOR_VIRTUAL_VIEWPORT_CONTEXT`
+  provider that is not the root fails in dev mode with `FORCDK-CORE-007`
+  ([#2129](https://github.com/tutkli/forty-cdk/issues/2129),
+  [#2188](https://github.com/tutkli/forty-cdk/issues/2188)). The pieces read each token at an
+  internal type the public interface does not declare, so a value that merely satisfies
+  `ForStepperContext` or `ForVirtualViewportContext` now throws from the first stepper piece or
+  `*forVirtualFor` that reads it. **Alias the token to a subclass of the root:
+  `{ provide: FOR_STEPPER_CONTEXT, useExisting: MyStepper }`, where `MyStepper` extends
+  `ForStepper`, and the same with `ForVirtualViewport`.**
+
+- **Listbox** — every `[forListbox]` host binds a generated `id`
+  ([#2168](https://github.com/tutkli/forty-cdk/issues/2168)), so `[forListboxController]` has an id
+  to point `aria-controls` at. The binding also replaces an `[id]` the consumer bound on the host.
+  0.37.0 narrows it to a listbox a controller drives and keeps the consumer's id
+  ([#2326](https://github.com/tutkli/forty-cdk/issues/2326)).
 
 ### Fixed
 
@@ -1767,7 +1791,11 @@ a drop that resolves no slot emits `dragEnd` with `dropped: false`.
   fallback, which picked `'end'` under RTL to make up for a listbox laid out left to right. The
   portaled content now carries `dir="rtl"` itself, so `'start'` resolves to the input's leading edge
   in both directions, and an RTL combobox with no `[align]` reflects `data-align="start"` instead of
-  `"end"` at the same rendered position. **A scope that set `align: null` drops the key.**
+  `"end"`. Under a `dir="rtl"` subtree or root the listbox keeps its rendered position. Under
+  `<html dir="rtl">` the portaled content already inherited RTL, so the old `'end'` anchored it to
+  the input's left (trailing) edge: a listbox wider or narrower than the input now aligns to the
+  right (leading) edge instead. **A scope that set `align: null` drops the key, and one that needs
+  the old whole-document RTL position sets `align: 'end'`.**
 
 - **Drag & drop**, **Virtual reorder**, **Table** — a list composed by a coordinator is closed
   ([#2124](https://github.com/tutkli/forty-cdk/issues/2124)). The `[forDropList]` that
