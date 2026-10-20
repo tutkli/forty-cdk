@@ -1505,6 +1505,43 @@ describe('ForVirtualReorder — idle Home / End reach the dataset ends (#2118)',
     expect((document.activeElement as HTMLElement).getAttribute('data-index')).toBe('998');
   });
 
+  async function focusDisabledMiddleRow(
+    harness: Awaited<ReturnType<typeof render<GuardedReorderHost>>>,
+  ): Promise<HTMLElement> {
+    harness.viewport.scrollTo({ top: 20000 });
+    await settle(harness);
+    const indices = harness.indices();
+    const middle = indices[Math.floor(indices.length / 2)]!;
+    harness.instance.disabledRow.set(middle);
+    await settle(harness);
+    const row = harness.query(`[data-testid="row-${middle}"]`)!;
+    row.focus();
+    return row;
+  }
+
+  it('End from a dragDisabled row focuses the last item of the dataset', async () => {
+    const harness = await render(GuardedReorderHost);
+    const row = await focusDisabledMiddleRow(harness);
+    expect(Math.max(...harness.indices())).toBeLessThan(999);
+
+    const event = dispatchKey(row, 'End');
+    await settle(harness);
+
+    expect(event.defaultPrevented).toBe(true);
+    expect((document.activeElement as HTMLElement).getAttribute('data-index')).toBe('999');
+  });
+
+  it('Home from a dragDisabled row focuses the first item of the dataset', async () => {
+    const harness = await render(GuardedReorderHost);
+    const row = await focusDisabledMiddleRow(harness);
+    expect(Math.min(...harness.indices())).toBeGreaterThan(0);
+
+    dispatchKey(row, 'Home');
+    await settle(harness);
+
+    expect((document.activeElement as HTMLElement).getAttribute('data-index')).toBe('0');
+  });
+
   it('leaves Home / End to the rows of a disabled list', async () => {
     const harness = await render(DisabledHost);
     const row = harness.query('[data-testid="row-2"]')!;
