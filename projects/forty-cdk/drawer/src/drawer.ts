@@ -4,7 +4,6 @@ import {
   computed,
   DestroyRef,
   Directive,
-  effect,
   ElementRef,
   inject,
   input,
@@ -23,7 +22,7 @@ import {
   warnIfDialogUnnamed,
 } from 'forty-cdk/core-overlay';
 import { assertCloseThreshold } from './snap-points';
-import { ForDrawerScaleCoordinator } from './drawer-scale-coordinator';
+import { ForDrawerScaleCoordinator, type ForDrawerScaleConfig } from './drawer-scale-coordinator';
 import {
   FOR_DRAWER_CONTEXT,
   type ForDrawerCloseReason,
@@ -189,7 +188,8 @@ export class ForDrawer extends ModalSurfaceBase<ForDrawerCloseReason> implements
    * When true (default) and `scaleBackground` is active, paints
    * `<body>` with `scaleBackgroundColor` so the gap between the scaled
    * wrapper and the viewport edge does not show through. Only applies
-   * when `scaleBackground` is `true`.
+   * when `scaleBackground` is `true`. A change while the drawer is open
+   * paints or restores `<body>` immediately.
    */
   readonly setBackgroundColorOnScale = input(this.#defaults.setBackgroundColorOnScale ?? true, {
     transform: booleanAttribute,
@@ -377,6 +377,20 @@ export class ForDrawer extends ModalSurfaceBase<ForDrawerCloseReason> implements
     () => this.scaleBackground() && this.#scaleCoordinator.active(),
   );
 
+  readonly #scaleConfig = computed<ForDrawerScaleConfig | null>(() => {
+    if (!this.scaleBackground()) {
+      return null;
+    }
+    const tuning = this.#tuning();
+    return {
+      setBackgroundColorOnScale: this.setBackgroundColorOnScale(),
+      scaleAmount: tuning.scaleAmount ?? 0.95,
+      scaleTranslateYpx: tuning.scaleTranslateYpx ?? 14,
+      scaleBorderRadiusPx: tuning.scaleBorderRadiusPx ?? 8,
+      scaleBackgroundColor: tuning.scaleBackgroundColor ?? 'black',
+    };
+  });
+
   // Cleanup refs for drawer-specific side effects (the modal-shell owns its
   // portal / dismissible / focus-trap / scroll-lock / inert-siblings teardown;
   // the gesture engine owns its own swipe-listener teardown). They are layered
@@ -384,7 +398,6 @@ export class ForDrawer extends ModalSurfaceBase<ForDrawerCloseReason> implements
   // afterNextRender so descendants see consistent topology, scale runs AFTER so
   // the coordinator composes on a fully-wired surface — and both are torn down
   // from a single `DestroyRef.onDestroy` (see the constructor).
-  readonly #scaleReady = signal(false);
   #scaleCleanup: (() => void) | null = null;
   #stackCleanup: (() => void) | null = null;
 
@@ -398,16 +411,15 @@ export class ForDrawer extends ModalSurfaceBase<ForDrawerCloseReason> implements
     // consistent topology throughout their mount sequence; consumers passing bad
     // closeThreshold / snapPoints get a clear error before the shell focuses.
     afterNextRender(() => {
-      // 1. Drawer-stack push. The `dragging` signal + resolved
-      //    nested-transform tunables ride along so `ForDrawerScaleCoordinator`
-      //    owns the `style.transform` write for the parent surface (issue #180)
-      //    and reads scope-local defaults through this node.
+      // 1. Drawer-stack push. The resolved nested-transform tunables ride
+      //    along so `ForDrawerScaleCoordinator` owns the `style.transform`
+      //    write for the parent surface and reads scope-local defaults through
+      //    this node.
       const tuning = this.#tuning();
       const handle = this.#drawerStack.push({
         host: this.#host.nativeElement,
         side: this.side,
         parent: this.#parentDrawer?.hostElement ?? null,
-        dragging: this.dragging,
         nestedScaleAmount: tuning.nestedScaleAmount ?? 0.93,
         nestedTranslateYpx: tuning.nestedTranslateYpx ?? 8,
       });
@@ -450,31 +462,11 @@ export class ForDrawer extends ModalSurfaceBase<ForDrawerCloseReason> implements
     // to body via the shell's portal, and the scale coordinator composes on
     // top of a fully-wired surface.
     afterNextRender(() => {
-      this.#scaleReady.set(true);
+      this.#scaleCleanup = this.#scaleCoordinator.registerDrawer(this.#scaleConfig);
 
       // Arm the swipe gate now that the surface is fully wired. The gesture
       // engine's effect owns the actual attach/detach; arming unblocks it.
       this.#drag.arm();
-    });
-
-    effect(() => {
-      if (!this.#scaleReady()) {
-        return;
-      }
-      const want = this.scaleBackground();
-      if (want && this.#scaleCleanup === null) {
-        const tuning = this.#tuning();
-        this.#scaleCleanup = this.#scaleCoordinator.registerDrawer({
-          setBackgroundColorOnScale: this.setBackgroundColorOnScale(),
-          scaleAmount: tuning.scaleAmount ?? 0.95,
-          scaleTranslateYpx: tuning.scaleTranslateYpx ?? 14,
-          scaleBorderRadiusPx: tuning.scaleBorderRadiusPx ?? 8,
-          scaleBackgroundColor: tuning.scaleBackgroundColor ?? 'black',
-        });
-      } else if (!want && this.#scaleCleanup !== null) {
-        this.#scaleCleanup();
-        this.#scaleCleanup = null;
-      }
     });
 
     // ---- Drawer-owned teardown, in one hook. Neither step depends on

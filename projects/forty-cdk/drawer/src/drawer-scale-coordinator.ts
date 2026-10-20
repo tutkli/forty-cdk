@@ -1,13 +1,23 @@
 import { isPlatformBrowser } from '@angular/common';
-import { computed, DOCUMENT, effect, inject, Injectable, PLATFORM_ID, signal } from '@angular/core';
+import {
+  computed,
+  DOCUMENT,
+  effect,
+  inject,
+  Injectable,
+  PLATFORM_ID,
+  type Signal,
+  signal,
+} from '@angular/core';
 
 import { createSingleSlot, injectPrefersReducedMotion } from 'forty-cdk/core';
 import { type ForDrawerSide, ForDrawerStack } from 'forty-cdk/core-overlay';
 
 /**
  * Per-drawer configuration consumed by {@link ForDrawerScaleCoordinator}.
- * Resolved by `[forDrawer]` from inputs + defaults at register time so the
- * coordinator never needs to re-read scope-dependent values.
+ * `[forDrawer]` registers it as a signal derived from its inputs and its
+ * scope's defaults, `null` while `scaleBackground` is off, so the coordinator
+ * reads every change while the drawer stays open.
  *
  * `setBackgroundColorOnScale` controls whether `<body>` receives an inline
  * background colour while the wrapper is scaled — necessary to mask the
@@ -55,10 +65,10 @@ const TRANSITION_TIMING = 'cubic-bezier(0.32, 0.72, 0, 1)';
  * Stacking model: one wrapper is coordinated at a time, the most recently
  * registered one, and a second still registered once the render settles warns
  * in dev mode; multiple drawers may be registered concurrently. The topmost (most recently
- * registered) drawer's config commands the effective scale — when it
- * unregisters, the previous topmost takes over. Reverts to inline-style
- * snapshots only when the last drawer unregisters or the wrapper itself
- * is torn down.
+ * registered) drawer with a non-`null` config commands the effective scale —
+ * when it unregisters or turns `scaleBackground` off, the next one down takes
+ * over. Reverts to inline-style snapshots only when no registered drawer wants
+ * the effect or the wrapper itself is torn down.
  *
  * `prefers-reduced-motion: reduce` is treated as a hard kill switch:
  * while it is `true` the effect is suppressed entirely, the wrapper /
@@ -67,8 +77,9 @@ const TRANSITION_TIMING = 'cubic-bezier(0.32, 0.72, 0, 1)';
  * effect re-applies.
  *
  * SSR: providedIn `root` so its state is per Angular bootstrap. On the
- * server, `registerWrapper` / `registerDrawer` are no-ops since the
- * directives that call them only do so from `afterNextRender`.
+ * server both registration methods return a no-op cleanup through their
+ * `isPlatformBrowser` gate; `[forDrawer]` additionally registers only after
+ * its first render.
  *
  * Internal to `forty-cdk/drawer`: not exported from any entry point.
  */
@@ -84,20 +95,18 @@ export class ForDrawerScaleCoordinator {
     owner: 'page',
     claimant: '[forDrawerWrapper]',
   });
-  readonly #stack = signal<readonly ForDrawerScaleConfig[]>([]);
+  readonly #drawers = signal<readonly Signal<ForDrawerScaleConfig | null>[]>([]);
 
   #wrapperSnapshot: WrapperSnapshot | null = null;
   #bodySnapshot: BodySnapshot | null = null;
   /**
-   * Hosts for which this coordinator currently owns an inline
-   * `style.transform` from the nested-state pass. Used to ensure we only
-   * clear transforms we ourselves applied — drag handlers also write to
-   * `style.transform` and the coordinator must yield to them.
+   * Hosts whose inline `style.transform` the nested-state pass wrote, so it
+   * clears only transforms it applied.
    */
   readonly #nestedTransformOwned = new WeakSet<HTMLElement>();
 
   /**
-   * `true` when a wrapper is registered, at least one drawer is active,
+   * `true` when a wrapper is registered, at least one drawer wants the effect,
    * and `prefers-reduced-motion: reduce` is not set. Drawers reflect this
    * on their host as `data-scale-background` when `scaleBackground()` is
    * also `true`; the wrapper reflects it as `data-state="scaled"` /
@@ -106,14 +115,20 @@ export class ForDrawerScaleCoordinator {
   readonly active = computed<boolean>(() => {
     return (
       this.#wrapperSlot.value() !== null &&
-      this.#stack().length > 0 &&
+      this.#activeConfig() !== null &&
       !this.#prefersReducedMotion()
     );
   });
 
   readonly #activeConfig = computed<ForDrawerScaleConfig | null>(() => {
-    const stack = this.#stack();
-    return stack.length === 0 ? null : (stack[stack.length - 1] ?? null);
+    const drawers = this.#drawers();
+    for (let i = drawers.length - 1; i >= 0; i--) {
+      const config = drawers[i]!();
+      if (config !== null) {
+        return config;
+      }
+    }
+    return null;
   });
 
   constructor() {
@@ -129,72 +144,19 @@ export class ForDrawerScaleCoordinator {
       }
     });
 
-    // Nested-state visual pass. Mirrors the pre-#180 in-drawer effect but
-    // runs once for the whole stack: every node that has at least one
-    // direct child in the stack gets a `scale + translate3d` applied to
-    // its host, gated by `prefers-reduced-motion: reduce` and by the
-    // node's own `dragging()` signal (the swipe handlers in `ForDrawer`
-    // mutate `style.transform` imperatively during a gesture, so the
-    // coordinator yields the host to them and reapplies on release as a
-    // side effect of the `dragging` flip). Tracking ownership in
-    // `#nestedTransformOwned` keeps cleanup honest — we only clear
-    // transforms we ourselves applied.
     effect(() => {
       const stack = this.#drawerStack.stack();
       const reducedMotion = this.#prefersReducedMotion();
 
-      // Two-pass: figure out which nodes currently want a nested
-      // transform, then reconcile against ownership. Reduced-motion
-      // forces an empty `wantsNested` set so previously-owned hosts get
-      // released cleanly.
-      const wantsNested = new Set<HTMLElement>();
-      if (!reducedMotion) {
-        for (const node of stack) {
-          // Read each node's `dragging` signal so the effect re-runs when
-          // any drawer's gesture flips on or off — yielding to the drag
-          // handlers without dropping the reactive subscription on the
-          // signal (Angular's effect tracking ignores signals only read
-          // inside conditionals that short-circuited last run).
-          const dragging = node.dragging();
-          const hasChild = stack.some((n) => n.parent === node.host);
-          if (hasChild && !dragging) {
-            wantsNested.add(node.host);
-          }
-        }
-      } else {
-        // Subscribe to `dragging` even under reduced-motion so a flip back
-        // to `false` for the preference re-runs this effect with full
-        // reactivity. Cheap to read (no allocation) and keeps the
-        // dependency graph predictable.
-        for (const node of stack) {
-          node.dragging();
-        }
-      }
-
-      // Apply transforms for nodes that want them.
       for (const node of stack) {
-        if (!wantsNested.has(node.host)) {
-          continue;
-        }
-        node.host.style.transform = this.#nestedTransform(
-          node.side(),
-          node.nestedScaleAmount,
-          node.nestedTranslateYpx,
-        );
-        this.#nestedTransformOwned.add(node.host);
-      }
-
-      // Release ownership on hosts we previously applied to but that no
-      // longer want a nested transform. The drag handler may have already
-      // overwritten `style.transform` with its own translate; only clear
-      // when the parent isn't currently dragging (otherwise we'd stomp
-      // the drag mid-gesture).
-      for (const node of stack) {
-        if (
-          this.#nestedTransformOwned.has(node.host) &&
-          !wantsNested.has(node.host) &&
-          !node.dragging()
-        ) {
+        if (!reducedMotion && stack.some((n) => n.parent === node.host)) {
+          node.host.style.transform = this.#nestedTransform(
+            node.side(),
+            node.nestedScaleAmount,
+            node.nestedTranslateYpx,
+          );
+          this.#nestedTransformOwned.add(node.host);
+        } else if (this.#nestedTransformOwned.has(node.host)) {
           node.host.style.transform = '';
           this.#nestedTransformOwned.delete(node.host);
         }
@@ -235,19 +197,20 @@ export class ForDrawerScaleCoordinator {
   }
 
   /**
-   * Register an active drawer's scale config on the LIFO stack. Returns
-   * a cleanup that pops the same entry — call from
-   * `DestroyRef.onDestroy`. Calling `registerDrawer` without a registered
-   * wrapper is silently a no-op (no styles applied) so test composition
-   * and consumer flows don't have to enforce ordering.
+   * Register a mounted drawer on the LIFO stack. `config` is read live: the
+   * topmost drawer whose `config` is not `null` commands the effect, so a
+   * drawer that turns `scaleBackground` off hands it to the one below.
+   * Returns a cleanup that removes the same entry, for the caller's
+   * `DestroyRef.onDestroy`. Without a registered wrapper nothing is applied,
+   * so test composition and consumer flows don't have to enforce ordering.
    */
-  registerDrawer(config: ForDrawerScaleConfig): () => void {
+  registerDrawer(config: Signal<ForDrawerScaleConfig | null>): () => void {
     if (!this.#isBrowser) {
       return () => {};
     }
-    this.#stack.update((s) => [...s, config]);
+    this.#drawers.update((s) => [...s, config]);
     return () => {
-      this.#stack.update((s) => {
+      this.#drawers.update((s) => {
         const idx = s.lastIndexOf(config);
         if (idx === -1) {
           return s;
@@ -293,8 +256,7 @@ export class ForDrawerScaleCoordinator {
       }
       body.style.backgroundColor = config.scaleBackgroundColor;
     } else if (this.#bodySnapshot) {
-      // Topmost drawer opts out — release the body snapshot we may have
-      // taken from a previous (now-popped) drawer.
+      // The commanding config opts out — release the body snapshot.
       this.#document.body.style.backgroundColor = this.#bodySnapshot.backgroundColor;
       this.#bodySnapshot = null;
     }

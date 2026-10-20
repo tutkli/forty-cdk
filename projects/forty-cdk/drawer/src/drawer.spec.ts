@@ -2733,6 +2733,32 @@ describe('ForDrawer scaleBackground / ForDrawerWrapper', () => {
     expect(document.body.style.backgroundColor).toBe('');
   });
 
+  it('restores the body color when setBackgroundColorOnScale flips false while open', async () => {
+    const r = renderHost(ScaleHost);
+    r.instance.open.set(true);
+    await flush(r.fixture);
+    expect(document.body.style.backgroundColor).toBe('black');
+
+    r.instance.setBackgroundColorOnScale.set(false);
+    await flush(r.fixture);
+
+    expect(document.body.style.backgroundColor).toBe('');
+    expect(r.query<HTMLElement>('#shell')!.style.transform).toContain('scale(0.95)');
+  });
+
+  it('paints the body color when setBackgroundColorOnScale flips true while open', async () => {
+    const r = renderHost(ScaleHost);
+    r.instance.setBackgroundColorOnScale.set(false);
+    r.instance.open.set(true);
+    await flush(r.fixture);
+    expect(document.body.style.backgroundColor).toBe('');
+
+    r.instance.setBackgroundColorOnScale.set(true);
+    await flush(r.fixture);
+
+    expect(document.body.style.backgroundColor).toBe('black');
+  });
+
   it('skips the effect entirely when scaleBackground=false', async () => {
     const r = renderHost(ScaleHost);
     r.instance.scaleBackground.set(false);

@@ -5,19 +5,15 @@ import { flush } from '../../../src/test-utils';
 import { type ForDrawerSide } from './drawer-side';
 import { type DrawerStackNode, ForDrawerStack } from './drawer-stack';
 
-const STILL = signal(false).asReadonly();
-
 function nodeOf(
   partial: Pick<DrawerStackNode, 'host' | 'parent'> & {
     side?: ForDrawerSide;
-    dragging?: DrawerStackNode['dragging'];
     nestedScaleAmount?: number;
     nestedTranslateYpx?: number;
   },
 ): DrawerStackNode {
   const { side, ...rest } = partial;
   return {
-    dragging: STILL,
     nestedScaleAmount: 0.93,
     nestedTranslateYpx: 8,
     ...rest,

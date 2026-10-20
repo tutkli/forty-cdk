@@ -8,28 +8,19 @@ import { fortyError } from 'forty-cdk/core';
  * stack is LIFO ordered (root → topmost) and exposes only what other
  * coordinators need — `host` for ancestry checks, `side` (a `Signal`, so a
  * runtime side flip recomputes dependent transforms) for layout heuristics,
- * `parent` for topology, `dragging` so visual coordinators (e.g.
- * `ForDrawerScaleCoordinator`'s nested-transform pass) can yield the
- * surface to imperative drag handlers, and the resolved nested-transform
- * tunables so the coordinator never needs to re-read scope-dependent
- * defaults.
+ * `parent` for topology, and the resolved nested-transform tunables so
+ * `ForDrawerScaleCoordinator`'s nested-transform pass never needs to re-read
+ * scope-dependent defaults.
  */
 export interface DrawerStackNode {
   readonly host: HTMLElement;
   /**
    * Reactive edge the drawer is anchored to. Read inside the coordinator's
    * nested-transform effect so a runtime `[side]` rebind recomputes the
-   * parent surface's transform axis, mirroring the reactive `dragging`
-   * channel.
+   * parent surface's transform axis.
    */
   readonly side: Signal<ForDrawerSide>;
   readonly parent: HTMLElement | null;
-  /**
-   * Reactive flag that flips to `true` while a swipe gesture is in flight
-   * on this drawer's surface. Visual coordinators must yield the host's
-   * inline transform to the drag handlers while this is `true`.
-   */
-  readonly dragging: Signal<boolean>;
   /**
    * Scale factor applied to *this* drawer's host while it owns one or
    * more direct child drawers (the nested-drawer visual). Resolved from

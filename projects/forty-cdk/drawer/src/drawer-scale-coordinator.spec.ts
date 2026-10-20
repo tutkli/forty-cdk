@@ -42,7 +42,6 @@ function makeDrawerHost(id: string): HTMLElement {
 
 interface PushedNode {
   readonly node: DrawerStackNode;
-  readonly dragging: WritableSignal<boolean>;
   readonly side: WritableSignal<ForDrawerSide>;
   cleanup(): void;
 }
@@ -55,20 +54,17 @@ function pushNode(
     nestedTranslateYpx?: number;
   },
 ): PushedNode {
-  const draggingSig = signal(false);
   const sideSig = signal<ForDrawerSide>(partial.side ?? 'bottom');
   const node: DrawerStackNode = {
     host: partial.host,
     parent: partial.parent,
     nestedScaleAmount: partial.nestedScaleAmount ?? 0.93,
     nestedTranslateYpx: partial.nestedTranslateYpx ?? 8,
-    dragging: draggingSig.asReadonly(),
     side: sideSig.asReadonly(),
   };
   const handle = drawerStack.push(node);
   return {
     node,
-    dragging: draggingSig,
     side: sideSig,
     cleanup: handle.cleanup,
   };
@@ -115,7 +111,7 @@ describe('ForDrawerScaleCoordinator', () => {
   it('applies wrapper styles + body color on first drawer registration', async () => {
     const { coordinator, fixture } = await createHost();
     coordinator.registerWrapper(wrapper);
-    coordinator.registerDrawer(DEFAULT_CONFIG);
+    coordinator.registerDrawer(signal(DEFAULT_CONFIG));
     await flush(fixture);
 
     expect(coordinator.active()).toBe(true);
@@ -130,7 +126,7 @@ describe('ForDrawerScaleCoordinator', () => {
   it('honours setBackgroundColorOnScale=false (no body color)', async () => {
     const { coordinator, fixture } = await createHost();
     coordinator.registerWrapper(wrapper);
-    coordinator.registerDrawer({ ...DEFAULT_CONFIG, setBackgroundColorOnScale: false });
+    coordinator.registerDrawer(signal({ ...DEFAULT_CONFIG, setBackgroundColorOnScale: false }));
     await flush(fixture);
 
     expect(coordinator.active()).toBe(true);
@@ -141,8 +137,8 @@ describe('ForDrawerScaleCoordinator', () => {
   it('LIFO: 2 drawers — closing the bottom keeps topmost styles applied', async () => {
     const { coordinator, fixture } = await createHost();
     coordinator.registerWrapper(wrapper);
-    const cleanupBottom = coordinator.registerDrawer(DEFAULT_CONFIG);
-    coordinator.registerDrawer({ ...DEFAULT_CONFIG, scaleAmount: 0.9 });
+    const cleanupBottom = coordinator.registerDrawer(signal(DEFAULT_CONFIG));
+    coordinator.registerDrawer(signal({ ...DEFAULT_CONFIG, scaleAmount: 0.9 }));
     await flush(fixture);
 
     expect(wrapper.style.transform).toContain('scale(0.9)');
@@ -155,8 +151,8 @@ describe('ForDrawerScaleCoordinator', () => {
   it('LIFO: closing topmost reveals previous drawer config', async () => {
     const { coordinator, fixture } = await createHost();
     coordinator.registerWrapper(wrapper);
-    coordinator.registerDrawer(DEFAULT_CONFIG);
-    const cleanupTop = coordinator.registerDrawer({ ...DEFAULT_CONFIG, scaleAmount: 0.9 });
+    coordinator.registerDrawer(signal(DEFAULT_CONFIG));
+    const cleanupTop = coordinator.registerDrawer(signal({ ...DEFAULT_CONFIG, scaleAmount: 0.9 }));
     await flush(fixture);
     expect(wrapper.style.transform).toContain('scale(0.9)');
 
@@ -172,7 +168,7 @@ describe('ForDrawerScaleCoordinator', () => {
 
     const { coordinator, fixture } = await createHost();
     coordinator.registerWrapper(wrapper);
-    const cleanup = coordinator.registerDrawer(DEFAULT_CONFIG);
+    const cleanup = coordinator.registerDrawer(signal(DEFAULT_CONFIG));
     await flush(fixture);
 
     expect(wrapper.style.transform).toContain('scale(0.95)');
@@ -194,7 +190,7 @@ describe('ForDrawerScaleCoordinator', () => {
     const second = makeWrapper();
     try {
       coordinator.registerWrapper(second);
-      coordinator.registerDrawer(DEFAULT_CONFIG);
+      coordinator.registerDrawer(signal(DEFAULT_CONFIG));
       await flush(fixture);
 
       expect(warn).toHaveBeenCalledTimes(1);
@@ -212,7 +208,7 @@ describe('ForDrawerScaleCoordinator', () => {
     wrapper.style.transform = 'translateZ(0)';
     const { coordinator, fixture } = await createHost();
     const cleanupFirst = coordinator.registerWrapper(wrapper);
-    coordinator.registerDrawer(DEFAULT_CONFIG);
+    coordinator.registerDrawer(signal(DEFAULT_CONFIG));
     await flush(fixture);
     expect(wrapper.style.transform).toContain('scale(0.95)');
 
@@ -244,9 +240,64 @@ describe('ForDrawerScaleCoordinator', () => {
     }
   });
 
+  it('reads a registered config live while the drawer stays registered', async () => {
+    const { coordinator, fixture } = await createHost();
+    coordinator.registerWrapper(wrapper);
+    const config = signal<ForDrawerScaleConfig | null>(DEFAULT_CONFIG);
+    coordinator.registerDrawer(config);
+    await flush(fixture);
+    expect(document.body.style.backgroundColor).toBe('black');
+
+    config.set({ ...DEFAULT_CONFIG, setBackgroundColorOnScale: false, scaleAmount: 0.9 });
+    await flush(fixture);
+    expect(document.body.style.backgroundColor).toBe('');
+    expect(wrapper.style.transform).toContain('scale(0.9)');
+
+    config.set(DEFAULT_CONFIG);
+    await flush(fixture);
+    expect(document.body.style.backgroundColor).toBe('black');
+    expect(wrapper.style.transform).toContain('scale(0.95)');
+  });
+
+  it('reverts when the only registered config turns null, and re-applies when it returns', async () => {
+    wrapper.style.transform = 'translateZ(0)';
+    const { coordinator, fixture } = await createHost();
+    coordinator.registerWrapper(wrapper);
+    const config = signal<ForDrawerScaleConfig | null>(DEFAULT_CONFIG);
+    coordinator.registerDrawer(config);
+    await flush(fixture);
+    expect(coordinator.active()).toBe(true);
+
+    config.set(null);
+    await flush(fixture);
+    expect(coordinator.active()).toBe(false);
+    expect(wrapper.style.transform).toBe('translateZ(0)');
+    expect(document.body.style.backgroundColor).toBe('');
+
+    config.set(DEFAULT_CONFIG);
+    await flush(fixture);
+    expect(coordinator.active()).toBe(true);
+    expect(wrapper.style.transform).toContain('scale(0.95)');
+  });
+
+  it('LIFO: a topmost config turning null hands the effect to the one below', async () => {
+    const { coordinator, fixture } = await createHost();
+    coordinator.registerWrapper(wrapper);
+    coordinator.registerDrawer(signal(DEFAULT_CONFIG));
+    const top = signal<ForDrawerScaleConfig | null>({ ...DEFAULT_CONFIG, scaleAmount: 0.9 });
+    coordinator.registerDrawer(top);
+    await flush(fixture);
+    expect(wrapper.style.transform).toContain('scale(0.9)');
+
+    top.set(null);
+    await flush(fixture);
+    expect(coordinator.active()).toBe(true);
+    expect(wrapper.style.transform).toContain('scale(0.95)');
+  });
+
   it('drawer registered before wrapper does not crash; effect applies once wrapper mounts', async () => {
     const { coordinator, fixture } = await createHost();
-    expect(() => coordinator.registerDrawer(DEFAULT_CONFIG)).not.toThrow();
+    expect(() => coordinator.registerDrawer(signal(DEFAULT_CONFIG))).not.toThrow();
     await flush(fixture);
 
     expect(coordinator.active()).toBe(false);
@@ -279,7 +330,7 @@ describe('ForDrawerScaleCoordinator under prefers-reduced-motion: reduce', () =>
   it('suppresses the effect entirely while reduced-motion is set', async () => {
     const { coordinator, fixture } = await createHost();
     coordinator.registerWrapper(wrapper);
-    coordinator.registerDrawer(DEFAULT_CONFIG);
+    coordinator.registerDrawer(signal(DEFAULT_CONFIG));
     await flush(fixture);
 
     expect(coordinator.active()).toBe(false);
@@ -303,7 +354,7 @@ describe('ForDrawerScaleCoordinator nested-state transform', () => {
     const { drawerStack, fixture } = await createHost();
     const parentEl = track(makeDrawerHost('parent'));
 
-    const parent = pushNode(drawerStack, { host: parentEl, parent: null });
+    pushNode(drawerStack, { host: parentEl, parent: null });
     await flush(fixture);
 
     expect(parentEl.style.transform).toBe('');
@@ -318,10 +369,6 @@ describe('ForDrawerScaleCoordinator nested-state transform', () => {
 
     // Sanity: child has no descendants → no transform.
     expect(childEl.style.transform).toBe('');
-
-    // Sanity: parent kept the visual no matter how the parent's
-    // own dragging signal flips later.
-    expect(parent.dragging()).toBe(false);
   });
 
   it('releases the parent transform when the child pops', async () => {
@@ -413,32 +460,6 @@ describe('ForDrawerScaleCoordinator nested-state transform', () => {
 
     expect(parentEl.style.transform).toContain('scale(0.85)');
     expect(parentEl.style.transform).toContain('-12px');
-  });
-
-  it('does not stomp the host transform while the parent is dragging', async () => {
-    const { drawerStack, fixture } = await createHost();
-    const parentEl = track(makeDrawerHost('parent'));
-    const childEl = track(makeDrawerHost('child'));
-
-    const parent = pushNode(drawerStack, { host: parentEl, parent: null });
-    pushNode(drawerStack, { host: childEl, parent: parentEl });
-    await flush(fixture);
-    expect(parentEl.style.transform).toContain('scale(0.93)');
-
-    // Simulate the swipe handler entering a gesture. The drawer flips
-    // `dragging` to true and writes its own translate3d to style.transform.
-    parent.dragging.set(true);
-    parentEl.style.transform = 'translate3d(0px, 30px, 0)';
-    await flush(fixture);
-
-    // Coordinator must NOT have stomped the imperative transform.
-    expect(parentEl.style.transform).toBe('translate3d(0px, 30px, 0)');
-
-    // Release: dragging flips back to false. Coordinator reapplies the
-    // nested transform.
-    parent.dragging.set(false);
-    await flush(fixture);
-    expect(parentEl.style.transform).toContain('scale(0.93)');
   });
 
   it('applies nested transform on grandparent + parent in a 3-level stack', async () => {
