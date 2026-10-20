@@ -69,9 +69,9 @@ const DEMOS_SOURCE_PREFIX = 'projects/forty-cdk-docs/src/app/demos/';
       </div>
 
       <div forTabsContent value="preview" class="demo-panel">
-        <section class="preview" aria-label="Preview">
+        <div class="preview">
           <ng-content />
-        </section>
+        </div>
       </div>
 
       <div forTabsContent value="code" class="demo-panel">
