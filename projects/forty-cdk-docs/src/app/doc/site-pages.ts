@@ -4,8 +4,9 @@ import { SITE_PAGES } from '../../generated/site-pages.generated';
  * One page the site publishes about itself rather than about an entry point
  * ([#1812](https://github.com/tutkli/forty-cdk/issues/1812)).
  *
- * Nothing here is authored twice: the title is the document's own `# ` heading
- * and the description its lede, both read by `readSitePages` at build time.
+ * Nothing here is authored twice: the title is the compiled document's own `# `
+ * heading and the description its lede, which the compiler lifts out of the
+ * intro and `gen-doc-model` emits beside the title.
  */
 export interface SitePageMeta {
   /** The route the page is served under, from the site root. */
