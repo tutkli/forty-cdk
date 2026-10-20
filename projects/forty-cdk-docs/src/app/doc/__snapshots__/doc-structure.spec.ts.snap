@@ -6194,6 +6194,14 @@ exports[`document structure > projects/forty-cdk/scroll-area/README.md declares 
       },
       {
         "columns": [
+          "Data attribute",
+          "Values",
+        ],
+        "role": "plain",
+        "rows": 1,
+      },
+      {
+        "columns": [
           "Property",
           "Type",
           "Description",

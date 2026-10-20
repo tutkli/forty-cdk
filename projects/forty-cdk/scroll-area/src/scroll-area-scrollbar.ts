@@ -10,7 +10,11 @@ import {
 } from '@angular/core';
 
 import { clamp, injectElementSize } from 'forty-cdk/core';
-import { injectScrollAreaContext, type ForScrollbarOrientation } from './scroll-area-context';
+import {
+  injectScrollAreaContext,
+  type ForScrollAreaContext,
+  type ForScrollbarOrientation,
+} from './scroll-area-context';
 import { jumpPosition, pagePosition, trackPressDirection } from './track-press';
 
 const MIN_THUMB_SIZE = 8;
@@ -47,7 +51,7 @@ export class ForScrollAreaScrollbar {
    * Axis this scrollbar controls.
    */
   readonly orientation = input.required<ForScrollbarOrientation>();
-  readonly ctx = injectScrollAreaContext('ForScrollAreaScrollbar');
+  readonly ctx: ForScrollAreaContext = injectScrollAreaContext('ForScrollAreaScrollbar');
   readonly host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
   readonly #document = inject(DOCUMENT);
 

@@ -585,7 +585,10 @@ export const SSR_FIXTURES: readonly SsrFixture[] = [
     head: ['style#for-scroll-area-hide-native[id]'],
     markup: [
       { select: '[forScrollArea]', attributes: { 'data-type': 'hover' } },
-      { select: '[forScrollAreaViewport]', attributes: { tabindex: '0' } },
+      {
+        select: '[forScrollAreaViewport]',
+        attributes: { tabindex: '0', 'data-for-scroll-area-viewport': '' },
+      },
       {
         select: '[forScrollAreaScrollbar]',
         attributes: { 'data-orientation': 'vertical', 'data-state': 'hidden', hidden: '' },

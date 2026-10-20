@@ -9,6 +9,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Scroll Area — BREAKING.** The viewport / content registration protocol leaves the public
+  `ForScrollAreaContext` and `ForScrollArea` ([#2366](https://github.com/tutkli/forty-cdk/issues/2366)):
+  `registerViewport`, `unregisterViewport`, `registerContent`, `unregisterContent`,
+  `reportScroll`, `reportSize` and `noteUserScroll` are now called only by the pieces, so code
+  that injected `FOR_SCROLL_AREA_CONTEXT` or held the root to call them no longer compiles. A
+  provider of that token must alias it to the root (`useExisting`); any other value fails in dev
+  mode with `FORCDK-CORE-007`. **Migrate** by rendering `[forScrollAreaViewport]` /
+  `[forScrollAreaContent]` instead of registering elements by hand.
+- **Scroll Area.** The injected stylesheet selects a `data-for-scroll-area-viewport` attribute the
+  viewport now stamps on its host, so a viewport applied through `hostDirectives` or a subclass
+  with its own selector hides its native scrollbars too. Its `overflow: scroll` is now written
+  inside `:where()`, so a consumer's global, layered or utility `overflow-x` / `overflow-y` rule
+  wins instead of being overridden.
 - **Select, Combobox — BREAKING.** `[forSelectSeparator]` and `[forComboboxSeparator]` are always
   presentational: `role="none"` and no `aria-orientation`, with `data-orientation` still stamped
   for styling ([#2393](https://github.com/tutkli/forty-cdk/issues/2393)). Both sit inside a

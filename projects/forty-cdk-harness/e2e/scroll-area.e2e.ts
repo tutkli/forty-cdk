@@ -219,6 +219,25 @@ test.describe('ScrollArea (geometry + drag)', () => {
     await expect(el(page, 'corner')).toHaveAttribute('hidden', '');
   });
 
+  test('a global consumer overflow rule of attribute specificity overrides the injected overflow default', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'scroll-area');
+    const viewport = el(page, 'viewport');
+    await expect(page.locator('style#for-scroll-area-hide-native')).toHaveCount(1);
+
+    await page.evaluate(() => {
+      const style = document.createElement('style');
+      style.textContent = '[data-testid="viewport"] { overflow-x: hidden; }';
+      document.head.prepend(style);
+    });
+
+    await expect
+      .poll(() => viewport.evaluate((node) => getComputedStyle(node).overflowX))
+      .toBe('hidden');
+    expect(await viewport.evaluate((node) => getComputedStyle(node).overflowY)).toBe('scroll');
+  });
+
   // Visibility-mode contract for `type="hover"` / `type="scroll"`. The
   // scrollbar's `data-state` combines overflow presence (geometry, zero in
   // jsdom) with the interaction signals (`hovering` / `scrolling`), so the
