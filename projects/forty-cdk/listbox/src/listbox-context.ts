@@ -4,6 +4,8 @@ import {
   assertRootContext,
   type ListNavigationAction,
   orphanContextError,
+  RootedRegistry,
+  type RootedHandle,
   type Unset,
   type VirtualizedResume,
   type WritingDirection,
@@ -219,15 +221,8 @@ export interface ListboxPieceContext {
   controllerFocusOut(next: EventTarget | null): void;
 }
 
-/**
- * The registration protocol of `[forListboxController]`. While a controller is
- * registered the listbox keeps no tab stop of its own, carries an `id` for the
- * controller's `aria-controls`, and reflects its active option through
- * `aria-activedescendant` on the controller instead of its host.
- */
+/** The registration protocol of `[forListboxVirtualized]`. */
 export interface ListboxRegistrationContext {
-  registerController(el: HTMLElement): void;
-  unregisterController(el: HTMLElement): void;
   /**
    * Called by `[forListboxVirtualized]` from its constructor. Hands the root the
    * virtualized focus model and returns the root state that model reads and
@@ -294,6 +289,14 @@ export interface ListboxContext<T = unknown>
  * type resolves too, and is rejected in dev mode by the first piece to reach the channel.
  */
 export const FOR_LISTBOX_CONTEXT = new InjectionToken<ForListboxContext>('FOR_LISTBOX_CONTEXT');
+
+export interface ListboxControllerHandle extends RootedHandle<object> {
+  readonly host: HTMLElement;
+}
+
+export const LISTBOX_CONTROLLERS = new InjectionToken<
+  RootedRegistry<object, ListboxControllerHandle>
+>('LISTBOX_CONTROLLERS', { providedIn: 'root', factory: () => new RootedRegistry() });
 
 export function injectListboxContext<T = unknown>(piece: string): ListboxContext<T> {
   const ctx = inject(FOR_LISTBOX_CONTEXT, { optional: true });

@@ -25,9 +25,9 @@
  * tokens of registries that are separate providers rather than views of a root,
  * which is the one shape a second token is still for: the table def-registry's
  * own token and registry class, which a scaffold wrapper must be able to
- * provide (see below), and the `*_TRIGGERS` registries a root derives its
- * trigger from, which a trigger reaches whether its root came through DI or
- * through its own input ([#2399]).
+ * provide (see below), and the rooted registries (`*_TRIGGERS`,
+ * `LISTBOX_CONTROLLERS`) a root derives a piece from, which the piece reaches
+ * whether its root came through DI or through its own input ([#2399]).
  *
  * The table's piece-registration protocol is not listed here: it lives in the
  * `forty-cdk/core` internal tier (the virtualization entry point registers
@@ -72,6 +72,8 @@ export const REGISTRATION_SURFACES = {
     'ListboxRegistrationContext',
     'ListboxVirtualization',
     'ListboxVirtualizationHost',
+    'ListboxControllerHandle',
+    'LISTBOX_CONTROLLERS',
   ],
   'navigation-menu': [
     'NavigationMenuContext',

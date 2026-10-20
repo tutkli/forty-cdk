@@ -20,6 +20,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the other three tokens. **Migrate** by rendering the primitive's trigger directive, or composing
   it through `hostDirectives`, instead of registering an element by hand.
 
+- **Listbox** — `[forListboxController]`'s `forListboxController` is no longer `input.required`
+  ([#2399](https://github.com/tutkli/forty-cdk/issues/2399)). A binding written in a template is
+  still checked against `ForListboxContext<T>`, but a controller composed through `hostDirectives`
+  without one no longer fails to compile with NG8008 and throws `FORCDK-CORE-010` in dev mode
+  instead, as an unbound `[forListboxOption]` value already does. Rebinding the input to another
+  listbox moves the controller there.
+
 ### Fixed
 
 - **Popover, Tooltip, Hover card, Date picker** — a root with two triggers keeps the one still

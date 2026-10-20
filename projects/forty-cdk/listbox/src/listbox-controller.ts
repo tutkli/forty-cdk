@@ -1,7 +1,14 @@
-import { computed, Directive, effect, ElementRef, inject, input, untracked } from '@angular/core';
+import { computed, Directive, ElementRef, inject, input, type InputSignal } from '@angular/core';
 
-import { isImeComposing } from 'forty-cdk/core';
-import { asListboxContext, type ForListboxContext } from './listbox-context';
+import {
+  assertInputBound,
+  isImeComposing,
+  isUnset,
+  registerHandle,
+  type Unset,
+  unsetInput,
+} from 'forty-cdk/core';
+import { asListboxContext, type ForListboxContext, LISTBOX_CONTROLLERS } from './listbox-context';
 
 const CARET_KEYS = new Set(['Home', 'End', 'ArrowLeft', 'ArrowRight']);
 
@@ -47,8 +54,8 @@ const CARET_KEYS = new Set(['Home', 'End', 'ArrowLeft', 'ArrowRight']);
     autocomplete: 'off',
     'aria-autocomplete': 'list',
     '[attr.aria-expanded]': 'active() ? (expanded() ? "true" : "false") : null',
-    '[attr.aria-controls]': 'active() ? listbox().controlsId() : null',
-    '[attr.aria-activedescendant]': 'active() ? listbox().activeDescendantId() : null',
+    '[attr.aria-controls]': 'active() ? controlsId() : null',
+    '[attr.aria-activedescendant]': 'active() ? activeDescendantId() : null',
     '(keydown)': 'onKeyDown($event)',
     '(input)': 'onInput()',
     '(focusout)': 'onFocusOut($event)',
@@ -57,30 +64,57 @@ const CARET_KEYS = new Set(['Home', 'End', 'ArrowLeft', 'ArrowRight']);
 export class ForListboxController<T = string> {
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
 
-  /** The listbox this textbox drives, passed as its `forListbox` export. */
-  readonly forListboxController = input.required<ForListboxContext<T>>();
+  /**
+   * The listbox this textbox drives, passed as its `forListbox` export. Required in
+   * practice though not by the template compiler: a controller left unbound throws
+   * in dev mode, and a production build drives nothing.
+   */
+  readonly forListboxController: InputSignal<ForListboxContext<T> | Unset> =
+    input(unsetInput<ForListboxContext<T>>());
 
-  private readonly listbox = computed(() =>
-    asListboxContext(this.forListboxController(), 'ForListboxController'),
+  readonly #root = computed(() => {
+    const root = this.forListboxController();
+    return isUnset(root) ? null : root;
+  });
+
+  private readonly listbox = computed(() => {
+    const root = this.#root();
+    return root === null ? null : asListboxContext(root, 'ForListboxController');
+  });
+
+  private readonly expanded = computed(() => (this.listbox()?.options().length ?? 0) > 0);
+
+  private readonly active = computed(
+    () => this.listbox()?.isActiveController(this.#host.nativeElement) ?? false,
   );
 
-  private readonly expanded = computed(() => this.listbox().options().length > 0);
-
-  private readonly active = computed(() =>
-    this.listbox().isActiveController(this.#host.nativeElement),
+  private readonly activeDescendantId = computed(
+    () => this.listbox()?.activeDescendantId() ?? null,
   );
 
   constructor() {
-    const el = this.#host.nativeElement;
-    effect((onCleanup) => {
-      const listbox = this.listbox();
-      untracked(() => listbox.registerController(el));
-      onCleanup(() => listbox.unregisterController(el));
-    });
+    assertInputBound(
+      this.forListboxController,
+      'listbox',
+      '[forListboxController]',
+      'forListboxController',
+    );
+    const controllers = inject(LISTBOX_CONTROLLERS);
+    registerHandle(
+      { host: this.#host.nativeElement, root: this.#root },
+      (handle) => controllers.add(handle),
+      (handle) => controllers.remove(handle),
+    );
+  }
+
+  private controlsId(): string | null {
+    return this.listbox()?.controlsId() ?? null;
   }
 
   private onKeyDown(event: KeyboardEvent): void {
+    const listbox = this.listbox();
     if (
+      listbox === null ||
       !this.active() ||
       event.defaultPrevented ||
       isImeComposing(event) ||
@@ -93,29 +127,29 @@ export class ForListboxController<T = string> {
     }
     if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
       event.preventDefault();
-      this.listbox().moveActiveOption(event.key === 'ArrowDown' ? 'next' : 'prev');
+      listbox.moveActiveOption(event.key === 'ArrowDown' ? 'next' : 'prev');
       return;
     }
     if (event.key === 'Enter') {
-      if (this.listbox().activateActiveOption()) {
+      if (listbox.activateActiveOption()) {
         event.preventDefault();
       }
       return;
     }
     if (CARET_KEYS.has(event.key)) {
-      this.listbox().clearActiveOption();
+      listbox.clearActiveOption();
     }
   }
 
   private onInput(): void {
     if (this.active()) {
-      this.listbox().clearActiveOption();
+      this.listbox()?.clearActiveOption();
     }
   }
 
   private onFocusOut(event: FocusEvent): void {
     if (this.active()) {
-      this.listbox().controllerFocusOut(event.relatedTarget);
+      this.listbox()?.controllerFocusOut(event.relatedTarget);
     }
   }
 }
