@@ -1,3 +1,5 @@
+import type { Locator, Page } from '@playwright/test';
+
 import { el, expect, gotoFixture, settleScroll, test } from './_helpers';
 
 test.describe('drag-drop auto-scroll', () => {
@@ -104,6 +106,48 @@ test.describe('drag-drop auto-scroll', () => {
     const scrollTop = await list.evaluate((el) => el.scrollTop);
     expect(scrollTop).toBe(0);
 
+    await page.mouse.up();
+  });
+});
+
+test.describe('drag-drop horizontal auto-scroll', () => {
+  async function holdAtRowEdge(page: Page, edge: 'left' | 'right'): Promise<Locator> {
+    const row = el(page, 'scroll-row');
+    const item0 = el(page, 'r-item-0');
+    const rowBox = await row.boundingBox();
+    const itemBox = await item0.boundingBox();
+    if (!rowBox || !itemBox) throw new Error('Elements not found');
+
+    const startX = itemBox.x + itemBox.width / 2;
+    const y = itemBox.y + itemBox.height / 2;
+    await page.mouse.move(startX, y);
+    await page.mouse.down();
+    await page.mouse.move(startX + (edge === 'right' ? 5 : -5), y);
+    await expect(item0).toHaveAttribute('data-dragging', '');
+    await page.mouse.move(edge === 'right' ? rowBox.x + rowBox.width - 10 : rowBox.x + 10, y);
+    return row;
+  }
+
+  test('advances scrollLeft when the pointer holds the right edge', async ({ page }) => {
+    await gotoFixture(page, 'drag-drop-scroll');
+    await expect.poll(() => el(page, 'scroll-row').evaluate((n) => n.scrollLeft)).toBe(0);
+
+    const row = await holdAtRowEdge(page, 'right');
+
+    await expect.poll(() => row.evaluate((n) => n.scrollLeft)).toBeGreaterThan(50);
+    await page.mouse.up();
+  });
+
+  test('scrolls toward the inline end when the pointer holds the left edge under dir="rtl"', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'drag-drop-scroll', { dir: 'rtl' });
+    await expect(el(page, 'scroll-row')).toHaveAttribute('dir', 'rtl');
+    await expect.poll(() => el(page, 'scroll-row').evaluate((n) => n.scrollLeft)).toBe(0);
+
+    const row = await holdAtRowEdge(page, 'left');
+
+    await expect.poll(() => row.evaluate((n) => n.scrollLeft)).toBeLessThan(-50);
     await page.mouse.up();
   });
 });

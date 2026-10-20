@@ -3767,6 +3767,122 @@ describe('ForDropList — geometry follows a window that recycles its rows (#212
   });
 });
 
+describe('ForDropList — auto-scroll follows the list under the pointer', () => {
+  @Component({
+    host: { 'data-fixture': 'auto-scroll-connected-host' },
+    imports: [...DND_IMPORTS],
+    template: `
+      <ul forDropList #listA="forDropList" [connectedTo]="[listB]">
+        @for (row of rowsA; track row.id) {
+          <li forDraggable [dragData]="row" [attr.data-test-id]="'a-' + row.id">{{ row.label }}</li>
+        }
+      </ul>
+      <ul forDropList #listB="forDropList" [connectedTo]="[listA]" style="overflow-y: auto">
+        @for (row of rowsB; track row.id) {
+          <li forDraggable [dragData]="row" [attr.data-test-id]="'b-' + row.id">
+            <svg aria-hidden="true"></svg>{{ row.label }}
+          </li>
+        }
+      </ul>
+    `,
+  })
+  class AutoScrollConnectedHost {
+    readonly listA = viewChild.required<ForDropList>('listA');
+    readonly rowsA: Row[] = [
+      { id: 1, label: 'Alpha' },
+      { id: 2, label: 'Beta' },
+    ];
+    readonly rowsB: Row[] = [
+      { id: 3, label: 'Gamma' },
+      { id: 4, label: 'Delta' },
+    ];
+  }
+
+  function stubBox(
+    el: Element,
+    rect: { left: number; top: number; right: number; bottom: number },
+  ) {
+    el.getBoundingClientRect = () =>
+      ({
+        ...rect,
+        width: rect.right - rect.left,
+        height: rect.bottom - rect.top,
+        x: rect.left,
+        y: rect.top,
+        toJSON() {},
+      }) as DOMRect;
+  }
+
+  function queueFrames() {
+    const pending = new Map<number, FrameRequestCallback>();
+    let next = 0;
+    vi.spyOn(window, 'requestAnimationFrame').mockImplementation((cb) => {
+      pending.set(++next, cb);
+      return next;
+    });
+    vi.spyOn(window, 'cancelAnimationFrame').mockImplementation((id) => {
+      pending.delete(id);
+    });
+    return () => {
+      const due = [...pending.values()];
+      pending.clear();
+      for (const cb of due) {
+        cb(performance.now());
+      }
+    };
+  }
+
+  afterEach(() => {
+    delete (document as { elementFromPoint?: unknown }).elementFromPoint;
+  });
+
+  async function dragTowardBottomOfB(under: (listB: HTMLElement) => Element) {
+    const { el, fixture, instance } = renderHost(AutoScrollConnectedHost);
+    await flush(fixture);
+    const listA = listEl(el, 0);
+    const listB = listEl(el, 1);
+    stubBox(listA, { left: 0, top: 0, right: 200, bottom: 240 });
+    stubBox(listB, { left: 300, top: 0, right: 500, bottom: 240 });
+    draggables(el).forEach((item, i) => {
+      const left = item.closest('ul') === listA ? 0 : 300;
+      const top = (i % 2) * 20;
+      stubBox(item, { left, top, right: left + 200, bottom: top + 20 });
+    });
+    Object.defineProperty(listB, 'scrollHeight', { configurable: true, value: 1000 });
+    Object.defineProperty(listB, 'clientHeight', { configurable: true, value: 240 });
+    let scrollTop = 0;
+    Object.defineProperty(listB, 'scrollTop', {
+      configurable: true,
+      get: () => scrollTop,
+      set: (v: number) => {
+        scrollTop = v;
+      },
+    });
+    const target = under(listB);
+    Object.defineProperty(document, 'elementFromPoint', {
+      configurable: true,
+      value: () => target,
+    });
+    const runFrame = queueFrames();
+
+    instance.listA().pointerLift(itemEl(el, 'a-1'), { x: 100, y: 10 });
+    instance.listA().pointerMove({ x: 400, y: 230 });
+    runFrame();
+    runFrame();
+    return scrollTop;
+  }
+
+  it('scrolls the connected list when the pointer is over one of its items', async () => {
+    const scrollTop = await dragTowardBottomOfB((listB) => listB.querySelector('[forDraggable]')!);
+    expect(scrollTop).toBeGreaterThan(0);
+  });
+
+  it('scrolls the connected list when the pointer is over an SVG icon inside it', async () => {
+    const scrollTop = await dragTowardBottomOfB((listB) => listB.querySelector('svg')!);
+    expect(scrollTop).toBeGreaterThan(0);
+  });
+});
+
 describe('ForDraggable with no dragData binding', () => {
   @Component({
     host: { 'data-fixture': 'unbound-draggable-host' },
