@@ -6,7 +6,9 @@ import {
   expectStays,
   gotoFixture,
   recordPointerMoves,
+  scrollTopOf,
   test,
+  wheelUntil,
 } from './_helpers';
 
 test.describe('Tree virtualization (Shape C)', () => {
@@ -84,7 +86,7 @@ test.describe('Tree virtualization (Shape C)', () => {
     await page.keyboard.press('ArrowDown');
     await expect.poll(() => activeDescendantIndex(tree), { timeout: 10000 }).toBe('1');
 
-    await page.mouse.wheel(0, 4000);
+    await wheelUntil(page, 4000, () => scrollTopOf(tree));
     await expect
       .poll(() => tree.getAttribute('aria-activedescendant'), { timeout: 10000 })
       .toBeFalsy();
@@ -120,7 +122,7 @@ test.describe('Tree virtualization (Shape C)', () => {
 
     await page.waitForTimeout(DEFAULT_POINTER_SUPPRESSION_MS * 2);
     const moves = await recordPointerMoves(page, 'tree');
-    await page.mouse.wheel(0, 4000);
+    await wheelUntil(page, 4000, () => scrollTopOf(tree));
     await expect.poll(moves, { timeout: 10000 }).toBeGreaterThan(0);
     await expectStays(page, async () =>
       expect(await tree.getAttribute('aria-activedescendant')).toBeFalsy(),

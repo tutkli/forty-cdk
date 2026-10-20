@@ -4384,6 +4384,15 @@ module.exports = tseslint.config(
           ],
         },
       ],
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector:
+            "CallExpression[callee.property.name='wheel'][callee.object.property.name='mouse']",
+          message:
+            "Dispatch a wheel through `wheelUntil` from './_helpers': a single `mouse.wheel` the browser drops is never re-sent, and the spec then waits on a scroll that cannot arrive.",
+        },
+      ],
     },
   },
 

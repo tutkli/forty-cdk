@@ -8,7 +8,9 @@ import {
   expectStays,
   gotoFixture,
   recordPointerMoves,
+  scrollTopOf,
   test,
+  wheelUntil,
 } from './_helpers';
 import { rowAt, rows } from './_table-helpers';
 
@@ -581,7 +583,7 @@ test.describe('Table (pointer highlight)', () => {
 
     await page.waitForTimeout(DEFAULT_POINTER_SUPPRESSION_MS * 2);
     const moves = await recordPointerMoves(page, 'scroll-container');
-    await page.mouse.wheel(0, 120);
+    await wheelUntil(page, 120, () => scrollTopOf(el(page, 'scroll-container')));
     await expect.poll(moves, { timeout: 10000 }).toBeGreaterThan(0);
     await expectStays(page, () =>
       expect(el(page, 'cell-1-name')).toHaveAttribute('data-highlighted', ''),

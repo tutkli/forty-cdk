@@ -1110,6 +1110,61 @@ export async function settleScroll(scroller: Locator): Promise<number> {
   );
 }
 
+export function scrollTopOf(scroller: Locator): Promise<number> {
+  return scroller.evaluate((node) => node.scrollTop);
+}
+
+export async function recordWheels(page: Page): Promise<() => Promise<number>> {
+  const baseline = await page.evaluate(() => {
+    const store = window as unknown as { __wheels?: number };
+    if (store.__wheels === undefined) {
+      store.__wheels = 0;
+      window.addEventListener(
+        'wheel',
+        () => {
+          store.__wheels = (store.__wheels ?? 0) + 1;
+        },
+        { capture: true, passive: true },
+      );
+    }
+    return store.__wheels;
+  });
+  return async () =>
+    (await page.evaluate(() => (window as unknown as { __wheels: number }).__wheels)) - baseline;
+}
+
+export const WHEEL_DELIVERY_WINDOW_MS = 2000;
+
+export const WHEEL_ATTEMPTS = 3;
+
+export async function wheelUntil(
+  page: Page,
+  deltaY: number,
+  signal: () => Promise<number>,
+): Promise<void> {
+  const baseline = await signal();
+  const wheels = await recordWheels(page);
+  for (let attempt = 1; attempt <= WHEEL_ATTEMPTS; attempt++) {
+    await page.mouse.wheel(0, deltaY);
+    const deadline = Date.now() + WHEEL_DELIVERY_WINDOW_MS;
+    while (Date.now() < deadline) {
+      if ((await signal()) !== baseline) return;
+      await afterFrames(page, 1);
+    }
+    test.info().annotations.push({
+      type: 'wheel-redispatch',
+      description:
+        `page.mouse.wheel(0, ${deltaY}) attempt ${attempt}: the signal held at ${baseline} ` +
+        `for ${WHEEL_DELIVERY_WINDOW_MS}ms, ${await wheels()} DOM wheel event(s) reached the page so far`,
+    });
+  }
+  expect(
+    await signal(),
+    `page.mouse.wheel(0, ${deltaY}) was dispatched ${WHEEL_ATTEMPTS} times and its signal never ` +
+      `left ${baseline}; ${await wheels()} DOM wheel event(s) reached the page`,
+  ).not.toBe(baseline);
+}
+
 export const DEFAULT_SCROLL_DISMISS_SUPPRESSION_MS = 200;
 
 export const DEFAULT_POINTER_SUPPRESSION_MS = 200;
