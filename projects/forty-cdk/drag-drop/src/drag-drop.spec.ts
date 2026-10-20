@@ -2614,6 +2614,67 @@ describe('ForDropList + ForDraggable', () => {
       expect(drop!.currentIndex).toBe(4);
     });
 
+    describe('scroll during the drag (#2349)', () => {
+      async function liftThenScroll(scroll: { listScrollTop: number; listTop: number }) {
+        TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+        const fixture = TestBed.createComponent(SingleListHost);
+        fixture.componentInstance.rows.set(
+          Array.from({ length: 6 }, (_, i) => ({ id: i + 1, label: `Row ${i + 1}` })),
+        );
+        fixture.detectChanges();
+        await flush(fixture);
+        const el = fixture.nativeElement as HTMLElement;
+        const counter = { n: 0 };
+        layout(el, counter);
+        const list = listEl(el);
+        let scrollTop = 0;
+        Object.defineProperty(list, 'scrollTop', {
+          configurable: true,
+          get: () => scrollTop,
+          set: () => {},
+        });
+        const ref = fixture.debugElement.children[0]!.injector.get(ForDropList);
+
+        const pending: { cb: FrameRequestCallback | null } = { cb: null };
+        makeRaf(pending);
+
+        ref.pointerLift(itemEl(el, 1), { x: 100, y: 10 });
+
+        scrollTop = scroll.listScrollTop;
+        const dy = scroll.listTop - scroll.listScrollTop;
+        stubRect(
+          list,
+          { left: 0, top: scroll.listTop, right: 200, bottom: scroll.listTop + 240 },
+          counter,
+        );
+        draggables(el).forEach((item, i) => {
+          stubRect(
+            item,
+            { left: 0, top: i * 20 + dy, right: 200, bottom: i * 20 + 20 + dy },
+            counter,
+          );
+        });
+
+        ref.pointerMove({ x: 100, y: 55 });
+        runFrame(pending);
+        ref.drop();
+        fixture.detectChanges();
+        return fixture.componentInstance.lastDrop();
+      }
+
+      it('commits the index under the pointer after the list itself scrolls', async () => {
+        const drop = await liftThenScroll({ listScrollTop: 40, listTop: 0 });
+        expect(drop!.previousIndex).toBe(0);
+        expect(drop!.currentIndex).toBe(4);
+      });
+
+      it('commits the index under the pointer after an ancestor or the viewport scrolls', async () => {
+        const drop = await liftThenScroll({ listScrollTop: 0, listTop: -40 });
+        expect(drop!.previousIndex).toBe(0);
+        expect(drop!.currentIndex).toBe(4);
+      });
+    });
+
     it('resolves cross-list transfer from cached geometry after lift', async () => {
       TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
       const fixture = TestBed.createComponent(ConnectedPerfHost);
