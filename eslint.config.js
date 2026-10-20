@@ -318,6 +318,114 @@ function resolveSameFileHelper(callNode, sourceCode) {
   return null;
 }
 
+const SYNCHRONOUS_CALLBACK_METHODS = new Set([
+  'every',
+  'filter',
+  'find',
+  'findIndex',
+  'findLast',
+  'findLastIndex',
+  'flatMap',
+  'forEach',
+  'map',
+  'reduce',
+  'reduceRight',
+  'some',
+]);
+
+const SANCTIONED_MARKER_WINDOW = 6;
+
+/** @param {import('estree').Node} node */
+function isInlineFunction(node) {
+  return node.type === 'ArrowFunctionExpression' || node.type === 'FunctionExpression';
+}
+
+/**
+ * The inline functions `callNode` runs before it returns, and therefore inside
+ * the reactive run of an effect that makes the call: the callbacks passed to
+ * `untracked(…)` or to an array iteration method, and the function an IIFE
+ * invokes. Any other nested function (an observer, a timer, a listener) runs
+ * outside that run, which is why the `effect()` rule family skips it.
+ *
+ * @param {import('estree').CallExpression} callNode
+ */
+function synchronousCallbacks(callNode) {
+  const callee = callNode.callee;
+  if (isInlineFunction(callee)) return [callee];
+  const runsItsArguments =
+    (callee.type === 'Identifier' && callee.name === 'untracked') ||
+    (callee.type === 'MemberExpression' &&
+      !callee.computed &&
+      callee.property.type === 'Identifier' &&
+      SYNCHRONOUS_CALLBACK_METHODS.has(callee.property.name));
+  return runsItsArguments ? callNode.arguments.filter(isInlineFunction) : [];
+}
+
+/**
+ * The callbacks an `effect(…)` or `afterRenderEffect(…)` call runs as a
+ * reactive context: its function argument, or every phase function of
+ * `afterRenderEffect`'s phase object. Empty for any other call.
+ *
+ * @param {import('estree').CallExpression} callNode
+ */
+function reactiveCallbacks(callNode) {
+  const callee = callNode.callee;
+  if (
+    callee.type !== 'Identifier' ||
+    (callee.name !== 'effect' && callee.name !== 'afterRenderEffect')
+  ) {
+    return [];
+  }
+  const spec = callNode.arguments[0];
+  if (!spec) return [];
+  if (isInlineFunction(spec)) return [spec];
+  if (callee.name === 'afterRenderEffect' && spec.type === 'ObjectExpression') {
+    return spec.properties
+      .filter((property) => property.type === 'Property' && isInlineFunction(property.value))
+      .map((property) => property.value);
+  }
+  return [];
+}
+
+/**
+ * The `@sanctioned-effect` / `@sanctioned-pull` line comment licensing the
+ * effect `callNode` creates, or `null`. Only the comments directly above the
+ * statement holding the call are candidates, so a marker cannot reach past the
+ * effect it sits on to license the next one, however short that one is; the
+ * line window keeps "directly above" literal across blank lines. Only a line
+ * comment whose text starts with the phrase counts: a block comment quoting the
+ * marker, or prose mentioning it mid-sentence, documents the ledger rather than
+ * joining it.
+ *
+ * @param {import('estree').CallExpression & { parent?: unknown }} callNode
+ * @param {import('eslint').SourceCode} sourceCode
+ * @param {RegExp} pattern
+ */
+function sanctionedMarkerFor(callNode, sourceCode, pattern) {
+  let anchor = callNode;
+  for (let current = callNode.parent; current; current = current.parent) {
+    if (isInlineFunction(current) || current.type === 'FunctionDeclaration') break;
+    if (
+      current.type === 'ExpressionStatement' ||
+      current.type === 'VariableDeclaration' ||
+      current.type === 'PropertyDefinition' ||
+      current.type === 'ReturnStatement'
+    ) {
+      anchor = current.parent?.type === 'ExportNamedDeclaration' ? current.parent : current;
+      break;
+    }
+  }
+  const line = anchor.loc.start.line;
+  for (const comment of sourceCode.getCommentsBefore(anchor)) {
+    if (comment.type !== 'Line' || !pattern.test(comment.value)) continue;
+    const end = comment.loc.end.line;
+    if (end <= line && line - end <= SANCTIONED_MARKER_WINDOW) {
+      return comment;
+    }
+  }
+  return null;
+}
+
 /**
  * Tiny inline plugin holding rules that don't fit the off-the-shelf
  * AST-selector / no-restricted-imports machinery.
@@ -1590,9 +1698,8 @@ const fortyCdkPlugin = {
          *
          * The candidate set is `getCommentsBefore` — the comments between the
          * previous token and this statement — rather than every comment in the
-         * file within `MARKER_WINDOW` lines. Its siblings can afford the looser
-         * proximity match because an `effect(` opens a multi-line body that keeps
-         * two candidate sites apart; a `detectChanges()` is one line, so two
+         * file within `MARKER_WINDOW` lines, as for its effect-marker siblings
+         * (`sanctionedMarkerFor`). A `detectChanges()` is one line, so two
          * reportable calls fit inside the window trivially (`floating.spec.ts`
          * already has marker → call → two assertions) and a file-wide scan would
          * let the first one's marker license the second silently. Adjacency is
@@ -2260,14 +2367,22 @@ const fortyCdkPlugin = {
     //
     // Scope and escape hatches (kept deliberately narrow to avoid false
     // positives on legitimate bridge effects):
-    //   - Only the effect callback's *own* synchronous statements are
-    //     inspected. Reads / writes inside nested function expressions (a
-    //     `ResizeObserver` / event callback, a `queueMicrotask`, etc.) fire
-    //     outside the reactive scope, so they are not counted.
+    //   - Only what runs synchronously inside the effect's reactive run is
+    //     inspected: the callback's own statements, plus the callbacks of
+    //     `untracked(…)`, of an array iteration method (`forEach`, `map`,
+    //     `filter`, …) and of an IIFE (#2378). Reads / writes inside any other
+    //     nested function (a `ResizeObserver` / event callback, a
+    //     `queueMicrotask`, etc.) fire outside the reactive scope, so they are
+    //     not counted.
     //   - A read wrapped in `untracked(() => sig())` is the documented escape
     //     hatch for genuinely needing the current value without subscribing —
     //     such reads are ignored, so pairing `untracked()` reads with writes
-    //     does not trip the rule.
+    //     does not trip the rule. A *write* inside `untracked()` is not hidden:
+    //     it still notifies the effect, so `const v = s(); untracked(() =>
+    //     s.set(v + 1))` is the same cycle as `s.set(s() + 1)`.
+    //   - `afterRenderEffect()` is a reactive context too, so its callback — or
+    //     every phase of its phase object, analyzed together — is checked the
+    //     same way, here and in the two marker rules below.
     //   - Writes are matched by callee shape (`<base>.set` / `<base>.update`)
     //     and by arity — one argument only, since `WritableSignal.set(v)` takes
     //     one and `Map.set(k, v)` takes two (#1606). Here that condition is
@@ -2325,37 +2440,45 @@ const fortyCdkPlugin = {
         function exprKey(node) {
           return sourceCode.getText(node);
         }
-        // Walk one function body, collecting tracked reads, writes, and the
-        // same-file helper calls worth following, without descending into
-        // nested function scopes or `untracked(…)`. `followHelpers` is false
-        // for a helper's own body, which is what bounds resolution to one level.
+        // Walk function bodies, collecting tracked reads, writes, and the
+        // same-file helper calls worth following. Nested functions are skipped
+        // unless they run synchronously inside the effect (`synchronousCallbacks`).
+        // Everything reached through `untracked(…)` is walked with `untracked`
+        // set: its reads are not tracked, but its writes still notify the effect.
+        // `followHelpers` is false for a helper's own body, which is what bounds
+        // resolution to one level.
         function collect(bodyNode, followHelpers) {
           const trackedReads = new Map(); // key -> first read node
           const writes = []; // { key, node }
-          const helperCalls = []; // { name, body, node }
-          const stack = [bodyNode];
+          const helperCalls = []; // { name, body, node, untracked }
+          const synchronous = new Map();
+          const stack = [[bodyNode, false]];
           while (stack.length) {
-            const node = stack.pop();
+            const [node, untracked] = stack.pop();
             if (!node || typeof node !== 'object') continue;
             if (Array.isArray(node)) {
-              for (const item of node) stack.push(item);
+              for (const item of node) stack.push([item, untracked]);
               continue;
             }
             if (!node.type) continue;
-            // Do not descend into nested function scopes — their reads / writes
-            // run outside this effect's reactive run (observer callbacks, etc.).
             if (
               node.type === 'FunctionExpression' ||
               node.type === 'ArrowFunctionExpression' ||
               node.type === 'FunctionDeclaration'
             ) {
+              if (synchronous.has(node)) stack.push([node.body, synchronous.get(node)]);
               continue;
             }
             if (node.type === 'CallExpression') {
               const callee = node.callee;
-              // `untracked(() => …)` — the documented escape hatch. Skip the
-              // whole subtree; the read inside is intentionally not tracked.
-              if (callee.type === 'Identifier' && callee.name === 'untracked') {
+              // `untracked(() => …)` — the documented escape hatch for a read.
+              // It hides the reads inside it, not the writes.
+              const untrackedCall = callee.type === 'Identifier' && callee.name === 'untracked';
+              for (const callback of synchronousCallbacks(node)) {
+                synchronous.set(callback, untracked || untrackedCall);
+              }
+              if (untrackedCall) {
+                for (const arg of node.arguments) stack.push([arg, true]);
                 continue;
               }
               // Write: `<base>.set(…)` / `<base>.update(…)`.
@@ -2369,7 +2492,7 @@ const fortyCdkPlugin = {
                   writes.push({ key: exprKey(callee.object), node });
                 }
                 // Still descend into the arguments — a read may live there.
-                for (const arg of node.arguments) stack.push(arg);
+                for (const arg of node.arguments) stack.push([arg, untracked]);
                 continue;
               }
               // A same-file helper the effect delegates to. Resolved before the
@@ -2378,8 +2501,8 @@ const fortyCdkPlugin = {
               // resolves to a function declaration is the helper, not a signal.
               const helper = followHelpers ? resolveSameFileHelper(node, sourceCode) : null;
               if (helper) {
-                helperCalls.push({ ...helper, node });
-                for (const arg of node.arguments) stack.push(arg);
+                helperCalls.push({ ...helper, node, untracked });
+                for (const arg of node.arguments) stack.push([arg, untracked]);
                 continue;
               }
               // Tracked read: a zero-argument call `<sig>()` whose callee is an
@@ -2389,7 +2512,7 @@ const fortyCdkPlugin = {
                 (callee.type === 'Identifier' || callee.type === 'MemberExpression')
               ) {
                 const key = exprKey(callee);
-                if (!trackedReads.has(key)) {
+                if (!untracked && !trackedReads.has(key)) {
                   trackedReads.set(key, node);
                 }
                 // A read has no children worth scanning for this rule.
@@ -2398,7 +2521,7 @@ const fortyCdkPlugin = {
             }
             for (const key in node) {
               if (key === 'parent' || key === 'loc' || key === 'range') continue;
-              stack.push(node[key]);
+              stack.push([node[key], untracked]);
             }
           }
           return { trackedReads, writes, helperCalls };
@@ -2406,22 +2529,29 @@ const fortyCdkPlugin = {
         // The effect's own reads / writes, merged with those of every same-file
         // helper it calls. A merged entry remembers the helper it came from and
         // is anchored on the call site, so the report lands on the effect the
-        // reader has to fix and names the helper that completes the cycle.
-        function analyzeCallback(fnNode) {
-          const own = collect(fnNode.body, true);
+        // reader has to fix and names the helper that completes the cycle. A
+        // helper called inside `untracked(…)` contributes its writes only.
+        function analyzeCallbacks(callbacks) {
+          const own = collect(
+            callbacks.map((callback) => callback.body),
+            true,
+          );
           const trackedReads = new Map();
           for (const [key, node] of own.trackedReads) {
             trackedReads.set(key, { node, helper: null });
           }
           const writes = own.writes.map((write) => ({ ...write, helper: null }));
-          const analyzed = new Set();
+          const analyzed = { tracked: new Set(), untracked: new Set() };
           for (const call of own.helperCalls) {
-            if (analyzed.has(call.body)) continue;
-            analyzed.add(call.body);
+            const seen = call.untracked ? analyzed.untracked : analyzed.tracked;
+            if (seen.has(call.body)) continue;
+            seen.add(call.body);
             const inner = collect(call.body, false);
-            for (const key of inner.trackedReads.keys()) {
-              if (!trackedReads.has(key)) {
-                trackedReads.set(key, { node: call.node, helper: call.name });
+            if (!call.untracked) {
+              for (const key of inner.trackedReads.keys()) {
+                if (!trackedReads.has(key)) {
+                  trackedReads.set(key, { node: call.node, helper: call.name });
+                }
               }
             }
             for (const write of inner.writes) {
@@ -2432,16 +2562,9 @@ const fortyCdkPlugin = {
         }
         return {
           CallExpression(node) {
-            const callee = node.callee;
-            if (callee.type !== 'Identifier' || callee.name !== 'effect') return;
-            const cb = node.arguments[0];
-            if (
-              !cb ||
-              (cb.type !== 'ArrowFunctionExpression' && cb.type !== 'FunctionExpression')
-            ) {
-              return;
-            }
-            const { trackedReads, writes } = analyzeCallback(cb);
+            const callbacks = reactiveCallbacks(node);
+            if (callbacks.length === 0) return;
+            const { trackedReads, writes } = analyzeCallbacks(callbacks);
             const reported = new Set();
             for (const write of writes) {
               const read = trackedReads.get(write.key);
@@ -2492,9 +2615,12 @@ const fortyCdkPlugin = {
     //     the author was already writing clears it. DOM writes (`setAttribute`,
     //     `toggleAttribute`, `style.setProperty`, `el.value = …`) are what
     //     `effect()` is for and never match.
-    //   - Does not descend into nested function scopes, matching
-    //     `no-effect-state-propagation`: a write inside an observer callback
-    //     runs outside the effect's reactive run.
+    //   - Descends into a nested function only when it runs synchronously
+    //     inside the effect (`untracked(…)`, an array iteration callback, an
+    //     IIFE), matching `no-effect-state-propagation`: a write inside an
+    //     observer callback runs outside the effect's reactive run, while one
+    //     wrapped in `untracked()` is still state propagation and still needs
+    //     the marker (#2378).
     //   - Follows a call to a helper declared in the **same file**, one level
     //     deep, exactly as `no-effect-state-propagation` does (#1575), so the
     //     write one hoisted-helper call away that `element-size` makes is now
@@ -2502,14 +2628,17 @@ const fortyCdkPlugin = {
     //     is the same one: a call into another file is not followed, so the
     //     marker is still required by convention there for `grep
     //     @sanctioned-effect` to stay the complete ledger.
-    //   - A marker licenses only the effect it sits on. A bare
-    //     `@sanctioned-effect` with no invariant / no rationale is reported as
-    //     malformed rather than accepted.
-    //   - Only a **line comment whose text starts with the phrase** is a marker.
-    //     The window is proximity-based, so without that anchor a JSDoc block
-    //     quoting `@sanctioned-effect(<invariant>)` — the shape conventions.md
-    //     asks prose to avoid precisely so the `grep` ledger stays honest — would
-    //     silently license the next effect within six lines. Documenting the
+    //   - A marker licenses only the effect it sits on. Its candidates are the
+    //     comments directly above the statement holding the `effect(` call
+    //     (`getCommentsBefore`), within six lines, so it cannot reach past the
+    //     preceding effect: two one-line effects fit inside any line window,
+    //     and a file-wide proximity scan let one marker license both (#2378). A
+    //     bare `@sanctioned-effect` with no invariant / no rationale is
+    //     reported as malformed rather than accepted.
+    //   - Only a **line comment whose text starts with the phrase** is a marker,
+    //     so a JSDoc block quoting `@sanctioned-effect(<invariant>)` — the shape
+    //     conventions.md asks prose to avoid precisely so the `grep` ledger
+    //     stays honest — cannot license the effect below it. Documenting the
     //     ledger must not join it.
     //
     // See: .claude/rules/conventions.md § "The sanctioned-effect marker".
@@ -2535,19 +2664,18 @@ const fortyCdkPlugin = {
         const sourceCode = context.sourceCode;
         const MARKER = /^\s*@sanctioned-effect/;
         const WELL_FORMED = /@sanctioned-effect\([a-z][a-z0-9-]*\)\s*:\s*\S/;
-        // How many lines above the `effect(` call the marker may sit. A
-        // multi-line rationale is normal, so this is a small window rather
-        // than "the previous line" exactly.
-        const MARKER_WINDOW = 6;
 
         /**
-         * Collects `.set(…)` / `.update(…)` calls in one function body, plus the
-         * same-file helper calls worth following. `followHelpers` is false for a
-         * helper's own body, which is what bounds resolution to one level.
+         * Collects `.set(…)` / `.update(…)` calls in function bodies, plus the
+         * same-file helper calls worth following. A nested function is walked
+         * only when it runs synchronously inside the effect. `followHelpers` is
+         * false for a helper's own body, which is what bounds resolution to one
+         * level.
          */
         function collect(bodyNode, followHelpers) {
           const writes = [];
           const helperCalls = [];
+          const synchronous = new Set();
           const stack = [bodyNode];
           while (stack.length) {
             const node = stack.pop();
@@ -2562,9 +2690,11 @@ const fortyCdkPlugin = {
               node.type === 'ArrowFunctionExpression' ||
               node.type === 'FunctionDeclaration'
             ) {
+              if (synchronous.has(node)) stack.push(node.body);
               continue;
             }
             if (node.type === 'CallExpression') {
+              for (const callback of synchronousCallbacks(node)) synchronous.add(callback);
               if (
                 node.callee.type === 'MemberExpression' &&
                 !node.callee.computed &&
@@ -2597,8 +2727,11 @@ const fortyCdkPlugin = {
          * report lands on the effect the marker would license and names the
          * helper that performs the write.
          */
-        function writesIn(fnNode) {
-          const own = collect(fnNode.body, true);
+        function writesIn(callbacks) {
+          const own = collect(
+            callbacks.map((callback) => callback.body),
+            true,
+          );
           const writes = own.writes.map((write) => ({ ...write, helper: null }));
           const analyzed = new Set();
           for (const call of own.helperCalls) {
@@ -2611,43 +2744,14 @@ const fortyCdkPlugin = {
           return writes;
         }
 
-        /**
-         * The `@sanctioned-effect` comment covering `node`, or `null`. Matched
-         * by proximity (any line comment ending within `MARKER_WINDOW` lines
-         * above the call) rather than by AST attachment, so it works whether the
-         * `effect(` call is a bare statement, an assignment, or nested in a
-         * constructor body. Only a line comment whose text *starts* with the
-         * phrase counts: a block comment quoting the marker, or prose mentioning
-         * it mid-sentence, documents the ledger rather than joining it, and must
-         * not license a nearby effect.
-         */
-        function markerFor(node) {
-          const line = node.loc.start.line;
-          for (const comment of sourceCode.getAllComments()) {
-            if (comment.type !== 'Line' || !MARKER.test(comment.value)) continue;
-            const end = comment.loc.end.line;
-            if (end <= line && line - end <= MARKER_WINDOW) {
-              return comment;
-            }
-          }
-          return null;
-        }
-
         return {
           CallExpression(node) {
-            if (node.callee.type !== 'Identifier' || node.callee.name !== 'effect') return;
-            const callback = node.arguments[0];
-            if (
-              !callback ||
-              (callback.type !== 'ArrowFunctionExpression' &&
-                callback.type !== 'FunctionExpression')
-            ) {
-              return;
-            }
-            const writes = writesIn(callback);
+            const callbacks = reactiveCallbacks(node);
+            if (callbacks.length === 0) return;
+            const writes = writesIn(callbacks);
             if (writes.length === 0) return;
 
-            const marker = markerFor(node);
+            const marker = sanctionedMarkerFor(node, sourceCode, MARKER);
             if (marker && WELL_FORMED.test(marker.value)) return;
             if (marker) {
               context.report({ node: marker, messageId: 'malformedMarker' });
@@ -2726,8 +2830,8 @@ const fortyCdkPlugin = {
     //     short by construction — a helper earns a place on it only by existing
     //     to run a pull.
     //   - Write detection matches `require-sanctioned-effect-marker` exactly
-    //     (method name `set` / `update`, one-argument calls only, no descent into
-    //     nested function scopes, same-file helpers followed one level deep), so
+    //     (method name `set` / `update`, one-argument calls only, descent into
+    //     synchronous callbacks only, same-file helpers followed one level deep), so
     //     the residual gap is the same: a write behind a cross-file collaborator
     //     call is invisible. That gap is what the Combobox bridge above sits in,
     //     and `tryResolvePending` is built for it on purpose — its write is the
@@ -2758,11 +2862,12 @@ const fortyCdkPlugin = {
     //     one line, where the documented directive silences both and reports no
     //     unused-directive warning to say so; the author has no other move
     //     either, because a disable inside the helper would suppress nothing.
-    //   - A marker licenses only the effect it sits on, and a bare
-    //     `@sanctioned-pull` with no store / no rationale is malformed. As with
-    //     the sibling, only a line comment whose text starts with the phrase
-    //     counts, so a JSDoc block quoting the marker cannot license the next
-    //     effect within the window.
+    //   - A marker licenses only the effect it sits on, anchored exactly like
+    //     the sibling's on the comments directly above the statement holding the
+    //     `effect(` call, and a bare `@sanctioned-pull` with no store / no
+    //     rationale is malformed. As with the sibling, only a line comment whose
+    //     text starts with the phrase counts, so a JSDoc block quoting the marker
+    //     cannot license the effect below it.
     //
     // See: .claude/rules/conventions.md § "The sanctioned-pull marker".
     // Fixture: `projects/forty-cdk/eslint-rules-fixtures/require-sanctioned-pull-marker.fixture.ts`.
@@ -2796,17 +2901,19 @@ const fortyCdkPlugin = {
         const PULL_RUNNERS = new Set(['runAutoHighlightBridge', 'runVirtualizedNavigatorBridge']);
         const MARKER = /^\s*@sanctioned-pull/;
         const WELL_FORMED = /@sanctioned-pull\([a-z][a-z0-9-]*\)\s*:\s*\S/;
-        const MARKER_WINDOW = 6;
 
         /**
-         * Collects the pulls and signal writes of one function body, plus the
-         * same-file helper calls worth following. `followHelpers` is false for a
-         * helper's own body, which is what bounds resolution to one level.
+         * Collects the pulls and signal writes of function bodies, plus the
+         * same-file helper calls worth following. A nested function is walked
+         * only when it runs synchronously inside the effect. `followHelpers` is
+         * false for a helper's own body, which is what bounds resolution to one
+         * level.
          */
         function collect(bodyNode, followHelpers) {
           const pulls = [];
           const writes = [];
           const helperCalls = [];
+          const synchronous = new Set();
           const stack = [bodyNode];
           while (stack.length) {
             const node = stack.pop();
@@ -2821,9 +2928,11 @@ const fortyCdkPlugin = {
               node.type === 'ArrowFunctionExpression' ||
               node.type === 'FunctionDeclaration'
             ) {
+              if (synchronous.has(node)) stack.push(node.body);
               continue;
             }
             if (node.type === 'CallExpression') {
+              for (const callback of synchronousCallbacks(node)) synchronous.add(callback);
               const callee = node.callee;
               const member =
                 callee.type === 'MemberExpression' &&
@@ -2863,8 +2972,11 @@ const fortyCdkPlugin = {
          * node they were found on, so the two branches never share a line and the
          * documented disable stays scoped to the misread write.
          */
-        function analyzeCallback(fnNode) {
-          const own = collect(fnNode.body, true);
+        function analyzeCallbacks(callbacks) {
+          const own = collect(
+            callbacks.map((callback) => callback.body),
+            true,
+          );
           const pulls = own.pulls.map((pull) => ({ ...pull, helper: null }));
           const writes = [...own.writes];
           const analyzed = new Set();
@@ -2882,36 +2994,11 @@ const fortyCdkPlugin = {
           return { pulls, writes };
         }
 
-        /**
-         * The `@sanctioned-pull` comment covering `node`, or `null`. Matched by
-         * proximity rather than AST attachment, and restricted to a line comment
-         * whose text starts with the phrase, mirroring the sanctioned-effect
-         * marker so both read the same way at a call site.
-         */
-        function markerFor(node) {
-          const line = node.loc.start.line;
-          for (const comment of sourceCode.getAllComments()) {
-            if (comment.type !== 'Line' || !MARKER.test(comment.value)) continue;
-            const end = comment.loc.end.line;
-            if (end <= line && line - end <= MARKER_WINDOW) {
-              return comment;
-            }
-          }
-          return null;
-        }
-
         return {
           CallExpression(node) {
-            if (node.callee.type !== 'Identifier' || node.callee.name !== 'effect') return;
-            const callback = node.arguments[0];
-            if (
-              !callback ||
-              (callback.type !== 'ArrowFunctionExpression' &&
-                callback.type !== 'FunctionExpression')
-            ) {
-              return;
-            }
-            const { pulls, writes } = analyzeCallback(callback);
+            const callbacks = reactiveCallbacks(node);
+            if (callbacks.length === 0) return;
+            const { pulls, writes } = analyzeCallbacks(callbacks);
             if (pulls.length === 0) return;
 
             if (writes.length > 0) {
@@ -2923,7 +3010,7 @@ const fortyCdkPlugin = {
               });
             }
 
-            const marker = markerFor(node);
+            const marker = sanctionedMarkerFor(node, sourceCode, MARKER);
             if (marker && WELL_FORMED.test(marker.value)) return;
             if (marker) {
               context.report({ node: marker, messageId: 'malformedMarker' });

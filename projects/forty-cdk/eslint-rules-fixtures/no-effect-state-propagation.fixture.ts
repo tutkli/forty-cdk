@@ -12,6 +12,9 @@
 
 declare function effect(fn: () => void): void;
 declare function untracked<T>(fn: () => T): T;
+declare function afterRenderEffect(
+  spec: (() => void) | Record<string, (value?: unknown) => unknown>,
+): void;
 declare interface WritableSignal<T> {
   (): T;
   set(value: T): void;
@@ -24,6 +27,7 @@ declare const box: WritableSignal<number>;
 declare const measured: { width: number };
 declare const registry: { bump(): void };
 declare function observe(cb: () => void): void;
+declare const list: () => readonly number[];
 declare const slots: { (): readonly string[]; set(index: number, value: string): void };
 
 // Expected: 1× forty-cdk/no-effect-state-propagation
@@ -127,4 +131,46 @@ effect(() => {
 // signal — the #1572 cycle lived in another file and would still slip through.
 effect(() => {
   registry.bump();
+});
+
+// Expected: 1× forty-cdk/no-effect-state-propagation
+// `untracked()` hides a read, not a write: the write still notifies this
+// effect, which tracked `s` one line earlier, so the cycle is the same one.
+effect(() => {
+  const v = s();
+  untracked(() => s.set(v + 1));
+});
+
+// Expected: 1× forty-cdk/no-effect-state-propagation
+// An array iteration callback runs inside the effect's own reactive run, so its
+// read and write pair exactly as they would written inline.
+effect(() => {
+  list().forEach(() => s.set(s() + 1));
+});
+
+// Expected: 1× forty-cdk/no-effect-state-propagation
+// An immediately invoked function is the effect's own code too.
+effect(() => {
+  (() => {
+    s.set(s() + 1);
+  })();
+});
+
+// Expected: 1× forty-cdk/no-effect-state-propagation
+// `afterRenderEffect()` is a reactive context like `effect()`.
+afterRenderEffect(() => {
+  s.set(s() + 1);
+});
+
+// Expected: 1× forty-cdk/no-effect-state-propagation
+// Its phase form spreads the cycle over two phases of one effect.
+afterRenderEffect({
+  earlyRead: () => s(),
+  write: () => s.set(1),
+});
+
+// Allowed: read and write both sit inside `untracked()`, so the effect never
+// tracks the signal it writes.
+effect(() => {
+  untracked(() => s.set(s() + 1));
 });

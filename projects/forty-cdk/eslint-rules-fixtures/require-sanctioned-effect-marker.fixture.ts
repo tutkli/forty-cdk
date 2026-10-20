@@ -12,6 +12,9 @@
 
 declare function effect(fn: () => void): void;
 declare function untracked<T>(fn: () => T): T;
+declare function afterRenderEffect(
+  spec: (() => void) | Record<string, (value?: unknown) => unknown>,
+): void;
 declare interface WritableSignal<T> {
   (): T;
   set(value: T): void;
@@ -24,6 +27,7 @@ declare const host: HTMLElement;
 declare const mirrored: WritableSignal<number>;
 declare const measured: { width: number };
 declare function observe(cb: () => void): void;
+declare const items: () => readonly string[];
 declare const scratch: Map<string, number>;
 
 // Expected: 1× forty-cdk/require-sanctioned-effect-marker
@@ -124,3 +128,41 @@ class MirrorsInAMethod {
 effect(() => {
   syncMirrored();
 });
+
+// Expected: 1× forty-cdk/require-sanctioned-effect-marker
+// Wrapping the write in `untracked()` is still state propagation; it runs
+// synchronously inside the effect and needs the marker like any other write.
+effect(() => {
+  untracked(() => out.set(disabled() ? 1 : 0));
+});
+
+// Expected: 1× forty-cdk/require-sanctioned-effect-marker
+// So does a write inside an array iteration callback.
+effect(() => {
+  items().forEach(() => out.update((value) => value + 1));
+});
+
+// Expected: 1× forty-cdk/require-sanctioned-effect-marker
+// `afterRenderEffect()` writes are held to the same ledger.
+afterRenderEffect(() => {
+  out.set(measured.width);
+});
+
+// Expected: 1× forty-cdk/require-sanctioned-effect-marker
+// Including a write in one phase of its phase form.
+afterRenderEffect({
+  write: () => out.set(measured.width),
+});
+
+// Allowed: a well-formed marker licenses an `afterRenderEffect()` write.
+// @sanctioned-effect(external-source): mirrors a measurement taken after render.
+afterRenderEffect(() => {
+  out.set(measured.width);
+});
+
+// Expected: 1× forty-cdk/require-sanctioned-effect-marker
+// A marker licenses the effect it sits on and nothing past it, even when the
+// next effect is one line and falls inside the marker's line window.
+// @sanctioned-effect(external-source): the first write mirrors a measurement.
+effect(() => out.set(measured.width));
+effect(() => open.set(disabled()));

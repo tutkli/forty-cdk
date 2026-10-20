@@ -14,6 +14,9 @@
 
 declare function effect(fn: () => void): void;
 declare function untracked<T>(fn: () => T): T;
+declare function afterRenderEffect(
+  spec: (() => void) | Record<string, (value?: unknown) => unknown>,
+): void;
 declare interface WritableSignal<T> {
   (): T;
   set(value: T): void;
@@ -214,3 +217,30 @@ function pullAndTouchSilencedBuilder(): void {
 effect(() => {
   pullAndTouchSilencedBuilder();
 });
+
+// Expected: 1× forty-cdk/require-sanctioned-pull-marker (pullWithWrite)
+// A write inside `untracked()` still runs on every re-run the pull causes.
+// @sanctioned-pull(label-cache-window): the option window is transient.
+effect(() => {
+  labelCache.prime();
+  untracked(() => activeId.set(labelCache.windowEntries()[0] ?? null));
+});
+
+// Expected: 1× forty-cdk/require-sanctioned-pull-marker (missingMarker)
+// A pull inside an array iteration callback runs inside the effect's own run.
+effect(() => {
+  items().forEach(() => labelCache.prime());
+});
+
+// Expected: 1× forty-cdk/require-sanctioned-pull-marker (missingMarker)
+// `afterRenderEffect()` pulls are held to the same ledger.
+afterRenderEffect(() => {
+  labelCache.prime();
+});
+
+// Expected: 1× forty-cdk/require-sanctioned-pull-marker (missingMarker)
+// A marker licenses the effect it sits on and nothing past it, even when the
+// next effect is one line and falls inside the marker's line window.
+// @sanctioned-pull(label-cache-window): the option window is transient.
+effect(() => labelCache.prime());
+effect(() => runVirtualizedNavigatorBridge({ items }));
