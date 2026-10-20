@@ -47,8 +47,7 @@ import { injectSelectContext, type SelectContext } from './select-context';
  * - **non-modal (default)** — the listbox is anchored to the trigger and
  *   branches on `[forSelect].position`:
  *   - `'popper'` (default) — full anchored placement (`side`, `align`,
- *     `sideOffset`, `alignOffset`, `flip`, `shift`, `arrow`,
- *     `hideWhenDetached`).
+ *     `sideOffset`, `alignOffset`, `flip`, `shift`, `hideWhenDetached`).
  *   - `'item-aligned'` — the listbox overlays the trigger so the selected
  *     option's center aligns with the trigger's center. The anchored-placement
  *     inputs are no-ops in this mode.

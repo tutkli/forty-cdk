@@ -141,7 +141,7 @@ export type ForSelectOverlayContext<T = unknown> = ListboxOverlayPieceContext<
 export interface ForSelectContext<T = unknown> {
   /**
    * The current selection, as a read-only signal. Mutate it through the guarded
-   * methods (`activate` / `commitOnTab`) or the root's `[(value)]` binding — a
+   * methods (`activate` / `selectAll`) or the root's `[(value)]` binding — a
    * direct write would bypass the root's disabled / readonly guards and
    * `markTouched`.
    */
@@ -187,9 +187,10 @@ export interface ForSelectContext<T = unknown> {
 
   /**
    * Multi-select only (APG range keyboard, Ctrl/Cmd+A). Add every enabled
-   * option to the selection, or remove them when they are all already selected
-   * (toggle). Selected values that are not an enabled rendered option are kept.
-   * No-op in single mode, disabled, readonly, or the virtualized path.
+   * rendered option to the selection, or remove them when they are all already
+   * selected (toggle). Selected values that are not an enabled rendered option
+   * are kept. In the virtualized path that is the rendered window only, not the
+   * whole source. No-op in single mode, disabled, or readonly.
    */
   selectAll(): void;
 

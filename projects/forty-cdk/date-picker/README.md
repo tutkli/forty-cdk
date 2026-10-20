@@ -54,7 +54,7 @@ Presence in the DOM is yours: wrap `[forDatePickerContent]` in `@if (picker.open
 
 ## Examples
 
-Open the popover from the trigger and pick a day: the trigger keeps `data-placeholder` until something is chosen, and its `data-state` follows the overlay.
+Open the popover from the trigger and pick a day: the `[forDatePickerValue]` inside the trigger keeps `data-placeholder` until something is chosen, and the trigger's `data-state` follows the overlay.
 
 ```ts
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';

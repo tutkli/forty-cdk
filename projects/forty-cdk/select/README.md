@@ -53,7 +53,7 @@ It implements the select-only combobox pattern (`role="combobox"` on the trigger
 
 ## Examples
 
-Open the listbox from the trigger, move with the arrow keys and commit with `Enter`. Until something is chosen, `data-placeholder` stays on the trigger.
+Open the listbox from the trigger, move with the arrow keys and commit with `Enter`. Until something is chosen, the `[forSelectValue]` inside the trigger keeps `data-placeholder`.
 
 ```ts
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
@@ -715,7 +715,7 @@ Implements the [WAI-ARIA select-only combobox pattern](https://www.w3.org/WAI/AR
 - Apply each option directive to a `<button>` so Space / Enter activation come from native button behavior. The listbox doesn't intercept them.
 - Disabled options keep `tabindex="-1"` and `aria-disabled="true"` (per APG): still reachable by a screen reader, but click and keyboard activation are no-ops, and a mouse press on one leaves focus where it was, so arrow keys and typeahead carry on from the option that had it.
 - A mouse press on the listbox surface that lands on no focusable element (padding, a `[forSelectGroupLabel]`, a `[forSelectSeparator]`) is cancelled, so focus stays on the option that had it and the arrow keys keep working. A press on an option still focuses it in every browser. A press on your own `<button>` inside the surface is left to the browser, and macOS Safari and Firefox do not focus a `<button>` on a press.
-- `[forSelectSeparator]` never registers with the listbox's option collection, so it's skipped during navigation and typeahead automatically. It carries `role="separator"` and emits `aria-orientation` only for `orientation="vertical"`, because `horizontal` is the ARIA default; `data-orientation` is always stamped for styling. Set `decorative` when the surrounding options already convey the split. `decorative` switches the line to `role="none"` and drops `aria-orientation`, matching the [shared separator emission policy](../separator/README.md#accessibility).
+- `[forSelectSeparator]` is skipped by navigation and typeahead. It is always presentational: `role="none"` and no `aria-orientation`, because a `role="listbox"` may only own `option` / `group` children (`aria-required-children`). `data-orientation` is always stamped for styling. When the split must be announced, wrap the options on each side in a `[forSelectGroup]` with a `[forSelectGroupLabel]`.
 - `[forSelectGroup]` is purely advisory grouping: options inside still register flatly with the root, so navigation flows through groups without interruption.
 - The trigger is exempt from the dismissible layer's outside-pointer checks, so a click on the trigger while the listbox is open routes through `(click)` (toggle) instead of double-firing as an outside dismissal.
 - **`data-highlighted=""`** is reflected on the active `[forSelectOption]` (the hovered one, else the focused one) so consumers can paint a uniform focus ring shared with the listbox / menu / combobox primitives. It follows the pointer as well as the keyboard (see [Pointer highlight](#pointer-highlight)), so it is the one hook to style rather than pairing it with `:hover`.

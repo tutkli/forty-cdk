@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Select, Combobox — BREAKING.** `[forSelectSeparator]` and `[forComboboxSeparator]` are always
+  presentational: `role="none"` and no `aria-orientation`, with `data-orientation` still stamped
+  for styling ([#2393](https://github.com/tutkli/forty-cdk/issues/2393)). Both sit inside a
+  `role="listbox"`, which may own only `option` and `group` children, so the former default
+  `role="separator"` failed axe's `aria-required-children` on every select and combobox built from
+  the documented anatomy. The `decorative` input is removed. **Migrate** by deleting any
+  `[decorative]` binding, and wrap the options on each side in a `[forSelectGroup]` /
+  `[forComboboxGroup]` with a group label where the split must be announced.
+
 ## [0.39.0] - 2026-10-18
 
 ### Added
