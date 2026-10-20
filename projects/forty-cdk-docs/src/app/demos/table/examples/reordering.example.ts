@@ -186,10 +186,6 @@ function personField(person: Person, column: PersonColumn): string {
       opacity: 0.4;
     }
 
-    .tbl-row[data-drag-over] {
-      background: color-mix(in srgb, var(--ex-accent, #0e7c6b) 10%, transparent);
-    }
-
     .tbl-ph {
       box-sizing: border-box;
       border: 2px dashed var(--ex-accent, #0e7c6b);

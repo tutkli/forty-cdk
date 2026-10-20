@@ -308,19 +308,19 @@ const FALLBACK_WIDTH: Record<PersonColumn, number> = {
     }
 
     .ctbl-sort-label::after {
-      content: ' ↕';
+      content: ' ↕' / '';
       font-size: 0.8em;
       opacity: 0.35;
     }
 
     .ctbl-head-cell[data-sorted='ascending'] .ctbl-sort-label::after {
-      content: ' ▲';
+      content: ' ▲' / '';
       opacity: 1;
       color: var(--ex-accent, #0e7c6b);
     }
 
     .ctbl-head-cell[data-sorted='descending'] .ctbl-sort-label::after {
-      content: ' ▼';
+      content: ' ▼' / '';
       opacity: 1;
       color: var(--ex-accent, #0e7c6b);
     }
@@ -360,8 +360,13 @@ const FALLBACK_WIDTH: Record<PersonColumn, number> = {
     }
 
     .ctbl-resizer:hover::before,
+    .ctbl-resizer:focus-visible::before,
     .ctbl-resizer[data-resizing]::before {
       background: var(--ex-accent, #0e7c6b);
+    }
+
+    .ctbl-resizer:focus-visible {
+      outline: none;
     }
 
     .ctbl-ph {

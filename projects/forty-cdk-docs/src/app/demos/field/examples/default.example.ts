@@ -43,7 +43,7 @@ import { ForField, ForFieldControl, ForFieldDescription, ForLabel } from 'forty-
     }
 
     .field[data-required] .field-label-text::after {
-      content: ' *';
+      content: ' *' / '';
       color: var(--ex-danger, #b3261e);
     }
 
