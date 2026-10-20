@@ -200,6 +200,13 @@ scope:
 providers: [provideForDragDropDefaults({ itemRoleDescription: 'movable item' })];
 ```
 
+The host needs a role that supports the attribute. ARIA 1.2 prohibits `aria-roledescription` on
+the generic role, which is what a bare `<div>` or `<span>` and a `<section>` with no accessible
+name have, so on one of those a screen reader drops the description and the item is announced with
+no role at all. Put `[forDraggable]` on an `<li>` inside the `<ul>` or `<ol>` that carries
+`[forDropList]`, or give the item `role="listitem"` and its list `role="list"` when the markup has
+to stay a `<div>`, as the rows of a virtualized list do.
+
 `[forTableColumnReorder]` turns it off for its header cells, which keep the `columnheader` role
 name and leave "sortable" to `aria-sort`.
 
@@ -320,18 +327,18 @@ column. Each item lifts with its own `[forDragPreview]` / `[forDragPlaceholder]`
 declared inside a nested item.
 
 ```html
-<div forDropList orientation="horizontal" (dragDrop)="moveColumn($event)">
+<ul forDropList orientation="horizontal" (dragDrop)="moveColumn($event)">
   @for (column of columns(); track column.id) {
-  <section forDraggable [dragData]="column">
+  <li forDraggable [dragData]="column">
     <h2>{{ column.title }}</h2>
     <ul forDropList (dragDrop)="moveCard(column, $event)">
       @for (card of column.cards; track card.id) {
       <li forDraggable [dragData]="card">{{ card.title }}</li>
       }
     </ul>
-  </section>
+  </li>
   }
-</div>
+</ul>
 ```
 
 ### Custom preview & placeholder
