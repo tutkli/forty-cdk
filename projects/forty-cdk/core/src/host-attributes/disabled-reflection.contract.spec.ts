@@ -1,19 +1,25 @@
-import { Component, type Provider, provideZonelessChangeDetection, signal } from '@angular/core';
+import {
+  Component,
+  type Provider,
+  provideZonelessChangeDetection,
+  signal,
+  type Type,
+  type WritableSignal,
+} from '@angular/core';
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { ForAccordion, ForAccordionItem, ForAccordionTrigger } from 'forty-cdk/accordion';
 import { ForDisclosure, ForDisclosureTrigger } from 'forty-cdk/disclosure';
+import { ForFieldControl } from 'forty-cdk/field';
 import { ForFieldset } from 'forty-cdk/fieldset';
+import { ForFileUpload, ForFileUploadInput, ForFileUploadTrigger } from 'forty-cdk/file-upload';
 import { ForInput, ForTextarea } from 'forty-cdk/input';
-import {
-  ForNumberInput,
-  ForNumberInputDecrement,
-  ForNumberInputGroup,
-  ForNumberInputIncrement,
-} from 'forty-cdk/number-input';
+import { ForNumberInput } from 'forty-cdk/number-input';
+import { ForPagination, ForPaginationItem } from 'forty-cdk/pagination';
+import { ForSearch, ForSearchClear, ForSearchGroup } from 'forty-cdk/search';
 import { provideNativeDateAdapter } from 'forty-cdk/shared';
-import { ForCalendar, ForCalendarNextButton, ForCalendarPrevButton } from 'forty-cdk/calendar';
 import { ForDatePicker, ForDatePickerTrigger } from 'forty-cdk/date-picker';
+import { ForTimePicker, ForTimePickerTrigger } from 'forty-cdk/time-picker';
 
 import {
   ForCombobox,
@@ -22,6 +28,7 @@ import {
   ForComboboxChips,
   ForComboboxClear,
   ForComboboxInput,
+  ForComboboxToggle,
   ForComboboxTrigger,
 } from 'forty-cdk/combobox';
 import { ForSelect, ForSelectTrigger } from 'forty-cdk/select';
@@ -30,6 +37,8 @@ import { ForDialogTrigger } from 'forty-cdk/dialog';
 import { ForDrawerTrigger } from 'forty-cdk/drawer';
 import { ForPopover, ForPopoverTrigger } from 'forty-cdk/popover';
 import { ForDropdownMenu, ForDropdownMenuTrigger } from 'forty-cdk/dropdown-menu';
+
+import { LIBRARY_CODE } from '../../../src/test-utils/source-scan';
 
 /**
  * Library-wide contract for the non-destructive `disabled` reflection rolled
@@ -54,7 +63,7 @@ function configure(providers: Provider[] = []): void {
   });
 }
 
-function mount<T>(component: { new (): T }): ComponentFixture<T> {
+function mount<T>(component: Type<T>): ComponentFixture<T> {
   const fixture = TestBed.createComponent(component);
   fixture.detectChanges();
   return fixture;
@@ -74,11 +83,15 @@ function expectStaticDisabledSurvives<T>(fixture: ComponentFixture<T>): void {
   expect(target(fixture).getAttribute('disabled')).toBe('');
 }
 
+interface LocalInputHost {
+  readonly disabled: WritableSignal<boolean>;
+}
+
 /**
  * Local-input host: an imperatively-applied `disabled` survives an
  * enable→disable cycle, since the helper only removes what it set itself.
  */
-function expectImperativeDisabledSurvives<T extends { disabled: { set(v: boolean): void } }>(
+function expectImperativeDisabledSurvives<T extends LocalInputHost>(
   fixture: ComponentFixture<T>,
 ): void {
   const el = target(fixture);
@@ -96,6 +109,41 @@ function expectImperativeDisabledSurvives<T extends { disabled: { set(v: boolean
   fixture.componentInstance.disabled.set(false);
   fixture.detectChanges();
   expect(el.getAttribute('disabled')).toBe('');
+}
+
+const HELPER_CALL = /[^A-Za-z#.]reflectDisabled\(/g;
+
+function helperCalls(source: string): number {
+  return source.match(HELPER_CALL)?.length ?? 0;
+}
+
+function declaringPath(): string {
+  const found = [...LIBRARY_CODE].find(([, source]) =>
+    source.includes('export function reflectDisabled('),
+  );
+  expect(found).toBeDefined();
+  return found![0];
+}
+
+function callerPaths(): string[] {
+  const declaring = declaringPath();
+  return [...LIBRARY_CODE]
+    .filter(([path, source]) => path !== declaring && helperCalls(source) > 0)
+    .map(([path]) => path);
+}
+
+function subclassPaths(base: string): string[] {
+  const heritage = new RegExp(`\\bextends\\s+${base}\\b`);
+  return [...LIBRARY_CODE].filter(([, source]) => heritage.test(source)).map(([path]) => path);
+}
+
+function reflectDisabledHosts(): string[] {
+  return callerPaths()
+    .flatMap((path) => {
+      const base = /\bexport abstract class (\w+)/.exec(LIBRARY_CODE.get(path)!)?.[1];
+      return base === undefined ? [path] : subclassPaths(base);
+    })
+    .sort();
 }
 
 // ---------------------------------------------------------------------------
@@ -139,6 +187,16 @@ class SelectTriggerHost {
 class DatePickerTriggerHost {}
 
 @Component({
+  imports: [ForTimePicker, ForTimePickerTrigger],
+  template: `
+    <div forTimePicker>
+      <button forTimePickerTrigger data-testid="target" disabled>Open</button>
+    </div>
+  `,
+})
+class TimePickerTriggerHost {}
+
+@Component({
   imports: [ForCombobox, ForComboboxInput],
   template: `
     <div forCombobox [(query)]="query">
@@ -162,6 +220,17 @@ class ComboboxInputHost {
 class ComboboxClearHost {
   readonly query = signal('x');
 }
+
+@Component({
+  imports: [ForCombobox, ForComboboxInput, ForComboboxToggle],
+  template: `
+    <div forCombobox>
+      <input forComboboxInput />
+      <button forComboboxToggle data-testid="target" disabled>▾</button>
+    </div>
+  `,
+})
+class ComboboxToggleHost {}
 
 @Component({
   imports: [
@@ -200,34 +269,27 @@ class ComboboxChipRemoveHost {
 class ComboboxTriggerHost {}
 
 @Component({
-  imports: [ForCalendar, ForCalendarPrevButton, ForCalendarNextButton],
+  imports: [ForFileUpload, ForFileUploadInput, ForFileUploadTrigger],
   template: `
-    <div forCalendar [(value)]="value">
-      <button forCalendarPrevButton [ariaLabel]="'Previous'" data-testid="target" disabled>
-        ‹
-      </button>
-      <button forCalendarNextButton [ariaLabel]="'Next'" data-testid="next" disabled>›</button>
+    <div forFileUpload>
+      <button forFileUploadTrigger data-testid="target" disabled>Choose</button>
+      <input forFileUploadInput aria-label="Upload" />
     </div>
   `,
 })
-class CalendarButtonsHost {
-  readonly value = signal(new Date(2026, 5, 15));
-}
+class FileUploadTriggerHost {}
 
 @Component({
-  imports: [ForNumberInputGroup, ForNumberInput, ForNumberInputIncrement, ForNumberInputDecrement],
+  imports: [ForSearchGroup, ForSearch, ForSearchClear],
   template: `
-    <div forNumberInputGroup>
-      <input forNumberInput [(value)]="qty" />
-      <button forNumberInputIncrement [ariaLabel]="'Increase'" data-testid="target" disabled>
-        +
-      </button>
-      <button forNumberInputDecrement [ariaLabel]="'Decrease'" data-testid="dec" disabled>−</button>
+    <div forSearchGroup>
+      <input forSearch [(value)]="query" />
+      <button forSearchClear data-testid="target" disabled>×</button>
     </div>
   `,
 })
-class NumberInputButtonsHost {
-  readonly qty = signal<number | null>(5);
+class SearchClearHost {
+  readonly query = signal('x');
 }
 
 // ---------------------------------------------------------------------------
@@ -287,6 +349,18 @@ class DrawerTriggerHost {
 }
 
 @Component({
+  imports: [ForPagination, ForPaginationItem],
+  template: `
+    <nav forPagination [count]="3" [page]="1">
+      <button forPaginationItem [page]="2" [disabled]="disabled()" data-testid="target">2</button>
+    </nav>
+  `,
+})
+class PaginationItemHost {
+  readonly disabled = signal(false);
+}
+
+@Component({
   imports: [ForInput],
   template: `<input forInput [disabled]="disabled()" data-testid="target" />`,
 })
@@ -303,10 +377,26 @@ class TextareaHost {
 }
 
 @Component({
+  imports: [ForSearch],
+  template: `<input forSearch [disabled]="disabled()" data-testid="target" />`,
+})
+class SearchHost {
+  readonly disabled = signal(false);
+}
+
+@Component({
   imports: [ForNumberInput],
   template: `<input forNumberInput [disabled]="disabled()" data-testid="target" />`,
 })
 class NumberInputRootHost {
+  readonly disabled = signal(false);
+}
+
+@Component({
+  imports: [ForFieldControl],
+  template: `<input forFieldControl [disabled]="disabled()" data-testid="target" />`,
+})
+class FieldControlHost {
   readonly disabled = signal(false);
 }
 
@@ -318,104 +408,74 @@ class FieldsetHost {
   readonly disabled = signal(false);
 }
 
+interface HostCase<T> {
+  readonly fixture: Type<T>;
+  readonly providers?: Provider[];
+}
+
+const STATIC_ATTR_HOSTS: Readonly<Record<string, HostCase<unknown>>> = {
+  'accordion/src/accordion-trigger.ts': { fixture: AccordionTriggerHost },
+  'combobox/src/combobox-chip-remove.ts': { fixture: ComboboxChipRemoveHost },
+  'combobox/src/combobox-clear.ts': { fixture: ComboboxClearHost },
+  'combobox/src/combobox-input.ts': { fixture: ComboboxInputHost },
+  'combobox/src/combobox-toggle.ts': { fixture: ComboboxToggleHost },
+  'combobox/src/combobox-trigger.ts': { fixture: ComboboxTriggerHost },
+  'date-picker/src/date-picker-trigger.ts': {
+    fixture: DatePickerTriggerHost,
+    providers: provideNativeDateAdapter(),
+  },
+  'file-upload/src/file-upload-trigger.ts': { fixture: FileUploadTriggerHost },
+  'search/src/search-clear.ts': { fixture: SearchClearHost },
+  'select/src/select-trigger.ts': { fixture: SelectTriggerHost },
+  'time-picker/src/time-picker-trigger.ts': {
+    fixture: TimePickerTriggerHost,
+    providers: provideNativeDateAdapter(),
+  },
+};
+
+const LOCAL_INPUT_HOSTS: Readonly<Record<string, HostCase<LocalInputHost>>> = {
+  'dialog/src/dialog-trigger.ts': { fixture: DialogTriggerHost },
+  'disclosure/src/disclosure-trigger.ts': { fixture: DisclosureTriggerHost },
+  'drawer/src/drawer-trigger.ts': { fixture: DrawerTriggerHost },
+  'dropdown-menu/src/dropdown-menu-trigger.ts': { fixture: DropdownMenuTriggerHost },
+  'field/src/field-control.ts': { fixture: FieldControlHost },
+  'fieldset/src/fieldset.ts': { fixture: FieldsetHost },
+  'input/src/input.ts': { fixture: InputHost },
+  'input/src/textarea.ts': { fixture: TextareaHost },
+  'number-input/src/number-input.ts': { fixture: NumberInputRootHost },
+  'pagination/src/pagination-item.ts': { fixture: PaginationItemHost },
+  'popover/src/popover-trigger.ts': { fixture: PopoverTriggerHost },
+  'search/src/search.ts': { fixture: SearchHost },
+};
+
 describe('disabled reflection — library-wide contract', () => {
+  describe('roster derived from source', () => {
+    it('finds the reflectDisabled hosts through the glob', () => {
+      expect(reflectDisabledHosts().length).toBeGreaterThan(20);
+    });
+
+    it('finds one reflectDisabled call per calling file', () => {
+      const counts = callerPaths().map((path) => [path, helperCalls(LIBRARY_CODE.get(path)!)]);
+      expect(counts.filter(([, n]) => n !== 1)).toEqual([]);
+    });
+
+    it('has exactly one case per reflectDisabled host', () => {
+      const cases = [...Object.keys(STATIC_ATTR_HOSTS), ...Object.keys(LOCAL_INPUT_HOSTS)].sort();
+      expect(cases).toEqual(reflectDisabledHosts());
+    });
+  });
+
   describe('static-attr hosts preserve a consumer-set static disabled', () => {
-    it('accordion trigger', () => {
-      configure();
-      expectStaticDisabledSurvives(mount(AccordionTriggerHost));
-    });
-
-    it('select trigger', () => {
-      configure();
-      expectStaticDisabledSurvives(mount(SelectTriggerHost));
-    });
-
-    it('date-picker trigger', () => {
-      configure(provideNativeDateAdapter());
-      expectStaticDisabledSurvives(mount(DatePickerTriggerHost));
-    });
-
-    it('combobox input', () => {
-      configure();
-      expectStaticDisabledSurvives(mount(ComboboxInputHost));
-    });
-
-    it('combobox clear', () => {
-      configure();
-      expectStaticDisabledSurvives(mount(ComboboxClearHost));
-    });
-
-    it('combobox chip-remove', () => {
-      configure();
-      expectStaticDisabledSurvives(mount(ComboboxChipRemoveHost));
-    });
-
-    it('combobox trigger', () => {
-      configure();
-      expectStaticDisabledSurvives(mount(ComboboxTriggerHost));
-    });
-
-    it('calendar prev / next buttons', () => {
-      configure(provideNativeDateAdapter());
-      const fixture = mount(CalendarButtonsHost);
-      const root = fixture.nativeElement as HTMLElement;
-      expect(root.querySelector('[data-testid="target"]')!.getAttribute('disabled')).toBe('');
-      expect(root.querySelector('[data-testid="next"]')!.getAttribute('disabled')).toBe('');
-    });
-
-    it('number-input increment / decrement buttons', () => {
-      configure();
-      const fixture = mount(NumberInputButtonsHost);
-      const root = fixture.nativeElement as HTMLElement;
-      expect(root.querySelector('[data-testid="target"]')!.getAttribute('disabled')).toBe('');
-      expect(root.querySelector('[data-testid="dec"]')!.getAttribute('disabled')).toBe('');
+    it.each(Object.entries(STATIC_ATTR_HOSTS))('%s', (_, { fixture, providers }) => {
+      configure(providers);
+      expectStaticDisabledSurvives(mount(fixture));
     });
   });
 
   describe('local-input hosts preserve an imperatively-applied disabled across an enable cycle', () => {
-    it('popover trigger', () => {
-      configure();
-      expectImperativeDisabledSurvives(mount(PopoverTriggerHost));
-    });
-
-    it('disclosure trigger', () => {
-      configure();
-      expectImperativeDisabledSurvives(mount(DisclosureTriggerHost));
-    });
-
-    it('dropdown-menu trigger', () => {
-      configure();
-      expectImperativeDisabledSurvives(mount(DropdownMenuTriggerHost));
-    });
-
-    it('dialog trigger', () => {
-      configure();
-      expectImperativeDisabledSurvives(mount(DialogTriggerHost));
-    });
-
-    it('drawer trigger', () => {
-      configure();
-      expectImperativeDisabledSurvives(mount(DrawerTriggerHost));
-    });
-
-    it('input', () => {
-      configure();
-      expectImperativeDisabledSurvives(mount(InputHost));
-    });
-
-    it('textarea', () => {
-      configure();
-      expectImperativeDisabledSurvives(mount(TextareaHost));
-    });
-
-    it('number-input root', () => {
-      configure();
-      expectImperativeDisabledSurvives(mount(NumberInputRootHost));
-    });
-
-    it('fieldset', () => {
-      configure();
-      expectImperativeDisabledSurvives(mount(FieldsetHost));
+    it.each(Object.entries(LOCAL_INPUT_HOSTS))('%s', (_, { fixture, providers }) => {
+      configure(providers);
+      expectImperativeDisabledSurvives(mount(fixture));
     });
   });
 });
