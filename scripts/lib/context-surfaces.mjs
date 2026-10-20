@@ -26,7 +26,11 @@ export const CONTEXT_SURFACE_CEILING = 25;
  * `CONTEXT_SURFACE_CEILING` to absorb a new root — the move that would make the
  * whole gate decorative — is exactly what it exists to prevent.
  *
- * These ten are the roots the #1399 / #1722 split has not reached yet. None is
+ * An entry records a public surface still wider than the ceiling whose members
+ * have not had their inverted-default pass. That holds whether or not the root
+ * already declares an internal `<X>Context`: a root that does was split for the
+ * members it needed then, and the public surface behind it stayed as wide as it
+ * was, so the work an entry owes is that pass, never a second split. None is
  * argued to be legitimately wide: each carries members whose only caller is a
  * piece of its own primitive, and each needs the same read Combobox, Select,
  * Carousel, Table and Avatar got. Two things about the sizes are worth knowing
@@ -45,56 +49,56 @@ export const CONTEXT_SURFACE_EXCEPTIONS = {
   ForCalendarContext: {
     ceiling: 61,
     reason:
-      'Not split. Carries the day-cell grid model (`[forCalendarCell]` focus / range / hover ' +
+      'Carries the day-cell grid model (`[forCalendarCell]` focus / range / hover ' +
       'preview) beside the consumer-facing value and view state.',
   },
   ForMenuContext: {
     ceiling: 52,
     reason:
-      'Not split. The shared menu-overlay surface every menu flavour composes, so it carries the ' +
+      'The shared menu-overlay surface every menu flavour composes, so it carries the ' +
       'item registry, the typeahead buffer and the sibling-navigation protocol.',
   },
   ForPopoverContext: {
     ceiling: 46,
     reason:
-      'Not split. 11 of these are the inherited `AnchoredPositioningContext`; the rest are the ' +
+      '11 of these are the inherited `AnchoredPositioningContext`; the rest are the ' +
       'trigger / content / arrow wiring `[forPopoverContent]` drives.',
   },
   ForDatePickerContext: {
     ceiling: 45,
     reason:
-      'Not split. Composes the field, the calendar and the overlay, and republishes each of the ' +
+      'Composes the field, the calendar and the overlay, and republishes each of the ' +
       "three anatomies' piece surfaces.",
   },
   ForTooltipContext: {
     ceiling: 35,
-    reason: 'Not split. 11 inherited positioning members plus the hover-intent schedule protocol.',
+    reason: '11 inherited positioning members plus the hover-intent schedule protocol.',
   },
   ForTimePickerContext: {
     ceiling: 34,
-    reason: "Not split. Mirrors DatePicker's composition over the time field and the slot list.",
+    reason: "Mirrors DatePicker's composition over the time field and the slot list.",
   },
   ForHoverCardContext: {
     ceiling: 32,
-    reason: 'Not split. 11 inherited positioning members plus the hover-intent schedule protocol.',
+    reason: '11 inherited positioning members plus the hover-intent schedule protocol.',
   },
   ForStepperContext: {
     ceiling: 31,
     reason:
-      'Not split. Reuses the Tabs backbone, so it carries the trigger / content registry and the ' +
+      'Reuses the Tabs backbone, so it carries the trigger / content registry and the ' +
       'roving model alongside the step state a consumer reads.',
   },
   ForTreeContext: {
     ceiling: 29,
     reason:
-      'Not split. Carries the activedescendant focus model and the per-item ARIA index arithmetic ' +
+      'Carries the activedescendant focus model and the per-item ARIA index arithmetic ' +
       'beside the expansion / selection commands, plus the `compareWith` the selection contract ' +
       'mandates on the read surface.',
   },
   ForListboxContext: {
     ceiling: 27,
     reason:
-      'Not split. Carries the APG range-selection and typeahead handlers `[forListboxOption]` ' +
+      'Carries the APG range-selection and typeahead handlers `[forListboxOption]` ' +
       "routes its keys through — the same members Select's pass moved.",
   },
 };
