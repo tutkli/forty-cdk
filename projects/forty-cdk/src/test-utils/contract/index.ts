@@ -5,7 +5,7 @@
  * styling vocabulary, consumer-set static attribute adoption, the
  * single-value selection / open-item model shape, the anchored-overlay
  * positioning-input family, per-family defaults-key parity, native form
- * submission through hidden inputs.
+ * submission through hidden inputs, the date adapter seam.
  *
  * Each contract owns the assertions that are identical across every
  * primitive in its family. Migration is incremental: when a primitive's
@@ -99,3 +99,9 @@ export {
   type NativeSubmissionHost,
   type NativeSubmissionContractOptions,
 } from './native-submission-contract';
+
+export {
+  assertDateAdapterContract,
+  type DateAdapterClass,
+  type DateAdapterContractOptions,
+} from './date-adapter-contract';

@@ -45,6 +45,15 @@ exports[`document structure > docs/date-adapters.md declares the sections and ta
     "tables": [
       {
         "columns": [
+          "Member",
+          "Read by",
+          "When it is omitted",
+        ],
+        "role": "plain",
+        "rows": 4,
+      },
+      {
+        "columns": [
           "Part",
           "Produced by",
         ],
