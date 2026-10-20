@@ -48,7 +48,7 @@ function injectTableRegistration(): TableRegistrationContext {
 }
 
 /**
- * Opt-in row-virtualization companion for `[forTable]` in `<div role>` grid mode. Place it on the
+ * Opt-in row-virtualization companion for `[forTable]` on the `<div role>` structure. Place it on the
  * same element as `[forTable]`; it builds the windowing core from `[virtualRowCount]` — which
  * defaults to the table's `[rowCount]` — and exposes the visible window for the consumer to render
  * with their own `@for` + position transform.

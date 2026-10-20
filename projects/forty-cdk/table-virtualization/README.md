@@ -9,7 +9,7 @@ foldInto: table#virtualized-rows
 
 The opt-in row-virtualization companion for `[forTable]`: it builds a windowing core from the table's `[rowCount]` and exposes the visible slice for the consumer to render, plus cross-window roving keyboard navigation.
 
-`[forTableVirtualized]` sits on the same element as `[forTable]` and works only with `<div role>` grid mode, because a native `<table>` cannot omit rows mid-body without the browser recalculating every column width. It owns no DOM of its own: the consumer renders `virtualRows()` with their own `@for` and positions each row with a `translateY` transform, or lets `<for-table-body>` own the sizer. The focused row stays mounted even when scrolled out of the window, so the roving-focused `gridcell` is never unmounted. SSR-safe: off-browser the window is empty and `totalSize` is the estimate-based total.
+`[forTableVirtualized]` sits on the same element as `[forTable]` and works only with the `<div role>` structure, in `mode="table"` or `mode="grid"`, because a native `<table>` cannot omit rows mid-body without the browser recalculating every column width. It owns no DOM of its own: the consumer renders `virtualRows()` with their own `@for` and positions each row with a `translateY` transform, or lets `<for-table-body>` own the sizer. The focused row stays mounted even when scrolled out of the window, so the roving-focused `gridcell` is never unmounted. SSR-safe: off-browser the window is empty and `totalSize` is the estimate-based total.
 
 > Ships from the **`forty-cdk/table-virtualization`** secondary entry point, not from
 > `forty-cdk/virtualization`. It is the one adapter that composes both `forty-cdk/table` and

@@ -4,11 +4,13 @@
 and each row's `aria-rowindex` go on reporting the true totals, so a grid of tens of thousands of
 rows scrolls at a fixed cost and still tells a screen reader where the user is.
 
-It is opt-in and works only with `<div role>` grid mode. Native `<table>` cannot omit rows mid-body
-(the browser recalculates all column widths when any row is missing), so virtualization requires the
-`<div>` structure documented in
-[the table README](../projects/forty-cdk/table/README.md#div-mode). This guide also covers the
-scroll-container choice and the ARIA reindexing contract. Split out of the table README in
+It is opt-in and works only with the `<div role>` structure (div mode). Native `<table>` cannot omit
+rows mid-body (the browser recalculates all column widths when any row is missing), so virtualization
+requires the `<div>` structure documented in
+[the table README](../projects/forty-cdk/table/README.md#div-mode). The constraint is the structure, not
+the ARIA mode: `mode="table"` windows the same way the `mode="grid"` example below does, keeping
+`role="table"` for a read-only list. This guide also covers the scroll-container choice and the ARIA
+reindexing contract. Split out of the table README in
 [#1401](https://github.com/tutkli/forty-cdk/issues/1401) because it spans two entry points; the
 adapter itself ships from the third,
 [`forty-cdk/table-virtualization`](../projects/forty-cdk/table-virtualization/README.md), and the
@@ -53,7 +55,7 @@ Key points:
 - The sticky header rowgroup lives **outside** the absolutely-positioned body so it is not clipped by the scroll container's overflow.
 - The body rowgroup is `position: relative` and sized to `v.totalSize()`. This creates the full scroll range.
 - Each row is `position: absolute; transform: translateY(vrow.start + 'px')`. Do not use `top`, because `transform` avoids layout thrashing.
-- Bind `[virtualIndex]="vrow.index"` on each `[forTableRow]`. This is what drives the absolute 1-based `aria-rowindex` (`vrow.index + 1`) rather than the DOM-order index.
+- Bind `[virtualIndex]="vrow.index"` on each `[forTableRow]`. This is what drives the absolute 1-based `aria-rowindex` rather than the DOM-order index: `vrow.index + 1`, plus 1 more when a `[forTableHeaderRow]` is present, because the header row is `aria-rowindex="1"` (so in the example above, row 0 reports `aria-rowindex="2"`). See [Grid mode in the table README](../projects/forty-cdk/table/README.md#grid-mode).
 - The **focused row stays mounted** even when scrolled out of the window. The roving-focused `gridcell` is never unmounted; roving navigation is unchanged.
 - For measured (variable) row heights, call `v.measureRow(el)` per rendered row in `afterEveryRender`. Each `[forTableRow]` reflects its `[virtualIndex]` as `data-index`, the attribute the core reads to know which row an element is, so give the rows a template reference (`#row`) and query them; `measureRow(null)` then sweeps the rows recycled out of the window.
 

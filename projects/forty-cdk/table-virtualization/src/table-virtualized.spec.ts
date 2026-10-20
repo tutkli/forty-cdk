@@ -960,3 +960,156 @@ describe('ForTableVirtualized — the README anatomy under a data change (#2225)
     expect(second.style.transform).toBe('translateY(32px)');
   });
 });
+
+const MODE_TOTAL = 1000;
+
+@Component({
+  imports: [
+    ForTable,
+    ForTableVirtualized,
+    ForTableHeaderRow,
+    ForTableHeaderCell,
+    ForTableRow,
+    ForTableCell,
+  ],
+  template: `
+    <div
+      forTable
+      forTableVirtualized
+      [mode]="mode()"
+      ariaLabel="Big table"
+      [rowCount]="total"
+      [estimateRowSize]="44"
+      #v="forTableVirtualized"
+      style="height: 400px; overflow: auto; position: relative"
+    >
+      <div forTableHeaderRow style="position: sticky; top: 0">
+        <div forTableHeaderCell name="name">Name</div>
+      </div>
+      <div role="rowgroup" [style.height.px]="v.totalSize()" style="position: relative">
+        @for (vrow of v.virtualRows(); track vrow.index) {
+          <div
+            forTableRow
+            [virtualIndex]="vrow.index"
+            [style.transform]="'translateY(' + vrow.start + 'px)'"
+            style="position: absolute; left: 0; right: 0"
+          >
+            <div forTableCell name="name">Row {{ vrow.index }}</div>
+          </div>
+        }
+      </div>
+    </div>
+  `,
+})
+class RawModeHost {
+  readonly mode = signal<'table' | 'grid'>('grid');
+  readonly total = MODE_TOTAL;
+}
+
+@Component({
+  imports: [
+    ForTable,
+    ForTableVirtualized,
+    ForTableBody,
+    ForTableColumnDef,
+    ForTableHeaderCellDef,
+    ForTableCellDef,
+  ],
+  template: `
+    <div
+      forTable
+      forTableVirtualized
+      mode="table"
+      ariaLabel="People"
+      [estimateRowSize]="44"
+      style="height: 400px; overflow: auto"
+    >
+      <for-table-body [rows]="rows()" [rowKey]="rowKey">
+        <ng-container forTableColumnDef="name">
+          <ng-template forTableHeaderCellDef>Name</ng-template>
+          <ng-template forTableCellDef [forTableCellDefRow]="rows()" let-row>{{
+            row.name
+          }}</ng-template>
+        </ng-container>
+      </for-table-body>
+    </div>
+  `,
+})
+class DeclarativeTableModeHost {
+  readonly rows = signal(
+    Array.from({ length: MODE_TOTAL }, (_, id) => ({ id, name: `Row ${id}` })),
+  );
+  readonly rowKey = (row: { id: number }): number => row.id;
+}
+
+describe('ForTableVirtualized — table mode and the header-inclusive row index (#2390)', () => {
+  let restoreObservers: () => void;
+  beforeAll(() => {
+    restoreObservers = installObserverPolyfills();
+  });
+  afterAll(() => restoreObservers());
+
+  function renderWithViewport<T>(
+    host: new () => T,
+    setup?: (instance: T) => void,
+  ): RenderResult<T> {
+    TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+    const fixture = TestBed.createComponent(host);
+    setup?.(fixture.componentInstance);
+    const el = fixture.nativeElement as HTMLElement;
+    Object.defineProperty(el.querySelector('[forTable]')!, 'offsetHeight', {
+      configurable: true,
+      get: () => 400,
+    });
+    fixture.detectChanges();
+    return {
+      fixture,
+      instance: fixture.componentInstance,
+      el,
+      query: <E extends Element = HTMLElement>(selector: string) => el.querySelector<E>(selector),
+      queryAll: <E extends Element = HTMLElement>(selector: string) =>
+        Array.from(el.querySelectorAll<E>(selector)),
+      flush: () => flush(fixture),
+    };
+  }
+
+  const dataRows = (el: HTMLElement): HTMLElement[] =>
+    Array.from(el.querySelectorAll<HTMLElement>('[role="row"]')).filter(
+      (row) => row.querySelector('[role="cell"], [role="gridcell"]') !== null,
+    );
+
+  it('reports aria-rowindex as vrow.index + 2 when a header row precedes the window in grid mode', async () => {
+    const { el, flush } = renderWithViewport(RawModeHost);
+    await flush();
+
+    const rows = dataRows(el);
+    expect(rows.length).toBeGreaterThan(0);
+    expect(rows[0]!.getAttribute('data-index')).toBe('0');
+    expect(rows[0]!.getAttribute('aria-rowindex')).toBe('2');
+    expect(el.querySelector('[forTableHeaderRow]')!.getAttribute('aria-rowindex')).toBe('1');
+  });
+
+  it('windows raw rows under mode="table" while the root keeps role="table"', async () => {
+    const { el, query, flush } = renderWithViewport(RawModeHost, (host) => host.mode.set('table'));
+    await flush();
+
+    expect(query('[forTable]')!.getAttribute('role')).toBe('table');
+    const rows = dataRows(el);
+    expect(rows.length).toBeGreaterThan(0);
+    expect(rows.length).toBeLessThan(MODE_TOTAL);
+    expect(el.querySelectorAll('[role="gridcell"]')).toHaveLength(0);
+    expect(rows.every((row) => row.querySelector('[role="cell"]') !== null)).toBe(true);
+  });
+
+  it('windows a <for-table-body> under mode="table" while the root keeps role="table"', async () => {
+    const { el, query, flush } = renderWithViewport(DeclarativeTableModeHost);
+    await flush();
+
+    expect(query('[forTable]')!.getAttribute('role')).toBe('table');
+    const rows = dataRows(el);
+    expect(rows.length).toBeGreaterThan(0);
+    expect(rows.length).toBeLessThan(MODE_TOTAL);
+    expect(el.querySelectorAll('[role="gridcell"]')).toHaveLength(0);
+    expect(rows.every((row) => row.querySelector('[role="cell"]') !== null)).toBe(true);
+  });
+});
