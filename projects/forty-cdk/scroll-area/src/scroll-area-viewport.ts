@@ -17,12 +17,14 @@ import { injectScrollAreaContext } from './scroll-area-context';
 
 const HIDE_NATIVE_SCROLLBARS_STYLE_ID = 'for-scroll-area-hide-native';
 const HIDE_NATIVE_SCROLLBARS_CSS = `
-  [forScrollAreaViewport] {
+  :where([data-for-scroll-area-viewport]) {
     overflow: scroll;
+  }
+  [data-for-scroll-area-viewport] {
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
-  [forScrollAreaViewport]::-webkit-scrollbar {
+  [data-for-scroll-area-viewport]::-webkit-scrollbar {
     display: none;
     width: 0;
     height: 0;
@@ -45,6 +47,11 @@ function injectHidingStylesOnce(doc: Document, nonce: string | null): void {
  * hiding stylesheet is part of the server render too, and carries Angular's
  * `CSP_NONCE` when one is provided.
  *
+ * The stylesheet targets the `data-for-scroll-area-viewport` attribute the
+ * directive stamps on its host, so a viewport composed through `hostDirectives`
+ * or a re-selected subclass is covered too. It also sets `overflow: scroll` at
+ * zero specificity, a default any consumer rule overrides.
+ *
  * Focusable by default (`tabindex="0"`) so a scroll area whose content has no
  * focusable children is still reachable and keyboard-scrollable — the browser
  * gives a focused overflow container native arrow / PageUp / PageDown / Home /
@@ -55,6 +62,7 @@ function injectHidingStylesOnce(doc: Document, nonce: string | null): void {
   selector: '[forScrollAreaViewport]',
   exportAs: 'forScrollAreaViewport',
   host: {
+    'data-for-scroll-area-viewport': '',
     '[attr.tabindex]': 'focusable() ? 0 : null',
     '(scroll)': 'onScroll()',
   },

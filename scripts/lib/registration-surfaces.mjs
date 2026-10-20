@@ -73,6 +73,7 @@ export const REGISTRATION_SURFACES = {
   ],
   popover: ['PopoverContext', 'PopoverPieceContext', 'PopoverRegistrationContext'],
   'radio-group': ['RadioGroupContext', 'ForRadioHandle'],
+  'scroll-area': ['ScrollAreaContext', 'ScrollAreaRegistrationContext'],
   select: [
     'SelectContext',
     'SelectPieceContext',

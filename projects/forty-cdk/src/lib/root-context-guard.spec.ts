@@ -24,6 +24,7 @@ import { FOR_LISTBOX_CONTEXT, ForListboxOption } from 'forty-cdk/listbox';
 import { FOR_NAVIGATION_MENU_CONTEXT, ForNavigationMenuList } from 'forty-cdk/navigation-menu';
 import { FOR_POPOVER_CONTEXT, ForPopoverClose } from 'forty-cdk/popover';
 import { FOR_RADIO_GROUP_CONTEXT, ForRadio } from 'forty-cdk/radio-group';
+import { FOR_SCROLL_AREA_CONTEXT, ForScrollAreaCorner } from 'forty-cdk/scroll-area';
 import {
   FOR_SELECT_CONTEXT,
   type ForSelectContext,
@@ -228,6 +229,14 @@ class ImpostorPopoverHost {}
 class ImpostorRadioGroupHost {}
 
 @Component({
+  imports: [ForScrollAreaCorner],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  providers: [{ provide: FOR_SCROLL_AREA_CONTEXT, useValue: {} }],
+  template: `<div forScrollAreaCorner></div>`,
+})
+class ImpostorScrollAreaHost {}
+
+@Component({
   imports: [ForSelectValue],
   changeDetection: ChangeDetectionStrategy.OnPush,
   providers: [{ provide: FOR_SELECT_CONTEXT, useValue: {} }],
@@ -428,6 +437,15 @@ const GUARDED: readonly GuardedRoot[] = [
     root: '[forRadioGroup]',
     piece: 'ForRadio',
     host: ImpostorRadioGroupHost,
+  },
+  {
+    entryPoint: 'scroll-area',
+    source: 'scroll-area/src/scroll-area-context.ts',
+    calls: 1,
+    token: 'FOR_SCROLL_AREA_CONTEXT',
+    root: '[forScrollArea]',
+    piece: 'ForScrollAreaCorner',
+    host: ImpostorScrollAreaHost,
   },
   {
     entryPoint: 'select',

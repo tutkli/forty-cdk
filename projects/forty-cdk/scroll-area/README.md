@@ -8,7 +8,7 @@ archetype: [composable-ui]
 
 A scrollable region with cross-browser, stylable synthetic scrollbars.
 
-Hides native scrollbars on the inner viewport and exposes synthetic `scrollbar` + `thumb` + `corner` directives that the consumer styles freely. This is the **only** primitive in forty-cdk that ships CSS: a single `<style>` tag (id `for-scroll-area-hide-native`) is injected into `document.head` the first time a viewport mounts. The server render emits it too, so a server-rendered page paints without native scrollbars before hydration, and it carries Angular's `CSP_NONCE` (set through the token or the `ngCspNonce` attribute) so a nonce-based `style-src` policy admits it. It hides webkit / Firefox / IE native scrollbars on `[forScrollAreaViewport]` only, leaving the rest of your CSS untouched.
+Hides native scrollbars on the inner viewport and exposes synthetic `scrollbar` + `thumb` + `corner` directives that the consumer styles freely. This is the **only** primitive in forty-cdk that ships CSS: a single `<style>` tag (id `for-scroll-area-hide-native`) is injected into `document.head` the first time a viewport mounts. The server render emits it too, so a server-rendered page paints without native scrollbars before hydration, and it carries Angular's `CSP_NONCE` (set through the token or the `ngCspNonce` attribute) so a nonce-based `style-src` policy admits it. It hides webkit / Firefox / IE native scrollbars on the viewport only, and sets `overflow: scroll` there as a zero-specificity default that any rule of yours overrides, leaving the rest of your CSS untouched.
 
 ## Anatomy
 
@@ -113,11 +113,15 @@ The resolved writing direction is reflected on the root via the native `dir` att
 
 ### `ForScrollAreaViewport`
 
-The actual scrolling element. Hides native scrollbars and reports scroll position and geometry to the root. Carries no `data-*` attributes.
+The actual scrolling element. Hides native scrollbars and reports scroll position and geometry to the root.
 
 | Property    | Type             | Description                                                                                                                                                                                            |
 | ----------- | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `focusable` | `input<boolean>` | Whether the viewport is a keyboard tab stop. When `true`, emits `tabindex="0"` so the scroll container is focusable and gets native keyboard scrolling. Set `false` to opt out.<br>**Default:** `true` |
+
+| Data attribute                  | Values                                                        |
+| ------------------------------- | ------------------------------------------------------------- |
+| `data-for-scroll-area-viewport` | always present (empty); the element the injected sheet styles |
 
 Reflects `tabindex="0"` while `focusable` is `true`; no `tabindex` attribute when `false`.
 
@@ -258,7 +262,8 @@ forty-cdk ships no styles: put your own class on each piece and key your CSS off
 
   With `type="always"` the vertical track's grid column is always filled, so the viewport width stays constant whether or not the content overflows, with no reflow when it crosses the boundary. The `position: absolute` layout in the [Examples](#examples) section above is the right default for `auto` / `hover` / `scroll`, where an overlaid self-hiding scrollbar is the desired look.
 
-- **Native scrollbars are hidden globally on `[forScrollAreaViewport]`** via an injected `<style>` tag. If you need to opt out (e.g. for a debug build), remove `#for-scroll-area-hide-native` from the head, but that defeats the primitive's purpose.
+- **Native scrollbars are hidden on every viewport** via an injected `<style>` tag keyed off `[data-for-scroll-area-viewport]`, which the directive stamps on its host. A viewport applied through `hostDirectives` or a subclass with its own selector carries it too, so it hides its native scrollbars like the authored `[forScrollAreaViewport]`. If you need to opt out (e.g. for a debug build), remove `#for-scroll-area-hide-native` from the head, but that defeats the primitive's purpose.
+- **`overflow: scroll` is an overridable default.** The same sheet sets it inside `:where()`, so it has zero specificity and any rule of yours wins, whether global, layered or a utility class. Clip an axis with `overflow-x: hidden` (or `overflow-y`) on the viewport and the sheet leaves it alone.
 - **Keyboard scrolling is native, via a focusable viewport.** `[forScrollAreaViewport]` carries `tabindex="0"` by default, so it is a tab stop and the browser gives the focused overflow container native arrow / PageUp / PageDown / Home / End / Space scrolling. This works in every browser, including Safari (which, unlike Chrome/Firefox, does not make a non-focusable overflow container keyboard-scrollable). The scrollbar is a pointer affordance only (thumb drag + track press) and never a tab stop. If the projected content already holds focusable elements and you don't want the extra tab stop, set `[focusable]="false"` on the viewport.
 - **Drag uses pointer-capture** so the cursor doesn't lose the thumb if it briefly leaves the track. The `pointermove` / `pointerup` listeners are attached to the owner document (capture still routes them there), and an in-flight drag pins the track `data-state="visible"` and painted. That way a drag is never silently aborted if the scrollbar would otherwise self-hide mid-gesture (e.g. a `type="scroll"` fade, or a consumer `display: none` on `[data-state="hidden"]`).
 - **RTL is handled on the horizontal axis.** When the root resolves to `dir="rtl"`, the horizontal thumb starts pinned to the right edge of the track and a leftward drag scrolls the content forward (the browser's native negative-`scrollLeft` model). Set the direction the standard way: `[dir]` on the root or an ancestor `dir` attribute.

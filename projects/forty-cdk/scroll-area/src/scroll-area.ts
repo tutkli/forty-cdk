@@ -145,21 +145,21 @@ export class ForScrollArea implements ForScrollAreaContext {
   readonly scrolling = this.#scrolling.asReadonly();
   #scrollTimer: ReturnType<typeof setTimeout> | null = null;
 
-  registerViewport(el: HTMLElement): void {
+  private registerViewport(el: HTMLElement): void {
     this.#viewport.set(el);
   }
 
-  unregisterViewport(el: HTMLElement): void {
+  private unregisterViewport(el: HTMLElement): void {
     if (this.#viewport() === el) {
       this.#viewport.set(null);
     }
   }
 
-  registerContent(el: HTMLElement): void {
+  private registerContent(el: HTMLElement): void {
     this.#content.set(el);
   }
 
-  unregisterContent(el: HTMLElement): void {
+  private unregisterContent(el: HTMLElement): void {
     // Only clear if the unregistering element is the one we currently track,
     // so a late teardown of an old content piece doesn't blow away a freshly
     // registered replacement.
@@ -168,19 +168,19 @@ export class ForScrollArea implements ForScrollAreaContext {
     }
   }
 
-  reportScroll(left: number, top: number): void {
+  private reportScroll(left: number, top: number): void {
     this.#scrollLeft.set(left);
     this.#scrollTop.set(top);
   }
 
-  reportSize(clientW: number, clientH: number, scrollW: number, scrollH: number): void {
+  private reportSize(clientW: number, clientH: number, scrollW: number, scrollH: number): void {
     this.#clientW.set(clientW);
     this.#clientH.set(clientH);
     this.#scrollW.set(scrollW);
     this.#scrollH.set(scrollH);
   }
 
-  noteUserScroll(): void {
+  private noteUserScroll(): void {
     this.#scrolling.set(true);
     if (this.#scrollTimer !== null) clearTimeout(this.#scrollTimer);
     this.#scrollTimer = setTimeout(

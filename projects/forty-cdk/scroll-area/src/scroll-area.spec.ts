@@ -1,6 +1,7 @@
 import {
   CSP_NONCE,
   Component,
+  Directive,
   provideZonelessChangeDetection,
   signal,
   viewChild,
@@ -17,7 +18,12 @@ import { ForScrollAreaCorner } from './scroll-area-corner';
 import { ForScrollAreaScrollbar } from './scroll-area-scrollbar';
 import { ForScrollAreaThumb } from './scroll-area-thumb';
 import { ForScrollAreaViewport } from './scroll-area-viewport';
-import type { ForScrollAreaTrackPress, ForScrollAreaType } from './scroll-area-context';
+import {
+  FOR_SCROLL_AREA_CONTEXT,
+  type ForScrollAreaTrackPress,
+  type ForScrollAreaType,
+  type ScrollAreaContext,
+} from './scroll-area-context';
 
 @Component({
   imports: [
@@ -93,9 +99,8 @@ class ScrollAreaFocusableHost {
 }
 
 // A bare root with a viewport so the content ResizeObserver wiring runs. The
-// root directive instance is surfaced via a `viewChild` so the wiring tests can
-// drive `registerContent` / `unregisterContent` / `noteUserScroll` directly —
-// these are part of the documented `ForScrollAreaContext`, not private signals.
+// root's context is read at the internal `ScrollAreaContext` type so the wiring
+// tests can drive the registration protocol the pieces call.
 @Component({
   imports: [ForScrollArea, ForScrollAreaViewport],
   template: `
@@ -105,7 +110,8 @@ class ScrollAreaFocusableHost {
   `,
 })
 class ScrollAreaWiringHost {
-  readonly root = viewChild.required(ForScrollArea);
+  private readonly ctx = viewChild.required(ForScrollArea, { read: FOR_SCROLL_AREA_CONTEXT });
+  readonly root = (): ScrollAreaContext => this.ctx() as ScrollAreaContext;
 }
 
 @Component({
@@ -123,6 +129,36 @@ class ScrollAreaWiringHost {
 })
 class ScrollAreaTrackPressHost {
   readonly trackPress = signal<ForScrollAreaTrackPress>('page');
+}
+
+@Component({
+  selector: 'ds-scroll-viewport',
+  hostDirectives: [ForScrollAreaViewport],
+  template: '<ng-content />',
+})
+class ComposedViewport {}
+
+@Directive({ selector: '[dsViewport]' })
+class SubclassedViewport extends ForScrollAreaViewport {}
+
+@Component({
+  imports: [ForScrollArea, ComposedViewport, SubclassedViewport],
+  template: `
+    <div forScrollArea>
+      <ds-scroll-viewport data-testid="composed"></ds-scroll-viewport>
+    </div>
+    <div forScrollArea>
+      <div dsViewport data-testid="subclassed"></div>
+    </div>
+  `,
+})
+class ScrollAreaWrappedViewportHost {}
+
+function hidingSheetSelectors(): string[] {
+  const style = document.getElementById('for-scroll-area-hide-native') as HTMLStyleElement;
+  return Array.from(style.sheet!.cssRules, (rule) =>
+    (rule as CSSStyleRule).selectorText.replace(/::[-\w]+/g, ''),
+  );
 }
 
 // Geometry — thumb size / position, overflow-driven visibility, hover / scroll
@@ -165,6 +201,20 @@ describe('ForScrollArea', () => {
 
     const style = document.getElementById('for-scroll-area-hide-native');
     expect(style?.hasAttribute('nonce')).toBe(false);
+  });
+
+  it('targets a viewport composed through hostDirectives or a re-selected subclass with every hiding rule', () => {
+    const { query } = renderHost(ScrollAreaWrappedViewportHost);
+    const selectors = hidingSheetSelectors();
+    expect(selectors.length).toBeGreaterThan(0);
+
+    for (const testid of ['composed', 'subclassed']) {
+      const host = query<HTMLElement>(`[data-testid="${testid}"]`)!;
+      expect(host.matches('[forScrollAreaViewport]')).toBe(false);
+      for (const selector of selectors) {
+        expect(host.matches(selector), `${testid} ↔ ${selector}`).toBe(true);
+      }
+    }
   });
 
   it('wires each thumb to its own scrollbar axis and registers it with that scrollbar', () => {
