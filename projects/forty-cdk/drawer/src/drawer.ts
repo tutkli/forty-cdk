@@ -105,7 +105,7 @@ export class ForDrawer extends ModalSurfaceBase<ForDrawerCloseReason> implements
    * mobile-first pattern. The keyboard navigation axis (for swipe direction)
    * derives from this, as does the `data-side` attribute on the host.
    */
-  readonly side = input<ForDrawerSide>(this.#defaults.side ?? 'bottom');
+  readonly side = input<ForDrawerSide>(this.#defaults.side);
 
   /**
    * When true (default), Escape, backdrop click, pointer-down outside,
@@ -113,7 +113,7 @@ export class ForDrawer extends ModalSurfaceBase<ForDrawerCloseReason> implements
    * Disable for confirm flows that must be answered explicitly; a swipe then
    * never arms a dismissal, though `snapPoints` still drag between snaps.
    */
-  readonly dismissible = input(this.#defaults.dismissible ?? true, {
+  readonly dismissible = input(this.#defaults.dismissible, {
     transform: booleanAttribute,
   });
 
@@ -123,13 +123,13 @@ export class ForDrawer extends ModalSurfaceBase<ForDrawerCloseReason> implements
    * navigation drawer that coexists with the rest of the page. Read once at
    * mount: a change while the drawer is open takes effect on the next open.
    */
-  readonly modal = input(this.#defaults.modal ?? true, { transform: booleanAttribute });
+  readonly modal = input(this.#defaults.modal, { transform: booleanAttribute });
 
   /**
    * When true (default), focus returns to the previously focused element on close. Modal mode
    * only: a non-modal drawer never moves focus on close.
    */
-  readonly returnFocus = input(this.#defaults.returnFocus ?? true, {
+  readonly returnFocus = input(this.#defaults.returnFocus, {
     transform: booleanAttribute,
   });
 
@@ -138,7 +138,7 @@ export class ForDrawer extends ModalSurfaceBase<ForDrawerCloseReason> implements
    * focusable descendant; `'container'` focuses the drawer surface itself
    * (useful when there's nothing focusable inside).
    */
-  readonly initialFocus = input<'first' | 'container'>(this.#defaults.initialFocus ?? 'first');
+  readonly initialFocus = input<'first' | 'container'>(this.#defaults.initialFocus);
 
   /**
    * When true (default), a swipe toward the anchored edge dismisses past
@@ -146,7 +146,7 @@ export class ForDrawer extends ModalSurfaceBase<ForDrawerCloseReason> implements
    * still drags between snaps when it is `false`, stopping at the lowest one.
    * A drawer whose `dismissible` is `false` never swipe-dismisses either way.
    */
-  readonly swipeToDismiss = input(this.#defaults.swipeToDismiss ?? true, {
+  readonly swipeToDismiss = input(this.#defaults.swipeToDismiss, {
     transform: booleanAttribute,
   });
 
@@ -158,7 +158,7 @@ export class ForDrawer extends ModalSurfaceBase<ForDrawerCloseReason> implements
    * fraction of the **lowest snap's** extent, so a small "peek" snap stays
    * dismissible without dragging it entirely off-screen.
    */
-  readonly closeThreshold = input(this.#defaults.closeThreshold ?? 0.25);
+  readonly closeThreshold = input(this.#defaults.closeThreshold);
 
   /**
    * When true, the swipe gesture only arms on a pointerdown that started on
@@ -171,7 +171,7 @@ export class ForDrawer extends ModalSurfaceBase<ForDrawerCloseReason> implements
    * swipe is not claimed as a scroll. A scroller inside the surface keeps its
    * own scrolling.
    */
-  readonly handleOnly = input(this.#defaults.handleOnly ?? false, { transform: booleanAttribute });
+  readonly handleOnly = input(this.#defaults.handleOnly, { transform: booleanAttribute });
 
   /**
    * When true, asks the registered `[forDrawerWrapper]` to scale and
@@ -180,7 +180,7 @@ export class ForDrawer extends ModalSurfaceBase<ForDrawerCloseReason> implements
    * wrapper is mounted. Default `false` so existing consumers are
    * untouched.
    */
-  readonly scaleBackground = input(this.#defaults.scaleBackground ?? false, {
+  readonly scaleBackground = input(this.#defaults.scaleBackground, {
     transform: booleanAttribute,
   });
 
@@ -191,7 +191,7 @@ export class ForDrawer extends ModalSurfaceBase<ForDrawerCloseReason> implements
    * when `scaleBackground` is `true`. A change while the drawer is open
    * paints or restores `<body>` immediately.
    */
-  readonly setBackgroundColorOnScale = input(this.#defaults.setBackgroundColorOnScale ?? true, {
+  readonly setBackgroundColorOnScale = input(this.#defaults.setBackgroundColorOnScale, {
     transform: booleanAttribute,
   });
 
@@ -384,10 +384,10 @@ export class ForDrawer extends ModalSurfaceBase<ForDrawerCloseReason> implements
     const tuning = this.#tuning();
     return {
       setBackgroundColorOnScale: this.setBackgroundColorOnScale(),
-      scaleAmount: tuning.scaleAmount ?? 0.95,
-      scaleTranslateYpx: tuning.scaleTranslateYpx ?? 14,
-      scaleBorderRadiusPx: tuning.scaleBorderRadiusPx ?? 8,
-      scaleBackgroundColor: tuning.scaleBackgroundColor ?? 'black',
+      scaleAmount: tuning.scaleAmount,
+      scaleTranslateYpx: tuning.scaleTranslateYpx,
+      scaleBorderRadiusPx: tuning.scaleBorderRadiusPx,
+      scaleBackgroundColor: tuning.scaleBackgroundColor,
     };
   });
 
@@ -420,8 +420,8 @@ export class ForDrawer extends ModalSurfaceBase<ForDrawerCloseReason> implements
         host: this.#host.nativeElement,
         side: this.side,
         parent: this.#parentDrawer?.hostElement ?? null,
-        nestedScaleAmount: tuning.nestedScaleAmount ?? 0.93,
-        nestedTranslateYpx: tuning.nestedTranslateYpx ?? 8,
+        nestedScaleAmount: tuning.nestedScaleAmount,
+        nestedTranslateYpx: tuning.nestedTranslateYpx,
       });
       this.#stackHandle.set(handle);
       this.#stackCleanup = handle.cleanup;

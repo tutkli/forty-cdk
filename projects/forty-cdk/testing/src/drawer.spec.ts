@@ -7,6 +7,7 @@ import {
 } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
+import { provideForDrawerDefaults } from 'forty-cdk/defaults';
 import {
   FOR_DRAWER_CONTEXT,
   ForDrawerBackdrop,
@@ -124,6 +125,53 @@ describe('provideForDrawerTesting', () => {
     expect(context.swipeProgress()).toBe(0);
     expect(context.fadeFromActive()).toBe(false);
     expect(context.hostElement).toBeInstanceOf(HTMLElement);
+  });
+
+  it('reports the scope drawer defaults on the context', async () => {
+    await mount([
+      provideForDrawerDefaults({ side: 'right', dismissible: false, modal: false }),
+      provideForDrawerTesting(),
+    ]);
+    const context = TestBed.inject(FOR_DRAWER_CONTEXT);
+
+    expect(context.side()).toBe('right');
+    expect(context.dismissible()).toBe(false);
+    expect(context.modal()).toBe(false);
+  });
+
+  it('lets the options override the scope defaults and set alert', async () => {
+    await mount([
+      provideForDrawerDefaults({ side: 'right', dismissible: false }),
+      provideForDrawerTesting({ side: 'top', dismissible: true, modal: false, alert: true }),
+    ]);
+    const context = TestBed.inject(FOR_DRAWER_CONTEXT);
+
+    expect(context.side()).toBe('top');
+    expect(context.dismissible()).toBe(true);
+    expect(context.modal()).toBe(false);
+    expect(context.alert()).toBe(true);
+  });
+
+  it('ignores a backdrop click when the scope defaults are not dismissible', async () => {
+    const fixture = await mount([
+      provideForDrawerDefaults({ dismissible: false }),
+      provideForDrawerTesting(),
+    ]);
+    const ref = TestBed.inject(ForDrawerRef);
+
+    document.querySelector<HTMLElement>('[data-testid="backdrop"]')!.click();
+    await flush(fixture);
+
+    expect(ref.isClosed()).toBe(false);
+  });
+
+  it('still closes on the close button when not dismissible', async () => {
+    const fixture = await mount(provideForDrawerTesting({ dismissible: false }));
+    const ref = TestBed.inject(ForDrawerRef);
+
+    fixture.nativeElement.querySelector('button').click();
+
+    await expect(ref.closed).resolves.toEqual({ reason: 'closeButton', result: 'applied' });
   });
 
   it("reads the context's active snap point off the ref", async () => {

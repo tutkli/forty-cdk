@@ -1,5 +1,6 @@
 import { computed, inject, type Provider, signal } from '@angular/core';
 
+import { FOR_DIALOG_DEFAULTS } from 'forty-cdk/defaults';
 import {
   FOR_DIALOG_CONTEXT,
   FOR_DIALOG_DATA,
@@ -19,6 +20,12 @@ type DialogTestingContext = ForDialogContext & {
   surfaceElement(): HTMLElement | null;
 };
 
+interface DialogTestingState {
+  readonly dismissible: boolean;
+  readonly modal: boolean;
+  readonly alert: boolean;
+}
+
 /** Options accepted by {@link provideForDialogTesting}. */
 export interface ForDialogTestingOptions {
   /**
@@ -28,6 +35,18 @@ export interface ForDialogTestingOptions {
   readonly ref?: ForDialogRef;
   /** The payload `injectDialogData()` returns. Defaults to `null`, as `open()` without `data`. */
   readonly data?: unknown;
+  /**
+   * What the context reports as `dismissible()`, as `ForDialogOpenConfig.dismissible`. Defaults to
+   * the scope's `FOR_DIALOG_DEFAULTS`.
+   */
+  readonly dismissible?: boolean;
+  /**
+   * What the context reports as `modal()`, as `ForDialogOpenConfig.modal`. Defaults to the scope's
+   * `FOR_DIALOG_DEFAULTS`.
+   */
+  readonly modal?: boolean;
+  /** What the context reports as `alert()`, as `ForDialogOpenConfig.alert`. Defaults to `false`. */
+  readonly alert?: boolean;
 }
 
 /**
@@ -50,8 +69,10 @@ export function createForDialogRef<R = unknown>(): ForDialogRef<R> {
  * With it a dialog's content component mounts outside the manager and its pieces behave as they do
  * in the opened dialog: `[forDialogTitle]` and `[forDialogDescription]` register into the context's
  * `labelledBy()` / `describedBy()`, and `[forDialogClose]` or a backdrop click closes the ref with
- * that reason and the `closeWith` value. The context reports a dismissible, modal, non-alert dialog
- * at depth `0`, the manager's defaults.
+ * that reason and the `closeWith` value, which a dialog that is not dismissible ignores for every
+ * reason but `closeButton` and `programmatic`. The context reports `dismissible` and `modal` from
+ * `options`, else from the scope's `FOR_DIALOG_DEFAULTS` as `ForDialogManager.open()` resolves
+ * them, `alert` from `options` (else `false`), and depth `0`.
  *
  * ```ts
  * TestBed.configureTestingModule({ providers: [provideForDialogTesting()] });
@@ -65,17 +86,27 @@ export function provideForDialogTesting(options: ForDialogTestingOptions = {}): 
   return [
     { provide: ForDialogRef, useFactory: () => options.ref ?? createForDialogRef() },
     { provide: FOR_DIALOG_DATA, useValue: options.data ?? null },
-    { provide: FOR_DIALOG_CONTEXT, useFactory: () => createContext(inject(ForDialogRef)) },
+    {
+      provide: FOR_DIALOG_CONTEXT,
+      useFactory: () => {
+        const defaults = inject(FOR_DIALOG_DEFAULTS);
+        return createContext(inject(ForDialogRef), {
+          dismissible: options.dismissible ?? defaults.dismissible,
+          modal: options.modal ?? defaults.modal,
+          alert: options.alert ?? false,
+        });
+      },
+    },
   ];
 }
 
-function createContext(ref: ForDialogRef): DialogTestingContext {
+function createContext(ref: ForDialogRef, state: DialogTestingState): DialogTestingContext {
   const labels = createIdRegistry();
   const descriptions = createIdRegistry();
   return {
-    dismissible: signal(true).asReadonly(),
-    modal: signal(true).asReadonly(),
-    alert: signal(false).asReadonly(),
+    dismissible: signal(state.dismissible).asReadonly(),
+    modal: signal(state.modal).asReadonly(),
+    alert: signal(state.alert).asReadonly(),
     container: signal<HTMLElement | null>(null).asReadonly(),
     depth: signal(0).asReadonly(),
     labelledBy: computed(() => labels.joined()),
@@ -90,6 +121,11 @@ function createContext(ref: ForDialogRef): DialogTestingContext {
     unregisterInitialFocus: () => {},
     isTopmostPointerLayer: () => true,
     surfaceElement: () => null,
-    requestClose: (reason: ForDialogCloseReason, value?: unknown) => ref.close(value, reason),
+    requestClose: (reason: ForDialogCloseReason, value?: unknown) => {
+      if (reason !== 'closeButton' && reason !== 'programmatic' && !state.dismissible) {
+        return;
+      }
+      ref.close(value, reason);
+    },
   };
 }

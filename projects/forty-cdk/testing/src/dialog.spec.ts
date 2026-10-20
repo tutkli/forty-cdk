@@ -7,6 +7,7 @@ import {
 } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
+import { provideForDialogDefaults } from 'forty-cdk/defaults';
 import {
   FOR_DIALOG_CONTEXT,
   ForDialogBackdrop,
@@ -112,6 +113,51 @@ describe('provideForDialogTesting', () => {
     expect(context.alert()).toBe(false);
     expect(context.container()).toBeNull();
     expect(context.depth()).toBe(0);
+  });
+
+  it('reports the scope dialog defaults on the context', async () => {
+    await mount([
+      provideForDialogDefaults({ dismissible: false, modal: false }),
+      provideForDialogTesting(),
+    ]);
+    const context = TestBed.inject(FOR_DIALOG_CONTEXT);
+
+    expect(context.dismissible()).toBe(false);
+    expect(context.modal()).toBe(false);
+  });
+
+  it('lets the options override the scope defaults and set alert', async () => {
+    await mount([
+      provideForDialogDefaults({ dismissible: false }),
+      provideForDialogTesting({ dismissible: true, modal: false, alert: true }),
+    ]);
+    const context = TestBed.inject(FOR_DIALOG_CONTEXT);
+
+    expect(context.dismissible()).toBe(true);
+    expect(context.modal()).toBe(false);
+    expect(context.alert()).toBe(true);
+  });
+
+  it('ignores a backdrop click when the scope defaults are not dismissible', async () => {
+    const fixture = await mount([
+      provideForDialogDefaults({ dismissible: false }),
+      provideForDialogTesting(),
+    ]);
+    const ref = TestBed.inject(ForDialogRef);
+
+    document.querySelector<HTMLElement>('[data-testid="backdrop"]')!.click();
+    await flush(fixture);
+
+    expect(ref.isClosed()).toBe(false);
+  });
+
+  it('still closes on the close button when not dismissible', async () => {
+    const fixture = await mount(provideForDialogTesting({ dismissible: false }));
+    const ref = TestBed.inject(ForDialogRef);
+
+    fixture.nativeElement.querySelector('button').click();
+
+    await expect(ref.closed).resolves.toEqual({ reason: 'closeButton', result: true });
   });
 
   it('closes the ref with the closeButton reason and the closeWith value', async () => {

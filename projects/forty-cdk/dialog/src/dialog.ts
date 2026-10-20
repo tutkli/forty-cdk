@@ -81,7 +81,7 @@ export class ForDialog extends ModalSurfaceBase<ForDialogCloseReason> implements
    * focus outside emit `(dismiss)`. Disable for critical confirm flows that
    * must be answered explicitly via `[forDialogClose]`.
    */
-  readonly dismissible = input(this.#defaults.dismissible ?? true, { transform: booleanAttribute });
+  readonly dismissible = input(this.#defaults.dismissible, { transform: booleanAttribute });
 
   /**
    * When true (default), sets `aria-modal="true"`, locks body scroll, and
@@ -89,20 +89,20 @@ export class ForDialog extends ModalSurfaceBase<ForDialogCloseReason> implements
    * Read once at mount: a change while the dialog is open takes effect on the
    * next open.
    */
-  readonly modal = input(this.#defaults.modal ?? true, { transform: booleanAttribute });
+  readonly modal = input(this.#defaults.modal, { transform: booleanAttribute });
 
   /**
    * When true (default), focus returns to the previously focused element on close. Modal mode
    * only: a non-modal dialog never moves focus on close.
    */
-  readonly returnFocus = input(this.#defaults.returnFocus ?? true, { transform: booleanAttribute });
+  readonly returnFocus = input(this.#defaults.returnFocus, { transform: booleanAttribute });
 
   /**
    * Where to send focus on mount. `'first'` (default) finds the first
    * focusable descendant; `'container'` focuses the dialog box itself
    * (useful when there's nothing focusable inside).
    */
-  readonly initialFocus = input<'first' | 'container'>(this.#defaults.initialFocus ?? 'first');
+  readonly initialFocus = input<'first' | 'container'>(this.#defaults.initialFocus);
 
   protected readonly entryPoint = 'dialog';
 

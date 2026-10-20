@@ -14,7 +14,7 @@ export type BreakpointMap = Record<string, number>;
  * The default breakpoint map, mirroring Tailwind CSS's `sm`–`2xl` scale. Used
  * as the library fallback when no `provideForBreakpointsDefaults` is in scope,
  * and the source of the typed breakpoint names when the consumer has not
- * augmented {@link BreakpointRegistry}.
+ * augmented `BreakpointRegistry` from `forty-cdk/breakpoints`.
  */
 export const forBreakpointsTailwind = {
   sm: 640,
