@@ -186,3 +186,186 @@ describe('createAutoScroller — resolveScrollHost follows the pointer across co
     scroller.stop();
   });
 });
+
+describe('createAutoScroller — walks outward past a container that cannot scroll', () => {
+  interface Scroller extends HTMLElement {
+    deltaX: number;
+    deltaY: number;
+  }
+
+  const created: HTMLElement[] = [];
+
+  function scroller(
+    rect: { left: number; top: number; right: number; bottom: number },
+    extent: { scrollTop?: number; scrollLeft?: number; dir?: 'ltr' | 'rtl' } = {},
+  ): Scroller {
+    const el = document.createElement('div') as unknown as Scroller;
+    el.style.overflowX = 'auto';
+    el.style.overflowY = 'auto';
+    if (extent.dir) {
+      el.style.direction = extent.dir;
+    }
+    Object.defineProperty(el, 'scrollHeight', { value: 1000, configurable: true });
+    Object.defineProperty(el, 'clientHeight', { value: 100, configurable: true });
+    Object.defineProperty(el, 'scrollWidth', { value: 1000, configurable: true });
+    Object.defineProperty(el, 'clientWidth', { value: 100, configurable: true });
+    let top = extent.scrollTop ?? 0;
+    let left = extent.scrollLeft ?? 0;
+    el.deltaX = 0;
+    el.deltaY = 0;
+    Object.defineProperty(el, 'scrollTop', {
+      configurable: true,
+      get: () => top,
+      set: (v: number) => {
+        el.deltaY += v - top;
+        top = v;
+      },
+    });
+    Object.defineProperty(el, 'scrollLeft', {
+      configurable: true,
+      get: () => left,
+      set: (v: number) => {
+        el.deltaX += v - left;
+        left = v;
+      },
+    });
+    el.getBoundingClientRect = () =>
+      ({
+        ...rect,
+        width: rect.right - rect.left,
+        height: rect.bottom - rect.top,
+        x: rect.left,
+        y: rect.top,
+        toJSON() {},
+      }) as DOMRect;
+    created.push(el);
+    return el;
+  }
+
+  function harness() {
+    const pending: { cb: FrameRequestCallback | null } = { cb: null };
+    const scrollBy = vi.fn<(x: number, y: number) => void>();
+    const win = {
+      innerWidth: 800,
+      innerHeight: 600,
+      scrollBy,
+      requestAnimationFrame(cb: FrameRequestCallback): number {
+        pending.cb = cb;
+        return 1;
+      },
+      cancelAnimationFrame(): void {
+        pending.cb = null;
+      },
+      getComputedStyle: (el: Element) => window.getComputedStyle(el),
+      get document() {
+        return document;
+      },
+    } as unknown as Window;
+    const step = (): void => {
+      const cb = pending.cb;
+      pending.cb = null;
+      cb?.(0);
+    };
+    return { win, scrollBy, step };
+  }
+
+  afterEach(() => {
+    for (const el of created.splice(0)) {
+      el.remove();
+    }
+  });
+
+  it('scrolls the viewport when the container edge lies below the fold', () => {
+    const panel = scroller({ left: 0, top: 300, right: 400, bottom: 1080 });
+    document.body.appendChild(panel);
+    const { win, scrollBy, step } = harness();
+    const autoScroller = createAutoScroller({
+      host: panel,
+      win,
+      edgeSize: 50,
+      maxSpeed: 20,
+      onFrame: () => {},
+    });
+
+    autoScroller.update({ x: 200, y: 590 });
+    step();
+
+    expect(panel.deltaY).toBe(0);
+    expect(scrollBy).toHaveBeenCalledTimes(1);
+    expect(scrollBy.mock.calls[0]![1]).toBeGreaterThan(0);
+    autoScroller.stop();
+  });
+
+  it('prefers the nearest container while it can still scroll toward the edge', () => {
+    const outer = scroller({ left: 0, top: 0, right: 400, bottom: 300 });
+    const inner = scroller({ left: 0, top: 0, right: 400, bottom: 300 });
+    outer.appendChild(inner);
+    document.body.appendChild(outer);
+    const { win, scrollBy, step } = harness();
+    const autoScroller = createAutoScroller({
+      host: inner,
+      win,
+      edgeSize: 50,
+      maxSpeed: 20,
+      onFrame: () => {},
+    });
+
+    autoScroller.update({ x: 200, y: 290 });
+    step();
+
+    expect(inner.deltaY).toBeGreaterThan(0);
+    expect(outer.deltaY).toBe(0);
+    expect(scrollBy).not.toHaveBeenCalled();
+    autoScroller.stop();
+  });
+
+  it('hands the edge to the scrollable ancestor once the nearest container is fully scrolled', () => {
+    const outer = scroller({ left: 0, top: 0, right: 400, bottom: 300 });
+    const inner = scroller({ left: 0, top: 0, right: 400, bottom: 300 }, { scrollTop: 900 });
+    outer.appendChild(inner);
+    document.body.appendChild(outer);
+    const { win, scrollBy, step } = harness();
+    const autoScroller = createAutoScroller({
+      host: inner,
+      win,
+      edgeSize: 50,
+      maxSpeed: 20,
+      onFrame: () => {},
+    });
+
+    autoScroller.update({ x: 200, y: 290 });
+    step();
+
+    expect(inner.deltaY).toBe(0);
+    expect(outer.deltaY).toBeGreaterThan(0);
+    expect(scrollBy).not.toHaveBeenCalled();
+    autoScroller.stop();
+  });
+
+  it('reads the negative scrollLeft model of an RTL container when deciding it is fully scrolled', () => {
+    const outer = scroller({ left: 0, top: 0, right: 400, bottom: 300 });
+    const atStart = scroller({ left: 0, top: 0, right: 400, bottom: 300 }, { dir: 'rtl' });
+    outer.appendChild(atStart);
+    document.body.appendChild(outer);
+    const { win, step } = harness();
+    const autoScroller = createAutoScroller({
+      host: atStart,
+      win,
+      edgeSize: 50,
+      maxSpeed: 20,
+      onFrame: () => {},
+    });
+
+    autoScroller.update({ x: 10, y: 150 });
+    step();
+    expect(atStart.deltaX).toBeLessThan(0);
+    expect(outer.deltaX).toBe(0);
+
+    atStart.scrollLeft = 0;
+    autoScroller.update({ x: 390, y: 150 });
+    step();
+    expect(atStart.scrollLeft).toBe(0);
+    expect(outer.deltaX).toBeGreaterThan(0);
+    autoScroller.stop();
+  });
+});

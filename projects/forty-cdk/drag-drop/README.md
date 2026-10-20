@@ -103,7 +103,7 @@ export class DragDropSortableExample {
 
 ### Drag follows scroll (auto-scroll)
 
-When a pointer drag reaches the edge of the nearest scrollable container, `[forDropList]` auto-scrolls it toward that edge so you can drop on items far outside the visible window. The edge zone and max speed are tuned via `provideForDragDropDefaults`. Keyboard dragging is unaffected.
+When a pointer drag reaches the edge of a scrollable container that can still scroll that way (the list, a scrollable ancestor, or the page), `[forDropList]` auto-scrolls it toward that edge so you can drop on items far outside the visible window. The edge zone and max speed are tuned via `provideForDragDropDefaults`. Keyboard dragging is unaffected.
 
 ### Transfer between lists
 
@@ -224,10 +224,15 @@ follows the pointer as the default preview. The clone carries
 
 ### Auto-scroll
 
-While a pointer drag is in flight, `[forDropList]` automatically scrolls the
-nearest scrollable container (the list itself, a scrollable ancestor, or the
-viewport) toward whichever edge the pointer approaches. Speed scales with
-proximity: the closer the pointer is to the edge, the faster the scroll.
+While a pointer drag is in flight, `[forDropList]` automatically scrolls toward
+whichever edge the pointer approaches. The candidates are the list under the
+pointer, then each scrollable ancestor, then the viewport, and the first one whose
+edge the pointer is near and that can still scroll that way is the one that
+scrolls. So a fully scrolled list hands the edge to the panel around it, and a
+panel whose bottom edge is below the fold hands it to the page. Both axes are
+covered, and under `dir="rtl"` the left edge scrolls toward the inline end. Speed
+scales with proximity: the closer the pointer is to the edge, the faster the
+scroll.
 
 The feature is **on by default**. Opt out with `[autoScroll]="false"`:
 

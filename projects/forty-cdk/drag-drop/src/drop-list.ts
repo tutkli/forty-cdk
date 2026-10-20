@@ -629,7 +629,7 @@ export class ForDropList implements ForDropListContext {
       return null;
     }
     const under = this.#document.elementFromPoint(point.x, point.y);
-    if (!(under instanceof view.HTMLElement)) {
+    if (under === null) {
       return null;
     }
     const containers = [this as ForDropListContext, ...this.#effectiveConnected()];

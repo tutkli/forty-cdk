@@ -1,10 +1,12 @@
-import { type DragRect } from 'forty-cdk/core';
+import { composedParentElement, type DragRect } from 'forty-cdk/core';
 
 /** A 2-D scroll velocity vector produced by `computeScrollVelocity`. */
 export interface AutoScrollVelocity {
   readonly x: number;
   readonly y: number;
 }
+
+const NO_VELOCITY: AutoScrollVelocity = { x: 0, y: 0 };
 
 function axisVelocity(
   pos: number,
@@ -58,20 +60,20 @@ function isScrollable(el: HTMLElement, win: Window): boolean {
 }
 
 /**
- * Walks up the DOM from `start` (inclusive) looking for the nearest scrollable
- * ancestor, stopping before `documentElement` and `body`. Returns the first
- * scrollable element, or `null` if none is found (the caller should fall back
- * to the viewport).
+ * Walks up the composed tree from `start` (inclusive), stopping before
+ * `documentElement` and `body`, and returns every scrollable ancestor from the
+ * innermost outward. An empty result leaves the viewport as the only target.
  */
-export function findScrollContainer(start: HTMLElement | null, win: Window): HTMLElement | null {
+function findScrollContainers(start: HTMLElement | null, win: Window): HTMLElement[] {
+  const containers: HTMLElement[] = [];
   let el = start;
   while (el !== null && el !== win.document.documentElement && el !== win.document.body) {
     if (isScrollable(el, win)) {
-      return el;
+      containers.push(el);
     }
-    el = el.parentElement;
+    el = composedParentElement(el);
   }
-  return null;
+  return containers;
 }
 
 /** An active auto-scroll controller returned by `createAutoScroller`. */
@@ -98,23 +100,42 @@ export interface AutoScrollerConfig {
    * Optional resolver for the element the scrollable-container search should start from, given the
    * current pointer position. Returns the element under the pointer (or `null` to fall back to
    * `host`). Supplied by callers that drag across connected lists so auto-scroll follows the
-   * container the pointer is actually over — not always the origin list. When provided, the scroll
-   * target is re-resolved on every `update`, so a pointer crossing from one list into another
-   * scrolls the destination container.
+   * container the pointer is actually over — not always the origin list. The search is re-run on
+   * every `update`, so a pointer crossing from one list into another scrolls the destination
+   * container.
    */
   readonly resolveScrollHost?: (point: { x: number; y: number }) => HTMLElement | null;
 }
 
 interface ScrollTarget {
-  rect(): DragRect;
+  velocity(point: { x: number; y: number }, edgeSize: number, maxSpeed: number): AutoScrollVelocity;
   scrollBy(dx: number, dy: number): void;
 }
 
-function elementTarget(el: HTMLElement): ScrollTarget {
+function towardRoom(delta: number, offset: number, max: number): number {
+  if (delta < 0) {
+    return offset >= 1 ? delta : 0;
+  }
+  return offset <= max - 1 ? delta : 0;
+}
+
+function elementTarget(el: HTMLElement, win: Window): ScrollTarget {
   return {
-    rect(): DragRect {
+    velocity(point, edgeSize, maxSpeed): AutoScrollVelocity {
       const r = el.getBoundingClientRect();
-      return { left: r.left, top: r.top, right: r.right, bottom: r.bottom };
+      if (point.x < r.left || point.x > r.right || point.y < r.top || point.y > r.bottom) {
+        return NO_VELOCITY;
+      }
+      const v = computeScrollVelocity(r, point, edgeSize, maxSpeed);
+      const maxX = el.scrollWidth - el.clientWidth;
+      const offsetX =
+        v.x !== 0 && win.getComputedStyle(el).direction === 'rtl'
+          ? el.scrollLeft + maxX
+          : el.scrollLeft;
+      return {
+        x: towardRoom(v.x, offsetX, maxX),
+        y: towardRoom(v.y, el.scrollTop, el.scrollHeight - el.clientHeight),
+      };
     },
     scrollBy(dx: number, dy: number): void {
       el.scrollLeft += dx;
@@ -125,8 +146,9 @@ function elementTarget(el: HTMLElement): ScrollTarget {
 
 function viewportTarget(win: Window): ScrollTarget {
   return {
-    rect(): DragRect {
-      return { left: 0, top: 0, right: win.innerWidth, bottom: win.innerHeight };
+    velocity(point, edgeSize, maxSpeed): AutoScrollVelocity {
+      const rect = { left: 0, top: 0, right: win.innerWidth, bottom: win.innerHeight };
+      return computeScrollVelocity(rect, point, edgeSize, maxSpeed);
     },
     scrollBy(dx: number, dy: number): void {
       win.scrollBy(dx, dy);
@@ -136,8 +158,11 @@ function viewportTarget(win: Window): ScrollTarget {
 
 /**
  * Creates an auto-scroller that drives a `requestAnimationFrame` loop while a
- * pointer drag is near the edge of the nearest scrollable container (or the
- * viewport). Deltas are applied instantaneously per frame — no CSS smooth-scroll
+ * pointer drag is near a scroll edge. The candidates are the scrollable
+ * containers from the list (or the one under the pointer) outward, then the
+ * viewport; each frame scrolls the innermost candidate whose rect holds the
+ * pointer, whose edge band the pointer is in, and which can still scroll that
+ * way. Deltas are applied instantaneously per frame — no CSS smooth-scroll
  * easing — which is the `prefers-reduced-motion`-safe approach: scrolling is
  * functional, not decorative, so no reduced-motion branch is needed.
  *
@@ -152,31 +177,43 @@ export function createAutoScroller(config: AutoScrollerConfig): AutoScroller {
 
   const win: Window = maybeWin;
 
-  let target: ScrollTarget | null = null;
-  let targetEl: HTMLElement | null = null;
+  let targets: readonly ScrollTarget[] = [];
   let point: { x: number; y: number } | null = null;
   let rafId: number | null = null;
 
-  function resolveTarget(at: { x: number; y: number }): ScrollTarget {
+  function resolveTargets(at: { x: number; y: number }): readonly ScrollTarget[] {
     const start = config.resolveScrollHost
       ? (config.resolveScrollHost(at) ?? config.host)
       : config.host;
-    const el = findScrollContainer(start, win);
-    targetEl = el;
-    return el ? elementTarget(el) : viewportTarget(win);
+    return [
+      ...findScrollContainers(start, win).map((el) => elementTarget(el, win)),
+      viewportTarget(win),
+    ];
+  }
+
+  function activeScroll(at: {
+    x: number;
+    y: number;
+  }): { target: ScrollTarget; v: AutoScrollVelocity } | null {
+    for (const target of targets) {
+      const v = target.velocity(at, config.edgeSize, config.maxSpeed);
+      if (v.x !== 0 || v.y !== 0) {
+        return { target, v };
+      }
+    }
+    return null;
   }
 
   function tick(): void {
     rafId = null;
-    if (point === null || target === null) {
+    if (point === null) {
       return;
     }
-    const v = computeScrollVelocity(target.rect(), point, config.edgeSize, config.maxSpeed);
-    if (v.x === 0 && v.y === 0) {
-      target = null;
+    const active = activeScroll(point);
+    if (active === null) {
       return;
     }
-    target.scrollBy(v.x, v.y);
+    active.target.scrollBy(active.v.x, active.v.y);
     config.onFrame();
     rafId = win.requestAnimationFrame(tick);
   }
@@ -184,17 +221,8 @@ export function createAutoScroller(config: AutoScrollerConfig): AutoScroller {
   return {
     update(next: { x: number; y: number }): void {
       point = next;
-      if (target === null) {
-        target = resolveTarget(point);
-      } else if (config.resolveScrollHost) {
-        const previousEl = targetEl;
-        const nextTarget = resolveTarget(point);
-        if (targetEl !== previousEl) {
-          target = nextTarget;
-        }
-      }
-      const v = computeScrollVelocity(target.rect(), point, config.edgeSize, config.maxSpeed);
-      if (v.x === 0 && v.y === 0) {
+      targets = resolveTargets(next);
+      if (activeScroll(next) === null) {
         if (rafId !== null) {
           win.cancelAnimationFrame(rafId);
           rafId = null;
@@ -208,8 +236,7 @@ export function createAutoScroller(config: AutoScrollerConfig): AutoScroller {
         win.cancelAnimationFrame(rafId);
         rafId = null;
       }
-      target = null;
-      targetEl = null;
+      targets = [];
       point = null;
     },
   };
