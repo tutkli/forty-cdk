@@ -17,6 +17,7 @@ import {
   flushPositioning,
   renderHost,
   type RenderResult,
+  withScrollIntoViewStub,
 } from '../../src/test-utils';
 import {
   assertDataStateContract,
@@ -982,19 +983,8 @@ describe('ForSelect', () => {
     });
 
     describe('range navigation scrolls the focused option into view (#1284)', () => {
-      function withScrollStub(run: (stub: ReturnType<typeof vi.fn>) => Promise<void>) {
-        const had = 'scrollIntoView' in Element.prototype;
-        const stub = vi.fn();
-        Element.prototype.scrollIntoView = stub;
-        return run(stub).finally(() => {
-          if (!had) {
-            delete (Element.prototype as { scrollIntoView?: unknown }).scrollIntoView;
-          }
-        });
-      }
-
       it('Shift+ArrowDown reveals the extended option', () =>
-        withScrollStub(async (stub) => {
+        withScrollIntoViewStub(async (stub) => {
           const r = await openMulti();
           getOption('apple').focus();
           pressKey(getOption('apple'), 'ArrowDown', { shiftKey: true });
@@ -1004,7 +994,7 @@ describe('ForSelect', () => {
         }));
 
       it('Ctrl+Shift+End reveals the range edge option', () =>
-        withScrollStub(async (stub) => {
+        withScrollIntoViewStub(async (stub) => {
           const r = await openMulti();
           getOption('banana').focus();
           pressKey(getOption('banana'), 'End', { ctrlKey: true, shiftKey: true });
@@ -3409,19 +3399,8 @@ describe('ForSelect', () => {
   });
 
   describe('scroll-to-selected on open (#1145)', () => {
-    function withScrollStub(run: (stub: ReturnType<typeof vi.fn>) => Promise<void>) {
-      const had = 'scrollIntoView' in Element.prototype;
-      const stub = vi.fn();
-      Element.prototype.scrollIntoView = stub;
-      return run(stub).finally(() => {
-        if (!had) {
-          delete (Element.prototype as { scrollIntoView?: unknown }).scrollIntoView;
-        }
-      });
-    }
-
     it('reveals the selected option once the positioner resolves (popper)', () =>
-      withScrollStub(async (stub) => {
+      withScrollIntoViewStub(async (stub) => {
         const r = renderHost(SelectHost);
         r.instance.value.set(['date']);
         r.instance.open.set(true);
@@ -3431,7 +3410,7 @@ describe('ForSelect', () => {
       }));
 
     it('does not scroll when nothing is selected (initial focus lands on the first option)', () =>
-      withScrollStub(async (stub) => {
+      withScrollIntoViewStub(async (stub) => {
         const r = renderHost(SelectHost);
         r.instance.open.set(true);
         await flushPositioning(r.fixture);
@@ -3445,7 +3424,7 @@ describe('ForSelect', () => {
       ['End', 'item-aligned'],
     ] as const) {
       it(`reveals the last option ${key} focused once the positioner resolves (${position})`, () =>
-        withScrollStub(async (stub) => {
+        withScrollIntoViewStub(async (stub) => {
           const r = renderHost(SelectHost);
           r.instance.position.set(position);
           await flush(r.fixture);
@@ -3458,7 +3437,7 @@ describe('ForSelect', () => {
     }
 
     it('reveals the option focus landed on, not a disabled selection it could not focus', () =>
-      withScrollStub(async (stub) => {
+      withScrollIntoViewStub(async (stub) => {
         const r = renderHost(SelectHost);
         r.instance.cherryDisabled.set(true);
         r.instance.value.set(['cherry']);
@@ -3498,7 +3477,7 @@ describe('ForSelect', () => {
     }
 
     it('reveals the option compareWith matches when the value serializes differently', () =>
-      withScrollStub(async (stub) => {
+      withScrollIntoViewStub(async (stub) => {
         const r = renderHost(CompareWithOnlyHost);
         r.instance.value.set([{ id: 2, name: 'Berlin', country: 'DE' }]);
         r.instance.open.set(true);

@@ -9,7 +9,13 @@ import {
   ForTimePickerOption,
   ForTimePickerTrigger,
 } from 'forty-cdk/time-picker';
-import { afterEachOverlayCleanup, flush, flushPositioning, renderHost } from '../test-utils';
+import {
+  afterEachOverlayCleanup,
+  flush,
+  flushPositioning,
+  renderHost,
+  withScrollIntoViewStub,
+} from '../test-utils';
 import { entryPointOf, LIBRARY_CODE } from '../test-utils/source-scan';
 
 /**
@@ -118,27 +124,24 @@ describe('listbox overlay adopters', () => {
   for (const [entryPoint, adopter] of Object.entries(ADOPTERS)) {
     describe(entryPoint, () => {
       it('reveals the option End focused once the positioner has resolved', async () => {
-        const had = 'scrollIntoView' in Element.prototype;
         const revealed: Element[] = [];
-        Element.prototype.scrollIntoView = function (this: Element) {
-          const content = byTestId(adopter.content);
-          if (content?.style.translate) {
-            revealed.push(this);
-          }
-        };
-        try {
-          const r = renderHost(adopter.host);
-          await flush(r.fixture);
-          pressKey(byTestId(adopter.trigger), 'End');
-          await flushPositioning(r.fixture);
+        await withScrollIntoViewStub(
+          async () => {
+            const r = renderHost(adopter.host);
+            await flush(r.fixture);
+            pressKey(byTestId(adopter.trigger), 'End');
+            await flushPositioning(r.fixture);
 
-          expect(document.activeElement).toBe(byTestId(adopter.lastOption));
-          expect(revealed).toContain(byTestId(adopter.lastOption));
-        } finally {
-          if (!had) {
-            delete (Element.prototype as { scrollIntoView?: unknown }).scrollIntoView;
-          }
-        }
+            expect(document.activeElement).toBe(byTestId(adopter.lastOption));
+            expect(revealed).toContain(byTestId(adopter.lastOption));
+          },
+          function (this: Element) {
+            const content = byTestId(adopter.content);
+            if (content?.style.translate) {
+              revealed.push(this);
+            }
+          },
+        );
       });
 
       it('parks focus on the trigger when Tab leaves the surface from a non-option', async () => {

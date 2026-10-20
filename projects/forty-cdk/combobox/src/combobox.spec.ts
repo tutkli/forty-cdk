@@ -10,7 +10,13 @@ import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 
 import { isUnset, unsetInput, type VetoableEvent, type VetoableNativeEvent } from 'forty-cdk/core';
-import { afterEachOverlayCleanup, flush, flushPositioning, renderHost } from '../../src/test-utils';
+import {
+  afterEachOverlayCleanup,
+  flush,
+  flushPositioning,
+  renderHost,
+  withScrollIntoViewStub,
+} from '../../src/test-utils';
 import {
   assertDataStateContract,
   assertDismissibleLayerContract,
@@ -1412,14 +1418,8 @@ describe('ForCombobox', () => {
       expect(input.getAttribute('aria-activedescendant')).toBeNull();
     });
 
-    it('scrolls the auto-highlight-seeded option into view on open (#568)', async () => {
-      // jsdom on Windows leaves `scrollIntoView` undefined on the prototype
-      // (the production code safe-calls it). Stub it so the call is observable,
-      // restoring the prototype afterwards so the global state doesn't leak.
-      const had = 'scrollIntoView' in Element.prototype;
-      const stub = vi.fn();
-      Element.prototype.scrollIntoView = stub;
-      try {
+    it('scrolls the auto-highlight-seeded option into view on open (#568)', () =>
+      withScrollIntoViewStub(async (stub) => {
         const r = renderHost(ComboboxHost);
         r.instance.open.set(true);
         await flush(r.fixture);
@@ -1428,23 +1428,15 @@ describe('ForCombobox', () => {
         expect(getInput().getAttribute('aria-activedescendant')).toBe(apple.id);
         // The seeded option's host is the element scrolled into view.
         expect(stub.mock.contexts).toContain(apple);
-      } finally {
-        if (!had) {
-          delete (Element.prototype as { scrollIntoView?: unknown }).scrollIntoView;
-        }
-      }
-    });
+      }));
 
-    it('seeds the activedescendant without an unbounded self-cycle (#568)', async () => {
+    it('seeds the activedescendant without an unbounded self-cycle (#568)', () =>
       // The auto-highlight decision is a pure derivation in the `#activeId`
       // linkedSignal, so a stable item set must settle without the effect
       // re-running over and over (a self-cycle would scroll the seed on every
       // tick). Guards against a future regression that reintroduces the
       // read-and-write-in-the-same-effect-scope smell.
-      const had = 'scrollIntoView' in Element.prototype;
-      const stub = vi.fn();
-      Element.prototype.scrollIntoView = stub;
-      try {
+      withScrollIntoViewStub(async (stub) => {
         const r = renderHost(ComboboxHost);
         r.instance.open.set(true);
         await flushPositioning(r.fixture);
@@ -1458,12 +1450,7 @@ describe('ForCombobox', () => {
         await flush(r.fixture);
         expect(stub.mock.calls.length).toBe(afterOpen);
         expect(getInput().getAttribute('aria-activedescendant')).toBe(apple.id);
-      } finally {
-        if (!had) {
-          delete (Element.prototype as { scrollIntoView?: unknown }).scrollIntoView;
-        }
-      }
-    });
+      }));
 
     describe('append vs filter scroll-into-view (#931)', () => {
       @Component({
@@ -1497,19 +1484,8 @@ describe('ForCombobox', () => {
         ]);
       }
 
-      function withScrollStub(run: (stub: ReturnType<typeof vi.fn>) => Promise<void>) {
-        const had = 'scrollIntoView' in Element.prototype;
-        const stub = vi.fn();
-        Element.prototype.scrollIntoView = stub;
-        return run(stub).finally(() => {
-          if (!had) {
-            delete (Element.prototype as { scrollIntoView?: unknown }).scrollIntoView;
-          }
-        });
-      }
-
       it('does not re-scroll the activedescendant when options are appended, not filtered', () =>
-        withScrollStub(async (stub) => {
+        withScrollIntoViewStub(async (stub) => {
           const r = renderHost(AppendHost);
           r.instance.open.set(true);
           await flushPositioning(r.fixture);
@@ -1527,7 +1503,7 @@ describe('ForCombobox', () => {
         }));
 
       it('leaves the scroll untouched when an option is hovered and then a page is appended', () =>
-        withScrollStub(async (stub) => {
+        withScrollIntoViewStub(async (stub) => {
           const r = renderHost(AppendHost);
           r.instance.open.set(true);
           await flushPositioning(r.fixture);
@@ -1547,7 +1523,7 @@ describe('ForCombobox', () => {
         }));
 
       it('scrolls the new seed into view when a filter re-seeds the auto-highlight', () =>
-        withScrollStub(async (stub) => {
+        withScrollIntoViewStub(async (stub) => {
           const r = renderHost(AppendHost);
           r.instance.open.set(true);
           await flush(r.fixture);
@@ -2708,7 +2684,7 @@ describe('ForCombobox', () => {
     @Component({
       imports: [ForCombobox, ForComboboxInput, ForComboboxContent],
       template: `
-        <div forCombobox [(open)]="open" dir="rtl" align="center">
+        <div forCombobox [(open)]="open" dir="rtl" align="end">
           <input forComboboxInput />
           @if (open()) {
             <div forComboboxContent></div>
@@ -2755,10 +2731,12 @@ describe('ForCombobox', () => {
       expect(content.getAttribute('dir')).toBe('rtl');
     });
 
-    it('honors a consumer-provided [align] in RTL (no auto-flip)', async () => {
+    it('passes a consumer-provided logical [align] through unchanged under dir="rtl"', async () => {
       const r = renderHost(RtlHostWithAlign);
       await flushPositioning(r.fixture);
-      expect(getContent().dataset['align']).toBe('center');
+      const content = getContent();
+      expect(content.dataset['align']).toBe('end');
+      expect(content.getAttribute('dir')).toBe('rtl');
     });
   });
 
