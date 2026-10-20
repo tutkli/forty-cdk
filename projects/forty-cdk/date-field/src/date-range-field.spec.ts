@@ -898,6 +898,42 @@ describe('ForDateRangeField', () => {
     });
   });
 
+  describe('endpoint group accessible name', () => {
+    @Component({
+      imports: [ForDateRangeField, ForDateRangeFieldStart, ForDateRangeFieldEnd],
+      providers: [...provideNativeDateAdapter()],
+      template: `
+        <div forDateRangeField>
+          <div
+            forDateRangeFieldStart
+            data-testid="start-group"
+            [ariaLabel]="startAriaLabel()"
+          ></div>
+          <div forDateRangeFieldEnd data-testid="end-group" [ariaLabel]="endAriaLabel()"></div>
+        </div>
+      `,
+    })
+    class EndpointLabelHost {
+      readonly startAriaLabel = signal<string | null>(null);
+      readonly endAriaLabel = signal<string | null>(null);
+    }
+
+    it('drops the scope default when [ariaLabel] is bound to null', () => {
+      const r = renderHost(EndpointLabelHost);
+      expect(r.query('[data-testid="start-group"]')!.hasAttribute('aria-label')).toBe(false);
+      expect(r.query('[data-testid="end-group"]')!.hasAttribute('aria-label')).toBe(false);
+    });
+
+    it('emits a bound [ariaLabel] over the scope default', async () => {
+      const r = renderHost(EndpointLabelHost);
+      r.instance.startAriaLabel.set('Check-in');
+      r.instance.endAriaLabel.set('Check-out');
+      await flush(r.fixture);
+      expect(r.query('[data-testid="start-group"]')!.getAttribute('aria-label')).toBe('Check-in');
+      expect(r.query('[data-testid="end-group"]')!.getAttribute('aria-label')).toBe('Check-out');
+    });
+  });
+
   describe('localized labels via provideForDateRangeFieldDefaults', () => {
     @Component({
       imports: [
@@ -909,8 +945,8 @@ describe('ForDateRangeField', () => {
       providers: [
         ...provideNativeDateAdapter(),
         ...provideForDateRangeFieldDefaults({
-          startLabel: 'Desde',
-          endLabel: 'Hasta',
+          startAriaLabel: 'Desde',
+          endAriaLabel: 'Hasta',
           segmentLabels: { day: 'día' },
         }),
       ],

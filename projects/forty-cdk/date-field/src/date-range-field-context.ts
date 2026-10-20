@@ -21,9 +21,9 @@ export type DateRangeFieldSegment = FieldSegment;
  * Coordination surface `[forDateRangeField]` (the root) exposes to its two
  * endpoint groups (`[forDateRangeFieldStart]` / `[forDateRangeFieldEnd]`). The
  * root owns the start / end segment engines and the composed
- * `DateRange` value; each endpoint reads its rendered segments, its
- * accessible group label, and the {@link SegmentEditorContext} it provides to
- * its own segment / literal children.
+ * `DateRange` value; each endpoint reads its rendered segments and the
+ * {@link SegmentEditorContext} it provides to its own segment / literal
+ * children.
  */
 export interface ForDateRangeFieldContext {
   /** The field's effective disabled (own input OR a surrounding disabled `[forFieldset]`). */
@@ -36,8 +36,6 @@ export interface ForDateRangeFieldContext {
   endpointSegments(which: DateRangeFieldEndpoint): Signal<readonly FieldSegment[]>;
   /** The segment-coordination surface `which` endpoint provides to its segments. */
   endpointContext(which: DateRangeFieldEndpoint): SegmentEditorContext;
-  /** The accessible `aria-label` for `which` endpoint group. */
-  endpointLabel(which: DateRangeFieldEndpoint): Signal<string | null>;
 }
 
 /**

@@ -185,9 +185,6 @@ export class ForDateRangeField<D>
   readonly #startContext: SegmentEditorContext;
   readonly #endContext: SegmentEditorContext;
 
-  readonly #startLabel = computed<string | null>(() => resolveText(this.#defaults.startLabel));
-  readonly #endLabel = computed<string | null>(() => resolveText(this.#defaults.endLabel));
-
   /** `aria-invalid` reflects the form-driven invalidity OR a self-detected disorder. */
   private readonly ariaInvalid = computed(() => this.invalid() || this.#composer.disordered());
 
@@ -349,10 +346,6 @@ export class ForDateRangeField<D>
 
   endpointContext(which: DateRangeFieldEndpoint): SegmentEditorContext {
     return which === 'start' ? this.#startContext : this.#endContext;
-  }
-
-  endpointLabel(which: DateRangeFieldEndpoint): Signal<string | null> {
-    return which === 'start' ? this.#startLabel : this.#endLabel;
   }
 
   private onFocusOut(event: FocusEvent): void {

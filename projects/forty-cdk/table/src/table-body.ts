@@ -457,7 +457,7 @@ export class ForTableBody<T = unknown> {
    * stamps the column's own `[forTablePlaceholderCellDef]`, else the body-level
    * `[forTablePlaceholderCellDefault]`, else nothing.
    */
-  readonly loading = input(false);
+  readonly loading = input(false, { transform: booleanAttribute });
 
   /** Number of placeholder rows rendered while `loading`. Default `3`. */
   readonly placeholderRows = input(3);

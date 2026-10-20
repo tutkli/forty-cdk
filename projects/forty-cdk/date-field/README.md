@@ -296,7 +296,7 @@ readonly booking = form(this.model);
 | `ariaLabel`   | `input<string \| null>`                          | Accessible name for the whole range field group. Emits no `aria-label` while `null`.<br>**Default:** `null`                                         |
 | `dir`         | `input<'ltr' \| 'rtl' \| null>`                  | Writing direction. `null` resolves the ambient direction; mirrors ArrowLeft / ArrowRight segment navigation.<br>**Default:** `null`                 |
 
-The endpoint groups each accept an `ariaLabel` input for their own group label, falling back to the scope defaults (`'Start date'` / `'End date'`). Plus the shared `FormUiControl` members bound automatically by `[formField]`.
+The endpoint groups each accept an `ariaLabel` input for their own group label, falling back to the scope defaults (`'Start date'` / `'End date'`); bind `[ariaLabel]="null"` to drop the name. Plus the shared `FormUiControl` members bound automatically by `[formField]`.
 
 `ForDateRangeField` exposes the same `clear()` and `reset()` as `ForDateField`. They drop a half-entered range and an out-of-order one, its `data-range-error` included, which writing `null` through `[(value)]` cannot do: such a range already reports `value()` as `null`. Without them, finishing the end endpoint later would commit a range built from a start the user thought was gone. A native reset of the owning `<form>` returns the range to what it held when the field first rendered and runs `reset()`.
 
@@ -314,7 +314,7 @@ Each endpoint is its own tab stop, so `Tab` moves start group → end group → 
 
 ### Range scoped defaults
 
-`provideForDateRangeFieldDefaults` mirrors `provideForDateFieldDefaults` and adds `startLabel` / `endLabel` for the two endpoint group `aria-label`s (`'Start date'` / `'End date'` by default). Both wrapper patterns work via `FOR_DATE_RANGE_FIELD_HOST_DIRECTIVE_INPUTS` / `FOR_DATE_RANGE_FIELD_HOST_DIRECTIVE_OUTPUTS`. See [Wrapping form primitives](../../../docs/wrapping-form-primitives.md).
+`provideForDateRangeFieldDefaults` mirrors `provideForDateFieldDefaults` and adds `startAriaLabel` / `endAriaLabel` for the two endpoint group `aria-label`s (`'Start date'` / `'End date'` by default). Both wrapper patterns work via `FOR_DATE_RANGE_FIELD_HOST_DIRECTIVE_INPUTS` / `FOR_DATE_RANGE_FIELD_HOST_DIRECTIVE_OUTPUTS`. See [Wrapping form primitives](../../../docs/wrapping-form-primitives.md).
 
 ## Keyboard
 

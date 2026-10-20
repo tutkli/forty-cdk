@@ -146,9 +146,12 @@ function writingDirection(files) {
  * name is mandatory, so the English fallback lives in the scope defaults.
  * Reports the defaults key each one reads, because the key naming is itself a
  * convention (`*AriaLabel`). Such a piece leaves the input unset and resolves
- * it against the key (`resolveTextInput(this.ariaLabel(), this.#defaults.<key>)`);
- * any other non-`null` initial value is reported as written, so a hardcoded
- * literal shows up here.
+ * it against the key (`resolveTextInput(this.ariaLabel(), this.#defaults.<key>)`),
+ * one row per key, so a base class choosing between two keys reports both.
+ * A `null` input coalesced onto a defaults key or a root-held label
+ * (`this.ariaLabel() ?? this.root.…`) is reported as written, because that
+ * shape cannot be dropped with `[ariaLabel]="null"`; any other non-`null`
+ * initial value is reported as written too, so a hardcoded literal shows up here.
  */
 function ariaLabelDefaults(files) {
   const members = [];
@@ -157,14 +160,21 @@ function ariaLabelDefaults(files) {
     if (!match) {
       continue;
     }
-    const resolved = text.match(
-      /resolveTextInput\(\s*this\.ariaLabel\(\),\s*this\.#defaults\.([A-Za-z]+)\s*\)/,
-    );
-    if (resolved) {
-      members.push(`${id} → \`${resolved[1]}\``);
+    const keys = resolvedAriaLabelKeys(text);
+    if (keys.length > 0) {
+      for (const key of keys) {
+        members.push(`${id} → \`${key}\``);
+      }
       continue;
     }
     const argument = match[1];
+    const coalesced = text.match(
+      /this\.ariaLabel\(\)\s*\?\?\s*(this\.(?:root\.[A-Za-z]+|#defaults\.[A-Za-z]+))/,
+    );
+    if (coalesced) {
+      members.push(`${id} → \`?? ${coalesced[1]}\``);
+      continue;
+    }
     if (argument === 'null' || argument === '') {
       continue;
     }
@@ -172,6 +182,28 @@ function ariaLabelDefaults(files) {
     members.push(`${id} → \`${key ? key[1] : argument}\``);
   }
   return [{ key: 'non-`null` `ariaLabel` defaults', count: members.length, members }];
+}
+
+/**
+ * Defaults keys read by the fallback argument of
+ * `resolveTextInput(this.ariaLabel(), …)`, in source order. The argument is
+ * brace-matched to its closing parenthesis, so a ternary over two keys yields
+ * both.
+ */
+function resolvedAriaLabelKeys(text) {
+  const head = text.match(/resolveTextInput\(\s*this\.ariaLabel\(\),/);
+  if (!head) {
+    return [];
+  }
+  let depth = 1;
+  const start = head.index + head[0].length;
+  let end = start;
+  for (; end < text.length && depth > 0; end++) {
+    if (text[end] === '(') depth++;
+    else if (text[end] === ')') depth--;
+  }
+  const fallback = text.slice(start, end - 1);
+  return [...new Set([...fallback.matchAll(/this\.#defaults\.([A-Za-z]+)/g)].map((m) => m[1]))];
 }
 
 /**

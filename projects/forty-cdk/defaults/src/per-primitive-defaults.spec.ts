@@ -486,7 +486,7 @@ const CASES: readonly DefaultsCase<object>[] = [
     token: FOR_DATE_RANGE_FIELD_DEFAULTS,
     fallback: FOR_DATE_RANGE_FIELD_FALLBACK_DEFAULTS,
     provide: provideForDateRangeFieldDefaults,
-    override: { startLabel: 'Fecha de inicio', placeholder: { year: 'aaaa' }, hourCycle: 24 },
+    override: { startAriaLabel: 'Fecha de inicio', placeholder: { year: 'aaaa' }, hourCycle: 24 },
   }),
   defaultsCase({
     name: 'provideForTimeFieldDefaults',
@@ -500,7 +500,11 @@ const CASES: readonly DefaultsCase<object>[] = [
     token: FOR_TIME_RANGE_FIELD_DEFAULTS,
     fallback: FOR_TIME_RANGE_FIELD_FALLBACK_DEFAULTS,
     provide: provideForTimeRangeFieldDefaults,
-    override: { startLabel: 'Hora de inicio', placeholder: { dayPeriod: 'a. m.' }, hourCycle: 24 },
+    override: {
+      startAriaLabel: 'Hora de inicio',
+      placeholder: { dayPeriod: 'a. m.' },
+      hourCycle: 24,
+    },
   }),
   defaultsCase({
     name: 'provideForBreakpointsDefaults',

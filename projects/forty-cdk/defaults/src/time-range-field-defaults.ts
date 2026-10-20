@@ -44,12 +44,12 @@ export interface ForTimeRangeFieldDefaults {
    * Accessible name announced (via `aria-label`) for the start endpoint group,
    * used when `[forTimeRangeFieldStart]` has no explicit `ariaLabel`.
    */
-  startLabel: LocalizableText;
+  startAriaLabel: LocalizableText;
   /**
    * Accessible name announced (via `aria-label`) for the end endpoint group,
    * used when `[forTimeRangeFieldEnd]` has no explicit `ariaLabel`.
    */
-  endLabel: LocalizableText;
+  endAriaLabel: LocalizableText;
   /**
    * 12- or 24-hour cycle for range fields that don't bind `[hourCycle]`. Library
    * fallback `null`, which derives the cycle from the locale.
@@ -79,8 +79,8 @@ export const FOR_TIME_RANGE_FIELD_FALLBACK_DEFAULTS: ForTimeRangeFieldDefaults =
   emptySegmentText: 'Empty',
   segmentLabels: DEFAULT_TIME_RANGE_FIELD_SEGMENT_LABELS,
   placeholder: {},
-  startLabel: 'Start time',
-  endLabel: 'End time',
+  startAriaLabel: 'Start time',
+  endAriaLabel: 'End time',
   hourCycle: null,
 };
 

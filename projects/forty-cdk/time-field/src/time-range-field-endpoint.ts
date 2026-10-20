@@ -5,6 +5,7 @@ import {
   type TimeSegmentType,
   type WritingDirection,
   hostAriaLabel,
+  resolveTextInput,
 } from 'forty-cdk/core';
 import {
   FOR_TIME_RANGE_FIELD_CONTEXT,
@@ -12,6 +13,7 @@ import {
   injectTimeRangeFieldContext,
   type TimeRangeFieldEndpoint,
 } from './time-range-field-context';
+import { FOR_TIME_RANGE_FIELD_DEFAULTS } from 'forty-cdk/defaults';
 
 /**
  * Shared base for the two endpoint groups of a `[forTimeRangeField]`. Each
@@ -43,13 +45,15 @@ export abstract class ForTimeRangeFieldEndpointBase {
   protected abstract readonly which: TimeRangeFieldEndpoint;
 
   private readonly root = injectTimeRangeFieldContext('ForTimeRangeField endpoint');
+  readonly #defaults = inject(FOR_TIME_RANGE_FIELD_DEFAULTS);
 
   /**
-   * Accessible name for this endpoint group. Falls back to the scope default
-   * (`'Start time'` / `'End time'` via `provideForTimeRangeFieldDefaults`).
-   * Emits no `aria-label` while both are `null`.
+   * Accessible name for this endpoint group. Defaults to the scope's
+   * `startAriaLabel` / `endAriaLabel` (`'Start time'` / `'End time'` unless
+   * overridden via `provideForTimeRangeFieldDefaults`); set `null` to drop the
+   * attribute.
    */
-  readonly ariaLabel = input<string | null>(null);
+  readonly ariaLabel = input<string | null>();
 
   /** The field's effective disabled, reflected on the group. */
   readonly effectiveDisabled: Signal<boolean> = this.root.effectiveDisabled;
@@ -69,16 +73,13 @@ export abstract class ForTimeRangeFieldEndpointBase {
     this.root.endpointSegments(this.which)(),
   );
 
-  /** Resolved accessible name for this endpoint group (explicit input or scope default). */
-  private readonly label: Signal<string | null> = computed(
-    () => this.ariaLabel() ?? this.root.endpointLabel(this.which)(),
+  private readonly resolvedAriaLabel = hostAriaLabel(
+    () =>
+      resolveTextInput(
+        this.ariaLabel(),
+        this.which === 'start' ? this.#defaults.startAriaLabel : this.#defaults.endAriaLabel,
+      ) || null,
   );
-
-  /**
-   * Emitted `aria-label`: a consumer-set static value on the endpoint group
-   * when present, else {@link label}.
-   */
-  private readonly resolvedAriaLabel = hostAriaLabel(() => this.label() || null);
 }
 
 /**

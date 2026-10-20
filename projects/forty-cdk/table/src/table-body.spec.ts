@@ -1404,6 +1404,42 @@ describe('ForTableBody', () => {
     expect(query('[forTableRow] [data-column="name"]')?.textContent).not.toContain('Ada');
   });
 
+  it('renders placeholder rows from the bare loading attribute', () => {
+    @Component({
+      imports: [
+        ForTable,
+        ForTableBody,
+        ForTableColumnDef,
+        ForTableHeaderCellDef,
+        ForTableCellDef,
+        ForTablePlaceholderCellDef,
+      ],
+      template: `
+        <div forTable mode="grid" ariaLabel="People">
+          <for-table-body [rows]="rows" [rowKey]="rowKey" loading>
+            <ng-container forTableColumnDef="name">
+              <ng-template forTableHeaderCellDef>Name</ng-template>
+              <ng-template forTableCellDef [forTableCellDefRow]="rows" let-row>{{
+                row.name
+              }}</ng-template>
+              <ng-template forTablePlaceholderCellDef
+                ><span class="skeleton">loading</span></ng-template
+              >
+            </ng-container>
+          </for-table-body>
+        </div>
+      `,
+    })
+    class BareLoadingHost {
+      readonly rows = buildRows();
+      readonly rowKey = (row: Row): number => row.id;
+    }
+
+    const { query } = renderHost(BareLoadingHost);
+    expect(query('[forTableRow] [data-column="name"] .skeleton')?.textContent).toContain('loading');
+    expect(query('[forTableRow] [data-column="name"]')?.textContent).not.toContain('Ada');
+  });
+
   it('reacts to row changes', () => {
     const { instance, queryAll, fixture } = renderHost(BodyHost);
     expect(queryAll('[forTableRow]')).toHaveLength(3);
