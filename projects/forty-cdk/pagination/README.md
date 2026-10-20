@@ -158,6 +158,26 @@ Pagination is headless state: derive `count` from your data, then slice the visi
 | ----------- | ----------------------- | ------------------------------------------------------------------------------------------------------- |
 | `ariaLabel` | `input<string \| null>` | Accessible label for the next-page button.<br>**Default:** `null` (and empty string) emits no attribute |
 
+## Scoped defaults
+
+`provideForPaginationDefaults` configures pagination defaults for an injector subtree, either at the application root or in any component's `providers` array. Partial overrides inherit unspecified keys from the parent scope (or the library fallbacks at the root).
+
+| Key             | Library fallback | Meaning                                                                                                                                           |
+| --------------- | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `siblingCount`  | `1`              | Pages shown on each side of the current page before the range collapses to an ellipsis, for paginations that don't set `siblingCount` themselves. |
+| `boundaryCount` | `1`              | Pages always shown at each end of the list, for paginations that don't set `boundaryCount` themselves.                                            |
+
+Per-instance inputs always win over the scope defaults.
+
+```ts
+import { type ApplicationConfig } from '@angular/core';
+import { provideForPaginationDefaults } from 'forty-cdk/defaults';
+
+export const appConfig: ApplicationConfig = {
+  providers: [provideForPaginationDefaults({ siblingCount: 2 })],
+};
+```
+
 ## Accessibility
 
 Implements the [WAI-ARIA navigation landmark pattern](https://www.w3.org/WAI/ARIA/apg/patterns/landmarks/examples/navigation.html).

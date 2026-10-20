@@ -401,6 +401,33 @@ The button-opened menu now clears the button by 4px while a right-click still op
 
 A shared menu whose openers all want the same placement needs none of this. Set the root's inputs instead.
 
+## Scoped defaults
+
+`provideForMenuDefaults` configures menu defaults for an injector subtree, either at the application root or in any component's `providers` array. Partial overrides inherit unspecified keys from the parent scope (or the library fallbacks at the root). The keys apply to every `[forMenuSub]` in the scope, including the submenus of a dropdown menu, context menu or menubar, and to every `[forMenu]` root.
+
+| Key                           | Library fallback | Meaning                                                                                                                                                                                                                                                              |
+| ----------------------------- | ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `side`                        | `null`           | Anchor side for both roots. `null` keeps each root's own: `'bottom'` for `[forMenu]`, and the side away from the parent item for `[forMenuSub]` (`'right'` in LTR, `'left'` in RTL). A value pins both roots in the scope to that side.                              |
+| `align`                       | `'start'`        | Alignment along `side` for both roots.                                                                                                                                                                                                                               |
+| `subMenuOpenDelay`            | `100`            | Delay (ms) before a hovered `[forMenuSubTrigger]` opens its submenu.                                                                                                                                                                                                 |
+| `subMenuCloseDelay`           | `100`            | Delay (ms) before a submenu closes once the pointer has left both the sub-trigger and the submenu content and is outside the pointer-grace region.                                                                                                                   |
+| `subMenuPointerGraceDuration` | `300`            | Lifetime (ms) of the pointer-grace "safe triangle" that holds off the close while the pointer travels from the sub-trigger toward the submenu.                                                                                                                       |
+| `sideOffset`                  | `0`              | Main-axis gap (px) between the anchor and the menu content for both roots, so a submenu sits flush against its parent item and a shared menu flush against its opener.                                                                                               |
+| `collisionPadding`            | `8`              | Collision-middleware padding (px) for both roots.                                                                                                                                                                                                                    |
+| `fallbackAxisSideDirection`   | `'none'`         | Perpendicular side `flip` may drop to when both sides of the preferred axis overflow, for both roots. `'none'` keeps only the opposite same-axis placement. Only consulted while `avoidCollisions` is on. See [Narrow-viewport fallback](#narrow-viewport-fallback). |
+| `loop`                        | `true`           | Whether arrow navigation wraps past the first / last enabled item, for menus that don't set `loop` themselves.                                                                                                                                                       |
+
+A per-instance input, where the piece has one, always wins over the scope default, and an opener's `[menuPositioning]` wins for the opens it drives. The three `subMenu*` timings have no per-instance input. The timings only govern mouse hover; opening a submenu by click, Enter, Space or the arrow key is unaffected by them.
+
+```ts
+import { type ApplicationConfig } from '@angular/core';
+import { provideForMenuDefaults } from 'forty-cdk/defaults';
+
+export const appConfig: ApplicationConfig = {
+  providers: [provideForMenuDefaults({ subMenuOpenDelay: 150, sideOffset: 2 })],
+};
+```
+
 ## API
 
 ### `ForMenu`

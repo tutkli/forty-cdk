@@ -496,6 +496,38 @@ readonly keepSearchFocused = (event: VetoableEvent): void => {
 
 The dialog still installs the focus trap (so Tab cycles inside once focus enters), but the imperative initial focus move is suppressed and the search input keeps focus.
 
+## Scoped defaults
+
+`provideForDialogDefaults` configures dialog defaults for an injector subtree, either at the application root or in any component's `providers` array. Partial overrides inherit unspecified keys from the parent scope (or the library fallbacks at the root).
+
+| Key                    | Library fallback | Meaning                                                                                                                                                                |
+| ---------------------- | ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `modal`                | `true`           | Whether a dialog that doesn't set `modal` itself is modal: `aria-modal`, scroll lock, focus trap, inert siblings and return focus on close.                            |
+| `dismissible`          | `true`           | Whether Escape, the backdrop and outside interaction close a dialog that doesn't set `dismissible` itself.                                                             |
+| `returnFocus`          | `true`           | Whether a modal dialog that doesn't set `returnFocus` itself restores focus to the previously focused element on close. A non-modal dialog never moves focus on close. |
+| `initialFocus`         | `'first'`        | Where focus goes on mount for a dialog that doesn't set `initialFocus` itself: `'first'` (first focusable inside) or `'container'` (the dialog host).                  |
+| `animateEnter`         | unset            | CSS class a `ForDialogManager.open()` dialog plays its enter animation with. Unset, the dialog mounts with no enter class.                                             |
+| `animateLeave`         | unset            | CSS class a `ForDialogManager.open()` dialog keeps until its exit animation finishes. Unset, close tears the host down immediately.                                    |
+| `backdropAnimateLeave` | unset            | CSS class the `[forDialogBackdrop]` of a `ForDialogManager.open()` dialog keeps until its exit animation finishes. Unset, the backdrop plays no exit animation.        |
+
+`modal`, `dismissible`, `returnFocus` and `initialFocus` seed the matching `[forDialog]` inputs and `open()` config fields; the three `animate*` keys apply to `ForDialogManager.open()` only. A bound input or a per-`open()` config value always wins over the scope default. A declarative `[forDialog]` reads the nearest scope, while `ForDialogManager` reads the root injector unless the caller passes its `injector` on the `open()` config; see [Programmatic API](#programmatic-api).
+
+```ts
+import { type ApplicationConfig } from '@angular/core';
+import { provideForDialogDefaults } from 'forty-cdk/defaults';
+
+export const appConfig: ApplicationConfig = {
+  providers: [
+    provideForDialogDefaults({
+      initialFocus: 'container',
+      animateEnter: 'dialog-enter',
+      animateLeave: 'dialog-leave',
+      backdropAnimateLeave: 'backdrop-leave',
+    }),
+  ],
+};
+```
+
 ## Known limitations
 
 Two shapes are correct by design and still break something a consumer can only discover by hitting it. Both live in markup a design system produces routinely, and neither shows up in devtools: every role and `aria-*` stays correct, so the symptom is a keyboard or screen-reader one. The library-wide statement, with the same detail for every primitive, is [Shadow DOM](../shared/README.md#shadow-dom) in `forty-cdk/shared`.

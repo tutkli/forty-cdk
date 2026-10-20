@@ -413,14 +413,39 @@ The expansion is keyed on the query. Each new query replaces it with the ancesto
 
 ## Scoped defaults
 
+`provideForTreeDefaults` configures tree defaults for an injector subtree, either at the application root or in any component's `providers` array. Partial overrides inherit unspecified keys from the parent scope (or the library fallbacks at the root).
+
+| Key                     | Library fallback                                                                | Meaning                                                                                                                                                                                                                                                                                                |
+| ----------------------- | ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `selectionFollowsFocus` | `false`                                                                         | Single mode only: whether every keyboard focus move (arrow navigation, entering a child, leaving to the parent, a typeahead match) also selects the focused node, for trees that don't set `selectionFollowsFocus` themselves.                                                                         |
+| `dragAnnounceLift`      | `"Picked up <label>. Use arrow keys to move, Space to drop, Escape to cancel."` | Builds the `[forTreeNodeDrag]` announcement when a node is picked up. Receives the node's `label` and returns the string.                                                                                                                                                                              |
+| `dragAnnounceMove`      | `"<label>: under <parentLabel>, position <position> of <total>."`               | Builds the announcement on each intermediate move while a node is lifted. Receives `label`, `parentLabel` (`null` at the root, where the fallback says `at root`), the 1-based `position` and `total` (`null` in a collapsed parent, where the fallback leaves the total out), and returns the string. |
+| `dragAnnounceDrop`      | `"Dropped <label> under <parentLabel>, position <position> of <total>."`        | Builds the announcement when a node is committed to its new position. Receives the same arguments as `dragAnnounceMove` and returns the string.                                                                                                                                                        |
+| `dragAnnounceCancel`    | `"Cancelled. <label> returned to its original position."`                       | Builds the announcement when a lift is cancelled and the node returns to its origin. Receives `label` and returns the string.                                                                                                                                                                          |
+| `dragAnnounceInvalid`   | `"Cannot drop <label> here."`                                                   | Builds the announcement when a `[canDrop]` veto rejects the attempted drop. Receives `label` and returns the string.                                                                                                                                                                                   |
+
+Per-instance inputs always win over the scope defaults. `selectionFollowsFocus` only applies to single-select trees, so a `multiple` or `selectionMode="checkbox"` tree in the same scope ignores the default and keeps its checked set while the user navigates. The drag builders have no per-instance input; [Localizing drag announcements](#localizing-drag-announcements) describes the `label` / `parentLabel` text they receive.
+
 ```ts
+import { type ApplicationConfig } from '@angular/core';
 import { provideForTreeDefaults } from 'forty-cdk/defaults';
 
-// app config or a component's providers
-providers: [provideForTreeDefaults({ selectionFollowsFocus: true })];
+export const appConfig: ApplicationConfig = {
+  providers: [
+    provideForTreeDefaults({
+      selectionFollowsFocus: true,
+      dragAnnounceLift: (label) =>
+        `${label} levantado. Usa las flechas para mover, Espacio para soltar, Escape para cancelar.`,
+      dragAnnounceMove: (label, parentLabel, position, total) =>
+        `${label}: ${parentLabel ? `dentro de ${parentLabel}, ` : 'en la raíz, '}posición ${position}${total === null ? '' : ` de ${total}`}.`,
+      dragAnnounceDrop: (label, parentLabel, position, total) =>
+        `${label} soltado ${parentLabel ? `dentro de ${parentLabel}, ` : 'en la raíz, '}posición ${position}${total === null ? '' : ` de ${total}`}.`,
+      dragAnnounceCancel: (label) => `Cancelado. ${label} vuelve a su posición original.`,
+      dragAnnounceInvalid: (label) => `No se puede soltar ${label} aquí.`,
+    }),
+  ],
+};
 ```
-
-`selectionFollowsFocus` only applies to single-select trees, so a `multiple` or `selectionMode="checkbox"` tree in the same scope ignores the default and keeps its checked set while the user navigates.
 
 ## Virtualization
 
@@ -834,28 +859,7 @@ While a drag is in flight, `[forTreeNodeDrag]` announces lift / move / drop / ca
 
 The `label` and `parentLabel` a formatter receives are the node's `[textValue]` when it carries one, and the accessible text of its `[forTreeItemLabel]` otherwise. That is the same text typeahead matches against, so a node is announced by the name the user types to reach it, and `aria-hidden` decoration inside the label (a toggle caret, a checkbox glyph) is excluded from both.
 
-```ts
-import { provideForTreeDefaults } from 'forty-cdk/defaults';
-
-provideForTreeDefaults({
-  dragAnnounceLift: (label) =>
-    `${label} levantado. Usa las flechas para mover, Espacio para soltar, Escape para cancelar.`,
-  dragAnnounceMove: (label, parentLabel, position, total) =>
-    `${label}: ${parentLabel ? `dentro de ${parentLabel}, ` : 'en la raíz, '}posición ${position}${total === null ? '' : ` de ${total}`}.`,
-  dragAnnounceDrop: (label, parentLabel, position, total) =>
-    `${label} soltado ${parentLabel ? `dentro de ${parentLabel}, ` : 'en la raíz, '}posición ${position}${total === null ? '' : ` de ${total}`}.`,
-  dragAnnounceCancel: (label) => `Cancelado. ${label} vuelve a su posición original.`,
-  dragAnnounceInvalid: (label) => `No se puede soltar ${label} aquí.`,
-});
-```
-
-| Default               | Type                                                                                              | Description                                                        |
-| --------------------- | ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
-| `dragAnnounceLift`    | `(label: string) => string`                                                                       | Announced when a node is picked up for drag.                       |
-| `dragAnnounceMove`    | `(label: string, parentLabel: string \| null, position: number, total: number \| null) => string` | Announced on each intermediate move while a node is lifted.        |
-| `dragAnnounceDrop`    | `(label: string, parentLabel: string \| null, position: number, total: number \| null) => string` | Announced when a node is committed to its new position.            |
-| `dragAnnounceCancel`  | `(label: string) => string`                                                                       | Announced when a lift is cancelled and the node returns to origin. |
-| `dragAnnounceInvalid` | `(label: string) => string`                                                                       | Announced when a `canDrop` veto rejects the attempted drop.        |
+The five `dragAnnounce*` builders are listed under [Scoped defaults](#scoped-defaults).
 
 ## API
 

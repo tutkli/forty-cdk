@@ -133,6 +133,30 @@ Every output above is vetoable: each handler receives a `VetoableEvent` (or `Vet
 
 The menu items, content surface, radio groups, separators, and groups live in the [`menu/`](../menu/README.md) folder. See [menu → Styling](../menu/README.md#styling) for their `data-state` / `data-highlighted` / `data-disabled` attributes and the content-surface CSS custom properties.
 
+## Scoped defaults
+
+`provideForDropdownMenuDefaults` configures dropdown-menu defaults for an injector subtree, either at the application root or in any component's `providers` array. Partial overrides inherit unspecified keys from the parent scope (or the library fallbacks at the root).
+
+| Key                         | Library fallback | Meaning                                                                                                                                                                                   |
+| --------------------------- | ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `side`                      | `'bottom'`       | Anchor side for dropdown menus that don't set `side` themselves.                                                                                                                          |
+| `align`                     | `'start'`        | Alignment along `side` for dropdown menus that don't set `align` themselves.                                                                                                              |
+| `sideOffset`                | `4`              | Main-axis gap (px) between the trigger and the menu for dropdown menus that don't set `sideOffset` themselves.                                                                            |
+| `collisionPadding`          | `8`              | Collision-middleware padding (px) for dropdown menus that don't set it themselves.                                                                                                        |
+| `fallbackAxisSideDirection` | `'none'`         | Perpendicular side `flip` may drop to when both sides of the preferred axis overflow. `'none'` keeps only the opposite same-axis placement. Only consulted while `avoidCollisions` is on. |
+| `loop`                      | `true`           | Whether arrow navigation wraps past the first / last enabled item, for dropdown menus that don't set `loop` themselves.                                                                   |
+
+Per-instance inputs always win over the scope defaults. Submenus inside a dropdown menu take their timings and placement from `provideForMenuDefaults`; see the [Menu README](../menu/README.md#scoped-defaults).
+
+```ts
+import { type ApplicationConfig } from '@angular/core';
+import { provideForDropdownMenuDefaults } from 'forty-cdk/defaults';
+
+export const appConfig: ApplicationConfig = {
+  providers: [provideForDropdownMenuDefaults({ align: 'end', loop: false })],
+};
+```
+
 ## Keyboard
 
 | Key                             | Behavior                                                                                       |

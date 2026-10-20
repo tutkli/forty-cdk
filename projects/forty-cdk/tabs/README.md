@@ -98,6 +98,26 @@ export class TabsDefaultExample {
 </div>
 ```
 
+## Scoped defaults
+
+`provideForTabsDefaults` configures tabs defaults for an injector subtree, either at the application root or in any component's `providers` array. Partial overrides inherit unspecified keys from the parent scope (or the library fallbacks at the root).
+
+| Key              | Library fallback | Meaning                                                                                                                                                                                                      |
+| ---------------- | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `activationMode` | `'automatic'`    | `'automatic'`: arrow navigation moves focus and selects the new tab. `'manual'`: arrow navigation only moves focus, and Space / Enter activates. Applies to tabs that don't set `activationMode` themselves. |
+| `loop`           | `true`           | Whether arrow navigation wraps past the first / last trigger, for tabs that don't set `loop` themselves. The fallback matches the APG Tabs pattern.                                                          |
+
+Per-instance inputs always win over the scope defaults.
+
+```ts
+import { type ApplicationConfig } from '@angular/core';
+import { provideForTabsDefaults } from 'forty-cdk/defaults';
+
+export const appConfig: ApplicationConfig = {
+  providers: [provideForTabsDefaults({ activationMode: 'manual' })],
+};
+```
+
 ## Known limitations
 
 **The panel's focusable-content detection does not re-measure across a shadow boundary, nor on a CSS-only visibility flip.** The measurement runs on the panel's first render and again on mutations of its own subtree, filtered to the attributes that change whether an element is focusable (`href`, `controls`, `disabled`, `hidden`, `inert`, `tabindex`, `type`, `contenteditable`). Two changes are therefore invisible to it and leave the previous answer standing:

@@ -85,73 +85,6 @@ export class DemoAlignment {
 
 `ForToggleGroup` implements `FormValueControl<readonly string[]>`, so `[formField]` binds the pressed-values array to a form field. This single-select alignment group is required: clearing the choice and blurring marks the group `data-invalid` / `data-touched`.
 
-## Signal Forms (single Toggle)
-
-`ForToggle` implements `FormCheckboxControl`, so a single `aria-pressed` toggle (the natural home for bold / italic, mute, or favourite buttons) auto-wires with `[formField]` from `@angular/forms/signals`. The schema's `disabled`, `readonly`, `required`, `invalid`, `pending`, `dirty`, `errors`, and `touched` flow into the matching inputs without consumer glue.
-
-```ts
-import { Component, signal } from '@angular/core';
-import { form, FormField, required } from '@angular/forms/signals';
-import { ForToggle } from 'forty-cdk/toggle';
-
-@Component({
-  selector: 'demo-bold',
-  imports: [ForToggle, FormField],
-  template: ` <button forToggle [formField]="prefs.bold" aria-label="Bold">B</button> `,
-})
-export class DemoBold {
-  readonly model = signal({ bold: false });
-  readonly prefs = form(this.model, (s) => required(s.bold));
-}
-```
-
-When `[name]` is set (typically through `[formField]`), the directive mounts an `<input type="hidden" value="on">` sibling while checked so the surrounding `<form>` picks it up during native submission. A native reset of the owning `<form>` returns `checked` to what it held when the toggle first rendered.
-
-For a set of related toggles, `ForToggleGroup` implements `FormValueControl<readonly string[]>` instead: its `value` is `readonly string[]`, and a single-mode group simply carries `[]` or `[selected]`.
-
-## Signal Forms (ToggleGroup)
-
-`ForToggleGroup` implements `FormValueControl<readonly string[]>`, so it auto-wires with `[formField]` from `@angular/forms/signals`. The schema's `disabled`, `readonly`, `required`, `invalid`, `pending`, `dirty`, `errors`, `touched`, and `name` flow into the matching inputs without consumer glue.
-
-```ts
-import { Component, signal } from '@angular/core';
-import { form, FormField, required, requiredError, validate } from '@angular/forms/signals';
-import { ForToggleGroup, ForToggleGroupItem } from 'forty-cdk/toggle';
-
-@Component({
-  selector: 'demo-formats',
-  imports: [ForToggleGroup, ForToggleGroupItem, FormField],
-  template: `
-    <div forToggleGroup multiple [formField]="prefs.formats" aria-label="Formats">
-      <button forToggleGroupItem value="bold">B</button>
-      <button forToggleGroupItem value="italic">I</button>
-      <button forToggleGroupItem value="underline">U</button>
-    </div>
-  `,
-})
-export class DemoFormats {
-  readonly model = signal({ formats: [] as string[] });
-  readonly prefs = form(this.model, (s) => {
-    required(s.formats);
-    validate(s.formats, ({ value }) =>
-      value().length === 0 ? requiredError({ message: 'Pick at least one format' }) : undefined,
-    );
-  });
-}
-```
-
-> **Requiring a non-empty selection.** `ForToggleGroup`'s value is a `readonly string[]`, and Angular's
-> `required()` treats only `''`, `false`, `null`, and `NaN` as empty. An empty array `[]` counts as
-> _present_, so `required(s.formats)` reflects `data-required` but never makes the form invalid
-> on its own. Enforce "at least one" with the explicit `validate(...)` length rule above, or with
-> Angular's `minLength(s.formats, 1)` (which emits a `minLengthError` instead of a `requiredError`).
-> The single-`boolean` `ForToggle` above is unaffected: `required(s.bold)` works because `false` is
-> treated as empty.
-
-When `[name]` is set (typically through `[formField]`), the directive mounts one `<input type="hidden">` sibling per selected value so the surrounding `<form>` picks the values up during native submission. A native reset of the owning `<form>` returns `value` to what it held when the group first rendered.
-
-Choose between the two form-control shapes by the value you need: `ForToggle` (`FormCheckboxControl`, a single `boolean`) for one independent on/off button, `ForToggleGroup` (`FormValueControl<readonly string[]>`) for a set of related toggles whose selection is a list.
-
 ## API
 
 ### `ForToggle`
@@ -268,6 +201,93 @@ forty-cdk ships no styles: put your own class on each piece and key your CSS off
 - **`data-state`** uses the form-control vocabulary `"checked" | "unchecked"` (per `CLAUDE.md` cross-primitive convention), even though ARIA uses `aria-pressed`. The data attribute mirrors the logical "is this option active" state, not the ARIA term.
 - **Single mode** lets the user reach the `[]` state by clicking the currently pressed item again. Set `deselectable="false"` to keep the pressed item pressed instead, for a segmented button whose arrows move focus only, or use `[forRadioGroup]` if you need to enforce one-of-N with the selection following the arrow keys.
 - **Roving tabindex** follows focus: once any item is focused, that item becomes the tab stop so re-entry restores it. Before any focus, the entry point is computed from the group's value: the first selected item when there is at least one selection, otherwise the first enabled item in DOM order. The consumer never sets `tabindex` manually.
+
+## Signal Forms (single Toggle)
+
+`ForToggle` implements `FormCheckboxControl`, so a single `aria-pressed` toggle (the natural home for bold / italic, mute, or favourite buttons) auto-wires with `[formField]` from `@angular/forms/signals`. The schema's `disabled`, `readonly`, `required`, `invalid`, `pending`, `dirty`, `errors`, and `touched` flow into the matching inputs without consumer glue.
+
+```ts
+import { Component, signal } from '@angular/core';
+import { form, FormField, required } from '@angular/forms/signals';
+import { ForToggle } from 'forty-cdk/toggle';
+
+@Component({
+  selector: 'demo-bold',
+  imports: [ForToggle, FormField],
+  template: ` <button forToggle [formField]="prefs.bold" aria-label="Bold">B</button> `,
+})
+export class DemoBold {
+  readonly model = signal({ bold: false });
+  readonly prefs = form(this.model, (s) => required(s.bold));
+}
+```
+
+When `[name]` is set (typically through `[formField]`), the directive mounts an `<input type="hidden" value="on">` sibling while checked so the surrounding `<form>` picks it up during native submission. A native reset of the owning `<form>` returns `checked` to what it held when the toggle first rendered.
+
+For a set of related toggles, `ForToggleGroup` implements `FormValueControl<readonly string[]>` instead: its `value` is `readonly string[]`, and a single-mode group simply carries `[]` or `[selected]`.
+
+## Signal Forms (ToggleGroup)
+
+`ForToggleGroup` implements `FormValueControl<readonly string[]>`, so it auto-wires with `[formField]` from `@angular/forms/signals`. The schema's `disabled`, `readonly`, `required`, `invalid`, `pending`, `dirty`, `errors`, `touched`, and `name` flow into the matching inputs without consumer glue.
+
+```ts
+import { Component, signal } from '@angular/core';
+import { form, FormField, required, requiredError, validate } from '@angular/forms/signals';
+import { ForToggleGroup, ForToggleGroupItem } from 'forty-cdk/toggle';
+
+@Component({
+  selector: 'demo-formats',
+  imports: [ForToggleGroup, ForToggleGroupItem, FormField],
+  template: `
+    <div forToggleGroup multiple [formField]="prefs.formats" aria-label="Formats">
+      <button forToggleGroupItem value="bold">B</button>
+      <button forToggleGroupItem value="italic">I</button>
+      <button forToggleGroupItem value="underline">U</button>
+    </div>
+  `,
+})
+export class DemoFormats {
+  readonly model = signal({ formats: [] as string[] });
+  readonly prefs = form(this.model, (s) => {
+    required(s.formats);
+    validate(s.formats, ({ value }) =>
+      value().length === 0 ? requiredError({ message: 'Pick at least one format' }) : undefined,
+    );
+  });
+}
+```
+
+> **Requiring a non-empty selection.** `ForToggleGroup`'s value is a `readonly string[]`, and Angular's
+> `required()` treats only `''`, `false`, `null`, and `NaN` as empty. An empty array `[]` counts as
+> _present_, so `required(s.formats)` reflects `data-required` but never makes the form invalid
+> on its own. Enforce "at least one" with the explicit `validate(...)` length rule above, or with
+> Angular's `minLength(s.formats, 1)` (which emits a `minLengthError` instead of a `requiredError`).
+> The single-`boolean` `ForToggle` above is unaffected: `required(s.bold)` works because `false` is
+> treated as empty.
+
+When `[name]` is set (typically through `[formField]`), the directive mounts one `<input type="hidden">` sibling per selected value so the surrounding `<form>` picks the values up during native submission. A native reset of the owning `<form>` returns `value` to what it held when the group first rendered.
+
+Choose between the two form-control shapes by the value you need: `ForToggle` (`FormCheckboxControl`, a single `boolean`) for one independent on/off button, `ForToggleGroup` (`FormValueControl<readonly string[]>`) for a set of related toggles whose selection is a list.
+
+## Scoped defaults
+
+`provideForToggleDefaults` configures toggle group defaults for an injector subtree, either at the application root or in any component's `providers` array. Partial overrides inherit unspecified keys from the parent scope (or the library fallbacks at the root). A standalone `[forToggle]` reads none of them.
+
+| Key            | Library fallback | Meaning                                                                                                                                                             |
+| -------------- | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `loop`         | `true`           | Whether arrow navigation wraps past the first / last enabled item, for groups that don't set `loop` themselves.                                                     |
+| `deselectable` | `true`           | Whether pressing the pressed item of a single-mode group clears the selection, for groups that don't set `deselectable` themselves. Multiple-mode groups ignore it. |
+
+Per-instance inputs always win over the scope defaults.
+
+```ts
+import { type ApplicationConfig } from '@angular/core';
+import { provideForToggleDefaults } from 'forty-cdk/defaults';
+
+export const appConfig: ApplicationConfig = {
+  providers: [provideForToggleDefaults({ deselectable: false })],
+};
+```
 
 ## Wrapping in a design system
 

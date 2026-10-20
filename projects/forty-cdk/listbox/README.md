@@ -275,27 +275,7 @@ While a reorder is in flight, `data-dragging` is reflected on two pieces:
 
 ### Localizing reorder announcements
 
-While a reorder is in flight, `[forListboxReorder]` announces lift / move / drop / cancel through an off-screen live region. The phrasing is English by default; override it per injector scope with `provideForListboxDefaults` so screen readers speak the consumer's language. `index` / `total` are 1-based.
-
-```ts
-import { provideForListboxDefaults } from 'forty-cdk/defaults';
-
-provideForListboxDefaults({
-  reorderAnnounceLift: (label, index, total) => `${label} levantado. ${index} de ${total}.`,
-  reorderAnnounceMove: (label, index, total) =>
-    `${label} movido a la posición ${index} de ${total}.`,
-  reorderAnnounceDrop: (label, index, total) =>
-    `${label} soltado en la posición ${index} de ${total}.`,
-  reorderAnnounceCancel: (label) => `Movimiento de ${label} cancelado.`,
-});
-```
-
-| Default                 | Type                                                      | Description                                     |
-| ----------------------- | --------------------------------------------------------- | ----------------------------------------------- |
-| `reorderAnnounceLift`   | `(label: string, index: number, total: number) => string` | Announced when an option is lifted for reorder. |
-| `reorderAnnounceMove`   | `(label: string, index: number, total: number) => string` | Announced when the drop position changes.       |
-| `reorderAnnounceDrop`   | `(label: string, index: number, total: number) => string` | Announced on a committed drop.                  |
-| `reorderAnnounceCancel` | `(label: string) => string`                               | Announced when the reorder is cancelled.        |
+While a reorder is in flight, `[forListboxReorder]` announces lift / move / drop / cancel through an off-screen live region. The phrasing is English by default; the four `reorderAnnounce*` builders under [Scoped defaults](#scoped-defaults) translate it per injector scope, so screen readers speak the consumer's language.
 
 ## Virtualization
 
@@ -522,6 +502,39 @@ What the controller changes:
 - **One controller per listbox.** A second `[forListboxController]` on the same listbox warns in dev mode. Only the most recently registered one drives it: the others carry no `role`, `aria-controls`, `aria-expanded` or `aria-activedescendant`, and their keys stay plain text editing.
 
 `Escape` is yours: the controller never handles it, so bind `[clearOnEscape]="false"` on `forSearch` when `Escape` should reach an enclosing dialog on the first press rather than clear the query. The keys the controller handles are listed under [Keyboard](#driven-by-a-text-input).
+
+## Scoped defaults
+
+`provideForListboxDefaults` configures listbox defaults for an injector subtree, either at the application root or in any component's `providers` array. Partial overrides inherit unspecified keys from the parent scope (or the library fallbacks at the root).
+
+| Key                     | Library fallback                                     | Meaning                                                                                                                                                                                             |
+| ----------------------- | ---------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `selectionFollowsFocus` | `false`                                              | Single mode only: whether a keyboard focus move (arrow navigation or a typeahead match) also selects the focused option, for listboxes that don't set `selectionFollowsFocus` themselves.           |
+| `loop`                  | `true`                                               | Whether arrow navigation wraps past the first / last enabled option, for listboxes that don't set `loop` themselves.                                                                                |
+| `reorderAnnounceLift`   | `"<label>, lifted. <index> of <total>."`             | Builds the `[forListboxReorder]` announcement when an option is lifted. Receives the option's accessible text as `label`, its 1-based `index` and the option count `total`, and returns the string. |
+| `reorderAnnounceMove`   | `"<label>, moved to position <index> of <total>."`   | Builds the announcement when the drop position changes. Receives `label`, the 1-based target `index` and `total`, and returns the string.                                                           |
+| `reorderAnnounceDrop`   | `"<label>, dropped at position <index> of <total>."` | Builds the announcement on a committed drop. Receives `label`, the 1-based final `index` and `total`, and returns the string.                                                                       |
+| `reorderAnnounceCancel` | `"<label>, movement cancelled."`                     | Builds the announcement when a reorder is cancelled. Receives `label` and returns the string.                                                                                                       |
+
+Per-instance inputs always win over the scope defaults. The reorder builders have no per-instance input, so the scope is the place to localize them:
+
+```ts
+import { type ApplicationConfig } from '@angular/core';
+import { provideForListboxDefaults } from 'forty-cdk/defaults';
+
+export const appConfig: ApplicationConfig = {
+  providers: [
+    provideForListboxDefaults({
+      reorderAnnounceLift: (label, index, total) => `${label} levantado. ${index} de ${total}.`,
+      reorderAnnounceMove: (label, index, total) =>
+        `${label} movido a la posición ${index} de ${total}.`,
+      reorderAnnounceDrop: (label, index, total) =>
+        `${label} soltado en la posición ${index} de ${total}.`,
+      reorderAnnounceCancel: (label) => `Movimiento de ${label} cancelado.`,
+    }),
+  ],
+};
+```
 
 ## API
 

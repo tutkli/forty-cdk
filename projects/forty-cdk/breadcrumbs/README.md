@@ -86,22 +86,6 @@ export class BreadcrumbsDefaultExample {
 
 The primitive renders whatever items you give it, so collapsing a deep path is a consumer decision. Here the middle is folded into an expandable ellipsis button that reveals the hidden crumbs. The trail stays a single accessible navigation landmark either way.
 
-## Localizing the label
-
-`Breadcrumb` is verbalized by screen readers, so translate it per injector scope with `provideForBreadcrumbsDefaults`. Configure it at the application root, or in any component's `providers` to scope the translation to a subtree. A per-instance `[ariaLabel]` still wins over the scope default.
-
-<!-- snippet: fragment -->
-
-```ts
-import { provideForBreadcrumbsDefaults } from 'forty-cdk/defaults';
-
-bootstrapApplication(App, {
-  providers: [provideForBreadcrumbsDefaults({ label: 'Ruta de navegación' })],
-});
-```
-
-For a language the app sets or switches after bootstrap, pass `label` as a function and the overrides as a factory, as [Localizing default text](../shared/README.md#localizing-default-text) shows.
-
 ## API
 
 ### `ForBreadcrumbs`
@@ -115,6 +99,27 @@ For a language the app sets or switches after bootstrap, pass `label` as a funct
 | Property  | Type             | Description                                                                    |
 | --------- | ---------------- | ------------------------------------------------------------------------------ |
 | `current` | `input<boolean>` | When true, reflects `aria-current="page"` on the link.<br>**Default:** `false` |
+
+## Scoped defaults
+
+`provideForBreadcrumbsDefaults` configures breadcrumb defaults for an injector subtree, either at the application root or in any component's `providers` array. Partial overrides inherit unspecified keys from the parent scope (or the library fallbacks at the root).
+
+| Key     | Library fallback | Meaning                                                                                           |
+| ------- | ---------------- | ------------------------------------------------------------------------------------------------- |
+| `label` | `'Breadcrumb'`   | Accessible name of the `navigation` landmark, for trails that don't set `[ariaLabel]` themselves. |
+
+`label` is verbalized by screen readers, so translate it here to rename every breadcrumb landmark in the scope. It accepts a string or a function returning one; a function can read a language signal, so the name follows a language the app sets or switches after bootstrap, as [Localizing default text](../shared/README.md#localizing-default-text) shows.
+
+Per-instance inputs always win over the scope defaults.
+
+```ts
+import { type ApplicationConfig } from '@angular/core';
+import { provideForBreadcrumbsDefaults } from 'forty-cdk/defaults';
+
+export const appConfig: ApplicationConfig = {
+  providers: [provideForBreadcrumbsDefaults({ label: 'Ruta de navegación' })],
+};
+```
 
 ## Accessibility
 

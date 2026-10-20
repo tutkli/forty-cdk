@@ -128,6 +128,27 @@ When the search box **is** the overlay's only content, `[clearOnEscape]="false"`
 makes the first `Escape` dismiss the palette instead of clearing the query
 first (see [Keyboard](#keyboard) below).
 
+## Scoped defaults
+
+`provideForSearchDefaults` configures search defaults for an injector subtree, either at the application root or in any component's `providers` array. Partial overrides inherit unspecified keys from the parent scope (or the library fallbacks at the root).
+
+| Key              | Library fallback | Meaning                                                                                   |
+| ---------------- | ---------------- | ----------------------------------------------------------------------------------------- |
+| `clearAriaLabel` | `'Clear'`        | Accessible name of every `[forSearchClear]` button that doesn't set `[ariaLabel]` itself. |
+
+`clearAriaLabel` is spoken by a screen reader, so translate it here to rename every clear button in the scope. It accepts a string or a function returning one; a function can read a language signal, so the name follows a language the app sets or switches after bootstrap.
+
+Per-instance inputs always win over the scope defaults: `[ariaLabel]` names one button, and `[ariaLabel]="null"` drops the attribute.
+
+```ts
+import { type ApplicationConfig } from '@angular/core';
+import { provideForSearchDefaults } from 'forty-cdk/defaults';
+
+export const appConfig: ApplicationConfig = {
+  providers: [provideForSearchDefaults({ clearAriaLabel: 'Limpiar' })],
+};
+```
+
 ## API
 
 ### `ForSearch`
@@ -210,12 +231,5 @@ The propagation rule for an empty, disabled, or read-only field is unchanged:
   so style it with `:disabled` or `[data-disabled]`.
 - `[forSearchClear]` carries `aria-label="Clear"` by default so the icon-only
   button has an accessible name. Override it per-instance with `[ariaLabel]`, or
-  centrally (and for localization) with `provideForSearchDefaults`:
-
-  <!-- snippet: fragment -->
-
-  ```ts
-  providers: [provideForSearchDefaults({ clearAriaLabel: 'Limpiar' })];
-  ```
-
-  Set `[ariaLabel]="null"` to drop the attribute entirely.
+  centrally (and for localization) with the `clearAriaLabel` key of
+  `provideForSearchDefaults` (see [Scoped defaults](#scoped-defaults)). Set `[ariaLabel]="null"` to drop the attribute entirely.

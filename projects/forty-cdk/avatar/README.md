@@ -96,6 +96,25 @@ When the image errors, the directive flips `shouldShowFallback()` and the initia
 | -------------- | ------------------------------------------ |
 | `data-status`  | `idle` \| `loading` \| `loaded` \| `error` |
 
+## Scoped defaults
+
+`provideForAvatarDefaults` configures avatar defaults for an injector subtree, either at the application root or in any component's `providers` array. Partial overrides inherit unspecified keys from the parent scope (or the library fallbacks at the root).
+
+| Key               | Library fallback | Meaning                                                                                                                                                                                          |
+| ----------------- | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `fallbackDelayMs` | `0`              | Milliseconds to wait before the fallback shows while the image is idle or loading, for avatars that don't set `fallbackDelayMs` themselves. An `error` status always shows the fallback at once. |
+
+Per-instance inputs always win over the scope defaults.
+
+```ts
+import { type ApplicationConfig } from '@angular/core';
+import { provideForAvatarDefaults } from 'forty-cdk/defaults';
+
+export const appConfig: ApplicationConfig = {
+  providers: [provideForAvatarDefaults({ fallbackDelayMs: 500 })],
+};
+```
+
 ## Accessibility
 
 The directive does not impose a `role`. Pair the avatar with visible name text or `aria-label` on the surrounding element when identity matters. Set `alt=""` on the `<img>` for purely decorative avatars next to a name, or provide a meaningful `alt` description if the avatar stands alone.

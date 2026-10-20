@@ -593,6 +593,32 @@ Always nest the child's `@if` inside the parent's `@if`. That guarantees Angular
 
 ## Scoped defaults
 
+`provideForDrawerDefaults` configures drawer defaults for an injector subtree, either at the application root or in any component's `providers` array. Partial overrides inherit unspecified keys from the parent scope (or the library fallbacks at the root).
+
+| Key                         | Library fallback | Meaning                                                                                                                                                                    |
+| --------------------------- | ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `side`                      | `'bottom'`       | Edge a drawer that doesn't set `side` itself is anchored to.                                                                                                               |
+| `modal`                     | `true`           | Whether a drawer that doesn't set `modal` itself is modal: scroll lock, focus trap and `aria-modal`.                                                                       |
+| `dismissible`               | `true`           | Whether Escape, the backdrop and the swipe gesture close a drawer that doesn't set `dismissible` itself.                                                                   |
+| `swipeToDismiss`            | `true`           | Whether a drag toward the anchored edge dismisses. When `false`, snap dragging stays live. See [Swipe-to-dismiss](#swipe-to-dismiss).                                      |
+| `closeThreshold`            | `0.25`           | Fraction past which a release dismisses instead of snapping back: of the full dimension without snap points, of the lowest snap's extent with them.                        |
+| `initialFocus`              | `'first'`        | Where focus goes on mount: `'first'` (first focusable inside) or `'container'` (the drawer host).                                                                          |
+| `returnFocus`               | `true`           | Whether a modal drawer restores focus to the previously focused element on close. A non-modal drawer never moves focus on close.                                           |
+| `handleOnly`                | `false`          | Whether the swipe gesture arms only on the registered `[forDrawerHandle]` instead of the whole surface.                                                                    |
+| `scaleBackground`           | `false`          | Whether an open drawer scales and translates `[forDrawerWrapper]` behind it. Suppressed under `prefers-reduced-motion: reduce`. See [Scale background](#scale-background). |
+| `setBackgroundColorOnScale` | `true`           | Whether the body is painted with `scaleBackgroundColor` while the background is scaled, so the viewport does not show through around the wrapper.                          |
+| `scaleAmount`               | `0.95`           | Scale factor applied to the wrapper.                                                                                                                                       |
+| `scaleTranslateYpx`         | `14`             | Vertical translation (CSS px) added to `env(safe-area-inset-top)` while the wrapper is scaled.                                                                             |
+| `scaleBorderRadiusPx`       | `8`              | Border radius (px) applied to the wrapper while scaled.                                                                                                                    |
+| `scaleBackgroundColor`      | `'black'`        | Body background color applied while `setBackgroundColorOnScale` is active.                                                                                                 |
+| `nestedScaleAmount`         | `0.93`           | Scale factor applied to a parent drawer while a nested child drawer is open. Suppressed under `prefers-reduced-motion: reduce`. See [Nested drawers](#nested-drawers).     |
+| `nestedTranslateYpx`        | `8`              | Extra translation (px) applied to a parent drawer while a nested child is open, away from the parent's anchored edge.                                                      |
+| `animateEnter`              | unset            | CSS class a `ForDrawerManager.open()` drawer plays its enter animation with. Unset, the drawer mounts with no enter class.                                                 |
+| `animateLeave`              | unset            | CSS class a `ForDrawerManager.open()` drawer keeps until its exit animation finishes. Unset, close tears the host down immediately.                                        |
+| `backdropAnimateLeave`      | unset            | CSS class the `[forDrawerBackdrop]` of a `ForDrawerManager.open()` drawer keeps until its exit animation finishes. Unset, the backdrop plays no exit animation.            |
+
+A key named after a `[forDrawer]` input (`side` through `setBackgroundColorOnScale`) seeds that input and the matching `open()` config field, so a bound input or a per-`open()` value always wins. The six visual tunables (`scaleAmount` through `nestedTranslateYpx`) have no per-instance input and apply to declarative and manager-opened drawers alike; the three `animate*` keys apply to `ForDrawerManager.open()` only. A declarative `[forDrawer]` reads the nearest scope, while `ForDrawerManager` reads the root injector unless the caller passes its `injector` on the `open()` config.
+
 <!-- snippet: fragment -->
 
 ```ts

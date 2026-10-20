@@ -93,6 +93,25 @@ The bounds are `rangeMin` / `rangeMax` rather than `min` / `max` because `[formF
 
 For native `<form>` submit, set `[name]` and the directive mirrors `value()` into N `<input type="hidden">` siblings (one per thumb). A native reset of the owning `<form>` returns `value()` to what it held when the slider first rendered. `data-touched` / `data-dirty` / `data-pending` / `data-invalid` are reflected on the host as boolean `data-*` attributes (present when `true`, absent otherwise).
 
+## Scoped defaults
+
+`provideForSliderDefaults` configures slider defaults for an injector subtree, either at the application root or in any component's `providers` array. Partial overrides inherit unspecified keys from the parent scope (or the library fallbacks at the root).
+
+| Key              | Library fallback | Meaning                                                                                                                                      |
+| ---------------- | ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `stepMultiplier` | `10`             | Multiplier applied to `step` for `PageUp` / `PageDown`, for sliders that don't set `stepMultiplier` themselves. A step of `1` pages by `10`. |
+
+Per-instance inputs always win over the scope defaults.
+
+```ts
+import { type ApplicationConfig } from '@angular/core';
+import { provideForSliderDefaults } from 'forty-cdk/defaults';
+
+export const appConfig: ApplicationConfig = {
+  providers: [provideForSliderDefaults({ stepMultiplier: 5 })],
+};
+```
+
 ## API
 
 ### `ForSlider`

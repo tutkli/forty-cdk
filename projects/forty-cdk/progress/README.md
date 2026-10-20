@@ -77,13 +77,13 @@ A `null` value puts the bar in indeterminate mode, for loading states whose dura
 
 ### `ForProgress`
 
-| Property             | Type                                      | Description                                                                                                                                               |
-| -------------------- | ----------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `value`              | `input<number \| null>`                   | Current progress in `[0, max]` (one-way; display-only). `null` = indeterminate.<br>**Default:** `null`                                                    |
-| `max`                | `input<number>`                           | Upper bound. A non-positive or non-finite `max` falls back to `1` for ARIA so `aria-valuemax` always exceeds `aria-valuemin` (`0`).<br>**Default:** `100` |
-| `getValueLabel`      | `input<((value, max) => string) \| null>` | Override for `aria-valuetext` (e.g. "Step 3 of 5").<br>**Default:** —                                                                                     |
-| `announceCompletion` | `input<boolean>`                          | Announce `Complete` (or the label) once via `aria-live` on the loading→complete transition.<br>**Default:** —                                             |
-| `ariaLabel`          | `input<string \| null>`                   | Accessible name for the progressbar. Prefer a visible label referenced via `aria-labelledby` when one exists.<br>**Default:** `null`                      |
+| Property             | Type                                      | Description                                                                                                                                                                                                                                                        |
+| -------------------- | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `value`              | `input<number \| null>`                   | Current progress in `[0, max]` (one-way; display-only). `null` = indeterminate.<br>**Default:** `null`                                                                                                                                                             |
+| `max`                | `input<number>`                           | Upper bound. A non-positive or non-finite `max` falls back to `1` for ARIA so `aria-valuemax` always exceeds `aria-valuemin` (`0`).<br>**Default:** `100`                                                                                                          |
+| `getValueLabel`      | `input<((value, max) => string) \| null>` | Override for `aria-valuetext` (e.g. "Step 3 of 5").<br>**Default:** —                                                                                                                                                                                              |
+| `announceCompletion` | `input<boolean>`                          | Announce once via `aria-live` on the loading→complete transition: the `aria-valuetext` when `getValueLabel` is set, else the scope's [`completeAnnouncement`](#scoped-defaults) text (English fallback `Complete`).<br>**Default:** `false` (or the scope default) |
+| `ariaLabel`          | `input<string \| null>`                   | Accessible name for the progressbar. Prefer a visible label referenced via `aria-labelledby` when one exists.<br>**Default:** `null`                                                                                                                               |
 
 | Data attribute    | Values                                     |
 | ----------------- | ------------------------------------------ |
@@ -104,6 +104,39 @@ Visual fill paired with `[forProgress]`. Reflects the same state so width / tran
 | `data-min`        | `0`                                        |
 | `data-max`        | the `max` value                            |
 | `data-percentage` | `0`–`100` (absent while indeterminate)     |
+
+## Scoped defaults
+
+`provideForProgressDefaults` configures progress defaults for an injector subtree, either at the application root or in any component's `providers` array. Partial overrides inherit unspecified keys from the parent scope (or the library fallbacks at the root).
+
+| Key                    | Library fallback | Meaning                                                                                                                               |
+| ---------------------- | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `announceCompletion`   | `false`          | Whether bars that don't set `announceCompletion` themselves announce once through `aria-live` when they reach complete.               |
+| `completeAnnouncement` | `'Complete'`     | Text announced on that transition when the bar has no `aria-valuetext` (no `getValueLabel`). A bar with one announces its value text. |
+
+A bar's own `announceCompletion` input wins over the scope default.
+
+`completeAnnouncement` is spoken by a screen reader, so translate it here to localize the completion announcement of every bar in the scope. It accepts a string, or a function returning one that is called each time the announcement fires, so a function that reads a language signal announces in the current language:
+
+```ts
+import { signal, type ApplicationConfig } from '@angular/core';
+import { provideForProgressDefaults } from 'forty-cdk/defaults';
+
+export const language = signal<'en' | 'es'>('en');
+
+const completeText = { en: 'Complete', es: 'Completado' } as const;
+
+export const appConfig: ApplicationConfig = {
+  providers: [
+    provideForProgressDefaults({
+      announceCompletion: true,
+      completeAnnouncement: () => completeText[language()],
+    }),
+  ],
+};
+```
+
+A fixed language takes a plain string, `provideForProgressDefaults({ completeAnnouncement: 'Completado' })`. To read translations from a service, pass the overrides as a factory, as [Localizing default text](../shared/README.md#localizing-default-text) shows.
 
 ## Accessibility
 

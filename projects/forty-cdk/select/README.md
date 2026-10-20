@@ -266,16 +266,18 @@ All nine are no-ops in modal mode, and every one but `collisionPadding` is a no-
 
 ## Scoped defaults
 
-`provideForSelectDefaults` configures positioning defaults for an injector subtree, either at the application root or in any component's `providers` array. Partial overrides inherit unspecified keys from the parent scope (or the library fallbacks at the root).
+`provideForSelectDefaults` configures positioning and keyboard defaults for an injector subtree, either at the application root or in any component's `providers` array. Partial overrides inherit unspecified keys from the parent scope (or the library fallbacks at the root).
 
-| Key                | Library fallback | Meaning                                                                     |
-| ------------------ | ---------------- | --------------------------------------------------------------------------- |
-| `side`             | `'bottom'`       | Anchor side for selects that don't set `side` themselves.                   |
-| `align`            | `'start'`        | Alignment along `side` for selects that don't set `align` themselves.       |
-| `sideOffset`       | `4`              | Main-axis gap (px) for selects that don't set `sideOffset` themselves.      |
-| `collisionPadding` | `8`              | Collision-middleware padding (px) for selects that don't set it themselves. |
+| Key                     | Library fallback | Meaning                                                                                                                                                                                                                                                                    |
+| ----------------------- | ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `side`                  | `'bottom'`       | Anchor side for selects that don't set `side` themselves.                                                                                                                                                                                                                  |
+| `align`                 | `'start'`        | Alignment along `side` for selects that don't set `align` themselves.                                                                                                                                                                                                      |
+| `sideOffset`            | `4`              | Main-axis gap (px) for selects that don't set `sideOffset` themselves.                                                                                                                                                                                                     |
+| `collisionPadding`      | `8`              | Collision-middleware padding (px) for selects that don't set it themselves.                                                                                                                                                                                                |
+| `loop`                  | `true`           | Whether arrow navigation wraps past the first / last enabled option, for selects that don't set `loop` themselves.                                                                                                                                                         |
+| `selectionFollowsFocus` | `false`          | Single mode only: whether a keyboard focus move (arrow navigation or a typeahead match) also selects the focused option while the listbox is open, for selects that don't set `selectionFollowsFocus` themselves. See [Selection follows focus](#selection-follows-focus). |
 
-Per-instance inputs always win over the scope defaults. `side` / `align` / `sideOffset` are no-ops under `position="item-aligned"`, where only `collisionPadding` is honored, and every one of the four is a no-op in modal mode. See [macOS-style alignment](#macos-style-alignment) and [Modal touch presentation](#modal-touch-presentation).
+Per-instance inputs always win over the scope defaults. `side` / `align` / `sideOffset` are no-ops under `position="item-aligned"`, where only `collisionPadding` is honored, and every one of the four placement keys is a no-op in modal mode. See [macOS-style alignment](#macos-style-alignment) and [Modal touch presentation](#modal-touch-presentation).
 
 <!-- snippet: fragment -->
 

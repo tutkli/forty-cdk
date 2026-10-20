@@ -359,6 +359,28 @@ Dismissal is symmetric in both placements. Escape, outside pointerdown **and** t
 
 - Nested submenus are not implemented; they are tracked separately.
 
+## Scoped defaults
+
+`provideForNavigationMenuDefaults` configures navigation menu defaults for an injector subtree, either at the application root or in any component's `providers` array. Partial overrides inherit unspecified keys from the parent scope (or the library fallbacks at the root).
+
+| Key                 | Library fallback | Meaning                                                                                                                               |
+| ------------------- | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `openDelay`         | `200`            | Milliseconds before a hover opens an item, for menus that don't set `openDelay` themselves.                                           |
+| `closeDelay`        | `150`            | Milliseconds before an item closes after the pointer leaves, for menus that don't set `closeDelay` themselves.                        |
+| `skipDelayDuration` | `300`            | Milliseconds after a peer item closed during which the next open is instant, for menus that don't set `skipDelayDuration` themselves. |
+| `loop`              | `true`           | Whether arrow navigation wraps past the first / last enabled trigger, for menus that don't set `loop` themselves.                     |
+
+Per-instance inputs always win over the scope defaults.
+
+```ts
+import { type ApplicationConfig } from '@angular/core';
+import { provideForNavigationMenuDefaults } from 'forty-cdk/defaults';
+
+export const appConfig: ApplicationConfig = {
+  providers: [provideForNavigationMenuDefaults({ openDelay: 100, closeDelay: 300 })],
+};
+```
+
 ## API
 
 ### `ForNavigationMenu`

@@ -544,6 +544,8 @@ Auto-disabled when the entire previous / next page would be outside `[min, max]`
 
 ## Scoped defaults
 
+`provideForCalendarDefaults` configures calendar defaults for an injector subtree, either at the application root or in any component's `providers` array. Partial overrides inherit unspecified keys from the parent scope (or the library fallbacks at the root).
+
 ```ts
 import { provideForCalendarDefaults } from 'forty-cdk/defaults';
 
@@ -555,6 +557,8 @@ providers: [
   }),
 ];
 ```
+
+`firstDayOfWeek` sets the first column's weekday as a **0-6** index (`0` = Sunday, `1` = Monday) for calendars that don't bind `[firstDayOfWeek]`. Its fallback `null` takes the week start from the date adapter's `getFirstDayOfWeek()`, and a calendar's own `[firstDayOfWeek]` input always wins over the scope default.
 
 `outsideMonthLabel` builds the `aria-label` of a padding day outside the visible month from its formatted full date (default `"<date> (outside month)"`), so assistive tech can tell it apart from the month on screen. A calendar bound to its own `[dateLabel]` formatter ignores it.
 

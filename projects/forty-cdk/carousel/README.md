@@ -267,7 +267,7 @@ the defaults with `startLabel` / `stopLabel` inputs:
 ```
 
 Both defaults come from the scope's `rotationStartLabel` / `rotationStopLabel`
-(see [Localizing the default labels](#localizing-the-default-labels)); set either
+(see [Scoped defaults](#scoped-defaults)); set either
 input to `null` when the button carries a visible text label and you don't want
 an `aria-label` overriding it.
 
@@ -357,39 +357,46 @@ horizontal carousels (allows vertical page scroll) and `pan-x` for vertical
 carousels (allows horizontal page scroll). A mostly-cross-axis swipe is never
 captured, so page scrolling on the perpendicular axis is unaffected.
 
-## Localizing the default labels
+## Scoped defaults
 
-Each slide's default `aria-label` is the positional `"N of M"` string, each
-indicator's is `"Go to slide N"`, and the rotation control's swaps between
-`"Start automatic slide show"` and `"Stop automatic slide show"`. The root and
-each slide also carry an `aria-roledescription` (`"carousel"` / `"slide"`), which
-a screen reader speaks in place of the `group` role. Localize them all centrally
-with `provideForCarouselDefaults` instead of setting `ariaLabel` on every slide
-and indicator:
+`provideForCarouselDefaults` configures carousel defaults for an injector subtree, either at the application root or in any component's `providers` array. Partial overrides inherit unspecified keys from the parent scope (or the library fallbacks at the root), so you can localize just the labels and inherit the rest.
 
-<!-- snippet: fragment -->
+| Key                    | Library fallback               | Meaning                                                                                                                                                                                |
+| ---------------------- | ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `loop`                 | `false`                        | Whether `next` past the last slide wraps to the first and `prev` before the first wraps to the last, for carousels that don't set `loop` themselves.                                   |
+| `align`                | `'start'`                      | Alignment of the active slide within the viewport, for carousels that don't set `align` themselves.                                                                                    |
+| `slidesPerView`        | `1`                            | Number of slides visible at once, for carousels that don't set `slidesPerView` themselves.                                                                                             |
+| `containScroll`        | `false`                        | Whether the track offset is clamped so trailing slides sit flush at the viewport edge, for carousels that don't set `containScroll` themselves. See [Contain scroll](#contain-scroll). |
+| `autoplay`             | `false`                        | Whether the carousel rotates automatically on mount (never under reduced motion), for carousels that don't set `autoplay` themselves.                                                  |
+| `autoplayInterval`     | `5000`                         | Milliseconds between automatic slide advances, for carousels that don't set `autoplayInterval` themselves.                                                                             |
+| `slideLabel`           | `"N of M"`, e.g. `"2 of 5"`    | Builds each slide's default `aria-label` from `position` (1-based) and `total` (the slide count) and returns the string.                                                               |
+| `indicatorLabel`       | `"Go to slide N"`              | Builds each indicator's default `aria-label` from `position` (1-based) and returns the string.                                                                                         |
+| `rotationStartLabel`   | `'Start automatic slide show'` | Accessible name of `[forCarouselRotationControl]` while rotation is stopped, for controls that don't set `[startLabel]` themselves.                                                    |
+| `rotationStopLabel`    | `'Stop automatic slide show'`  | Accessible name of `[forCarouselRotationControl]` while rotation is playing, for controls that don't set `[stopLabel]` themselves.                                                     |
+| `roleDescription`      | `'carousel'`                   | `aria-roledescription` of the carousel root, spoken in place of its `group` role. An empty string drops the attribute.                                                                 |
+| `slideRoleDescription` | `'slide'`                      | `aria-roledescription` of each `[forCarouselSlide]`, spoken in place of its `group` role. An empty string drops the attribute.                                                         |
+
+Per-instance inputs always win over the scope defaults: an `ariaLabel` on `[forCarouselSlide]` / `[forCarouselIndicator]` overrides the built label, as do `[startLabel]` / `[stopLabel]` on `[forCarouselRotationControl]`.
+
+`rotationStartLabel`, `rotationStopLabel`, `roleDescription` and `slideRoleDescription` each accept a string or a function returning one; a function can read a language signal, so the text follows a language the app sets or switches after bootstrap, as [Localizing default text](../shared/README.md#localizing-default-text) shows. Localize them all centrally instead of setting `ariaLabel` on every slide and indicator:
 
 ```ts
-providers: [
-  provideForCarouselDefaults({
-    slideLabel: (position, total) => `Diapositiva ${position} de ${total}`,
-    indicatorLabel: (position) => `Ir a la diapositiva ${position}`,
-    rotationStartLabel: 'Iniciar la presentación',
-    rotationStopLabel: 'Detener la presentación',
-    roleDescription: 'carrusel',
-    slideRoleDescription: 'diapositiva',
-  }),
-];
-```
+import { type ApplicationConfig } from '@angular/core';
+import { provideForCarouselDefaults } from 'forty-cdk/defaults';
 
-`position` is the 1-based slide index and `total` is the slide count. Overrides
-merge with the parent scope, so you can localize just the labels and inherit the
-rest of the defaults. A per-element `ariaLabel` on `[forCarouselSlide]` /
-`[forCarouselIndicator]` still takes precedence over the localized default, as do
-`[startLabel]` / `[stopLabel]` on `[forCarouselRotationControl]`. For a language
-the app sets or switches after bootstrap, pass the text keys as functions and the
-overrides as a factory, as
-[Localizing default text](../shared/README.md#localizing-default-text) shows.
+export const appConfig: ApplicationConfig = {
+  providers: [
+    provideForCarouselDefaults({
+      slideLabel: (position, total) => `Diapositiva ${position} de ${total}`,
+      indicatorLabel: (position) => `Ir a la diapositiva ${position}`,
+      rotationStartLabel: 'Iniciar la presentación',
+      rotationStopLabel: 'Detener la presentación',
+      roleDescription: 'carrusel',
+      slideRoleDescription: 'diapositiva',
+    }),
+  ],
+};
+```
 
 ## Indicators map 1:1 to slides
 
@@ -487,7 +494,7 @@ Implements the [WAI-ARIA Carousel pattern](https://www.w3.org/WAI/ARIA/apg/patte
   `aria-label="N of M"` by default. Override per slide with the `ariaLabel` input,
   or localize the default format and both role descriptions app-wide with
   `provideForCarouselDefaults` (see
-  [Localizing the default labels](#localizing-the-default-labels)).
+  [Scoped defaults](#scoped-defaults)).
 - Slides outside the viewport receive `aria-hidden="true"` and `inert` to remove them from
   the accessibility tree and focus order. The visible set follows the laid-out offset, so
   `align` and `containScroll` decide which slides stay reachable.

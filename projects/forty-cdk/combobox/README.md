@@ -239,6 +239,41 @@ The content anchors to the field box when a `[forComboboxAnchor]` is present; se
 
 Focus stays on the `<input>` the whole time the listbox is open, so options never get `:focus`. `data-highlighted` is the canonical hook for styling the keyboard-active option. A mouse press anywhere on the popup that lands on no focusable element (padding, a group label, an empty or status row) does not move focus either, so typing and the arrow keys keep working after it; the trade-off is that popup text cannot be selected with the mouse, as in a native combobox. A press on a `[forComboboxAction]` still focuses it in every browser. A press on your own `<button>` inside the popup is left to the browser, and macOS Safari and Firefox do not focus a `<button>` on a press.
 
+## Scoped defaults
+
+`provideForComboboxDefaults` configures combobox defaults for an injector subtree, either at the application root or in any component's `providers` array. Partial overrides inherit unspecified keys from the parent scope (or the library fallbacks at the root).
+
+| Key                   | Library fallback                   | Meaning                                                                                                                                                                                         |
+| --------------------- | ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `side`                | `'bottom'`                         | Anchor side for comboboxes that don't set `side` themselves.                                                                                                                                    |
+| `align`               | `'start'`                          | Alignment along `side` for comboboxes that don't set `align` themselves. `start` and `end` follow the writing direction.                                                                        |
+| `sideOffset`          | `4`                                | Main-axis gap (px) for comboboxes that don't set `sideOffset` themselves.                                                                                                                       |
+| `collisionPadding`    | `8`                                | Collision-middleware padding (px) for comboboxes that don't set it themselves.                                                                                                                  |
+| `openHighlight`       | `'first'`                          | Where the editable anatomy's highlight lands on open (`'first'` or `'selected'`), for comboboxes that don't set `openHighlight` themselves. See [Open / close behavior](#open--close-behavior). |
+| `restoreQueryOnClose` | `false`                            | Whether a single-select editable combobox writes the selected option's label back into `query` when the listbox closes without a pick, for comboboxes that don't set it themselves.             |
+| `loop`                | `true`                             | Whether arrow navigation wraps past the first / last enabled option, for comboboxes that don't set `loop` themselves.                                                                           |
+| `toggleAriaLabel`     | `'Show options'`                   | Accessible name of a `[forComboboxToggle]` that sets no `[ariaLabel]`.                                                                                                                          |
+| `chipsAriaLabel`      | `'Selected items'`                 | Accessible name of a multi-mode `[forComboboxChips]` group that sets no `[ariaLabel]`.                                                                                                          |
+| `clearAriaLabel`      | `'Clear'`                          | Accessible name of a `[forComboboxClear]` that sets no `[ariaLabel]`.                                                                                                                           |
+| `chipRemoveLabel`     | `` (label) => `Remove ${label}` `` | Builds the accessible name of every `[forComboboxChipRemove]` from its chip's resolved option label. The piece takes no per-instance `[ariaLabel]`, so this key is the only way to change it.   |
+
+Per-instance inputs always win over the scope defaults. `toggleAriaLabel`, `chipsAriaLabel` and `clearAriaLabel` accept a string or a function returning one; the library calls the function each time it renders the name, so a function that reads a language signal keeps the name in the current language. See [Localizing default text](../shared/README.md#localizing-default-text).
+
+```ts
+import { type ApplicationConfig } from '@angular/core';
+import { provideForComboboxDefaults } from 'forty-cdk/defaults';
+
+export const appConfig: ApplicationConfig = {
+  providers: [
+    provideForComboboxDefaults({
+      openHighlight: 'selected',
+      clearAriaLabel: 'Clear selection',
+      chipRemoveLabel: (label) => `Remove ${label} from the selection`,
+    }),
+  ],
+};
+```
+
 ## Mount/visibility convention
 
 `[forComboboxContent]` follows the floating-overlay convention: the consumer's signal drives `@if`, the directive emits dismiss events when it wants to be unmounted. No `[hidden]`. The visible input lives outside the overlay; only the listbox surface portals.
