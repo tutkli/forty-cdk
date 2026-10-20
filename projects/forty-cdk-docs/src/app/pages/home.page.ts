@@ -8,6 +8,7 @@ import {
   signal,
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { ForToastManager } from 'forty-cdk/toast';
 
 import { injectFragmentScroll } from '../doc/doc-fragment';
 import { ENTRY_POINT_COUNT, LIBRARY } from '../primitives';
@@ -443,6 +444,7 @@ const INSTALL_COMMAND = 'npm install forty-cdk';
 export class HomePage {
   readonly #document = inject(DOCUMENT);
   readonly #destroyRef = inject(DestroyRef);
+  readonly #toast = inject(ForToastManager);
 
   protected readonly copied = signal(false);
 
@@ -471,6 +473,7 @@ export class HomePage {
   protected copyInstall(): void {
     const clipboard = this.#document.defaultView?.navigator.clipboard;
     if (!clipboard) {
+      this.#toast.show({ variant: 'error', title: 'Clipboard unavailable in this browser' });
       return;
     }
     clipboard.writeText(INSTALL_COMMAND).then(
@@ -480,8 +483,9 @@ export class HomePage {
           clearTimeout(this.#resetTimer);
         }
         this.#resetTimer = setTimeout(() => this.copied.set(false), 2000);
+        this.#toast.show({ variant: 'success', title: 'Copied to clipboard', duration: 2000 });
       },
-      () => undefined,
+      () => this.#toast.show({ variant: 'error', title: 'Could not copy the install command' }),
     );
   }
 }

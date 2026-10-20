@@ -8,11 +8,11 @@ import { DOCS_GROUPS, primitiveBySlug } from '../primitives';
  * The landing page's catalogue, CTA and maturity line
  * ([#1919](https://github.com/tutkli/forty-cdk/issues/1919)).
  *
- * The site's unit target cannot mount a component, so the page is read as text
- * the way `theme-bootstrap.spec.ts` reads `index.html`, and the rendered HTML is
- * held to the registry by `scripts/check-prerender-output.mjs`. What this file
- * states is the half the emit cannot: that the data the page renders is the data
- * the rail and the page headers render, and that the manifest is its source.
+ * The page is read as text the way `theme-bootstrap.spec.ts` reads
+ * `index.html`, and the rendered HTML is held to the registry by
+ * `scripts/check-prerender-output.mjs`. What this file states is the half the
+ * emit cannot: that the data the page renders is the data the rail and the page
+ * headers render, and that the manifest is its source.
  */
 const HOME_PAGE = import.meta.glob('/projects/forty-cdk-docs/src/app/pages/home.page.ts', {
   query: '?raw',
