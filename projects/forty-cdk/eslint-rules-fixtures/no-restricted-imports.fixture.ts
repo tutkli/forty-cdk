@@ -4,7 +4,8 @@
  * The fixtures override switches `no-restricted-imports` off for this
  * directory, so this fixture is
  * Linted as `projects/forty-cdk/core/src/no-restricted-imports.ts`
- * under the real config instead. Each banned path and pattern fires once.
+ * under the real config instead. Each banned path and pattern fires once, and
+ * each banned `@angular/core` name fires however it is imported.
  */
 
 // Expected: 1× no-restricted-imports — `@angular/cdk`.
@@ -26,5 +27,25 @@ import 'zone.js/testing';
 // Expected: 1× no-restricted-imports — the `zone.js/*` pattern.
 import 'zone.js/plugins/zone-error';
 
-// Allowed: the framework itself.
+// Expected: 2× no-restricted-imports — the `Input` / `Output` decorators, aliased or not.
+import { Input as In, Output } from '@angular/core';
+// Expected: 2× no-restricted-imports — the `HostBinding` / `HostListener` decorators.
+import { HostBinding, HostListener as Listen } from '@angular/core';
+// Expected: 1× no-restricted-imports — `NgModule`, aliased.
+import { NgModule as Module } from '@angular/core';
+// Expected: 1× no-restricted-imports — `NgZone`, as a type.
+import type { NgZone } from '@angular/core';
+// Expected: 4× no-restricted-imports — a namespace import reaches every banned name.
+import * as ng from '@angular/core';
+// Expected: 1× no-restricted-imports — a re-export.
+export { NgZone as Zone } from '@angular/core';
+
+export const used = [In, Output, HostBinding, Listen, Module, ng];
+export type Used = NgZone;
+
+// Allowed: the framework itself, and the signal APIs whose names differ only in case.
 import '@angular/core';
+import { inject, input, output, type OutputRef } from '@angular/core';
+
+export const allowed = [inject, input, output] as const;
+export type Allowed = OutputRef<unknown>;

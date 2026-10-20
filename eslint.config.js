@@ -12,8 +12,12 @@
  *   - No `@Input()` / `@Output()` decorators (use `input()` / `output()` / `model()`).
  *   - No `NgModule` (the library is standalone-only).
  *   - No `zone.js` / `NgZone` (the library must run zoneless).
+ *     The four `@angular/core` names above are banned at the import, so an
+ *     alias, a namespace import or a re-export cannot route around them.
  *   - No class names ending in `Service`, `Component`, or `Directive`.
- *   - No filenames containing `.service.`, `.component.`, or `.directive.`.
+ *   - No filenames carrying a type suffix (`.component.`, `.service.`,
+ *     `.directive.`, `.pipe.`, `.module.`, `.guard.`, `.interceptor.`,
+ *     `.resolver.`).
  *   - All public selectors must use the `for-` prefix.
  */
 
@@ -440,12 +444,12 @@ const fortyCdkPlugin = {
         type: 'problem',
         docs: {
           description:
-            'Forbid `.component.`, `.service.`, `.directive.` in filenames per CLAUDE.md.',
+            'Forbid a type suffix (`.component.`, `.service.`, `.pipe.`, …) in filenames per CLAUDE.md.',
         },
         schema: [],
         messages: {
           forbidden:
-            'Filenames must not contain `.component.`, `.service.`, or `.directive.`. Name files for what they represent (CLAUDE.md).',
+            'Filenames must not carry a type suffix (`.component.`, `.service.`, `.directive.`, `.pipe.`, `.module.`, `.guard.`, `.interceptor.`, `.resolver.`). Name files for what they represent (CLAUDE.md).',
         },
       },
       create(context) {
@@ -453,7 +457,9 @@ const fortyCdkPlugin = {
           Program(node) {
             const filename = context.filename;
             const base = filename.split(/[\\/]/).pop() || '';
-            if (/\.(component|service|directive)\./.test(base)) {
+            if (
+              /\.(component|service|directive|pipe|module|guard|interceptor|resolver)\./.test(base)
+            ) {
               context.report({ node, messageId: 'forbidden' });
             }
           },
@@ -3877,6 +3883,28 @@ module.exports = tseslint.config(
             { name: '@angular/material', message: 'Banned by CLAUDE.md.' },
             { name: '@angular/aria', message: 'Banned by CLAUDE.md.' },
             {
+              name: '@angular/core',
+              importNames: ['Input', 'Output'],
+              message:
+                'Use signal-based input() / input.required() / output() / model() instead of @Input() / @Output() decorators (CLAUDE.md).',
+            },
+            {
+              name: '@angular/core',
+              importNames: ['HostBinding', 'HostListener'],
+              message:
+                'Use the `host: { ... }` block in @Component / @Directive metadata instead of @HostBinding / @HostListener (CLAUDE.md).',
+            },
+            {
+              name: '@angular/core',
+              importNames: ['NgModule'],
+              message: 'NgModule is banned. forty-cdk is standalone-only (CLAUDE.md).',
+            },
+            {
+              name: '@angular/core',
+              importNames: ['NgZone'],
+              message: 'NgZone is banned. forty-cdk must run zoneless (CLAUDE.md).',
+            },
+            {
               name: 'zone.js',
               message: 'Banned by CLAUDE.md — the library must run zoneless.',
             },
@@ -3900,7 +3928,7 @@ module.exports = tseslint.config(
         },
       ],
 
-      // ---- Banned syntax (decorators, NgModule, NgZone, type-suffixed class names) ----
+      // ---- Banned syntax (decorators, NgModule, dynamic imports, type-suffixed class names) ----
       'no-restricted-syntax': [
         'error',
         {
@@ -3920,31 +3948,40 @@ module.exports = tseslint.config(
           message: 'NgModule is banned. forty-cdk is standalone-only (CLAUDE.md).',
         },
         {
-          selector: 'ClassDeclaration[id.name=/(Service|Component|Directive)$/]',
+          selector:
+            ':matches(ClassDeclaration, ClassExpression)[id.name=/(Service|Component|Directive)$/], VariableDeclarator[id.name=/(Service|Component|Directive)$/][init.type="ClassExpression"]',
           message:
             'Class names must not end in `Service`, `Component`, or `Directive`. Name classes for what they represent (CLAUDE.md).',
         },
         {
-          selector: 'ImportSpecifier[imported.name="NgZone"]',
-          message: 'NgZone is banned. forty-cdk must run zoneless (CLAUDE.md).',
-        },
-        {
-          selector: 'ImportSpecifier[imported.name="NgModule"]',
-          message: 'NgModule is banned. forty-cdk is standalone-only (CLAUDE.md).',
+          selector:
+            'ImportExpression[source.value=/^(@angular\\/(cdk|material|aria)|zone\\.js)(\\/|$)/]',
+          message:
+            'Banned by CLAUDE.md — a dynamic `import()` of `@angular/cdk`, `@angular/material`, `@angular/aria` or `zone.js` loads the package as surely as a static one.',
         },
         // ---- ARIA truthy-only attributes must be `null` when false, not `"false"` ----
         // Per .claude/rules/conventions.md § "ARIA state attribute emission", these attributes default to
         // their falsy state when absent; emitting `aria-required="false"` (etc.) forces
         // consumers to write `[aria-required="false"]` selectors that fight the spec.
         // Canonical Angular host binding: `'[attr.aria-disabled]': 'disabled() ? "true" : null'`.
-        // This selector matches a Property whose key is the host-binding for one of the
-        // truthy-only attributes (string literal `[attr.aria-<name>]`) and whose value
-        // string contains the literal `"false"` (the wrong falsy branch).
+        // The first selector matches a Property whose key is the host-binding for one of
+        // the truthy-only attributes (string literal `[attr.aria-<name>]`) and whose value
+        // string holds a quoted `false` in either quote style (the wrong falsy branch).
+        // The second matches the same keys when the value names no `null` at all: Angular
+        // removes an attribute only for `null` / `undefined` and stringifies `false`, so a
+        // bare boolean binding renders `"false"` too. `aria-haspopup` is left out of the
+        // second because its token form (`'"menu"'`) is always present.
         {
           selector:
-            'Property[key.value=/^\\[attr\\.aria-(disabled|readonly|required|invalid|busy|modal|haspopup|multiselectable)\\]$/][value.value=/"false"/]',
+            'Property[key.value=/^\\[attr\\.aria-(disabled|readonly|required|invalid|busy|modal|haspopup|multiselectable)\\]$/][value.value=/[\'"]false[\'"]/]',
           message:
             'ARIA truthy-only attributes must be `null` when false, not `"false"`. Use `cond() ? "true" : null` (.claude/rules/conventions.md § "ARIA state attribute emission").',
+        },
+        {
+          selector:
+            'Property[key.value=/^\\[attr\\.aria-(disabled|readonly|required|invalid|busy|modal|multiselectable)\\]$/][value.type="Literal"][value.value!=/null|[\'"]false[\'"]/]',
+          message:
+            'ARIA truthy-only attributes must bind `null` on their falsy branch: Angular stringifies `false`, so a bare boolean binding renders `"false"`. Use `cond() ? "true" : null` (.claude/rules/conventions.md § "ARIA state attribute emission").',
         },
         // ---- `type="button"` is a host *binding*, never a static host attribute ----
         // A static host attribute is stamped onto whatever element the consumer
@@ -4117,9 +4154,6 @@ module.exports = tseslint.config(
       '@angular-eslint/directive-selector': 'off',
       // Tests sometimes need explicit `any` for intentionally-broken inputs.
       '@typescript-eslint/no-explicit-any': 'off',
-      // Specs render bare `<button forX>` triggers as harness fixtures; their
-      // "content" is the directive being exercised, not user-visible text.
-      '@angular-eslint/template/elements-content': 'off',
       // Specs run under jsdom and freely poke at `document` to set up
       // fixtures or assert on the rendered DOM.
       'no-restricted-globals': 'off',
@@ -4158,9 +4192,6 @@ module.exports = tseslint.config(
       // The harness uses the default `app-` prefix Angular CLI generated.
       '@angular-eslint/component-selector': 'off',
       '@angular-eslint/directive-selector': 'off',
-      // Harness fixtures often render bare buttons whose "content" is the
-      // directive being exercised, not user-visible copy.
-      '@angular-eslint/template/elements-content': 'off',
       // Dev/CI-only app: nothing here ships, so it owes no carve-out ledger.
       'forty-cdk/require-sanctioned-effect-marker': 'off',
       'forty-cdk/require-sanctioned-pull-marker': 'off',
@@ -4175,7 +4206,6 @@ module.exports = tseslint.config(
     rules: {
       '@angular-eslint/component-selector': 'off',
       '@angular-eslint/directive-selector': 'off',
-      '@angular-eslint/template/elements-content': 'off',
       'forty-cdk/require-sanctioned-effect-marker': 'off',
       'forty-cdk/require-sanctioned-pull-marker': 'off',
       'forty-cdk/no-assertion-only-effect': 'off',
@@ -4346,6 +4376,15 @@ module.exports = tseslint.config(
     },
   },
 
+  {
+    files: ['**/*.html'],
+    ignores: ['**/*.ts/**'],
+    plugins: { 'forty-cdk': fortyCdkPlugin },
+    rules: {
+      'forty-cdk/no-suffixed-filenames': 'error',
+    },
+  },
+
   // ---------- Inline templates extracted from spec files ----------
   // The angular-eslint processor extracts inline `template:` strings into virtual
   // files appended as a sub-path of the parent .ts file (e.g.
@@ -4358,7 +4397,10 @@ module.exports = tseslint.config(
   // `.spec.ts` themselves, so they need the same entry. Registering the folder
   // in the `.ts` relaxation above is not enough: the processor names the
   // extracted template as a sub-path of the parent `.ts`, so only a `**/*.html`
-  // pattern reaches it.
+  // pattern reaches it, and a template rule set in a `.ts` block never applies.
+  // The E2E harness app and the documentation site are deliberately absent:
+  // their templates are what a real browser drives and what a consumer copies,
+  // so they keep the full template rule set.
   {
     files: [
       '**/*.spec.ts/**/*.html',
