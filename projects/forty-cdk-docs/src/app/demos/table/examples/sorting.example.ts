@@ -140,19 +140,19 @@ function personField(person: Person, column: PersonColumn): string {
     }
 
     .tbl-sort::after {
-      content: ' ↕';
+      content: ' ↕' / '';
       font-size: 0.8em;
       opacity: 0.35;
     }
 
     .tbl-sort[data-sorted='ascending']::after {
-      content: ' ▲';
+      content: ' ▲' / '';
       opacity: 1;
       color: var(--ex-accent, #0e7c6b);
     }
 
     .tbl-sort[data-sorted='descending']::after {
-      content: ' ▼';
+      content: ' ▼' / '';
       opacity: 1;
       color: var(--ex-accent, #0e7c6b);
     }
