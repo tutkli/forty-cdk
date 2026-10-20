@@ -31,6 +31,10 @@
         "./dist/forty-cdk/date-adapter",
         "./projects/forty-cdk/date-adapter/src/public-api.ts"
       ],
+      "forty-cdk/id-salt": [
+        "./dist/forty-cdk/id-salt",
+        "./projects/forty-cdk/id-salt/src/public-api.ts"
+      ],
       "forty-cdk/date-field": [
         "./dist/forty-cdk/date-field",
         "./projects/forty-cdk/date-field/src/public-api.ts"

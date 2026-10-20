@@ -1,7 +1,9 @@
 import { TestBed } from '@angular/core/testing';
 import { APP_ID, provideZonelessChangeDetection } from '@angular/core';
 
-import { FOR_ID_SALT, IdGenerator, provideForIdSalt } from './id-generator';
+import { FOR_ID_SALT, provideForIdSalt } from 'forty-cdk/id-salt';
+
+import { IdGenerator } from './id-generator';
 
 describe('IdGenerator', () => {
   beforeEach(() => {

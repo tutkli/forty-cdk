@@ -5,31 +5,37 @@ import {
   NativeDateAdapter as CalendarNativeDateAdapter,
   provideNativeDateAdapter as calendarProvideNativeDateAdapter,
 } from 'forty-cdk/calendar';
-import {
-  accessibleTextContent as coreAccessibleTextContent,
-  assertTimeCapable as coreAssertTimeCapable,
-  FOR_FIELDSET_CONTEXT as CORE_FOR_FIELDSET_CONTEXT,
-  injectDateAdapter as coreInjectDateAdapter,
-} from 'forty-cdk/core';
-import { FOR_MENU_CONTEXT as CORE_FOR_MENU_CONTEXT } from 'forty-cdk/core-overlay';
+import * as core from 'forty-cdk/core';
+import * as coreOverlay from 'forty-cdk/core-overlay';
+import * as dateAdapter from 'forty-cdk/date-adapter';
+import * as idSalt from 'forty-cdk/id-salt';
+import * as shared from 'forty-cdk/shared';
 import {
   accessibleTextContent,
-  assertTimeCapable,
   FOR_DATE_ADAPTER,
-  FOR_FIELDSET_CONTEXT,
-  FOR_MENU_CONTEXT,
   injectDateAdapter,
   NativeDateAdapter,
   provideNativeDateAdapter,
 } from 'forty-cdk/shared';
 
+const SOURCES: Readonly<Record<string, Readonly<Record<string, unknown>>>> = {
+  'forty-cdk/core': core,
+  'forty-cdk/core-overlay': coreOverlay,
+  'forty-cdk/date-adapter': dateAdapter,
+  'forty-cdk/id-salt': idSalt,
+};
+
 describe('forty-cdk/shared', () => {
-  it('re-exports the core runtime values rather than redeclaring them', () => {
-    expect(FOR_FIELDSET_CONTEXT).toBe(CORE_FOR_FIELDSET_CONTEXT);
-    expect(FOR_MENU_CONTEXT).toBe(CORE_FOR_MENU_CONTEXT);
-    expect(assertTimeCapable).toBe(coreAssertTimeCapable);
-    expect(injectDateAdapter).toBe(coreInjectDateAdapter);
-    expect(accessibleTextContent).toBe(coreAccessibleTextContent);
+  it('re-exports every runtime value from the entry point that declares it', () => {
+    const origins = Object.entries(shared).map(([name, value]) => ({
+      name,
+      from: Object.entries(SOURCES)
+        .filter(([, source]) => Object.hasOwn(source, name) && source[name] === value)
+        .map(([specifier]) => specifier),
+    }));
+
+    expect(origins).not.toEqual([]);
+    expect(origins.filter(({ from }) => from.length !== 1)).toEqual([]);
   });
 
   it('derives the same accessible text the primitives match on', () => {

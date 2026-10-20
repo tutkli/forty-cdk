@@ -12,14 +12,14 @@ Every primitive ships from its own entry point, but their public APIs speak a co
 
 ## Why this exists
 
-The types live in `forty-cdk/core`, which is **not** a public entry point: it also holds the engines and DI singletons the library refactors freely, and it exists so every primitive resolves the shared implementation to exactly one compiled module. Publishing the contract types from `forty-cdk/shared` gives them a specifier a consumer can depend on without depending on the engines next to them.
+Most of the types are declared in `forty-cdk/core` and `forty-cdk/core-overlay`, which are **not** public entry points: they also hold the engines and DI singletons the library refactors freely, and they exist so every primitive resolves the shared implementation to exactly one compiled module. Publishing the contract types from `forty-cdk/shared` gives them a specifier a consumer can depend on without depending on the engines next to them. The two date adapter types come from [`forty-cdk/date-adapter`](../date-adapter), which is public in its own right.
 
 ```ts
 import { ForTabs, ForTabsList, ForTabsTrigger } from 'forty-cdk/tabs';
 import type { WritingDirection } from 'forty-cdk/shared';
 ```
 
-There is nothing to install and, unless you mount more than one forty-cdk app on a page (see [Multiple apps on one page](#multiple-apps-on-one-page)), nothing to provide: 36 of the 47 exports are structural types erased at compile time, eight runtime values are re-exported from core and resolve to the same singly-compiled module every primitive already loads, and `FOR_DATE_ADAPTER`, `NativeDateAdapter` and `provideNativeDateAdapter` are re-exported from [`forty-cdk/date-adapter`](../date-adapter). Import those three from `forty-cdk/date-adapter` when you provide an adapter at the application root: this entry point loads the core, so a root import of it puts the code every primitive shares in your `main` bundle.
+There is nothing to install and, unless you mount more than one forty-cdk app on a page (see [Multiple apps on one page](#multiple-apps-on-one-page)), nothing to provide: 36 of the 47 exports are structural types erased at compile time. Of the 11 runtime values, five are re-exported from `forty-cdk/core` and `FOR_MENU_CONTEXT` from `forty-cdk/core-overlay`, which resolve to the singly-compiled modules the primitives already load. `FOR_DATE_ADAPTER`, `NativeDateAdapter` and `provideNativeDateAdapter` are re-exported from [`forty-cdk/date-adapter`](../date-adapter), and `FOR_ID_SALT` and `provideForIdSalt` from [`forty-cdk/id-salt`](../id-salt). Import those five from their own entry points when you provide them at the application root: this entry point loads `forty-cdk/core` and `forty-cdk/core-overlay`, and with them `@floating-ui/dom`, so a root import of it puts the code the primitives share in your `main` bundle.
 
 ## What it exports
 
@@ -103,12 +103,12 @@ Primitives generate the ids that wire `aria-labelledby`, `aria-controls`, and `a
 
 Angular's default `APP_ID` is the literal `'ng'`. Two forty-cdk apps mounted side-by-side on the same page therefore start from the same salt **and** the same counter, and emit identical id sequences, producing duplicate DOM ids. `aria-labelledby` resolves to whichever element appears first in the document, so a screen reader can announce app A's label for app B's control. Nothing looks wrong on screen; the failure is only audible.
 
-Give each app its own salt:
+Give each app its own salt, imported from [`forty-cdk/id-salt`](../id-salt) so the provider does not load the code the primitives share before the app bootstraps:
 
 <!-- snippet: fragment -->
 
 ```ts
-import { provideForIdSalt } from 'forty-cdk/shared';
+import { provideForIdSalt } from 'forty-cdk/id-salt';
 
 bootstrapApplication(AppA, { providers: [provideForIdSalt('a')] });
 bootstrapApplication(AppB, { providers: [provideForIdSalt('b')] });
@@ -316,5 +316,5 @@ Three things it does not do:
 ## Behavior notes
 
 - **Not a primitive.** There are no directives here and nothing to add to `imports`.
-- **Not `forty-cdk/core`.** `core` stays resolvable (the primitives import it by specifier, which is what keeps `LiveAnnouncer`, the focus-trap and dismissible-layer stacks, and the id-generator salt single-instance), but it carries no semver guarantee. If a symbol you need is not exported here, it is internal by design; open an issue rather than importing from `core`.
-- **Tree-shakes to nothing.** The types vanish at compile time and the eight values sit in the core module your primitives already pull, so importing from here adds no code to your bundle.
+- **Not `forty-cdk/core` or `forty-cdk/core-overlay`.** Both stay resolvable (the primitives import them by specifier, which is what keeps `LiveAnnouncer`, the focus-trap stack and the id generator single-instance in `core`, and the dismissible-layer stack in `core-overlay`), but neither carries a semver guarantee. If a symbol you need is not exported here, it is internal by design; open an issue rather than importing from either.
+- **What an import costs depends on where it is.** The types vanish at compile time. The runtime values come from `forty-cdk/core`, which every primitive loads, `forty-cdk/core-overlay`, which every overlay primitive loads, and the two light entry points above. Imported in a root `providers` array, this entry point puts `core` and `core-overlay` in your `main` bundle, which is why the date adapter and the id salt have homes of their own.

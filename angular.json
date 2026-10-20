@@ -40,6 +40,7 @@
               "../stepper/src/**/*.spec.ts",
               "../calendar/src/**/*.spec.ts",
               "../date-adapter/src/**/*.spec.ts",
+              "../id-salt/src/**/*.spec.ts",
               "../date-field/src/**/*.spec.ts",
               "../date-picker/src/**/*.spec.ts",
               "../time-field/src/**/*.spec.ts",

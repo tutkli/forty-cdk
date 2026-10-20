@@ -203,7 +203,7 @@ export { adoptHostId, hostId, resolveHostId } from './host-attributes/host-id';
 export { hostStaticAttribute } from './host-attributes/host-static-attribute';
 export { hostButtonType } from './host-attributes/host-type';
 export { MODAL_EXEMPT_ATTRIBUTE, MODAL_PEER_ATTRIBUTE } from './host-attributes/modal-attributes';
-export { FOR_ID_SALT, IdGenerator, provideForIdSalt } from './id-generator/id-generator';
+export { IdGenerator } from './id-generator/id-generator';
 export { isImeComposing } from './keyboard-navigation/ime-composition';
 export {
   type GridNavigationAction,

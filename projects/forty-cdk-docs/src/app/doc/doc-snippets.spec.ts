@@ -240,10 +240,10 @@ describe('internalTierImportsOf', () => {
 
   it('reports the import in a fragment, which is never compiled and still pasted', () => {
     const problems = internalTierImportsOf(
-      snippet('fragment', "import { FOR_ID_SALT as SALT } from 'forty-cdk/core';"),
+      snippet('fragment', "import { isUnset as unset } from 'forty-cdk/core';"),
     );
     expect(problems.map((problem) => problem.message)).toEqual([
-      expect.stringContaining("import FOR_ID_SALT from 'forty-cdk/shared'"),
+      expect.stringContaining("import isUnset from 'forty-cdk/shared'"),
     ]);
   });
 

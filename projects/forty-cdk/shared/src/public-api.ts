@@ -27,10 +27,8 @@ export {
   accessibleTextContent,
   assertTimeCapable,
   FOR_FIELDSET_CONTEXT,
-  FOR_ID_SALT,
   injectDateAdapter,
   isUnset,
-  provideForIdSalt,
 } from 'forty-cdk/core';
 export type {
   FloatingAlign,
@@ -52,3 +50,4 @@ export {
   NativeDateAdapter,
   provideNativeDateAdapter,
 } from 'forty-cdk/date-adapter';
+export { FOR_ID_SALT, provideForIdSalt } from 'forty-cdk/id-salt';
