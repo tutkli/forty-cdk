@@ -422,8 +422,9 @@ test.describe('Toast focus after dismissing the focused toast (#2126)', () => {
     page,
   }) => {
     await gotoFixture(page, 'toast', { side: 'top-right' });
-    await el(page, 'enqueue').click();
-    await el(page, 'enqueue').click();
+    await el(page, 'enqueue').focus();
+    await page.keyboard.press('Enter');
+    await page.keyboard.press('Enter');
     await expect(el(page, 'toast-1')).toBeVisible();
     await expectFocused(el(page, 'enqueue'));
 

@@ -98,7 +98,8 @@ test.describe('Calendar', () => {
     await gotoFixture(page, 'calendar', { bound: '1' });
     const next = el(page, 'next');
 
-    await next.click();
+    await next.focus();
+    await page.keyboard.press('Enter');
     await expect(el(page, 'cell-2026-6-15')).toBeVisible();
 
     await expect(next).toHaveAttribute('aria-disabled', 'true');
