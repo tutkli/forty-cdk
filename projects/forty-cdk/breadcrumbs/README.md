@@ -84,7 +84,7 @@ export class BreadcrumbsDefaultExample {
 
 ### Collapsing a long trail
 
-The primitive renders whatever items you give it, so collapsing a deep path is a consumer decision. Here the middle is folded into an expandable ellipsis button that reveals the hidden crumbs. The trail stays a single accessible navigation landmark either way.
+The primitive renders whatever items you give it, so collapsing a deep path is a consumer decision. Here the middle is folded into an expandable ellipsis button that reveals the hidden crumbs. Expanding removes the button, so focus moves to the first crumb it revealed instead of falling back to the page. The trail stays a single accessible navigation landmark either way.
 
 ## API
 
