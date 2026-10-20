@@ -13,6 +13,7 @@ const PLUGIN = 'forty-cdk';
 const EXPECTED_MARKER = /\bExpected:\s*(\d+)\s*×/;
 const ALLOWED_MARKER = /^\s*(?:\/\/|\/?\*+)\s*Allowed\b[^:\n]*:/;
 const LINTED_AS = /\bLinted as `([^`]+)`/g;
+const EXERCISES = /\bExercises `([^`]+)`/;
 
 const linter = new ESLint({
   cwd: repoRoot,
@@ -175,7 +176,8 @@ for (const file of files) {
 
   fixtures += 1;
   const name = basename(file, '.fixture.ts');
-  const ruleId = pluginRules.includes(name) ? `${PLUGIN}/${name}` : name;
+  const ruleId =
+    EXERCISES.exec(source)?.[1] ?? (pluginRules.includes(name) ? `${PLUGIN}/${name}` : name);
   const lintPaths = [...source.matchAll(LINTED_AS)].map((match) => match[1]);
 
   for (const lintPath of lintPaths.length > 0 ? lintPaths : [realPath]) {

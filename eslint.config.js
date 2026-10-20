@@ -11,6 +11,9 @@
  *   - No `@HostBinding` / `@HostListener` (use the `host: { ... }` block).
  *   - No `@Input()` / `@Output()` decorators (use `input()` / `output()` / `model()`).
  *   - No `NgModule` (the library is standalone-only).
+ *   - No `ControlValueAccessor` / `NG_VALUE_ACCESSOR` (form primitives use Signal Forms).
+ *   - No value import of an optional peer from library source, outside the
+ *     entry point that owns it.
  *   - No `zone.js` / `NgZone` (the library must run zoneless).
  *     The four `@angular/core` names above are banned at the import, so an
  *     alias, a namespace import or a re-export cannot route around them.
@@ -34,6 +37,37 @@ const angular = require('angular-eslint');
  * exempt both.
  */
 const INTERNAL_TIER_ENTRY_POINTS = new Set(['core', 'core-overlay']);
+
+const NON_SHIPPING_LIBRARY_SOURCES = [
+  '**/*.spec.ts',
+  '**/test-utils/**/*.ts',
+  'projects/forty-cdk/src/lib/ssr/fixtures/**/*.ts',
+  'projects/forty-cdk/src/lib/static-adoption/fixtures/**/*.ts',
+];
+
+const OPTIONAL_PEER_ENTRY_POINTS = { '@internationalized/date': 'internationalized-date' };
+
+const OPTIONAL_PEERS = Object.entries(
+  require('./projects/forty-cdk/package.json').peerDependenciesMeta ?? {},
+)
+  .filter(([, meta]) => meta.optional)
+  .map(([name]) => name);
+
+/** @param {string | null} owned */
+function optionalPeerValueImportBan(owned) {
+  const patterns = OPTIONAL_PEERS.filter((peer) => peer !== owned).map((peer) => {
+    const owner = OPTIONAL_PEER_ENTRY_POINTS[peer];
+    return {
+      group: [peer, `${peer}/*`],
+      allowTypeImports: true,
+      message:
+        `\`${peer}\` is an optional peer, so a value import from it fails the build of every consumer who did not install it. ` +
+        `Import its types with \`import type\`${owner ? `, and keep its values in \`forty-cdk/${owner}\`` : ''} ` +
+        '(CLAUDE.md § "Optional peers must never be imported by value from an entry point that consumers who lack that peer will load").',
+    };
+  });
+  return ['error', { patterns }];
+}
 
 /**
  * ARIA 1.2 global states and properties — supported by every role, so they
@@ -3971,6 +4005,12 @@ module.exports = tseslint.config(
               message: 'NgZone is banned. forty-cdk must run zoneless (CLAUDE.md).',
             },
             {
+              name: '@angular/forms',
+              importNames: ['ControlValueAccessor', 'NG_VALUE_ACCESSOR'],
+              message:
+                'ControlValueAccessor / NG_VALUE_ACCESSOR are banned: a form primitive implements the matching `@angular/forms/signals` interface so `[formField]` wires it (CLAUDE.md § "Form primitives use Signal Forms, never ControlValueAccessor").',
+            },
+            {
               name: 'zone.js',
               message: 'Banned by CLAUDE.md — the library must run zoneless.',
             },
@@ -4201,6 +4241,22 @@ module.exports = tseslint.config(
     },
   },
 
+  {
+    files: ['projects/forty-cdk/**/*.ts'],
+    ignores: NON_SHIPPING_LIBRARY_SOURCES,
+    rules: {
+      '@typescript-eslint/no-restricted-imports': optionalPeerValueImportBan(null),
+    },
+  },
+
+  ...Object.entries(OPTIONAL_PEER_ENTRY_POINTS).map(([peer, entryPoint]) => ({
+    files: [`projects/forty-cdk/${entryPoint}/**/*.ts`],
+    ignores: NON_SHIPPING_LIBRARY_SOURCES,
+    rules: {
+      '@typescript-eslint/no-restricted-imports': optionalPeerValueImportBan(peer),
+    },
+  })),
+
   // ---------- Spec / test-utility relaxations ----------
   // `src/lib/ssr/fixtures/**` holds the SSR smoke suite's fixture components and
   // its registry — spec support that is not itself a `.spec.ts` (#1594);
@@ -4208,12 +4264,7 @@ module.exports = tseslint.config(
   // static-attribute adoption sweep (#1597). Both are excluded from
   // `tsconfig.lib.json` for the same reason: nothing there ships.
   {
-    files: [
-      '**/*.spec.ts',
-      '**/test-utils/**/*.ts',
-      'projects/forty-cdk/src/lib/ssr/fixtures/**/*.ts',
-      'projects/forty-cdk/src/lib/static-adoption/fixtures/**/*.ts',
-    ],
+    files: NON_SHIPPING_LIBRARY_SOURCES,
     rules: {
       // Test harness components don't need to follow the public selector convention.
       '@angular-eslint/component-selector': 'off',
@@ -4359,6 +4410,7 @@ module.exports = tseslint.config(
       '@typescript-eslint/no-explicit-any': 'off',
       'no-restricted-globals': 'off',
       'no-restricted-imports': 'off',
+      '@typescript-eslint/no-restricted-imports': 'off',
       'no-restricted-syntax': 'off',
       // Off by default here: the `no-effect-state-propagation` fixture writes
       // signals inside `effect()` on purpose, and the "exactly one rule per
