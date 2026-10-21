@@ -39,6 +39,7 @@ import {
   anchorSlot,
   injectIdentifiedSlot,
   OverlayController,
+  warnIfOpenWithoutContent,
 } from 'forty-cdk/core-overlay';
 import { createActiveIdSignal, revealAutoHighlight } from './combobox-auto-highlight';
 import {
@@ -547,6 +548,13 @@ export class ForCombobox<T = string>
 
   constructor() {
     super();
+    warnIfOpenWithoutContent({
+      primitive: 'combobox',
+      piece: '[forComboboxContent]',
+      condition: 'combobox.open()',
+      open: this.open,
+      content: this.content,
+    });
     injectHiddenInput<T>({
       name: this.name,
       values: this.value,

@@ -15,6 +15,7 @@ import {
   MenuOverlayHost,
   FOR_MENU_CONTEXT,
   type ForMenuContext,
+  warnIfOpenWithoutContent,
 } from 'forty-cdk/core-overlay';
 import { FOR_MENU_DEFAULTS } from 'forty-cdk/defaults';
 
@@ -259,6 +260,17 @@ export class ForMenu extends MenuOverlayHost implements ForMenuContext {
 
   /** Top-level: no parent menu. */
   readonly parentMenu = null;
+
+  constructor() {
+    super();
+    warnIfOpenWithoutContent({
+      primitive: 'menu',
+      piece: '[forMenuContent]',
+      condition: 'menu.open()',
+      open: this.open,
+      content: this.content,
+    });
+  }
 
   /**
    * Anchors the active opener's next open at a 0×0 rect at (`x`, `y`) in viewport

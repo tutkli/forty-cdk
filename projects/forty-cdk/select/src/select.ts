@@ -36,7 +36,11 @@ import {
   boundEntries,
   type Unset,
 } from 'forty-cdk/core';
-import { AnchoredFormValueControlBase, ListboxOverlayController } from 'forty-cdk/core-overlay';
+import {
+  AnchoredFormValueControlBase,
+  ListboxOverlayController,
+  warnIfOpenWithoutContent,
+} from 'forty-cdk/core-overlay';
 import {
   FOR_SELECT_CONTEXT,
   SELECT_TRIGGERS,
@@ -521,6 +525,13 @@ export class ForSelect<T = string>
 
   constructor() {
     super();
+    warnIfOpenWithoutContent({
+      primitive: 'select',
+      piece: '[forSelectContent]',
+      condition: 'select.open()',
+      open: this.open,
+      content: this.#controller.content,
+    });
     injectHiddenInput<T>({
       name: this.name,
       values: this.value,

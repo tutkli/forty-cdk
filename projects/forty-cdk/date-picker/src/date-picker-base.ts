@@ -31,6 +31,7 @@ import {
   AnchoredFormValueControlBase,
   anchorSlot,
   RootedTriggerSlot,
+  warnIfOpenWithoutContent,
 } from 'forty-cdk/core-overlay';
 import { FOR_CALENDAR_CONTEXT, type ForCalendarContext } from 'forty-cdk/calendar';
 import { DATE_PICKER_TRIGGERS, type ForDatePickerContext } from './date-picker-context';
@@ -275,6 +276,17 @@ export abstract class DatePickerBase<D>
   protected readonly calendar = contentChild(FOR_CALENDAR_CONTEXT, {
     descendants: true,
   }) as Signal<ProjectedCalendar<unknown> | undefined>;
+
+  constructor() {
+    super();
+    warnIfOpenWithoutContent({
+      primitive: 'date-picker',
+      piece: '[forDatePickerContent]',
+      condition: 'picker.open()',
+      open: this.open,
+      content: this.content,
+    });
+  }
 
   private resolveTriggerId(staticId: string | null): string {
     return this.#triggerSlot.resolveId(staticId);

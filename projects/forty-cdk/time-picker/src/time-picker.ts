@@ -39,7 +39,11 @@ import {
   type Unset,
 } from 'forty-cdk/core';
 import { type TimeCapableDateAdapter } from 'forty-cdk/date-adapter';
-import { AnchoredFormValueControlBase, ListboxOverlayController } from 'forty-cdk/core-overlay';
+import {
+  AnchoredFormValueControlBase,
+  ListboxOverlayController,
+  warnIfOpenWithoutContent,
+} from 'forty-cdk/core-overlay';
 import {
   buildTimeSlots,
   selectedSlotSeconds,
@@ -493,6 +497,13 @@ export class ForTimePicker<D>
 
   constructor() {
     super();
+    warnIfOpenWithoutContent({
+      primitive: 'time-picker',
+      piece: '[forTimePickerContent]',
+      condition: 'picker.open()',
+      open: this.open,
+      content: this.#controller.content,
+    });
     injectHiddenInput({
       name: this.name,
       values: computed(() => {

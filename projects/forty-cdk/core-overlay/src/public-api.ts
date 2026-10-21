@@ -133,6 +133,10 @@ export {
   warnIfMountedWhileClosed,
 } from './overlay-controller/mounted-while-closed';
 export {
+  type OpenWithoutContentConfig,
+  warnIfOpenWithoutContent,
+} from './overlay-controller/open-without-content';
+export {
   OverlayController,
   type OverlayControllerDeps,
   type OverlayEmitTargets,

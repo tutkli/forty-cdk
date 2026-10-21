@@ -24,6 +24,7 @@ import {
   AnchoredOverlayPositioningBase,
   CloseReasonState,
   RootedTriggerSlot,
+  warnIfOpenWithoutContent,
 } from 'forty-cdk/core-overlay';
 import {
   FOR_POPOVER_CONTEXT,
@@ -212,6 +213,8 @@ export class ForPopover extends AnchoredOverlayPositioningBase implements ForPop
   readonly #arrowEl = signal<HTMLElement | null>(null);
   readonly arrow = this.#arrowEl.asReadonly();
 
+  readonly #contentEl = signal<HTMLElement | null>(null);
+
   readonly #initialFocusSlot = createSingleSlot<HTMLElement>({
     primitive: 'popover',
     owner: '[forPopover]',
@@ -241,6 +244,17 @@ export class ForPopover extends AnchoredOverlayPositioningBase implements ForPop
    */
   readonly lastCloseReason = this.#closeReasonState.reason;
 
+  constructor() {
+    super();
+    warnIfOpenWithoutContent({
+      primitive: 'popover',
+      piece: '[forPopoverContent]',
+      condition: 'popover.open()',
+      open: this.open,
+      content: this.#contentEl,
+    });
+  }
+
   private resolveTriggerId(staticId: string | null): string {
     return this.#triggerSlot.resolveId(staticId);
   }
@@ -269,6 +283,16 @@ export class ForPopover extends AnchoredOverlayPositioningBase implements ForPop
   unregisterArrow(el: HTMLElement): void {
     if (this.#arrowEl() === el) {
       this.#arrowEl.set(null);
+    }
+  }
+
+  private registerContent(el: HTMLElement): void {
+    this.#contentEl.set(el);
+  }
+
+  private unregisterContent(el: HTMLElement): void {
+    if (this.#contentEl() === el) {
+      this.#contentEl.set(null);
     }
   }
 

@@ -29,6 +29,7 @@ import {
   RootedTriggerSlot,
   ScrollDismissDispatcher,
   type ScrollDismissRegistration,
+  warnIfOpenWithoutContent,
 } from 'forty-cdk/core-overlay';
 import {
   FOR_TOOLTIP_CONTEXT,
@@ -204,6 +205,13 @@ export class ForTooltip extends AnchoredOverlayPositioningBase implements ForToo
 
   constructor() {
     super();
+    warnIfOpenWithoutContent({
+      primitive: 'tooltip',
+      piece: '[forTooltipContent]',
+      condition: 'tip.open()',
+      open: this.open,
+      content: this.#contentEl,
+    });
     forceCloseWhenDisabled({
       open: this.open,
       disabled: this.disabled,
