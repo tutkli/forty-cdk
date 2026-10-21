@@ -76,10 +76,6 @@ export class RootedTriggerSlot {
   resolveId(staticId: string | null): string {
     return staticId || this.#generatedId();
   }
-
-  register(): void {}
-
-  unregister(): void {}
 }
 
 /**

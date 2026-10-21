@@ -53,7 +53,7 @@ export const CONTEXT_SURFACE_EXCEPTIONS = {
       'preview) beside the consumer-facing value and view state.',
   },
   ForMenuContext: {
-    ceiling: 52,
+    ceiling: 50,
     reason:
       'The shared menu-overlay surface every menu flavour composes, so it carries the ' +
       'item registry, the typeahead buffer and the sibling-navigation protocol.',

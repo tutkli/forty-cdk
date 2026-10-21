@@ -99,10 +99,14 @@ export {
 export { createMenuItemList, type MenuItemHandle } from './menu-overlay/menu-item-list';
 export {
   asMenuOpenerRegistration,
+  createMenuOpenerHandle,
+  MENU_OPENERS,
+  type MenuOpenerHandle,
   type MenuOpenerOptions,
   type MenuOpenerPositioning,
   type MenuOpenerRegistration,
   menuReturnFocusTarget,
+  releaseMenuOpener,
 } from './menu-overlay/menu-opener-registry';
 export { createMenuOverlay, MenuOverlay } from './menu-overlay/menu-overlay';
 export { MenuOverlayHost } from './menu-overlay/menu-overlay-host';
@@ -134,6 +138,7 @@ export {
   type OverlayEmitTargets,
   type OverlayOpenOptions,
   type OverlayOpenOutcome,
+  type OverlaySide,
   type OverlaySlot,
   type OverlayTransitionOptions,
 } from './overlay-controller/overlay-controller';

@@ -1,5 +1,12 @@
-import { Directive, output, provideZonelessChangeDetection, signal } from '@angular/core';
+import {
+  Directive,
+  output,
+  provideZonelessChangeDetection,
+  signal,
+  type WritableSignal,
+} from '@angular/core';
 import { TestBed } from '@angular/core/testing';
+import type { ReferenceElement } from '@floating-ui/dom';
 
 import {
   createVetoableEvent,
@@ -10,6 +17,7 @@ import {
 import type { OverlayTransitionOptions } from '../overlay-controller/overlay-controller';
 import type { ForMenuCloseReason } from './menu-context';
 import type { MenuItemHandle } from './menu-item-list';
+import type { MenuOpenerHandle } from './menu-opener-registry';
 import { createMenuOverlay, type MenuOverlay, type MenuOverlayHooks } from './menu-overlay';
 
 interface TestItem extends MenuItemHandle {
@@ -31,6 +39,29 @@ function makeItem(id: string, opts: { disabled?: boolean; text?: string } = {}):
   };
 }
 
+function opener(
+  host: HTMLElement,
+  opts: { id?: string; dismissibleExempt?: boolean } = {},
+): MenuOpenerHandle {
+  return {
+    host,
+    root: signal<object | null>(null),
+    id: signal(opts.id ?? 'opener'),
+    dismissibleExempt: opts.dismissibleExempt ?? false,
+    labelsMenu: false,
+    positioning: null,
+    virtualAnchor: signal<ReferenceElement | null>(null),
+  };
+}
+
+function addOpeners(built: BuiltOverlay, ...handles: MenuOpenerHandle[]): void {
+  built.openers.update((list) => [...list, ...handles]);
+}
+
+function removeOpener(built: BuiltOverlay, handle: MenuOpenerHandle): void {
+  built.openers.update((list) => list.filter((existing) => existing !== handle));
+}
+
 /**
  * Tiny directive that owns the outputs the helper reads. Outputs must be
  * declared as class-field initializers per the Angular compiler — building
@@ -48,6 +79,7 @@ class HooksHost {
 
 interface BuiltOverlay {
   overlay: MenuOverlay<TestItem>;
+  openers: WritableSignal<readonly MenuOpenerHandle[]>;
   hooks: MenuOverlayHooks & {
     open: ReturnType<typeof signal<boolean>>;
     disabled: ReturnType<typeof signal<boolean>>;
@@ -100,12 +132,14 @@ function build(idPrefix = 'test'): BuiltOverlay {
     host.autoFocusOnClose.subscribe((e) => emitted.autoFocusOnClose.push(e));
 
     const lifecycle: BuiltOverlay['lifecycle'] = { opens: [], closes: [] };
+    const openers = signal<readonly MenuOpenerHandle[]>([]);
 
     const hooks = {
       open: open as MenuOverlayHooks['open'] & ReturnType<typeof signal<boolean>>,
       disabled,
       dismissible,
       loop,
+      openers,
       escapeKeyDown: host.escapeKeyDown,
       pointerDownOutside: host.pointerDownOutside,
       focusOutside: host.focusOutside,
@@ -120,7 +154,7 @@ function build(idPrefix = 'test'): BuiltOverlay {
       },
     };
     const overlay = createMenuOverlay<TestItem>(idPrefix, hooks);
-    result = { overlay, hooks, emitted, lifecycle };
+    result = { overlay, openers, hooks, emitted, lifecycle };
   });
   return result;
 }
@@ -145,35 +179,33 @@ describe('MenuOverlay', () => {
   });
 
   describe('trigger / content / item registration', () => {
-    it('exposes the registered trigger element until unregistered', () => {
-      const { overlay } = build();
-      const el = document.createElement('button');
-      overlay.registerTrigger(el);
-      expect(overlay.trigger()).toBe(el);
-      overlay.unregisterTrigger(el);
-      expect(overlay.trigger()).toBeNull();
+    it('exposes the sole opener as the trigger until it leaves', () => {
+      const built = build();
+      const handle = opener(document.createElement('button'));
+      addOpeners(built, handle);
+      expect(built.overlay.trigger()).toBe(handle.host);
+      removeOpener(built, handle);
+      expect(built.overlay.trigger()).toBeNull();
     });
 
-    it('does not clear trigger when a stale element unregisters', () => {
-      const { overlay } = build();
-      const a = document.createElement('button');
-      const b = document.createElement('button');
-      overlay.registerTrigger(a);
-      overlay.registerTrigger(b);
-      overlay.unregisterTrigger(a);
-      expect(overlay.trigger()).toBe(b);
+    it('falls back to the remaining opener when another one leaves', () => {
+      const built = build();
+      const a = opener(document.createElement('button'));
+      const b = opener(document.createElement('button'));
+      addOpeners(built, a, b);
+      removeOpener(built, a);
+      expect(built.overlay.trigger()).toBe(b.host);
     });
 
     it('leaves trigger unresolved while two openers compete and none is active', () => {
-      const { overlay } = build();
-      const a = document.createElement('button');
-      const b = document.createElement('button');
-      overlay.registerOpener(a);
-      overlay.registerOpener(b);
-      expect(overlay.trigger()).toBeNull();
+      const built = build();
+      const a = opener(document.createElement('button'));
+      const b = opener(document.createElement('button'));
+      addOpeners(built, a, b);
+      expect(built.overlay.trigger()).toBeNull();
 
-      overlay.activateOpener(b);
-      expect(overlay.trigger()).toBe(b);
+      built.overlay.activateOpener(b);
+      expect(built.overlay.trigger()).toBe(b.host);
     });
 
     it('registers content the same way', () => {
@@ -201,15 +233,16 @@ describe('MenuOverlay', () => {
 
   describe('opener registry', () => {
     it('reports each opener own id, falling back to the seed with none resolvable', () => {
-      const { overlay } = build('for-test-menu');
+      const built = build('for-test-menu');
+      const { overlay } = built;
       const seed = overlay.triggerId();
-      const a = document.createElement('button');
-      const b = document.createElement('div');
+      const a = opener(document.createElement('button'), { id: 'opener-a' });
+      const b = opener(document.createElement('div'), { id: 'opener-b' });
 
-      overlay.registerOpener(a, { id: signal('opener-a') });
+      addOpeners(built, a);
       expect(overlay.triggerId()).toBe('opener-a');
 
-      overlay.registerOpener(b, { id: signal('opener-b') });
+      addOpeners(built, b);
       expect(overlay.triggerId()).toBe(seed);
 
       overlay.activateOpener(b);
@@ -217,33 +250,33 @@ describe('MenuOverlay', () => {
     });
 
     it('anchors per opener, so switching back restores the element anchor with no clearing step', () => {
-      const { overlay } = build();
-      const button = document.createElement('button');
-      const region = document.createElement('div');
-      overlay.registerOpener(button);
-      overlay.registerOpener(region);
+      const built = build();
+      const { overlay } = built;
+      const button = opener(document.createElement('button'));
+      const region = opener(document.createElement('div'));
+      addOpeners(built, button, region);
 
       overlay.activateOpener(button);
-      expect(overlay.openerAnchor()).toBe(button);
+      expect(overlay.openerAnchor()).toBe(button.host);
       expect(overlay.openerVirtualAnchor()).toBeNull();
 
       overlay.activateOpener(region);
       overlay.setVirtualAnchor(12, 34);
       const virtual = overlay.openerVirtualAnchor();
-      expect(virtual).not.toBe(region);
+      expect(virtual).not.toBe(region.host);
       expect(virtual?.getBoundingClientRect().left).toBe(12);
       expect(virtual?.getBoundingClientRect().top).toBe(34);
       expect(overlay.openerAnchor()).toBe(virtual);
 
       overlay.activateOpener(button);
-      expect(overlay.openerAnchor()).toBe(button);
+      expect(overlay.openerAnchor()).toBe(button.host);
       expect(overlay.openerVirtualAnchor()).toBeNull();
     });
 
     it('snapshots a rect anchor by value', () => {
-      const { overlay } = build();
-      const region = document.createElement('div');
-      overlay.registerOpener(region);
+      const built = build();
+      const { overlay } = built;
+      addOpeners(built, opener(document.createElement('div')));
       overlay.setVirtualAnchorFromRect({
         x: 5,
         y: 6,
@@ -257,29 +290,86 @@ describe('MenuOverlay', () => {
     });
 
     it('exempts only the openers that asked for it', () => {
-      const { overlay } = build();
-      const button = document.createElement('button');
-      const region = document.createElement('div');
-      overlay.registerOpener(button, { dismissibleExempt: true });
-      overlay.registerOpener(region);
+      const built = build();
+      const button = opener(document.createElement('button'), { dismissibleExempt: true });
+      const region = opener(document.createElement('div'));
+      addOpeners(built, button, region);
 
-      expect(overlay.openerExemptions()).toEqual([button]);
+      expect(built.overlay.openerExemptions()).toEqual([button.host]);
 
-      overlay.unregisterOpener(button);
-      expect(overlay.openerExemptions()).toEqual([]);
+      removeOpener(built, button);
+      expect(built.overlay.openerExemptions()).toEqual([]);
     });
 
-    it('clears the active opener when it unregisters', () => {
-      const { overlay } = build();
-      const button = document.createElement('button');
-      const region = document.createElement('div');
-      overlay.registerOpener(button);
-      overlay.registerOpener(region);
-      overlay.activateOpener(button);
-      expect(overlay.trigger()).toBe(button);
+    it('falls back to the remaining opener when the active one leaves', () => {
+      const built = build();
+      const button = opener(document.createElement('button'));
+      const region = opener(document.createElement('div'));
+      addOpeners(built, button, region);
+      built.overlay.activateOpener(button);
+      expect(built.overlay.trigger()).toBe(button.host);
 
-      overlay.unregisterOpener(button);
-      expect(overlay.trigger()).toBe(region);
+      removeOpener(built, button);
+      expect(built.overlay.trigger()).toBe(region.host);
+    });
+
+    it('drops the return-focus target an open recorded once its opener leaves', () => {
+      const built = build();
+      const button = opener(document.createElement('button'));
+      const region = opener(document.createElement('div'));
+      const cell = document.createElement('span');
+      region.host.appendChild(cell);
+      document.body.append(button.host, region.host);
+      mountedHosts.push(button.host, region.host);
+      addOpeners(built, button, region);
+
+      built.overlay.activateOpener(region, cell);
+      expect(built.overlay.returnFocusTarget()).toBe(cell);
+
+      removeOpener(built, region);
+      expect(built.overlay.returnFocusTarget()).toBe(button.host);
+    });
+
+    it('resolves the opener that activated when two share a host', () => {
+      const built = build();
+      const host = document.createElement('button');
+      const dropdown = opener(host, { id: 'dropdown' });
+      const context = opener(host, { id: 'context' });
+      addOpeners(built, dropdown, context);
+
+      built.overlay.activateOpener(context);
+      built.overlay.setVirtualAnchor(12, 34);
+      expect(built.overlay.triggerId()).toBe('context');
+      expect(built.overlay.openerVirtualAnchor()?.getBoundingClientRect().left).toBe(12);
+
+      built.overlay.activateOpener(dropdown);
+      expect(built.overlay.triggerId()).toBe('dropdown');
+      expect(built.overlay.openerAnchor()).toBe(host);
+    });
+
+    it('resolves the newest of the openers sharing one host when none activated', () => {
+      const built = build();
+      const host = document.createElement('button');
+      addOpeners(built, opener(host, { id: 'first' }), opener(host, { id: 'second' }));
+
+      expect(built.overlay.trigger()).toBe(host);
+      expect(built.overlay.triggerId()).toBe('second');
+    });
+
+    it('forgets an active opener once it is released, and only that one', () => {
+      const built = build();
+      const button = opener(document.createElement('button'));
+      const region = opener(document.createElement('div'));
+      addOpeners(built, button, region);
+      built.overlay.activateOpener(button);
+      expect(built.overlay.trigger()).toBe(button.host);
+
+      built.overlay.releaseOpener(button);
+      expect(built.overlay.trigger()).toBeNull();
+
+      built.overlay.activateOpener(region);
+      built.overlay.releaseOpener(button);
+      expect(built.overlay.trigger()).toBe(region.host);
     });
   });
 

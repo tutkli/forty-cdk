@@ -963,5 +963,56 @@ describe('ForDropdownMenu', () => {
       expect(trigger.getAttribute('data-state')).toBe('closed');
       expect(document.querySelector('[forMenuContent]')).toBeNull();
     });
+
+    @Component({
+      imports: [...IMPORTS, NgTemplateOutlet],
+      template: `
+        <ng-template #trig let-root="root">
+          <button data-testid="trigger" [forDropdownMenuTrigger]="root">Options</button>
+        </ng-template>
+
+        <div forDropdownMenu [(open)]="openA" #a="forDropdownMenu">
+          @if (openA()) {
+            <div forMenuContent data-testid="content-a">
+              <button forMenuItem>A</button>
+            </div>
+          }
+        </div>
+        <div forDropdownMenu [(open)]="openB" #b="forDropdownMenu">
+          @if (openB()) {
+            <div forMenuContent data-testid="content-b">
+              <button forMenuItem>B</button>
+            </div>
+          }
+        </div>
+
+        <ng-container
+          [ngTemplateOutlet]="trig"
+          [ngTemplateOutletContext]="{ root: useB() ? b : a }"
+        />
+      `,
+    })
+    class RetargetedHost {
+      readonly openA = signal(false);
+      readonly openB = signal(false);
+      readonly useB = signal(false);
+    }
+
+    it('follows an explicit root swapped at runtime', async () => {
+      const r = renderHost(RetargetedHost);
+      const trigger = r.query<HTMLButtonElement>('[data-testid="trigger"]')!;
+
+      r.instance.useB.set(true);
+      await flush(r.fixture);
+      trigger.click();
+      await flush(r.fixture);
+
+      expect(r.query('[data-testid="trigger"]')).toBe(trigger);
+      expect(r.instance.openA()).toBe(false);
+      expect(r.instance.openB()).toBe(true);
+      expect(trigger.getAttribute('aria-controls')).toBe(
+        document.querySelector('[data-testid="content-b"]')!.id,
+      );
+    });
   });
 });

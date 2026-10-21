@@ -18,14 +18,19 @@ import {
   fortyWarn,
   hostId,
   injectPointerMove,
+  registerHandle,
   resolveActiveElement,
 } from 'forty-cdk/core';
 import {
   asMenuOpenerRegistration,
   createDebouncedAction,
+  createMenuOpenerHandle,
   type DebouncedAction,
+  MENU_OPENERS,
   type MenuActivationModality,
+  type MenuOpenerHandle,
   type MenuOpenerPositioning,
+  releaseMenuOpener,
 } from 'forty-cdk/core-overlay';
 import {
   type ContextMenuContext,
@@ -151,7 +156,8 @@ export class ForContextMenuTrigger {
    */
   readonly forContextMenuTrigger = input<ForContextMenuContext | ''>('');
 
-  private readonly ctx = injectContextMenuContext(this.forContextMenuTrigger);
+  readonly #resolved = injectContextMenuContext(this.forContextMenuTrigger);
+  private readonly ctx = this.#resolved.ctx;
 
   readonly #openerRegistration = computed(() => asMenuOpenerRegistration(this.ctx()));
 
@@ -181,26 +187,23 @@ export class ForContextMenuTrigger {
   /** Whether the trigger is disabled — its own `disabled` input OR the root's. */
   readonly effectiveDisabled = computed(() => this.disabled() || this.ctx().disabled());
 
+  readonly #handle: MenuOpenerHandle;
+
   constructor() {
-    const el = this.#host.nativeElement;
-    // Registration is an imperative call into the resolved root's registry,
-    // not state derivation — the effect only re-registers the element when
-    // the resolved root changes (explicit reference swapped at runtime).
-    effect((onCleanup) => {
-      const ctx = this.ctx();
-      const openers = this.#openerRegistration();
-      if (openers === null) {
-        ctx.registerTrigger(el);
-        onCleanup(() => ctx.unregisterTrigger(el));
-        return;
-      }
-      openers.registerOpener(el, {
-        id: this.id,
-        labelsMenu: false,
-        positioning: this.menuPositioning,
-      });
-      onCleanup(() => openers.unregisterOpener(el));
+    const openers = inject(MENU_OPENERS);
+    this.#handle = createMenuOpenerHandle(this.#host.nativeElement, this.#resolved.root, {
+      id: this.id,
+      labelsMenu: false,
+      positioning: this.menuPositioning,
     });
+    registerHandle(
+      this.#handle,
+      (handle) => openers.add(handle),
+      (handle) => {
+        openers.remove(handle);
+        releaseMenuOpener(handle);
+      },
+    );
     effect(() => {
       if (!this.ctx().open()) {
         untracked(() => this.#releaseTrailingGuard?.());
@@ -335,7 +338,7 @@ export class ForContextMenuTrigger {
   }
 
   #activate(returnFocusTarget: HTMLElement | null = null): void {
-    this.#openerRegistration()?.activateOpener(this.#host.nativeElement, returnFocusTarget);
+    this.#openerRegistration()?.activateOpener(this.#handle, returnFocusTarget);
   }
 
   #openMenu(modality: MenuActivationModality): void {
