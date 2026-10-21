@@ -5,11 +5,14 @@ import {
   assertRootContext,
   orphanContextError,
   RootedRegistry,
-  type RootedHandle,
   unresolvedRootError,
   type VetoableNativeEvent,
 } from 'forty-cdk/core';
-import { type FloatingAlign, type FloatingSide } from 'forty-cdk/core-overlay';
+import {
+  type FloatingAlign,
+  type FloatingSide,
+  type RootedTriggerHandle,
+} from 'forty-cdk/core-overlay';
 
 /**
  * How a `[forDatePicker]` is composed. `'trigger'`: the trigger is the control
@@ -194,13 +197,8 @@ export function injectDatePickerContext(piece: string): ForDatePickerContext {
   return ctx;
 }
 
-export interface DatePickerTriggerHandle extends RootedHandle<ForDatePickerContext> {
-  readonly host: HTMLElement;
-  readonly staticId: string | null;
-}
-
 export const DATE_PICKER_TRIGGERS = new InjectionToken<
-  RootedRegistry<ForDatePickerContext, DatePickerTriggerHandle>
+  RootedRegistry<ForDatePickerContext, RootedTriggerHandle<ForDatePickerContext>>
 >('DATE_PICKER_TRIGGERS', { providedIn: 'root', factory: () => new RootedRegistry() });
 
 /**

@@ -4,11 +4,10 @@ import {
   assertRootContext,
   orphanContextError,
   RootedRegistry,
-  type RootedHandle,
   unresolvedRootError,
   type VetoableNativeEvent,
 } from 'forty-cdk/core';
-import { type AnchoredPositioningContext } from 'forty-cdk/core-overlay';
+import { type AnchoredPositioningContext, type RootedTriggerHandle } from 'forty-cdk/core-overlay';
 
 /**
  * Why a popover requested close. `'tab'` is a Tab or Shift+Tab past either end of the content,
@@ -180,13 +179,8 @@ export function injectPopoverContext(piece: string): PopoverContext {
   return widened;
 }
 
-export interface PopoverTriggerHandle extends RootedHandle<ForPopoverContext> {
-  readonly host: HTMLElement;
-  readonly staticId: string | null;
-}
-
 export const POPOVER_TRIGGERS = new InjectionToken<
-  RootedRegistry<ForPopoverContext, PopoverTriggerHandle>
+  RootedRegistry<ForPopoverContext, RootedTriggerHandle<ForPopoverContext>>
 >('POPOVER_TRIGGERS', { providedIn: 'root', factory: () => new RootedRegistry() });
 
 /**

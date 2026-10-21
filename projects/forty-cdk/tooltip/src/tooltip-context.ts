@@ -4,10 +4,13 @@ import {
   assertRootContext,
   orphanContextError,
   RootedRegistry,
-  type RootedHandle,
   unresolvedRootError,
 } from 'forty-cdk/core';
-import { type AnchoredPositioningContext, type Point } from 'forty-cdk/core-overlay';
+import {
+  type AnchoredPositioningContext,
+  type Point,
+  type RootedTriggerHandle,
+} from 'forty-cdk/core-overlay';
 
 /** Reason a show / hide was scheduled — `focus` bypasses the open delay, `escape` and `press` the close delay. */
 export type TooltipScheduleReason = 'hover' | 'focus' | 'escape' | 'press';
@@ -99,13 +102,8 @@ export interface TooltipContext extends ForTooltipContext, TooltipPieceContext {
  */
 export const FOR_TOOLTIP_CONTEXT = new InjectionToken<ForTooltipContext>('FOR_TOOLTIP_CONTEXT');
 
-export interface TooltipTriggerHandle extends RootedHandle<ForTooltipContext> {
-  readonly host: HTMLElement;
-  readonly staticId: string | null;
-}
-
 export const TOOLTIP_TRIGGERS = new InjectionToken<
-  RootedRegistry<ForTooltipContext, TooltipTriggerHandle>
+  RootedRegistry<ForTooltipContext, RootedTriggerHandle<ForTooltipContext>>
 >('TOOLTIP_TRIGGERS', { providedIn: 'root', factory: () => new RootedRegistry() });
 
 export function injectTooltipContext(piece: string): ForTooltipContext {

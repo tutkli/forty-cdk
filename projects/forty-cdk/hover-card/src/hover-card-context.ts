@@ -174,6 +174,14 @@ export function injectHoverCardTriggerContext(explicitRoot: Signal<ForHoverCardC
         exportAs: 'forHoverCard',
       });
     }
+    const widened = resolved as unknown as HoverCardContext;
+    assertRootContext({
+      entryPoint: 'hover-card',
+      token: 'FOR_HOVER_CARD_CONTEXT',
+      root: '[forHoverCard]',
+      piece: 'ForHoverCardTrigger',
+      probe: () => widened.focusEnterContent,
+    });
     return resolved;
   });
   return { root, ctx };

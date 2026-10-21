@@ -26,6 +26,7 @@ import {
   type HoverIntentScheduler,
   type HoverSurfaceState,
   type Point,
+  RootedTriggerSlot,
   ScrollDismissDispatcher,
   type ScrollDismissRegistration,
 } from 'forty-cdk/core-overlay';
@@ -173,22 +174,22 @@ export class ForTooltip extends AnchoredOverlayPositioningBase implements ForToo
 
   readonly #generatedTriggerId = this.#idGen.next('for-tooltip-trigger');
 
-  readonly #triggers = inject(TOOLTIP_TRIGGERS).of(this);
-  readonly #triggerHandle = computed(() => this.#triggers().at(-1) ?? null);
+  readonly #triggerSlot: RootedTriggerSlot = new RootedTriggerSlot(
+    inject(TOOLTIP_TRIGGERS).of(this),
+    () => this.#generatedTriggerId,
+  );
 
   /**
    * Id of the trigger element. A consumer-set `id` on the trigger host is
    * adopted at registration and preserved; the generated
    * `for-tooltip-trigger-*` id is only assigned when the host has none.
    */
-  readonly triggerId = computed(() =>
-    this.resolveTriggerId(this.#triggerHandle()?.staticId ?? null),
-  );
+  readonly triggerId = this.#triggerSlot.id;
 
   /** Generated id of the content element, wired to the trigger's `aria-describedby` while open. */
   readonly contentId = signal(this.#idGen.next('for-tooltip-content'));
 
-  readonly trigger = computed(() => this.#triggerHandle()?.host ?? null);
+  readonly trigger = this.#triggerSlot.element;
 
   readonly #contentEl = signal<HTMLElement | null>(null);
 
@@ -237,7 +238,7 @@ export class ForTooltip extends AnchoredOverlayPositioningBase implements ForToo
   }
 
   private resolveTriggerId(staticId: string | null): string {
-    return staticId || this.#generatedTriggerId;
+    return this.#triggerSlot.resolveId(staticId);
   }
 
   /** Registers the content host element so the hoverable-content grace polygon can measure it. */

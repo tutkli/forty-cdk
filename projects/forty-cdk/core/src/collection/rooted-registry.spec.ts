@@ -53,6 +53,23 @@ describe('RootedRegistry', () => {
     expect(ofB()).toEqual([moving]);
   });
 
+  it('keeps a handle in its registration place on the root it moves to', () => {
+    const registry = new RootedRegistry<Root, Handle>();
+    const [moving, resolved] = makeHandle('moving', a);
+    const [newer] = makeHandle('newer', b);
+    registry.add(moving);
+    registry.add(newer);
+    const ofB = registry.of(b);
+
+    resolved.set(b);
+
+    expect(ofB()).toEqual([moving, newer]);
+
+    registry.remove(newer);
+
+    expect(ofB()).toEqual([moving]);
+  });
+
   it('lists a handle under no root while it resolves none', () => {
     const registry = new RootedRegistry<Root, Handle>();
     const [pending, resolved] = makeHandle('pending', null);

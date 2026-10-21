@@ -5,6 +5,7 @@ import {
   adoptHostId,
   createSingleSlot,
   IdGenerator,
+  type RootedHandle,
   type SingleSlot,
   type SingleSlotConfig,
 } from 'forty-cdk/core';
@@ -49,6 +50,31 @@ export class IdentifiedElementSlot<E extends HTMLElement = HTMLElement> {
     if (this.#el() === el) {
       this.#el.set(null);
     }
+  }
+}
+
+export interface RootedTriggerHandle<R extends object = object> extends RootedHandle<R> {
+  readonly host: HTMLElement;
+  readonly staticId: string | null;
+}
+
+export class RootedTriggerSlot {
+  readonly #generatedId: () => string;
+  readonly #latest: Signal<RootedTriggerHandle | null>;
+
+  readonly element: Signal<HTMLElement | null>;
+
+  readonly id: Signal<string>;
+
+  constructor(triggers: Signal<readonly RootedTriggerHandle[]>, generatedId: () => string) {
+    this.#generatedId = generatedId;
+    this.#latest = computed(() => triggers().at(-1) ?? null);
+    this.element = computed(() => this.#latest()?.host ?? null);
+    this.id = computed(() => this.resolveId(this.#latest()?.staticId ?? null));
+  }
+
+  resolveId(staticId: string | null): string {
+    return staticId || this.#generatedId();
   }
 }
 

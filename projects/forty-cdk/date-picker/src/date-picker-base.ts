@@ -1,6 +1,5 @@
 import {
   booleanAttribute,
-  computed,
   contentChild,
   Directive,
   inject,
@@ -28,7 +27,11 @@ import {
   type WritingDirection,
 } from 'forty-cdk/core';
 import { type DateAdapter } from 'forty-cdk/date-adapter';
-import { AnchoredFormValueControlBase, anchorSlot } from 'forty-cdk/core-overlay';
+import {
+  AnchoredFormValueControlBase,
+  anchorSlot,
+  RootedTriggerSlot,
+} from 'forty-cdk/core-overlay';
 import { FOR_CALENDAR_CONTEXT, type ForCalendarContext } from 'forty-cdk/calendar';
 import { DATE_PICKER_TRIGGERS, type ForDatePickerContext } from './date-picker-context';
 
@@ -212,16 +215,16 @@ export abstract class DatePickerBase<D>
 
   protected abstract readonly generatedTriggerId: string;
 
-  readonly #triggers = inject(DATE_PICKER_TRIGGERS).of(this);
-  readonly #triggerHandle = computed(() => this.#triggers().at(-1) ?? null);
+  readonly #triggerSlot: RootedTriggerSlot = new RootedTriggerSlot(
+    inject(DATE_PICKER_TRIGGERS).of(this),
+    () => this.generatedTriggerId,
+  );
 
   /**
    * The trigger's `id` for `aria-controls` wiring: a consumer-set static `id` on
    * the trigger host, else a generated one.
    */
-  readonly triggerId = computed(() =>
-    this.resolveTriggerId(this.#triggerHandle()?.staticId ?? null),
-  );
+  readonly triggerId = this.#triggerSlot.id;
 
   /** The surface's `id` for `aria-labelledby` wiring; concrete roots seed it from {@link idGen}. */
   abstract readonly contentId: WritableSignal<string>;
@@ -229,7 +232,7 @@ export abstract class DatePickerBase<D>
   /** Formatted current value via the adapter, or `null` when empty. */
   abstract readonly formattedValue: Signal<string | null>;
 
-  readonly trigger = computed(() => this.#triggerHandle()?.host ?? null);
+  readonly trigger = this.#triggerSlot.element;
 
   readonly #anchorSlot = anchorSlot({
     primitive: 'date-picker',
@@ -274,7 +277,7 @@ export abstract class DatePickerBase<D>
   }) as Signal<ProjectedCalendar<unknown> | undefined>;
 
   private resolveTriggerId(staticId: string | null): string {
-    return staticId || this.generatedTriggerId;
+    return this.#triggerSlot.resolveId(staticId);
   }
 
   registerAnchor(el: HTMLElement): void {

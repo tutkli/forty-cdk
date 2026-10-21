@@ -20,7 +20,11 @@ import {
   type VetoableEvent,
   type VetoableNativeEvent,
 } from 'forty-cdk/core';
-import { AnchoredOverlayPositioningBase, CloseReasonState } from 'forty-cdk/core-overlay';
+import {
+  AnchoredOverlayPositioningBase,
+  CloseReasonState,
+  RootedTriggerSlot,
+} from 'forty-cdk/core-overlay';
 import {
   FOR_POPOVER_CONTEXT,
   type ForPopoverCloseReason,
@@ -187,13 +191,13 @@ export class ForPopover extends AnchoredOverlayPositioningBase implements ForPop
   readonly #generatedTriggerId = this.#idGen.next('for-popover-trigger');
   readonly contentId = signal(this.#idGen.next('for-popover-content'));
 
-  readonly #triggers = inject(POPOVER_TRIGGERS).of(this);
-  readonly #triggerHandle = computed(() => this.#triggers().at(-1) ?? null);
-
-  readonly triggerId = computed(() =>
-    this.resolveTriggerId(this.#triggerHandle()?.staticId ?? null),
+  readonly #triggerSlot: RootedTriggerSlot = new RootedTriggerSlot(
+    inject(POPOVER_TRIGGERS).of(this),
+    () => this.#generatedTriggerId,
   );
-  readonly trigger = computed(() => this.#triggerHandle()?.host ?? null);
+
+  readonly triggerId = this.#triggerSlot.id;
+  readonly trigger = this.#triggerSlot.element;
 
   readonly #anchorEl = signal<HTMLElement | null>(null);
   readonly anchor = this.#anchorEl.asReadonly();
@@ -238,7 +242,7 @@ export class ForPopover extends AnchoredOverlayPositioningBase implements ForPop
   readonly lastCloseReason = this.#closeReasonState.reason;
 
   private resolveTriggerId(staticId: string | null): string {
-    return staticId || this.#generatedTriggerId;
+    return this.#triggerSlot.resolveId(staticId);
   }
 
   /**
