@@ -700,6 +700,28 @@ function rootedTriggerResolvers(): { readonly id: string; readonly guarded: bool
   return resolvers;
 }
 
+interface UnguardedTriggerResolver {
+  readonly id: string;
+  readonly reason: string;
+  readonly holds: () => boolean;
+}
+
+const UNGUARDED_TRIGGER_RESOLVERS: readonly UnguardedTriggerResolver[] = [
+  {
+    id: 'dropdown-menu/src/dropdown-menu-trigger.ts::injectDropdownMenuTriggerContext',
+    reason:
+      "FOR_MENU_CONTEXT also resolves [forMenubar]'s multiplexed context, which is no menu root " +
+      'and which the trigger drives on purpose, narrowing it to the opener protocol it may lack',
+    holds: () =>
+      /provide: FOR_MENU_CONTEXT,\s*useFactory:/.test(
+        LIBRARY_CODE.get('menubar/src/menubar.ts') ?? '',
+      ) &&
+      (LIBRARY_CODE.get('dropdown-menu/src/dropdown-menu-trigger.ts') ?? '').includes(
+        'asMenuOpenerRegistration(',
+      ),
+  },
+];
+
 const sorted = (values: Iterable<string>): string[] => [...values].sort();
 
 const claimedSources = new Set(GUARDED.map((entry) => entry.source));
@@ -779,11 +801,23 @@ describe('split-root context guard (meta-guard)', () => {
   });
 
   it('guards the resolved root of every trigger resolver whose root keys a registry handle', () => {
+    const excluded = new Set(UNGUARDED_TRIGGER_RESOLVERS.map((exclusion) => exclusion.id));
     const unguarded = rootedTriggerResolvers()
-      .filter((resolver) => !resolver.guarded)
+      .filter((resolver) => !resolver.guarded && !excluded.has(resolver.id))
       .map((resolver) => resolver.id);
 
     expect(sorted(unguarded)).toEqual([]);
+  });
+
+  it('excludes only unguarded trigger resolvers whose stated reason still holds', () => {
+    const guarded = new Map(
+      rootedTriggerResolvers().map((resolver) => [resolver.id, resolver.guarded]),
+    );
+    const stale = UNGUARDED_TRIGGER_RESOLVERS.filter(
+      (exclusion) => guarded.get(exclusion.id) !== false || !exclusion.holds(),
+    ).map((exclusion) => `${exclusion.id}: ${exclusion.reason}`);
+
+    expect(stale).toEqual([]);
   });
 
   it('declares the number of guarded resolvers each module has', () => {

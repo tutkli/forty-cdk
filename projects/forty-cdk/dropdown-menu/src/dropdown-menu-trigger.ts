@@ -22,7 +22,9 @@ import {
   type ForMenuContext,
   MENU_OPENERS,
   type MenuActivationModality,
+  type MenuOpenerHandle,
   type MenuOpenerPositioning,
+  releaseMenuOpener,
 } from 'forty-cdk/core-overlay';
 
 /**
@@ -168,17 +170,23 @@ export class ForDropdownMenuTrigger {
   /** Whether the trigger is disabled — its own `disabled` input OR the root's. */
   readonly effectiveDisabled = computed(() => this.disabled() || this.ctx().disabled());
 
+  readonly #handle: MenuOpenerHandle;
+
   constructor() {
     const openers = inject(MENU_OPENERS);
+    this.#handle = createMenuOpenerHandle(this.#host.nativeElement, this.#resolved.root, {
+      id: this.id,
+      dismissibleExempt: true,
+      labelsMenu: true,
+      positioning: this.menuPositioning,
+    });
     registerHandle(
-      createMenuOpenerHandle(this.#host.nativeElement, this.#resolved.root, {
-        id: this.id,
-        dismissibleExempt: true,
-        labelsMenu: true,
-        positioning: this.menuPositioning,
-      }),
+      this.#handle,
       (handle) => openers.add(handle),
-      (handle) => openers.remove(handle),
+      (handle) => {
+        openers.remove(handle);
+        releaseMenuOpener(handle);
+      },
     );
     reflectDisabled(this.effectiveDisabled);
   }
@@ -214,6 +222,6 @@ export class ForDropdownMenuTrigger {
   }
 
   #activate(): void {
-    this.#openerRegistration()?.activateOpener(this.#host.nativeElement);
+    this.#openerRegistration()?.activateOpener(this.#handle);
   }
 }

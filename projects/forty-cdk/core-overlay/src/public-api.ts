@@ -106,6 +106,7 @@ export {
   type MenuOpenerPositioning,
   type MenuOpenerRegistration,
   menuReturnFocusTarget,
+  releaseMenuOpener,
 } from './menu-overlay/menu-opener-registry';
 export { createMenuOverlay, MenuOverlay } from './menu-overlay/menu-overlay';
 export { MenuOverlayHost } from './menu-overlay/menu-overlay-host';

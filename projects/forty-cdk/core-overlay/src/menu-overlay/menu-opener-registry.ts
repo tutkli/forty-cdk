@@ -127,12 +127,14 @@ export function createMenuOpenerHandle(
  */
 export interface MenuOpenerRegistration {
   /**
-   * Marks `element` as the opener driving the current open. Return-focus, the
+   * Marks `opener` as the opener driving the current open. Return-focus, the
    * surface's `aria-labelledby` fallback, and the anchor all resolve against it.
    * `returnFocusTarget` records where focus returns for this open instead of
-   * `element` — the focused descendant a keyboard activation started from.
+   * the opener's host — the focused descendant a keyboard activation started
+   * from.
    */
-  activateOpener(element: HTMLElement, returnFocusTarget?: HTMLElement | null): void;
+  activateOpener(opener: MenuOpenerHandle, returnFocusTarget?: HTMLElement | null): void;
+  releaseOpener(opener: MenuOpenerHandle): void;
   /**
    * The element focus returns to when the menu closes: the target the active
    * opener recorded for this open while it is still in the document, else the
@@ -167,6 +169,13 @@ export function menuReturnFocusTarget(ctx: Pick<ForMenuContext, 'trigger'>): HTM
   return openers ? openers.returnFocusTarget() : ctx.trigger();
 }
 
+export function releaseMenuOpener(opener: MenuOpenerHandle): void {
+  const root = opener.root();
+  if (root !== null) {
+    asMenuOpenerRegistration(root)?.releaseOpener(opener);
+  }
+}
+
 /**
  * The registry of openers behind a menu root. Several triggers may drive one
  * menu definition, which is what lets `[forMenu]` be declared once and opened
@@ -176,8 +185,9 @@ export function menuReturnFocusTarget(ctx: Pick<ForMenuContext, 'trigger'>): HTM
  * the element return-focus lands on, the id the surface names itself after,
  * whether that id is a valid name at all, the floating-ui anchor, and the
  * placement override that anchor is measured with. "Active" is whichever opener
- * last called {@link activate}, falling back to the sole registered opener — so
- * a single-opener root and a programmatic open resolve unambiguously.
+ * last called {@link activate}, falling back to the newest opener when every
+ * registered one sits on the same element — so a single-opener root and a
+ * programmatic open resolve unambiguously.
  *
  * Each opener carries its own optional virtual anchor, so switching openers
  * switches the anchor with no clearing step: a pointer-anchored right-click
@@ -187,20 +197,20 @@ export function menuReturnFocusTarget(ctx: Pick<ForMenuContext, 'trigger'>): HTM
 export class MenuOpenerRegistry {
   readonly #seedId: Signal<string>;
   readonly #openers: Signal<readonly MenuOpenerHandle[]>;
-  readonly #activeElement = signal<HTMLElement | null>(null);
+  readonly #activeOpener = signal<MenuOpenerHandle | null>(null);
   #returnFocusTarget: HTMLElement | null = null;
   #activatedSinceMount = false;
 
   readonly #active = computed<MenuOpenerHandle | null>(() => {
     const openers = this.#openers();
-    const active = this.#activeElement();
-    if (active !== null) {
-      const match = openers.find((opener) => opener.host === active);
-      if (match !== undefined) {
-        return match;
-      }
+    const active = this.#activeOpener();
+    if (active !== null && openers.includes(active)) {
+      return active;
     }
-    return openers.length === 1 ? (openers[0] ?? null) : null;
+    const newest = openers.at(-1);
+    return newest !== undefined && openers.every((opener) => opener.host === newest.host)
+      ? newest
+      : null;
   });
 
   /**
@@ -278,10 +288,17 @@ export class MenuOpenerRegistry {
     this.id = computed(() => this.#active()?.id() ?? this.#seedId());
   }
 
-  activate(element: HTMLElement, returnFocusTarget: HTMLElement | null = null): void {
-    this.#activeElement.set(element);
+  activate(opener: MenuOpenerHandle, returnFocusTarget: HTMLElement | null = null): void {
+    this.#activeOpener.set(opener);
     this.#returnFocusTarget = returnFocusTarget;
     this.#activatedSinceMount = true;
+  }
+
+  release(opener: MenuOpenerHandle): void {
+    if (this.#activeOpener() === opener) {
+      this.#activeOpener.set(null);
+      this.#returnFocusTarget = null;
+    }
   }
 
   mountSurface(): void {
@@ -301,7 +318,8 @@ export class MenuOpenerRegistry {
   returnFocusTarget(): HTMLElement | null {
     const element = this.element();
     const target = this.#returnFocusTarget;
-    return target !== null && target.isConnected && element === this.#activeElement()
+    const opener = this.#activeOpener();
+    return target !== null && target.isConnected && opener !== null && this.#active() === opener
       ? target
       : element;
   }

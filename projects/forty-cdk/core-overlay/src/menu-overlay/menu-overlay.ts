@@ -206,8 +206,12 @@ export class MenuOverlay<H extends MenuItemHandle = MenuItemHandle> {
     this.#controller.setInitialFocus(target);
   }
 
-  activateOpener(element: HTMLElement, returnFocusTarget: HTMLElement | null = null): void {
-    this.#openers.activate(element, returnFocusTarget);
+  activateOpener(opener: MenuOpenerHandle, returnFocusTarget: HTMLElement | null = null): void {
+    this.#openers.activate(opener, returnFocusTarget);
+  }
+
+  releaseOpener(opener: MenuOpenerHandle): void {
+    this.#openers.release(opener);
   }
 
   /**

@@ -199,13 +199,13 @@ describe('MenuOverlay', () => {
 
     it('leaves trigger unresolved while two openers compete and none is active', () => {
       const built = build();
-      const a = document.createElement('button');
-      const b = document.createElement('button');
-      addOpeners(built, opener(a), opener(b));
+      const a = opener(document.createElement('button'));
+      const b = opener(document.createElement('button'));
+      addOpeners(built, a, b);
       expect(built.overlay.trigger()).toBeNull();
 
       built.overlay.activateOpener(b);
-      expect(built.overlay.trigger()).toBe(b);
+      expect(built.overlay.trigger()).toBe(b.host);
     });
 
     it('registers content the same way', () => {
@@ -236,13 +236,13 @@ describe('MenuOverlay', () => {
       const built = build('for-test-menu');
       const { overlay } = built;
       const seed = overlay.triggerId();
-      const a = document.createElement('button');
-      const b = document.createElement('div');
+      const a = opener(document.createElement('button'), { id: 'opener-a' });
+      const b = opener(document.createElement('div'), { id: 'opener-b' });
 
-      addOpeners(built, opener(a, { id: 'opener-a' }));
+      addOpeners(built, a);
       expect(overlay.triggerId()).toBe('opener-a');
 
-      addOpeners(built, opener(b, { id: 'opener-b' }));
+      addOpeners(built, b);
       expect(overlay.triggerId()).toBe(seed);
 
       overlay.activateOpener(b);
@@ -252,24 +252,24 @@ describe('MenuOverlay', () => {
     it('anchors per opener, so switching back restores the element anchor with no clearing step', () => {
       const built = build();
       const { overlay } = built;
-      const button = document.createElement('button');
-      const region = document.createElement('div');
-      addOpeners(built, opener(button), opener(region));
+      const button = opener(document.createElement('button'));
+      const region = opener(document.createElement('div'));
+      addOpeners(built, button, region);
 
       overlay.activateOpener(button);
-      expect(overlay.openerAnchor()).toBe(button);
+      expect(overlay.openerAnchor()).toBe(button.host);
       expect(overlay.openerVirtualAnchor()).toBeNull();
 
       overlay.activateOpener(region);
       overlay.setVirtualAnchor(12, 34);
       const virtual = overlay.openerVirtualAnchor();
-      expect(virtual).not.toBe(region);
+      expect(virtual).not.toBe(region.host);
       expect(virtual?.getBoundingClientRect().left).toBe(12);
       expect(virtual?.getBoundingClientRect().top).toBe(34);
       expect(overlay.openerAnchor()).toBe(virtual);
 
       overlay.activateOpener(button);
-      expect(overlay.openerAnchor()).toBe(button);
+      expect(overlay.openerAnchor()).toBe(button.host);
       expect(overlay.openerVirtualAnchor()).toBeNull();
     });
 
@@ -306,7 +306,7 @@ describe('MenuOverlay', () => {
       const button = opener(document.createElement('button'));
       const region = opener(document.createElement('div'));
       addOpeners(built, button, region);
-      built.overlay.activateOpener(button.host);
+      built.overlay.activateOpener(button);
       expect(built.overlay.trigger()).toBe(button.host);
 
       removeOpener(built, button);
@@ -323,11 +323,53 @@ describe('MenuOverlay', () => {
       mountedHosts.push(button.host, region.host);
       addOpeners(built, button, region);
 
-      built.overlay.activateOpener(region.host, cell);
+      built.overlay.activateOpener(region, cell);
       expect(built.overlay.returnFocusTarget()).toBe(cell);
 
       removeOpener(built, region);
       expect(built.overlay.returnFocusTarget()).toBe(button.host);
+    });
+
+    it('resolves the opener that activated when two share a host', () => {
+      const built = build();
+      const host = document.createElement('button');
+      const dropdown = opener(host, { id: 'dropdown' });
+      const context = opener(host, { id: 'context' });
+      addOpeners(built, dropdown, context);
+
+      built.overlay.activateOpener(context);
+      built.overlay.setVirtualAnchor(12, 34);
+      expect(built.overlay.triggerId()).toBe('context');
+      expect(built.overlay.openerVirtualAnchor()?.getBoundingClientRect().left).toBe(12);
+
+      built.overlay.activateOpener(dropdown);
+      expect(built.overlay.triggerId()).toBe('dropdown');
+      expect(built.overlay.openerAnchor()).toBe(host);
+    });
+
+    it('resolves the newest of the openers sharing one host when none activated', () => {
+      const built = build();
+      const host = document.createElement('button');
+      addOpeners(built, opener(host, { id: 'first' }), opener(host, { id: 'second' }));
+
+      expect(built.overlay.trigger()).toBe(host);
+      expect(built.overlay.triggerId()).toBe('second');
+    });
+
+    it('forgets an active opener once it is released, and only that one', () => {
+      const built = build();
+      const button = opener(document.createElement('button'));
+      const region = opener(document.createElement('div'));
+      addOpeners(built, button, region);
+      built.overlay.activateOpener(button);
+      expect(built.overlay.trigger()).toBe(button.host);
+
+      built.overlay.releaseOpener(button);
+      expect(built.overlay.trigger()).toBeNull();
+
+      built.overlay.activateOpener(region);
+      built.overlay.releaseOpener(button);
+      expect(built.overlay.trigger()).toBe(region.host);
     });
   });
 

@@ -4,6 +4,7 @@ import { AnchoredOverlayPositioningBase } from '../floating/anchored-overlay-pos
 import { type ListNavigationAction, type VetoableNativeEvent } from 'forty-cdk/core';
 import type { ForMenuCloseReason } from './menu-context';
 import type { MenuItemHandle } from './menu-item-list';
+import type { MenuOpenerHandle } from './menu-opener-registry';
 import type { MenuActivationModality, MenuOverlay } from './menu-overlay';
 
 /**
@@ -71,8 +72,12 @@ export abstract class MenuOverlayHost<
    * roots' emitted `.d.ts` while remaining callable at runtime — which is what
    * the trigger directives' `asMenuOpenerRegistration` narrowing relies on.
    */
-  private activateOpener(element: HTMLElement, returnFocusTarget?: HTMLElement | null): void {
-    this._overlay.activateOpener(element, returnFocusTarget);
+  private activateOpener(opener: MenuOpenerHandle, returnFocusTarget?: HTMLElement | null): void {
+    this._overlay.activateOpener(opener, returnFocusTarget);
+  }
+
+  private releaseOpener(opener: MenuOpenerHandle): void {
+    this._overlay.releaseOpener(opener);
   }
 
   private returnFocusTarget(): HTMLElement | null {
