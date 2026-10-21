@@ -2,7 +2,7 @@ name: Release
 
 on:
   push:
-    tags: ['v*']
+    tags: ['v[0-9]+.[0-9]+.[0-9]+']
 
 concurrency:
   group: release-${{ github.ref }}
@@ -10,25 +10,20 @@ concurrency:
 
 permissions:
   contents: read
-  id-token: write
 
 jobs:
-  publish:
-    name: Publish to npm
+  verify:
+    name: Verify the tagged commit
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 60
+    permissions:
+      contents: read
+      actions: read
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
     steps:
-      - uses: actions/checkout@v7
-      - uses: pnpm/action-setup@v6
-      - uses: actions/setup-node@v7
-        with:
-          node-version-file: .nvmrc
-          cache: pnpm
-
-      - name: Ensure npm supports trusted publishing
-        run: |
-          npm install -g npm@11
-          npm --version
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Verify tag matches the library version
         run: |
@@ -39,6 +34,71 @@ jobs:
             exit 1
           fi
           echo "Releasing forty-cdk ${pkg}"
+
+      - name: Verify the tagged commit is on main
+        run: |
+          status="$(gh api "repos/${GITHUB_REPOSITORY}/compare/${GITHUB_SHA}...main" --jq .status)"
+          if [ "$status" != "ahead" ] && [ "$status" != "identical" ]; then
+            echo "::error::${GITHUB_REF_NAME} points at ${GITHUB_SHA}, which is not on main (compare status: ${status}). Releases are cut from main only."
+            exit 1
+          fi
+
+      - name: Verify the version is above the published latest
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          latest="$(npm view forty-cdk dist-tags.latest)"
+          if [ -z "$latest" ]; then
+            echo "::error::Could not read the latest dist-tag of forty-cdk from npm"
+            exit 1
+          fi
+          highest="$(printf '%s\n%s\n' "$latest" "$version" | sort -V | tail -n 1)"
+          if [ "$version" = "$latest" ] || [ "$highest" != "$version" ]; then
+            echo "::error::${version} is not above the published latest ${latest}. Only the latest line is released; a maintenance version below it is not supported."
+            exit 1
+          fi
+          echo "${version} supersedes ${latest}"
+
+      - name: Wait for CI on the tagged commit
+        run: |
+          run=""
+          for _ in $(seq 1 20); do
+            run="$(gh run list --workflow ci.yml --commit "$GITHUB_SHA" --branch main --event push --limit 1 --json databaseId --jq '.[0].databaseId // empty')"
+            [ -n "$run" ] && break
+            sleep 30
+          done
+          if [ -z "$run" ]; then
+            echo "::error::No CI run found for the push of ${GITHUB_SHA} to main"
+            exit 1
+          fi
+          echo "Waiting for CI run ${run}"
+          gh run watch "$run" --interval 30 > /dev/null || true
+          conclusion="$(gh run view "$run" --json conclusion --jq .conclusion)"
+          if [ "$conclusion" != "success" ]; then
+            echo "::error::CI run ${run} for ${GITHUB_SHA} concluded '${conclusion}'. Re-run it, or fix main and tag the fix."
+            exit 1
+          fi
+          echo "CI run ${run} succeeded"
+
+  publish:
+    name: Publish to npm
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Ensure npm supports trusted publishing
+        run: |
+          npm install -g npm@11.21.1
+          npm --version
 
       - run: pnpm install --frozen-lockfile
 
