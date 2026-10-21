@@ -133,6 +133,13 @@ A [lefthook](https://github.com/evilmartians/lefthook) `pre-commit` hook lints a
 `prepare` script. Bypass it for a one-off commit with `git commit --no-verify`. CI additionally runs
 `pnpm format:check`, the full `pnpm typecheck`, and the E2E suite sharded across both engines.
 
+Releases are cut from `main` and published under the `latest` dist-tag only. Pushing a `vX.Y.Z` tag
+runs the release workflow, which publishes once the tag matches `projects/forty-cdk/package.json`,
+the tagged commit is on `main`, its CI run on `main` has succeeded (the workflow waits for a run
+still in progress), and the version is above the current `latest`. Prerelease and maintenance
+versions are not supported: a tag such as `v1.0.0-rc.1` does not start the workflow, and a version
+below `latest` fails before the build.
+
 ## License
 
 [MIT](LICENSE)
