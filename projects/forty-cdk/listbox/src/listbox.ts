@@ -2,6 +2,7 @@ import {
   booleanAttribute,
   computed,
   Directive,
+  effect,
   ElementRef,
   inject,
   input,
@@ -14,7 +15,6 @@ import {
   accessibleTextContent,
   Collection,
   createPointerHighlight,
-  createSingleSlot,
   firstEnabledHost,
   FormUiControlBase,
   injectHiddenInput,
@@ -39,6 +39,7 @@ import {
   pressFocusesDescendant,
   preventPointerFocus,
   type Unset,
+  warnOnDuplicateRegistration,
 } from 'forty-cdk/core';
 import {
   FOR_LISTBOX_CONTEXT,
@@ -46,6 +47,7 @@ import {
   type ForListboxOptionHandle,
   type ListboxVirtualization,
   type ListboxVirtualizationHost,
+  LISTBOX_CONTROLLERS,
 } from './listbox-context';
 import { FOR_LISTBOX_DEFAULTS } from 'forty-cdk/defaults';
 
@@ -272,13 +274,9 @@ export class ForListbox<T = string>
    */
   readonly #generatedId = inject(IdGenerator).next('for-listbox');
 
-  readonly #controller = createSingleSlot<HTMLElement>({
-    primitive: 'listbox',
-    owner: '[forListbox]',
-    claimant: '[forListboxController]',
-  });
-
-  readonly #controlled = computed(() => this.#controller.value() !== null);
+  readonly #controllers = inject(LISTBOX_CONTROLLERS).of(this);
+  readonly #controller = computed(() => this.#controllers().at(-1)?.host ?? null);
+  readonly #controlled = computed(() => this.#controller() !== null);
 
   readonly #activeId = signal<string | null>(null);
 
@@ -376,6 +374,20 @@ export class ForListbox<T = string>
     injectNativeFormResetToInitial(this.value);
     const host = this.#host.nativeElement;
     preventPointerFocus((event) => this.#controlled() && !pressFocusesDescendant(event, host));
+    warnOnDuplicateRegistration(() => this.#controllers().length, {
+      primitive: 'listbox',
+      owner: '[forListbox]',
+      claimant: '[forListboxController]',
+    });
+    effect(() => {
+      if (this.#controlled()) {
+        if (!host.id) {
+          host.id = this.#generatedId;
+        }
+      } else if (host.id === this.#generatedId) {
+        host.removeAttribute('id');
+      }
+    });
   }
 
   /**
@@ -392,7 +404,7 @@ export class ForListbox<T = string>
     if (this.effectiveDisabled()) {
       return;
     }
-    const controller = this.#controller.value();
+    const controller = this.#controller();
     if (controller !== null) {
       controller.focus(options);
       return;
@@ -504,22 +516,6 @@ export class ForListbox<T = string>
     return this.#virtualized() || this.#controlled();
   }
 
-  private registerController(el: HTMLElement): void {
-    this.#controller.register(el);
-    const host = this.#host.nativeElement;
-    if (!host.id) {
-      host.id = this.#generatedId;
-    }
-  }
-
-  private unregisterController(el: HTMLElement): void {
-    this.#controller.unregister(el);
-    const host = this.#host.nativeElement;
-    if (this.#controller.value() === null && host.id === this.#generatedId) {
-      host.removeAttribute('id');
-    }
-  }
-
   private registerVirtualization(virtualization: ListboxVirtualization): ListboxVirtualizationHost {
     this.#virtualization.set(virtualization as unknown as ListboxVirtualization<T>);
     return {
@@ -535,8 +531,8 @@ export class ForListbox<T = string>
   }
 
   private isActiveController(el: HTMLElement): boolean {
-    const occupant = this.#controller.value();
-    return occupant === null || occupant === el;
+    const controller = this.#controller();
+    return controller === null || controller === el;
   }
 
   private clearActiveOption(): void {

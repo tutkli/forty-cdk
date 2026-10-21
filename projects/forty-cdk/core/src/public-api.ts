@@ -84,7 +84,12 @@ export {
   registerA11yName,
   registerHandle,
 } from './collection/register-handle';
-export { createSingleSlot, type SingleSlot, type SingleSlotConfig } from './collection/single-slot';
+export {
+  createSingleSlot,
+  type SingleSlot,
+  type SingleSlotConfig,
+  warnOnDuplicateRegistration,
+} from './collection/single-slot';
 export { RootedRegistry, type RootedHandle } from './collection/rooted-registry';
 export {
   composedClosest,

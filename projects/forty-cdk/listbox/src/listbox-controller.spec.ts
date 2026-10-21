@@ -1,4 +1,4 @@
-import { Component, signal } from '@angular/core';
+import { Component, Directive, signal } from '@angular/core';
 import { form, FormField } from '@angular/forms/signals';
 import { By } from '@angular/platform-browser';
 
@@ -161,6 +161,39 @@ class FormFieldHost {
 class TouchedHost {
   readonly touched = signal(false);
 }
+
+@Component({
+  imports: [ForListbox, ForListboxController, ForListboxOption],
+  template: `
+    <input [forListboxController]="useSecond() ? second : first" aria-label="Search" />
+    <div forListbox #first="forListbox" ariaLabel="First">
+      <button type="button" forListboxOption value="one" data-test-id="one">One</button>
+    </div>
+    <div forListbox #second="forListbox" ariaLabel="Second">
+      <button type="button" forListboxOption value="two" data-test-id="two">Two</button>
+    </div>
+  `,
+})
+class RetargetedControllerHost {
+  readonly useSecond = signal(false);
+}
+
+@Directive({
+  selector: '[paletteInput]',
+  hostDirectives: [ForListboxController],
+})
+class PaletteInput {}
+
+@Component({
+  imports: [PaletteInput, ForListbox, ForListboxOption],
+  template: `
+    <input paletteInput aria-label="Search" />
+    <div forListbox ariaLabel="Commands">
+      <button type="button" forListboxOption value="home">Go home</button>
+    </div>
+  `,
+})
+class UnboundControllerHost {}
 
 const inputOf = (root: HTMLElement): HTMLInputElement =>
   root.querySelector<HTMLInputElement>('input')!;
@@ -584,6 +617,30 @@ describe('ForListboxController', () => {
       listbox.focus();
 
       expect(document.activeElement).toBe(inputOf(el));
+    });
+
+    it('follows a listbox swapped at runtime', async () => {
+      const { el, fixture, flush } = renderHost(RetargetedControllerHost);
+      await flush();
+      const input = inputOf(el);
+      const [first, second] = Array.from(el.querySelectorAll<HTMLElement>('[forListbox]'));
+      expect(input.getAttribute('aria-controls')).toBe(first!.id);
+
+      fixture.componentInstance.useSecond.set(true);
+      await flush();
+      pressKey(input, 'ArrowDown');
+      await flush();
+
+      expect(input.getAttribute('aria-controls')).toBe(second!.id);
+      expect(input.getAttribute('aria-activedescendant')).toBe(optionOf(el, 'two').id);
+      expect(first!.hasAttribute('id')).toBe(false);
+      expect(optionOf(el, 'one').getAttribute('tabindex')).toBe('0');
+    });
+
+    it('fails loudly in dev mode when composed without a listbox binding', () => {
+      expect(() => renderHost(UnboundControllerHost)).toThrow(
+        /\[forty-cdk\/listbox\] FORCDK-CORE-010: \[forListboxController\] has no \[forListboxController\] binding/,
+      );
     });
 
     it('warns in dev mode when a second controller registers', async () => {

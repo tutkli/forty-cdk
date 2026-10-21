@@ -60,6 +60,28 @@ export interface SingleSlot<T> {
   unregister(occupant: T): void;
 }
 
+export function warnOnDuplicateRegistration(count: () => number, config: SingleSlotConfig): void {
+  if (typeof ngDevMode !== 'undefined' && !ngDevMode) {
+    return;
+  }
+  let warned = false;
+  effect(() => {
+    const registered = count();
+    if (registered <= 1) {
+      warned = false;
+    } else if (!warned) {
+      warned = true;
+      fortyWarn({
+        code: 'FORCDK-CORE-005',
+        scope: config.primitive,
+        message: `A ${config.owner} coordinates a single ${config.claimant}, but ${registered} are registered.`,
+        cause: 'Only the most recently registered one is coordinated; the rest are inert.',
+        fix: `Keep one ${config.claimant} per ${config.owner}.`,
+      });
+    }
+  });
+}
+
 /**
  * Creates a {@link SingleSlot}. Must be called in an injection context, which a
  * directive field initializer is, because the dev-mode duplicate warning runs
@@ -69,24 +91,7 @@ export function createSingleSlot<T>(config: SingleSlotConfig): SingleSlot<T> {
   const occupants = signal<readonly T[]>([]);
   const value = computed<T | null>(() => occupants().at(-1) ?? null);
 
-  if (typeof ngDevMode === 'undefined' || ngDevMode) {
-    let warned = false;
-    effect(() => {
-      const registered = occupants().length;
-      if (registered <= 1) {
-        warned = false;
-      } else if (!warned) {
-        warned = true;
-        fortyWarn({
-          code: 'FORCDK-CORE-005',
-          scope: config.primitive,
-          message: `A ${config.owner} coordinates a single ${config.claimant}, but ${registered} are registered.`,
-          cause: 'Only the most recently registered one is coordinated; the rest are inert.',
-          fix: `Keep one ${config.claimant} per ${config.owner}.`,
-        });
-      }
-    });
-  }
+  warnOnDuplicateRegistration(() => occupants().length, config);
 
   return {
     value,

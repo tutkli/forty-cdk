@@ -597,9 +597,9 @@ export const appConfig: ApplicationConfig = {
 
 Applied on the `<input>` that drives the listbox (see [Command palette](#command-palette)).
 
-| Property               | Type                                   | Description                                                                                            |
-| ---------------------- | -------------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| `forListboxController` | `input.required<ForListboxContext<T>>` | The listbox to drive, passed through its `forListbox` export (`#list="forListbox"`).<br>**Default:** — |
+| Property               | Type                          | Description                                                                                                                                                                                                                                           |
+| ---------------------- | ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `forListboxController` | `input<ForListboxContext<T>>` | The listbox to drive, passed through its `forListbox` export (`#list="forListbox"`). Required in practice though not by the template compiler: a controller left unbound throws in dev mode, and a production build drives nothing.<br>**Default:** — |
 
 ### `ForListboxOptionIndicator`
 
