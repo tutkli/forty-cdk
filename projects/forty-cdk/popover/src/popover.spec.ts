@@ -1318,6 +1318,95 @@ describe('ForPopover', () => {
       expect(trigger.getAttribute('data-state')).toBe('closed');
       expect(trigger.hasAttribute('aria-controls')).toBe(false);
     });
+
+    @Component({
+      imports: [ForPopover, ForPopoverTrigger, ForPopoverContent, NgTemplateOutlet],
+      template: `
+        <ng-template #trig let-root="root">
+          <button type="button" [forPopoverTrigger]="root">Open</button>
+        </ng-template>
+
+        <div forPopover [(open)]="openA" #a="forPopover">
+          @if (openA()) {
+            <div forPopoverContent data-testid="content-a">A</div>
+          }
+        </div>
+        <div forPopover [(open)]="openB" #b="forPopover">
+          @if (openB()) {
+            <div forPopoverContent data-testid="content-b">B</div>
+          }
+        </div>
+
+        <ng-container
+          [ngTemplateOutlet]="trig"
+          [ngTemplateOutletContext]="{ root: useB() ? b : a }"
+        />
+      `,
+    })
+    class RetargetedHost {
+      readonly openA = signal(false);
+      readonly openB = signal(false);
+      readonly useB = signal(false);
+    }
+
+    it('follows an explicit root swapped at runtime', async () => {
+      const r = renderHost(RetargetedHost);
+      const trigger = r.query<HTMLButtonElement>('button')!;
+      const idUnderA = trigger.id;
+
+      r.instance.useB.set(true);
+      await flush(r.fixture);
+      trigger.click();
+      await flush(r.fixture);
+
+      expect(r.query('button')).toBe(trigger);
+      expect(r.instance.openA()).toBe(false);
+      expect(r.instance.openB()).toBe(true);
+      expect(trigger.id).not.toBe(idUnderA);
+      expect(trigger.getAttribute('aria-controls')).toBe(
+        document.querySelector('[data-testid="content-b"]')!.id,
+      );
+    });
+  });
+
+  describe('several triggers on one root', () => {
+    @Component({
+      imports: [ForPopover, ForPopoverTrigger, ForPopoverContent],
+      template: `
+        <div forPopover [(open)]="open">
+          <button type="button" forPopoverTrigger data-testid="first">First</button>
+          @if (second()) {
+            <button type="button" forPopoverTrigger data-testid="second">Second</button>
+          }
+          @if (open()) {
+            <div forPopoverContent>
+              <button type="button" data-testid="inside">Inside</button>
+            </div>
+          }
+        </div>
+      `,
+    })
+    class StackedTriggersHost {
+      readonly open = signal(false);
+      readonly second = signal(true);
+    }
+
+    it('returns focus to the remaining trigger after the newer one unmounts', async () => {
+      const r = renderHost(StackedTriggersHost);
+      r.query<HTMLButtonElement>('[data-testid="second"]')!.click();
+      await flush(r.fixture);
+      expect(r.instance.open()).toBe(true);
+
+      r.instance.second.set(false);
+      await flush(r.fixture);
+      const inside = document.querySelector<HTMLButtonElement>('[data-testid="inside"]')!;
+      inside.focus();
+      pressKey(inside, 'Escape');
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe(false);
+      expect(document.activeElement).toBe(r.query('[data-testid="first"]'));
+    });
   });
 
   describe('reduced-motion styling hook', () => {

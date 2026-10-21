@@ -307,8 +307,8 @@ export const DATETIME_FAMILY_ADOPTERS: readonly StaticAdoptionAdopter[] = [
       {
         key: '[forDatePickerTrigger]',
         channel: 'id',
-        source: 'date-picker/src/date-picker-base.ts',
-        seam: 'adoptHostId',
+        source: 'date-picker/src/date-picker-trigger.ts',
+        seam: 'staticHostId',
         probe: 'probe-trigger',
         fallback: { generated: 'for-date-picker-trigger' },
       },

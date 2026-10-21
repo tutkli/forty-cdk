@@ -59,27 +59,23 @@ export const CONTEXT_SURFACE_EXCEPTIONS = {
       'item registry, the typeahead buffer and the sibling-navigation protocol.',
   },
   ForPopoverContext: {
-    ceiling: 46,
+    ceiling: 44,
     reason:
       '11 of these are the inherited `AnchoredPositioningContext`; the rest are the ' +
       'trigger / content / arrow wiring `[forPopoverContent]` drives.',
   },
   ForDatePickerContext: {
-    ceiling: 45,
+    ceiling: 43,
     reason:
       'Composes the field, the calendar and the overlay, and republishes each of the ' +
       "three anatomies' piece surfaces.",
-  },
-  ForTooltipContext: {
-    ceiling: 35,
-    reason: '11 inherited positioning members plus the hover-intent schedule protocol.',
   },
   ForTimePickerContext: {
     ceiling: 34,
     reason: "Mirrors DatePicker's composition over the time field and the slot list.",
   },
-  ForHoverCardContext: {
-    ceiling: 32,
+  ForTooltipContext: {
+    ceiling: 33,
     reason: '11 inherited positioning members plus the hover-intent schedule protocol.',
   },
   ForStepperContext: {
@@ -87,6 +83,10 @@ export const CONTEXT_SURFACE_EXCEPTIONS = {
     reason:
       'Reuses the Tabs backbone, so it carries the trigger / content registry and the ' +
       'roving model alongside the step state a consumer reads.',
+  },
+  ForHoverCardContext: {
+    ceiling: 30,
+    reason: '11 inherited positioning members plus the hover-intent schedule protocol.',
   },
   ForTreeContext: {
     ceiling: 29,

@@ -27,9 +27,13 @@ import {
   type WritingDirection,
 } from 'forty-cdk/core';
 import { type DateAdapter } from 'forty-cdk/date-adapter';
-import { AnchoredFormValueControlBase, anchorSlot } from 'forty-cdk/core-overlay';
+import {
+  AnchoredFormValueControlBase,
+  anchorSlot,
+  RootedTriggerSlot,
+} from 'forty-cdk/core-overlay';
 import { FOR_CALENDAR_CONTEXT, type ForCalendarContext } from 'forty-cdk/calendar';
-import type { ForDatePickerContext } from './date-picker-context';
+import { DATE_PICKER_TRIGGERS, type ForDatePickerContext } from './date-picker-context';
 
 /**
  * The projected calendar as a picker reads it: the public
@@ -85,7 +89,7 @@ export function assertCalendarAdapter(
  * It implements the full {@link ForDatePickerContext} except `formattedValue`,
  * which depends on the concrete value type (single date vs `start – end`).
  * That, plus the `adapter`, the per-root `positioningDefaults` token, and the
- * generated `triggerId` / `contentId`, are declared abstract so each concrete
+ * generated trigger id / `contentId`, are declared abstract so each concrete
  * root owns them; everything else is concrete and inherited.
  *
  * Each concrete root keeps ownership of its `value` model (the
@@ -101,7 +105,7 @@ export abstract class DatePickerBase<D>
   extends AnchoredFormValueControlBase
   implements ForDatePickerContext
 {
-  /** Shared id generator; concrete roots seed {@link triggerId} / {@link contentId} from it. */
+  /** Shared id generator; concrete roots seed the generated trigger id / {@link contentId} from it. */
   protected readonly idGen = inject(IdGenerator);
 
   /** The active date adapter, resolved from `FOR_DATE_ADAPTER` (shared with `ForCalendar`). */
@@ -209,8 +213,18 @@ export abstract class DatePickerBase<D>
   readonly #emitAutoFocusOnOpen = injectVetoableEmitter(this.autoFocusOnOpen);
   readonly #emitAutoFocusOnClose = injectVetoableEmitter(this.autoFocusOnClose);
 
-  /** The trigger's `id` for `aria-controls` wiring; concrete roots seed it from {@link idGen}. */
-  abstract readonly triggerId: WritableSignal<string>;
+  protected abstract readonly generatedTriggerId: string;
+
+  readonly #triggerSlot: RootedTriggerSlot = new RootedTriggerSlot(
+    inject(DATE_PICKER_TRIGGERS).of(this),
+    () => this.generatedTriggerId,
+  );
+
+  /**
+   * The trigger's `id` for `aria-controls` wiring: a consumer-set static `id` on
+   * the trigger host, else a generated one.
+   */
+  readonly triggerId = this.#triggerSlot.id;
 
   /** The surface's `id` for `aria-labelledby` wiring; concrete roots seed it from {@link idGen}. */
   abstract readonly contentId: WritableSignal<string>;
@@ -218,8 +232,7 @@ export abstract class DatePickerBase<D>
   /** Formatted current value via the adapter, or `null` when empty. */
   abstract readonly formattedValue: Signal<string | null>;
 
-  readonly #triggerEl = signal<HTMLElement | null>(null);
-  readonly trigger = this.#triggerEl.asReadonly();
+  readonly trigger = this.#triggerSlot.element;
 
   readonly #anchorSlot = anchorSlot({
     primitive: 'date-picker',
@@ -263,14 +276,8 @@ export abstract class DatePickerBase<D>
     descendants: true,
   }) as Signal<ProjectedCalendar<unknown> | undefined>;
 
-  registerTrigger(el: HTMLElement): void {
-    adoptHostId(el, this.triggerId);
-    this.#triggerEl.set(el);
-  }
-  unregisterTrigger(el: HTMLElement): void {
-    if (this.#triggerEl() === el) {
-      this.#triggerEl.set(null);
-    }
+  private resolveTriggerId(staticId: string | null): string {
+    return this.#triggerSlot.resolveId(staticId);
   }
 
   registerAnchor(el: HTMLElement): void {
@@ -291,7 +298,7 @@ export abstract class DatePickerBase<D>
   }
 
   protected override fieldLabelledElement(): HTMLElement | null {
-    return this.#triggerEl();
+    return this.trigger();
   }
 
   protected override fieldLabelledElementId(): string | null {
@@ -309,7 +316,7 @@ export abstract class DatePickerBase<D>
     if (this.effectiveDisabled()) {
       return;
     }
-    this.#triggerEl()?.focus(options);
+    this.trigger()?.focus(options);
   }
 
   toggle(): void {

@@ -2,7 +2,13 @@ import { provideZonelessChangeDetection, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
 import { IdGenerator } from 'forty-cdk/core';
-import { anchorSlot, elementSlot, injectIdentifiedSlot, injectSlotId } from './element-registry';
+import {
+  anchorSlot,
+  elementSlot,
+  injectIdentifiedSlot,
+  injectSlotId,
+  RootedTriggerSlot,
+} from './element-registry';
 
 function configure(): void {
   TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
@@ -94,6 +100,45 @@ const ANCHOR_CONFIG = {
 function makeAnchorSlot() {
   return TestBed.runInInjectionContext(() => anchorSlot(ANCHOR_CONFIG));
 }
+
+describe('RootedTriggerSlot', () => {
+  const handle = (host: HTMLElement, staticId: string | null = null) => ({
+    host,
+    staticId,
+    root: signal<object | null>({}).asReadonly(),
+  });
+
+  it('resolves the newest handle, and the one before it once the newest leaves', () => {
+    const first = handle(document.createElement('button'));
+    const newest = handle(document.createElement('button'));
+    const triggers = signal([first, newest]);
+    const slot = new RootedTriggerSlot(triggers, () => 'generated');
+
+    expect(slot.element()).toBe(newest.host);
+
+    triggers.set([first]);
+
+    expect(slot.element()).toBe(first.host);
+  });
+
+  it('resolves no element and the generated id while no handle is registered', () => {
+    const slot = new RootedTriggerSlot(signal([]), () => 'generated');
+
+    expect(slot.element()).toBeNull();
+    expect(slot.id()).toBe('generated');
+  });
+
+  it("names the newest handle's static id, and the generated one when it carries none", () => {
+    const triggers = signal([handle(document.createElement('button'), 'mine')]);
+    const slot = new RootedTriggerSlot(triggers, () => 'generated');
+
+    expect(slot.id()).toBe('mine');
+
+    triggers.set([handle(document.createElement('button'))]);
+
+    expect(slot.id()).toBe('generated');
+  });
+});
 
 describe('anchorSlot', () => {
   beforeEach(configure);

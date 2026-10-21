@@ -20,11 +20,16 @@ import {
   type VetoableEvent,
   type VetoableNativeEvent,
 } from 'forty-cdk/core';
-import { AnchoredOverlayPositioningBase, CloseReasonState } from 'forty-cdk/core-overlay';
+import {
+  AnchoredOverlayPositioningBase,
+  CloseReasonState,
+  RootedTriggerSlot,
+} from 'forty-cdk/core-overlay';
 import {
   FOR_POPOVER_CONTEXT,
   type ForPopoverCloseReason,
   type ForPopoverContext,
+  POPOVER_TRIGGERS,
 } from './popover-context';
 import { FOR_POPOVER_DEFAULTS } from 'forty-cdk/defaults';
 
@@ -183,11 +188,16 @@ export class ForPopover extends AnchoredOverlayPositioningBase implements ForPop
   readonly #emitAutoFocusOnOpen = injectVetoableEmitter(this.autoFocusOnOpen);
   readonly #emitAutoFocusOnClose = injectVetoableEmitter(this.autoFocusOnClose);
 
-  readonly triggerId = signal(this.#idGen.next('for-popover-trigger'));
+  readonly #generatedTriggerId = this.#idGen.next('for-popover-trigger');
   readonly contentId = signal(this.#idGen.next('for-popover-content'));
 
-  readonly #triggerEl = signal<HTMLElement | null>(null);
-  readonly trigger = this.#triggerEl.asReadonly();
+  readonly #triggerSlot: RootedTriggerSlot = new RootedTriggerSlot(
+    inject(POPOVER_TRIGGERS).of(this),
+    () => this.#generatedTriggerId,
+  );
+
+  readonly triggerId = this.#triggerSlot.id;
+  readonly trigger = this.#triggerSlot.element;
 
   readonly #anchorEl = signal<HTMLElement | null>(null);
   readonly anchor = this.#anchorEl.asReadonly();
@@ -197,7 +207,7 @@ export class ForPopover extends AnchoredOverlayPositioningBase implements ForPop
    * when registered, otherwise falls back to the trigger so existing
    * popovers without an anchor keep their behavior.
    */
-  readonly reference = computed<HTMLElement | null>(() => this.#anchorEl() ?? this.#triggerEl());
+  readonly reference = computed<HTMLElement | null>(() => this.#anchorEl() ?? this.trigger());
 
   readonly #arrowEl = signal<HTMLElement | null>(null);
   readonly arrow = this.#arrowEl.asReadonly();
@@ -231,14 +241,8 @@ export class ForPopover extends AnchoredOverlayPositioningBase implements ForPop
    */
   readonly lastCloseReason = this.#closeReasonState.reason;
 
-  registerTrigger(el: HTMLElement): void {
-    adoptHostId(el, this.triggerId);
-    this.#triggerEl.set(el);
-  }
-  unregisterTrigger(el: HTMLElement): void {
-    if (this.#triggerEl() === el) {
-      this.#triggerEl.set(null);
-    }
+  private resolveTriggerId(staticId: string | null): string {
+    return this.#triggerSlot.resolveId(staticId);
   }
 
   /**

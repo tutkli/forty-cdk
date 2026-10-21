@@ -3,10 +3,11 @@ import { computed, inject, InjectionToken, type Signal } from '@angular/core';
 import {
   assertRootContext,
   orphanContextError,
+  RootedRegistry,
   unresolvedRootError,
   type VetoableNativeEvent,
 } from 'forty-cdk/core';
-import { type AnchoredPositioningContext } from 'forty-cdk/core-overlay';
+import { type AnchoredPositioningContext, type RootedTriggerHandle } from 'forty-cdk/core-overlay';
 
 /**
  * Why a popover requested close. `'tab'` is a Tab or Shift+Tab past either end of the content,
@@ -63,8 +64,6 @@ export interface ForPopoverContext extends AnchoredPositioningContext {
    */
   readonly reference: Signal<HTMLElement | null>;
 
-  registerTrigger(el: HTMLElement): void;
-  unregisterTrigger(el: HTMLElement): void;
   /** Adopts a consumer-set static `id` on the content host into `contentId`. */
   adoptContentId(el: HTMLElement): void;
   registerAnchor(el: HTMLElement): void;
@@ -129,12 +128,16 @@ export interface PopoverRegistrationContext {
   unregisterInitialFocus(el: HTMLElement): void;
 }
 
-/** What `[forPopoverContent]` reads off the root that no consumer has a call to touch. */
+/**
+ * What `[forPopoverContent]` and `[forPopoverTrigger]` read off the root that no consumer has a
+ * call to touch.
+ */
 export interface PopoverPieceContext {
   /** The element `[forPopoverInitialFocus]` registered, or `null`. */
   readonly initialFocusTarget: Signal<HTMLElement | null>;
   /** Which open overlays an outside pointer press closes, bound on `[forPopover]`. */
   readonly lightDismiss: Signal<'topmost' | 'stack'>;
+  resolveTriggerId(staticId: string | null): string;
 }
 
 /**
@@ -176,30 +179,45 @@ export function injectPopoverContext(piece: string): PopoverContext {
   return widened;
 }
 
+export const POPOVER_TRIGGERS = new InjectionToken<
+  RootedRegistry<ForPopoverContext, RootedTriggerHandle<ForPopoverContext>>
+>('POPOVER_TRIGGERS', { providedIn: 'root', factory: () => new RootedRegistry() });
+
 /**
  * Resolves the trigger's root context: the explicit reference when the
  * `[forPopoverTrigger]` input carries one, the injected `FOR_POPOVER_CONTEXT`
- * otherwise. The orphan error only fires when neither resolves, on first read
- * of the returned signal. Must be called in an injection context.
+ * otherwise. `root` is `null` while neither resolves; `ctx` throws the orphan
+ * error on read in that state. Must be called in an injection context.
  */
-export function injectPopoverTriggerContext(
-  explicitRoot: Signal<ForPopoverContext | ''>,
-): Signal<ForPopoverContext> {
+export function injectPopoverTriggerContext(explicitRoot: Signal<ForPopoverContext | ''>): {
+  readonly root: Signal<ForPopoverContext | null>;
+  readonly ctx: Signal<PopoverContext>;
+} {
   const injected = inject(FOR_POPOVER_CONTEXT, { optional: true });
-  return computed(() => {
+  const root = computed(() => {
     const explicit = explicitRoot();
-    if (explicit !== '') {
-      return explicit;
-    }
-    if (injected) {
-      return injected;
-    }
-    throw unresolvedRootError({
-      code: 'FORCDK-POPOVER-002',
-      trigger: '[forPopoverTrigger]',
-      root: '[forPopover]',
-      token: 'FOR_POPOVER_CONTEXT',
-      exportAs: 'forPopover',
-    });
+    return explicit === '' ? injected : explicit;
   });
+  const ctx = computed(() => {
+    const resolved = root();
+    if (!resolved) {
+      throw unresolvedRootError({
+        code: 'FORCDK-POPOVER-002',
+        trigger: '[forPopoverTrigger]',
+        root: '[forPopover]',
+        token: 'FOR_POPOVER_CONTEXT',
+        exportAs: 'forPopover',
+      });
+    }
+    const widened = resolved as unknown as PopoverContext;
+    assertRootContext({
+      entryPoint: 'popover',
+      token: 'FOR_POPOVER_CONTEXT',
+      root: '[forPopover]',
+      piece: 'ForPopoverTrigger',
+      probe: () => widened.resolveTriggerId,
+    });
+    return widened;
+  });
+  return { root, ctx };
 }

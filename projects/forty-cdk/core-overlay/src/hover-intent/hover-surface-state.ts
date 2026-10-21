@@ -12,7 +12,10 @@ import {
  * Inputs for {@link createHoverSurfaceState}.
  */
 export interface HoverSurfaceOptions {
-  /** The registered trigger, measured to orient the grace polygon. */
+  /**
+   * The registered trigger: measured to orient the grace polygon, and the only
+   * element whose hover and focus keep the surface alive.
+   */
   readonly trigger: () => HTMLElement | null;
   /** The registered content the grace polygon bridges toward. */
   readonly content: () => HTMLElement | null;
@@ -47,8 +50,6 @@ export interface HoverSurfaceState {
   focusContent(): void;
   /** Focus left the content: closes when nothing else keeps the surface alive. */
   blurContent(): void;
-  /** The trigger unmounted: clears its hover and focus and disarms the grace. */
-  resetTrigger(): void;
   /** The content unmounted: clears its hover and focus and disarms the grace. */
   resetContent(): void;
   /** Closes unless the trigger or the content is hovered or focused. */
@@ -67,18 +68,24 @@ export interface HoverSurfaceState {
 /**
  * Shared keep-alive state for Tooltip and Hover-card: which side of the
  * overlay is hovered or focused, and the pointer-grace bridge between them.
- * Each `reset*` clears one side when its element unmounts, since an element
- * removed under the pointer never reports `pointerleave` or `blur`.
+ * An element removed under the pointer never reports `pointerleave` or `blur`,
+ * so the trigger's hover and focus count only while the element they were
+ * observed on is still the registered trigger, and `resetContent` clears the
+ * content side when its element unmounts.
  *
  * Internal core tier — exported from `forty-cdk/core-overlay` for the
  * library's own entry points, with no semver guarantee.
  */
 export function createHoverSurfaceState(options: HoverSurfaceOptions): HoverSurfaceState {
-  let triggerHovered = false;
-  let triggerFocused = false;
+  let hoveredTrigger: HTMLElement | null = null;
+  let focusedTrigger: HTMLElement | null = null;
   let contentHovered = false;
   let contentFocused = false;
   let detachGrace: (() => void) | null = null;
+
+  const isTrigger = (el: HTMLElement | null): boolean => el !== null && el === options.trigger();
+  const triggerHovered = (): boolean => isTrigger(hoveredTrigger);
+  const triggerFocused = (): boolean => isTrigger(focusedTrigger);
 
   function disarmGrace(): void {
     if (detachGrace) {
@@ -88,7 +95,7 @@ export function createHoverSurfaceState(options: HoverSurfaceOptions): HoverSurf
   }
 
   function closeIfInactive(): void {
-    if (triggerHovered || triggerFocused || contentHovered || contentFocused) {
+    if (triggerHovered() || triggerFocused() || contentHovered || contentFocused) {
       return;
     }
     options.close();
@@ -117,20 +124,20 @@ export function createHoverSurfaceState(options: HoverSurfaceOptions): HoverSurf
   }
 
   return {
-    triggerFocused: () => triggerFocused,
-    focused: () => triggerFocused || contentFocused,
+    triggerFocused,
+    focused: () => triggerFocused() || contentFocused,
     enterTrigger: () => {
-      triggerHovered = true;
+      hoveredTrigger = options.trigger();
       disarmGrace();
     },
     leaveTrigger: () => {
-      triggerHovered = false;
+      hoveredTrigger = null;
     },
     focusTrigger: () => {
-      triggerFocused = true;
+      focusedTrigger = options.trigger();
     },
     blurTrigger: () => {
-      triggerFocused = false;
+      focusedTrigger = null;
       closeIfInactive();
     },
     enterContent: () => {
@@ -147,11 +154,6 @@ export function createHoverSurfaceState(options: HoverSurfaceOptions): HoverSurf
     blurContent: () => {
       contentFocused = false;
       closeIfInactive();
-    },
-    resetTrigger: () => {
-      triggerHovered = false;
-      triggerFocused = false;
-      disarmGrace();
     },
     resetContent: () => {
       contentHovered = false;

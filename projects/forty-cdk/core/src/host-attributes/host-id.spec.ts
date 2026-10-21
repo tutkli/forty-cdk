@@ -9,7 +9,7 @@ import {
 } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
-import { adoptHostId, hostId, resolveHostId } from './host-id';
+import { adoptHostId, hostId, resolveHostId, staticHostId } from './host-id';
 
 function withInjector<T>(fn: () => T): T {
   TestBed.configureTestingModule({
@@ -51,6 +51,26 @@ describe('resolveHostId', () => {
     // The adopted call still consumed a counter tick, so the next generated id
     // is the second in the sequence — not the first.
     expect(next).toMatch(/-2$/);
+  });
+});
+
+describe('staticHostId', () => {
+  it('returns the host element pre-existing static id', () => {
+    const host = document.createElement('button');
+    host.setAttribute('id', 'consumer-id');
+
+    expect(staticHostId(host)).toBe('consumer-id');
+  });
+
+  it('returns null when the host has no id', () => {
+    expect(staticHostId(document.createElement('button'))).toBeNull();
+  });
+
+  it('treats an empty-string id as absent', () => {
+    const host = document.createElement('button');
+    host.setAttribute('id', '');
+
+    expect(staticHostId(host)).toBeNull();
   });
 });
 

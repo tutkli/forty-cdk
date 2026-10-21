@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Popover, Tooltip, Hover card, Date picker — BREAKING.** `registerTrigger` and
+  `unregisterTrigger` leave `ForPopoverContext`, `ForTooltipContext`, `ForHoverCardContext`,
+  `ForDatePickerContext` and the `ForPopover`, `ForTooltip`, `ForHoverCard`, `ForDatePicker` and
+  `ForDateRangePicker` roots ([#2399](https://github.com/tutkli/forty-cdk/issues/2399)), and
+  `triggerId` on those roots is a read-only `Signal<string>`. The trigger directive registers itself
+  and the root derives its trigger, so code that called the methods through an injected context no
+  longer compiles. A provider of `FOR_TOOLTIP_CONTEXT` must now alias it to the root
+  (`useExisting`); any other value fails in dev mode with `FORCDK-CORE-007`, as it already did for
+  the other three tokens. **Migrate** by rendering the primitive's trigger directive, or composing
+  it through `hostDirectives`, instead of registering an element by hand.
+
+### Fixed
+
+- **Popover, Tooltip, Hover card, Date picker** — a root with two triggers keeps the one still
+  mounted when the newer one unmounts ([#2399](https://github.com/tutkli/forty-cdk/issues/2399)).
+  The root forgot both, so a popover closed afterwards returned focus to the body instead of the
+  remaining trigger.
+
 ## [0.40.0] - 2026-10-20
 
 ### Added

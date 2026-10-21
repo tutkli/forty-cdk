@@ -1,14 +1,25 @@
 import { createHoverSurfaceState, type HoverSurfaceState } from './hover-surface-state';
 
-function setup(): { state: HoverSurfaceState; close: ReturnType<typeof vi.fn> } {
+function setup(): {
+  state: HoverSurfaceState;
+  close: ReturnType<typeof vi.fn>;
+  setTrigger: (el: HTMLElement | null) => void;
+} {
   const close = vi.fn();
+  let trigger: HTMLElement | null = document.createElement('button');
   const state = createHoverSurfaceState({
-    trigger: () => null,
+    trigger: () => trigger,
     content: () => null,
     side: () => 'bottom',
     close,
   });
-  return { state, close };
+  return {
+    state,
+    close,
+    setTrigger: (el) => {
+      trigger = el;
+    },
+  };
 }
 
 describe('createHoverSurfaceState', () => {
@@ -25,14 +36,35 @@ describe('createHoverSurfaceState', () => {
     expect(close).toHaveBeenCalledTimes(1);
   });
 
-  it('forgets a hovered and focused trigger once it unmounts', () => {
+  it('keeps the surface alive while the registered trigger is hovered', () => {
     const { state, close } = setup();
+    state.enterTrigger();
+
+    state.closeIfInactive();
+
+    expect(close).not.toHaveBeenCalled();
+  });
+
+  it('forgets a hovered and focused trigger once it unmounts', () => {
+    const { state, close, setTrigger } = setup();
     state.enterTrigger();
     state.focusTrigger();
 
-    state.resetTrigger();
+    setTrigger(null);
 
     expect(state.triggerFocused()).toBe(false);
+    state.closeIfInactive();
+    expect(close).toHaveBeenCalledTimes(1);
+  });
+
+  it('forgets a hovered and focused trigger once another element is the registered one', () => {
+    const { state, close, setTrigger } = setup();
+    state.enterTrigger();
+    state.focusTrigger();
+
+    setTrigger(document.createElement('button'));
+
+    expect(state.focused()).toBe(false);
     state.closeIfInactive();
     expect(close).toHaveBeenCalledTimes(1);
   });

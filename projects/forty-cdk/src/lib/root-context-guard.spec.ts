@@ -19,10 +19,20 @@ import {
   type ForComboboxContext,
   ForComboboxTrigger,
 } from 'forty-cdk/combobox';
-import { FOR_HOVER_CARD_CONTEXT, ForHoverCardArrow } from 'forty-cdk/hover-card';
+import {
+  FOR_HOVER_CARD_CONTEXT,
+  ForHoverCardArrow,
+  type ForHoverCardContext,
+  ForHoverCardTrigger,
+} from 'forty-cdk/hover-card';
 import { FOR_LISTBOX_CONTEXT, ForListboxOption } from 'forty-cdk/listbox';
 import { FOR_NAVIGATION_MENU_CONTEXT, ForNavigationMenuList } from 'forty-cdk/navigation-menu';
-import { FOR_POPOVER_CONTEXT, ForPopoverClose } from 'forty-cdk/popover';
+import {
+  FOR_POPOVER_CONTEXT,
+  ForPopoverClose,
+  type ForPopoverContext,
+  ForPopoverTrigger,
+} from 'forty-cdk/popover';
 import { FOR_RADIO_GROUP_CONTEXT, ForRadio } from 'forty-cdk/radio-group';
 import { FOR_SCROLL_AREA_CONTEXT, ForScrollAreaCorner } from 'forty-cdk/scroll-area';
 import {
@@ -37,6 +47,7 @@ import { FOR_TABLE_CONTEXT, ForTableSelectAll } from 'forty-cdk/table';
 import { FOR_TABS_CONTEXT, ForTabsList } from 'forty-cdk/tabs';
 import { FOR_TIME_PICKER_CONTEXT, ForTimePickerValue } from 'forty-cdk/time-picker';
 import { FOR_TOAST_CONTEXT, ForToastTitle } from 'forty-cdk/toast';
+import { FOR_TOOLTIP_CONTEXT, type ForTooltipContext, ForTooltipTrigger } from 'forty-cdk/tooltip';
 import { FOR_TREE_CONTEXT, ForTreeItemLabel } from 'forty-cdk/tree';
 import { FOR_VIRTUAL_VIEWPORT_CONTEXT, ForVirtualFor } from 'forty-cdk/virtualization';
 
@@ -285,6 +296,14 @@ class ImpostorTimePickerHost {}
 class ImpostorToastHost {}
 
 @Component({
+  imports: [ForTooltipTrigger],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  providers: [{ provide: FOR_TOOLTIP_CONTEXT, useValue: {} }],
+  template: `<button type="button" forTooltipTrigger>Info</button>`,
+})
+class ImpostorTooltipHost {}
+
+@Component({
   imports: [ForTreeItemLabel],
   changeDetection: ChangeDetectionStrategy.OnPush,
   providers: [{ provide: FOR_TREE_CONTEXT, useValue: {} }],
@@ -396,7 +415,7 @@ const GUARDED: readonly GuardedRoot[] = [
   {
     entryPoint: 'hover-card',
     source: 'hover-card/src/hover-card-context.ts',
-    calls: 1,
+    calls: 2,
     token: 'FOR_HOVER_CARD_CONTEXT',
     root: '[forHoverCard]',
     piece: 'ForHoverCardArrow',
@@ -423,7 +442,7 @@ const GUARDED: readonly GuardedRoot[] = [
   {
     entryPoint: 'popover',
     source: 'popover/src/popover-context.ts',
-    calls: 1,
+    calls: 2,
     token: 'FOR_POPOVER_CONTEXT',
     root: '[forPopover]',
     piece: 'ForPopoverClose',
@@ -502,6 +521,15 @@ const GUARDED: readonly GuardedRoot[] = [
     host: ImpostorToastHost,
   },
   {
+    entryPoint: 'tooltip',
+    source: 'tooltip/src/tooltip-context.ts',
+    calls: 1,
+    token: 'FOR_TOOLTIP_CONTEXT',
+    root: '[forTooltip]',
+    piece: 'ForTooltipTrigger',
+    host: ImpostorTooltipHost,
+  },
+  {
     entryPoint: 'tree',
     source: 'tree/src/tree-context.ts',
     calls: 1,
@@ -554,6 +582,33 @@ class ReadSurfaceAccordionHost {}
 })
 class ExplicitSelectTriggerHost {
   readonly impostor = signal({} as ForSelectContext);
+}
+
+@Component({
+  imports: [ForPopoverTrigger],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `<button type="button" [forPopoverTrigger]="impostor()"></button>`,
+})
+class ExplicitPopoverTriggerHost {
+  readonly impostor = signal({} as ForPopoverContext);
+}
+
+@Component({
+  imports: [ForTooltipTrigger],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `<button type="button" [forTooltipTrigger]="impostor()"></button>`,
+})
+class ExplicitTooltipTriggerHost {
+  readonly impostor = signal({} as ForTooltipContext);
+}
+
+@Component({
+  imports: [ForHoverCardTrigger],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `<button type="button" [forHoverCardTrigger]="impostor()"></button>`,
+})
+class ExplicitHoverCardTriggerHost {
+  readonly impostor = signal({} as ForHoverCardContext);
 }
 
 @Component({
@@ -610,6 +665,25 @@ function guardCalls(): Map<string, number> {
     }
   }
   return calls;
+}
+
+function rootedTriggerResolvers(): { readonly id: string; readonly guarded: boolean }[] {
+  const resolvers: { id: string; guarded: boolean }[] = [];
+  for (const [path, code] of LIBRARY_CODE) {
+    for (const declaration of code.split(/\n(?=[^\s}])/)) {
+      const name = /^(?:export )?function (\w+)/.exec(declaration)?.[1];
+      if (
+        name !== undefined &&
+        /readonly root: Signal<[^;]*;\s*readonly ctx: Signal</.test(declaration)
+      ) {
+        resolvers.push({
+          id: `${path}::${name}`,
+          guarded: declaration.includes('assertRootContext('),
+        });
+      }
+    }
+  }
+  return resolvers;
 }
 
 const sorted = (values: Iterable<string>): string[] => [...values].sort();
@@ -686,6 +760,18 @@ describe('split-root context guard (meta-guard)', () => {
     expect(sorted(leaked)).toEqual([]);
   });
 
+  it('finds the trigger resolvers whose root keys a registry handle', () => {
+    expect(rootedTriggerResolvers().length).toBeGreaterThanOrEqual(4);
+  });
+
+  it('guards the resolved root of every trigger resolver whose root keys a registry handle', () => {
+    const unguarded = rootedTriggerResolvers()
+      .filter((resolver) => !resolver.guarded)
+      .map((resolver) => resolver.id);
+
+    expect(sorted(unguarded)).toEqual([]);
+  });
+
   it('declares the number of guarded resolvers each module has', () => {
     const calls = guardCalls();
     const mismatched = GUARDED.filter((entry) => calls.get(entry.source) !== entry.calls).map(
@@ -713,6 +799,24 @@ describe('split-root context guard', () => {
   it('fails ForSelectTrigger on its explicit-root path', () => {
     expect(() => renderHost(ExplicitSelectTriggerHost)).toThrow(
       expectedFailure({ ...entryFor('select'), piece: 'ForSelectTrigger' }),
+    );
+  });
+
+  it('fails ForPopoverTrigger on its explicit-root path', () => {
+    expect(() => renderHost(ExplicitPopoverTriggerHost)).toThrow(
+      expectedFailure({ ...entryFor('popover'), piece: 'ForPopoverTrigger' }),
+    );
+  });
+
+  it('fails ForTooltipTrigger on its explicit-root path', () => {
+    expect(() => renderHost(ExplicitTooltipTriggerHost)).toThrow(
+      expectedFailure(entryFor('tooltip')),
+    );
+  });
+
+  it('fails ForHoverCardTrigger on its explicit-root path', () => {
+    expect(() => renderHost(ExplicitHoverCardTriggerHost)).toThrow(
+      expectedFailure({ ...entryFor('hover-card'), piece: 'ForHoverCardTrigger' }),
     );
   });
 

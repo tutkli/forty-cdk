@@ -121,6 +121,8 @@ export {
   elementSlot,
   injectIdentifiedSlot,
   injectSlotId,
+  type RootedTriggerHandle,
+  RootedTriggerSlot,
 } from './overlay-controller/element-registry';
 export { InitialFocusState } from './overlay-controller/initial-focus-state';
 export {

@@ -1999,6 +1999,54 @@ describe('ForHoverCard', () => {
         expect(fixture.componentInstance.open()).toBe(true);
         expect(trigger.getAttribute('data-state')).toBe('open');
       });
+
+      @Component({
+        imports: [ForHoverCard, ForHoverCardTrigger, ForHoverCardContent, NgTemplateOutlet],
+        template: `
+          <ng-template #trig let-root="root">
+            <a id="trigger" [forHoverCardTrigger]="root" href="/x">Trigger</a>
+          </ng-template>
+
+          <span forHoverCard [(open)]="openA" [openDelay]="0" [closeDelay]="0" #a="forHoverCard">
+            @if (a.open()) {
+              <div forHoverCardContent>A</div>
+            }
+          </span>
+          <span forHoverCard [(open)]="openB" [openDelay]="0" [closeDelay]="0" #b="forHoverCard">
+            @if (b.open()) {
+              <div forHoverCardContent>B</div>
+            }
+          </span>
+
+          <ng-container
+            [ngTemplateOutlet]="trig"
+            [ngTemplateOutletContext]="{ root: useB() ? b : a }"
+          />
+        `,
+      })
+      class RetargetedHost {
+        readonly openA = signal(false);
+        readonly openB = signal(false);
+        readonly useB = signal(false);
+      }
+
+      it('follows an explicit root swapped at runtime', async () => {
+        const { fixture, query, flush } = renderHost(RetargetedHost);
+        await flush();
+        const trigger = query<HTMLAnchorElement>('#trigger')!;
+
+        fixture.componentInstance.useB.set(true);
+        await flush();
+        trigger.dispatchEvent(pointerEvent('pointerenter'));
+        await flush();
+        vi.advanceTimersByTime(0);
+        await flush();
+
+        expect(query('#trigger')).toBe(trigger);
+        expect(fixture.componentInstance.openA()).toBe(false);
+        expect(fixture.componentInstance.openB()).toBe(true);
+        expect(trigger.getAttribute('data-state')).toBe('open');
+      });
     });
   });
 
