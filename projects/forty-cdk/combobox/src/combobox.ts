@@ -37,12 +37,12 @@ import {
   AnchoredFormValueControlBase,
   type AnchoredPositioningSeedDefaults,
   anchorSlot,
-  elementSlot,
   injectIdentifiedSlot,
   OverlayController,
 } from 'forty-cdk/core-overlay';
 import { createActiveIdSignal, revealAutoHighlight } from './combobox-auto-highlight';
 import {
+  COMBOBOX_TRIGGERS,
   FOR_COMBOBOX_CONTEXT,
   type ForComboboxActionHandle,
   type ForComboboxAutocomplete,
@@ -317,7 +317,8 @@ export class ForCombobox<T = string>
   readonly autoFocusOnClose = output<VetoableEvent>();
 
   readonly #inputSlot = injectIdentifiedSlot<HTMLInputElement>('for-combobox', 'input');
-  readonly #triggerSlot = elementSlot();
+  readonly #triggers = inject(COMBOBOX_TRIGGERS).of(this);
+  readonly #latestTrigger = computed(() => this.#triggers().at(-1) ?? null);
 
   /**
    * The open / close / dismiss machine, shared with the menu and listbox
@@ -332,9 +333,9 @@ export class ForCombobox<T = string>
     idPrefix: 'for-combobox',
     createTrigger: () => ({
       id: this.#inputSlot.id,
-      element: this.#triggerSlot.element,
-      register: (el: HTMLElement) => this.#triggerSlot.register(el),
-      unregister: (el: HTMLElement) => this.#triggerSlot.unregister(el),
+      element: computed(() => this.#latestTrigger()?.host ?? null),
+      register: () => {},
+      unregister: () => {},
     }),
     defaultInitialFocus: 'first',
     disabled: this.effectiveDisabled,
@@ -388,10 +389,7 @@ export class ForCombobox<T = string>
    */
   readonly listboxId = computed(() => (this.hasList() ? this.listId() : this.contentId()));
 
-  readonly #registeredTriggerId = signal<string | null>(null);
-  private readonly triggerId = computed(() =>
-    this.trigger() === null ? null : this.#registeredTriggerId(),
-  );
+  private readonly triggerId = computed(() => this.#latestTrigger()?.id() ?? null);
 
   readonly options = this.#items.items;
   readonly chips = this.#chips.items;
@@ -597,17 +595,6 @@ export class ForCombobox<T = string>
   /** See {@link ForComboboxContext.unregisterAnchor}. */
   unregisterAnchor(el: HTMLElement): void {
     this.#anchorSlot.unregister(el);
-  }
-
-  private registerTrigger(el: HTMLElement, id: string): void {
-    this.#overlay.registerTrigger(el);
-    this.#registeredTriggerId.set(id);
-  }
-  private unregisterTrigger(el: HTMLElement): void {
-    if (this.trigger() === el) {
-      this.#registeredTriggerId.set(null);
-    }
-    this.#overlay.unregisterTrigger(el);
   }
 
   private registerFieldButton(el: HTMLElement): void {

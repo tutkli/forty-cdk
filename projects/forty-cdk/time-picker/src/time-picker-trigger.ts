@@ -1,7 +1,11 @@
-import { computed, Directive, effect, ElementRef, inject, input } from '@angular/core';
+import { computed, Directive, ElementRef, inject, input } from '@angular/core';
 
-import { hostButtonType, reflectDisabled } from 'forty-cdk/core';
-import { type ForTimePickerContext, injectTimePickerTriggerContext } from './time-picker-context';
+import { hostButtonType, reflectDisabled, registerHandle, staticHostId } from 'forty-cdk/core';
+import {
+  type ForTimePickerContext,
+  injectTimePickerTriggerContext,
+  TIME_PICKER_TRIGGERS,
+} from './time-picker-context';
 
 /**
  * Combobox button that opens the time picker listbox. Apply on a `<button>` so
@@ -45,7 +49,7 @@ import { type ForTimePickerContext, injectTimePickerTriggerContext } from './tim
   host: {
     '[attr.type]': 'buttonType()',
     '[attr.role]': 'fieldAnatomy() ? null : "combobox"',
-    '[id]': 'ctx().overlay.triggerId()',
+    '[id]': 'id()',
     '[attr.aria-haspopup]': '"listbox"',
     '[attr.aria-expanded]': 'ctx().open() ? "true" : "false"',
     '[attr.aria-controls]': 'ctx().open() ? ctx().overlay.contentId() : null',
@@ -65,6 +69,7 @@ export class ForTimePickerTrigger<D = unknown> {
   private readonly buttonType = hostButtonType();
 
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
+  readonly #staticId = staticHostId(this.#host.nativeElement);
 
   /**
    * Optional explicit reference to the `[forTimePicker]` root, named after the
@@ -75,17 +80,20 @@ export class ForTimePickerTrigger<D = unknown> {
    */
   readonly forTimePickerTrigger = input<ForTimePickerContext<D> | ''>('');
 
-  private readonly ctx = injectTimePickerTriggerContext<D>(this.forTimePickerTrigger);
+  readonly #resolved = injectTimePickerTriggerContext<D>(this.forTimePickerTrigger);
+  private readonly ctx = this.#resolved.ctx;
+
+  private readonly id = computed(() => this.ctx().overlay.resolveTriggerId(this.#staticId));
 
   private readonly fieldAnatomy = computed(() => this.ctx().anatomy?.() === 'field');
 
   constructor() {
-    const el = this.#host.nativeElement;
-    effect((onCleanup) => {
-      const ctx = this.ctx();
-      ctx.overlay.registerTrigger(el);
-      onCleanup(() => ctx.overlay.unregisterTrigger(el));
-    });
+    const triggers = inject(TIME_PICKER_TRIGGERS);
+    registerHandle(
+      { host: this.#host.nativeElement, staticId: this.#staticId, root: this.#resolved.root },
+      (handle) => triggers.add(handle),
+      (handle) => triggers.remove(handle),
+    );
     reflectDisabled(computed(() => this.ctx().effectiveDisabled()));
   }
 

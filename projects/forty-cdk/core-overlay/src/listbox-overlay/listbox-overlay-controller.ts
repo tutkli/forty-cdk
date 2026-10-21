@@ -18,7 +18,8 @@ import {
 import {
   anchorSlot,
   type AnchorSlot,
-  IdentifiedElementSlot,
+  type RootedTriggerHandle,
+  RootedTriggerSlot,
 } from '../overlay-controller/element-registry';
 import {
   OverlayController,
@@ -55,6 +56,7 @@ export interface ListboxOverlayControllerDeps<
 > {
   /** Id-generator prefix base, e.g. `'for-select'` (suffixed with `-trigger` / `-content`). */
   readonly idPrefix: string;
+  readonly triggers: Signal<readonly RootedTriggerHandle[]>;
   /** Names the root and its anchor piece in the dev-mode duplicate-anchor warning. */
   readonly anchorSlot: SingleSlotConfig;
   /** Default initial-focus target when none is set explicitly. */
@@ -131,8 +133,6 @@ export interface ListboxOverlayContext<H extends ListboxOverlayOptionHandle, Foc
   /** Set the initial-focus target ahead of the next open. */
   setInitialFocus(target: Focus): void;
 
-  registerTrigger(el: HTMLElement): void;
-  unregisterTrigger(el: HTMLElement): void;
   registerAnchor(el: HTMLElement): void;
   unregisterAnchor(el: HTMLElement): void;
   registerContent(el: HTMLElement): void;
@@ -185,6 +185,7 @@ export interface ListboxOverlayPieceContext<
    * so a Space the buffer took must not also activate.
    */
   handleTypeahead(event: KeyboardEvent): boolean;
+  resolveTriggerId(staticId: string | null): string;
 }
 
 /**
@@ -221,6 +222,7 @@ export class ListboxOverlayController<
   readonly #typeahead = injectTypeahead();
 
   readonly #anchorSlot: AnchorSlot;
+  readonly #triggerSlot: RootedTriggerSlot;
   readonly #controller: OverlayController<Focus, CloseReason>;
 
   /** The trigger's stable id, adopted from a consumer-set static id when present. */
@@ -254,9 +256,13 @@ export class ListboxOverlayController<
 
   constructor(deps: ListboxOverlayControllerDeps<H, Focus, CloseReason>) {
     this.#deps = deps;
+    let triggerSlot!: RootedTriggerSlot;
     this.#controller = new OverlayController<Focus, CloseReason>({
       idPrefix: deps.idPrefix,
-      createTrigger: (mintId) => new IdentifiedElementSlot(mintId()),
+      createTrigger: (mintId) => {
+        triggerSlot = new RootedTriggerSlot(deps.triggers, mintId());
+        return triggerSlot;
+      },
       defaultInitialFocus: deps.defaultInitialFocus,
       disabled: deps.effectiveDisabled,
       dismissible: deps.dismissible,
@@ -268,6 +274,7 @@ export class ListboxOverlayController<
       onClose: deps.onClose,
       onDismiss: deps.markTouched,
     });
+    this.#triggerSlot = triggerSlot;
     this.#anchorSlot = anchorSlot(deps.anchorSlot);
     this.triggerId = this.#controller.triggerId;
     this.contentId = this.#controller.contentId;
@@ -283,11 +290,8 @@ export class ListboxOverlayController<
     this.#controller.setInitialFocus(target);
   }
 
-  registerTrigger(el: HTMLElement): void {
-    this.#controller.registerTrigger(el);
-  }
-  unregisterTrigger(el: HTMLElement): void {
-    this.#controller.unregisterTrigger(el);
+  resolveTriggerId(staticId: string | null): string {
+    return this.#triggerSlot.resolveId(staticId);
   }
 
   registerAnchor(el: HTMLElement): void {

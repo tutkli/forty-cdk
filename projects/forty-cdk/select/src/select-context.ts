@@ -4,6 +4,7 @@ import {
   assertRootContext,
   type CollectionHandle,
   orphanContextError,
+  RootedRegistry,
   unresolvedRootError,
   type Unset,
   type VirtualizedResume,
@@ -13,6 +14,7 @@ import {
   type FloatingAlign,
   type FloatingSide,
   type ListboxOverlayPieceContext,
+  type RootedTriggerHandle,
 } from 'forty-cdk/core-overlay';
 import type {
   SelectPositionEntry,
@@ -467,6 +469,11 @@ export interface SelectVirtualizationHost<T = unknown> {
  */
 export const FOR_SELECT_CONTEXT = new InjectionToken<ForSelectContext>('FOR_SELECT_CONTEXT');
 
+export const SELECT_TRIGGERS = new InjectionToken<RootedRegistry<object, RootedTriggerHandle>>(
+  'SELECT_TRIGGERS',
+  { providedIn: 'root', factory: () => new RootedRegistry() },
+);
+
 /**
  * The select's internal coordination surface: everything {@link ForSelectContext}
  * publishes, plus the {@link SelectPieceContext} members and the full overlay
@@ -517,8 +524,8 @@ export function injectSelectContext<T = unknown>(piece: string): SelectContext<T
 /**
  * Resolves the trigger's root context: the explicit reference when the
  * `[forSelectTrigger]` input carries one, the injected `FOR_SELECT_CONTEXT`
- * otherwise. The orphan error only fires when neither resolves, on first read
- * of the returned signal. Must be called in an injection context.
+ * otherwise. `root` is `null` while neither resolves; `ctx` throws the orphan
+ * error on read in that state. Must be called in an injection context.
  *
  * The explicit reference is a public `ForSelectContext`, so it is widened back
  * to the internal surface: the runtime object is always the `[forSelect]` root,
@@ -531,11 +538,17 @@ export function injectSelectContext<T = unknown>(piece: string): SelectContext<T
  */
 export function injectSelectTriggerContext<T = unknown>(
   explicitRoot: Signal<ForSelectContext<T> | ''>,
-): Signal<SelectContext<T>> {
+): {
+  readonly root: Signal<ForSelectContext<T> | ForSelectContext | null>;
+  readonly ctx: Signal<SelectContext<T>>;
+} {
   const injected = inject(FOR_SELECT_CONTEXT, { optional: true });
-  return computed(() => {
+  const root = computed(() => {
     const explicit = explicitRoot();
-    const resolved = explicit === '' ? injected : explicit;
+    return explicit === '' ? injected : explicit;
+  });
+  const ctx = computed(() => {
+    const resolved = root();
     if (!resolved) {
       throw unresolvedRootError({
         code: 'FORCDK-SELECT-002',
@@ -553,4 +566,5 @@ export function injectSelectTriggerContext<T = unknown>(
     });
     return widened;
   });
+  return { root, ctx };
 }

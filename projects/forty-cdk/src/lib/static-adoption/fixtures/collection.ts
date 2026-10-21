@@ -439,8 +439,8 @@ export const COLLECTION_FAMILY_ADOPTERS: readonly StaticAdoptionAdopter[] = [
       {
         key: '[forSelectTrigger]',
         channel: 'id',
-        source: 'core-overlay/src/overlay-controller/element-registry.ts',
-        seam: 'adoptHostId',
+        source: 'select/src/select-trigger.ts',
+        seam: 'staticHostId',
         probe: 'probe-trigger',
         fallback: { generated: 'for-select-trigger' },
       },

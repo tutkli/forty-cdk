@@ -3382,6 +3382,97 @@ describe('ForSelect', () => {
       expect(trigger.getAttribute('data-state')).toBe('closed');
       expect(trigger.hasAttribute('aria-controls')).toBe(false);
     });
+
+    @Component({
+      imports: [ForSelect, ForSelectTrigger, ForSelectContent, ForSelectOption, NgTemplateOutlet],
+      template: `
+        <ng-template #trig let-root="root">
+          <button type="button" [forSelectTrigger]="root">Open</button>
+        </ng-template>
+
+        <div forSelect [(open)]="openA" #a="forSelect">
+          @if (openA()) {
+            <div forSelectContent data-testid="content-a">
+              <button forSelectOption value="apple">Apple</button>
+            </div>
+          }
+        </div>
+        <div forSelect [(open)]="openB" #b="forSelect">
+          @if (openB()) {
+            <div forSelectContent data-testid="content-b">
+              <button forSelectOption value="pear">Pear</button>
+            </div>
+          }
+        </div>
+
+        <ng-container
+          [ngTemplateOutlet]="trig"
+          [ngTemplateOutletContext]="{ root: useB() ? b : a }"
+        />
+      `,
+    })
+    class RetargetedHost {
+      readonly openA = signal(false);
+      readonly openB = signal(false);
+      readonly useB = signal(false);
+    }
+
+    it('follows an explicit root swapped at runtime', async () => {
+      const r = renderHost(RetargetedHost);
+      const trigger = r.query<HTMLButtonElement>('button')!;
+      const idUnderA = trigger.id;
+
+      r.instance.useB.set(true);
+      await flush(r.fixture);
+      trigger.click();
+      await flush(r.fixture);
+
+      expect(r.query('button')).toBe(trigger);
+      expect(r.instance.openA()).toBe(false);
+      expect(r.instance.openB()).toBe(true);
+      expect(trigger.id).not.toBe(idUnderA);
+      expect(trigger.getAttribute('aria-controls')).toBe(
+        document.querySelector('[data-testid="content-b"]')!.id,
+      );
+    });
+  });
+
+  describe('several triggers on one root', () => {
+    @Component({
+      imports: BASE_IMPORTS,
+      template: `
+        <div forSelect [(open)]="open">
+          <button forSelectTrigger data-testid="first">First</button>
+          @if (second()) {
+            <button forSelectTrigger data-testid="second">Second</button>
+          }
+          @if (open()) {
+            <div forSelectContent>
+              <button forSelectOption value="apple">Apple</button>
+            </div>
+          }
+        </div>
+      `,
+    })
+    class StackedTriggersHost {
+      readonly open = signal(false);
+      readonly second = signal(true);
+    }
+
+    it('returns focus to the remaining trigger after the newer one unmounts', async () => {
+      const r = renderHost(StackedTriggersHost);
+      r.query<HTMLButtonElement>('[data-testid="second"]')!.click();
+      await flush(r.fixture);
+      expect(r.instance.open()).toBe(true);
+
+      r.instance.second.set(false);
+      await flush(r.fixture);
+      pressKey(document, 'Escape');
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe(false);
+      expect(document.activeElement).toBe(r.query('[data-testid="first"]'));
+    });
   });
 
   describe('scroll-to-selected on open (#1145)', () => {

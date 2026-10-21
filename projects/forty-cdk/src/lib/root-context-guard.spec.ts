@@ -45,7 +45,12 @@ import type { WritingDirection } from 'forty-cdk/shared';
 import { FOR_STEPPER_CONTEXT, ForStepperProgress } from 'forty-cdk/stepper';
 import { FOR_TABLE_CONTEXT, ForTableSelectAll } from 'forty-cdk/table';
 import { FOR_TABS_CONTEXT, ForTabsList } from 'forty-cdk/tabs';
-import { FOR_TIME_PICKER_CONTEXT, ForTimePickerValue } from 'forty-cdk/time-picker';
+import {
+  FOR_TIME_PICKER_CONTEXT,
+  type ForTimePickerContext,
+  ForTimePickerTrigger,
+  ForTimePickerValue,
+} from 'forty-cdk/time-picker';
 import { FOR_TOAST_CONTEXT, ForToastTitle } from 'forty-cdk/toast';
 import { FOR_TOOLTIP_CONTEXT, type ForTooltipContext, ForTooltipTrigger } from 'forty-cdk/tooltip';
 import { FOR_TREE_CONTEXT, ForTreeItemLabel } from 'forty-cdk/tree';
@@ -505,7 +510,7 @@ const GUARDED: readonly GuardedRoot[] = [
   {
     entryPoint: 'time-picker',
     source: 'time-picker/src/time-picker-context.ts',
-    calls: 1,
+    calls: 2,
     token: 'FOR_TIME_PICKER_CONTEXT',
     root: '[forTimePicker]',
     piece: 'ForTimePickerValue',
@@ -618,6 +623,15 @@ class ExplicitHoverCardTriggerHost {
 })
 class ExplicitComboboxTriggerHost {
   readonly impostor = signal({} as ForComboboxContext);
+}
+
+@Component({
+  imports: [ForTimePickerTrigger],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `<button type="button" [forTimePickerTrigger]="impostor()"></button>`,
+})
+class ExplicitTimePickerTriggerHost {
+  readonly impostor = signal({} as ForTimePickerContext);
 }
 
 const escaped = (value: string): string => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -817,6 +831,12 @@ describe('split-root context guard', () => {
   it('fails ForHoverCardTrigger on its explicit-root path', () => {
     expect(() => renderHost(ExplicitHoverCardTriggerHost)).toThrow(
       expectedFailure({ ...entryFor('hover-card'), piece: 'ForHoverCardTrigger' }),
+    );
+  });
+
+  it('fails ForTimePickerTrigger on its explicit-root path', () => {
+    expect(() => renderHost(ExplicitTimePickerTriggerHost)).toThrow(
+      expectedFailure({ ...entryFor('time-picker'), piece: 'ForTimePickerTrigger' }),
     );
   });
 

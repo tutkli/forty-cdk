@@ -12,6 +12,7 @@ import {
   type VetoableEvent,
   type VetoableNativeEvent,
 } from 'forty-cdk/core';
+import { type RootedTriggerHandle } from '../overlay-controller/element-registry';
 import {
   ListboxOverlayController,
   type ListboxOverlayOptionHandle,
@@ -41,6 +42,7 @@ function makeHandle(
 interface Harness {
   readonly controller: ListboxOverlayController<FakeHandle, Focus, CloseReason>;
   readonly parent: HTMLElement;
+  readonly triggers: WritableSignal<readonly RootedTriggerHandle[]>;
   readonly open: WritableSignal<boolean>;
   readonly effectiveDisabled: WritableSignal<boolean>;
   readonly dismissible: WritableSignal<boolean>;
@@ -62,6 +64,7 @@ function createHarness(opts: { withNavigateFocus?: boolean } = {}): Harness {
   const parent = document.createElement('div');
   document.body.appendChild(parent);
 
+  const triggers = signal<readonly RootedTriggerHandle[]>([]);
   const open = signal(false);
   const effectiveDisabled = signal(false);
   const loop = signal(true);
@@ -89,6 +92,7 @@ function createHarness(opts: { withNavigateFocus?: boolean } = {}): Harness {
 
     const controller = new ListboxOverlayController<FakeHandle, Focus, CloseReason>({
       idPrefix: 'for-listbox-test',
+      triggers,
       anchorSlot: { primitive: 'select', owner: '[forSelect]', claimant: '[forSelectAnchor]' },
       defaultInitialFocus: 'selected',
       effectiveDisabled,
@@ -108,6 +112,7 @@ function createHarness(opts: { withNavigateFocus?: boolean } = {}): Harness {
     harness = {
       controller,
       parent,
+      triggers,
       open,
       effectiveDisabled,
       dismissible,
@@ -118,6 +123,10 @@ function createHarness(opts: { withNavigateFocus?: boolean } = {}): Harness {
     };
   });
   return harness;
+}
+
+function asTrigger(host: HTMLElement): RootedTriggerHandle {
+  return { host, staticId: host.id || null, root: signal(null) };
 }
 
 function makeOutput<T>(): OutputEmitterRef<T> {
@@ -143,11 +152,12 @@ describe('ListboxOverlayController', () => {
   });
 
   it('adopts a consumer static id on the trigger and content', () => {
-    const { controller } = createHarness();
+    const { controller, triggers } = createHarness();
     const trigger = document.createElement('button');
     trigger.id = 'my-trigger';
-    controller.registerTrigger(trigger);
+    triggers.set([asTrigger(trigger)]);
     expect(controller.triggerId()).toBe('my-trigger');
+    expect(controller.resolveTriggerId(null)).toContain('for-listbox-test-trigger');
 
     const content = document.createElement('div');
     content.id = 'my-content';
@@ -156,9 +166,9 @@ describe('ListboxOverlayController', () => {
   });
 
   it('falls the anchor back to the trigger until an explicit anchor registers', () => {
-    const { controller } = createHarness();
+    const { controller, triggers } = createHarness();
     const trigger = document.createElement('button');
-    controller.registerTrigger(trigger);
+    triggers.set([asTrigger(trigger)]);
     expect(controller.anchor()).toBe(trigger);
 
     const anchor = document.createElement('div');

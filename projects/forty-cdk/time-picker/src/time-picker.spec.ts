@@ -1,3 +1,4 @@
+import { NgTemplateOutlet } from '@angular/common';
 import { Component, ErrorHandler, provideZonelessChangeDetection, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
@@ -819,6 +820,74 @@ describe('ForTimePicker', () => {
       await flush(r.fixture);
 
       expect(r.instance.value()).toBeNull();
+    });
+  });
+
+  describe('explicit root reference (stamped templates)', () => {
+    @Component({
+      imports: [...BASE_IMPORTS, NgTemplateOutlet],
+      providers: [...provideNativeDateAdapter()],
+      template: `
+        <ng-template #trig let-root="root">
+          <button type="button" [forTimePickerTrigger]="root">Pick a time</button>
+        </ng-template>
+
+        <div forTimePicker [(open)]="openA" #a="forTimePicker">
+          @if (openA()) {
+            <div forTimePickerContent data-testid="content-a">
+              @for (slot of a.slots(); track slot.id) {
+                <div forTimePickerOption [value]="slot.value">{{ slot.label }}</div>
+              }
+            </div>
+          }
+        </div>
+        <div forTimePicker [(open)]="openB" #b="forTimePicker">
+          @if (openB()) {
+            <div forTimePickerContent data-testid="content-b">
+              @for (slot of b.slots(); track slot.id) {
+                <div forTimePickerOption [value]="slot.value">{{ slot.label }}</div>
+              }
+            </div>
+          }
+        </div>
+
+        <ng-container
+          [ngTemplateOutlet]="trig"
+          [ngTemplateOutletContext]="{ root: useB() ? b : a }"
+        />
+      `,
+    })
+    class RetargetedHost {
+      readonly openA = signal(false);
+      readonly openB = signal(false);
+      readonly useB = signal(false);
+    }
+
+    it('opens on click when the root is passed explicitly', async () => {
+      const r = renderHost(RetargetedHost);
+      const trigger = r.query<HTMLButtonElement>('button')!;
+
+      trigger.click();
+      await flush(r.fixture);
+
+      expect(r.instance.openA()).toBe(true);
+      expect(trigger.getAttribute('aria-expanded')).toBe('true');
+    });
+
+    it('follows an explicit root swapped at runtime', async () => {
+      const r = renderHost(RetargetedHost);
+      const trigger = r.query<HTMLButtonElement>('button')!;
+      const idUnderA = trigger.id;
+
+      r.instance.useB.set(true);
+      await flush(r.fixture);
+      trigger.click();
+      await flush(r.fixture);
+
+      expect(r.query('button')).toBe(trigger);
+      expect(r.instance.openA()).toBe(false);
+      expect(r.instance.openB()).toBe(true);
+      expect(trigger.id).not.toBe(idUnderA);
     });
   });
 

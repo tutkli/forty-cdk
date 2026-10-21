@@ -4,7 +4,6 @@ import { TestBed } from '@angular/core/testing';
 import { IdGenerator } from 'forty-cdk/core';
 import {
   anchorSlot,
-  elementSlot,
   injectIdentifiedSlot,
   injectSlotId,
   RootedTriggerSlot,
@@ -74,20 +73,6 @@ describe('injectIdentifiedSlot', () => {
     const generated = slot.id();
     slot.register(document.createElement('button'));
     expect(slot.id()).toBe(generated);
-  });
-});
-
-describe('elementSlot', () => {
-  it('registers and clears without writing an id onto the element', () => {
-    const slot = elementSlot();
-    const el = document.createElement('button');
-    el.id = 'untouched';
-    slot.register(el);
-    expect(slot.element()).toBe(el);
-    expect(el.id).toBe('untouched');
-
-    slot.unregister(el);
-    expect(slot.element()).toBeNull();
   });
 });
 
@@ -217,11 +202,5 @@ describe('anchorSlot', () => {
     expect(warn).not.toHaveBeenCalled();
     slot.unregister(el);
     expect(slot.element()).toBeNull();
-  });
-});
-
-describe('the dependency-free slot factories', () => {
-  it('construct with no injection context available', () => {
-    expect(() => elementSlot()).not.toThrow();
   });
 });

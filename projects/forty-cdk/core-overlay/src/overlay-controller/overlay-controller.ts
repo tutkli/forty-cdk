@@ -35,7 +35,7 @@ export interface OverlayEmitTargets {
  * One of the two element sides a surface has — the trigger focus returns to, and
  * the content that mounts. Both are supplied by the composing controller,
  * because neither is the same object twice in the library: a listbox overlay's
- * trigger is a single {@link IdentifiedElementSlot}, a menu overlay's is a
+ * trigger is the newest one registered with its root, a menu overlay's is a
  * registry of openers resolving one active element and its id, and
  * `[forMenubar]`'s multiplexed context resolves both sides off whichever bar
  * trigger is — or was last — active. All of them answer the same four
