@@ -118,10 +118,14 @@ export interface ForPopoverContext extends AnchoredPositioningContext {
 }
 
 /**
- * The registration protocol `[forPopoverInitialFocus]` drives. Never exported from
- * `public-api.ts`; `ForPopover` declares both members TS-`private`.
+ * The registration protocol `[forPopoverContent]` and `[forPopoverInitialFocus]` drive. Never
+ * exported from `public-api.ts`; `ForPopover` declares every member TS-`private`.
  */
 export interface PopoverRegistrationContext {
+  /** Registers the mounted `[forPopoverContent]` host. */
+  registerContent(el: HTMLElement): void;
+  /** Removes a previously registered content host. */
+  unregisterContent(el: HTMLElement): void;
   /** Registers the element the content focuses on mount. */
   registerInitialFocus(el: HTMLElement): void;
   /** Removes a previously registered initial-focus element. */

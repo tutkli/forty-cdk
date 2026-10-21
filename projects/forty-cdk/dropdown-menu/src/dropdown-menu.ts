@@ -14,6 +14,7 @@ import {
   MenuOverlayHost,
   FOR_MENU_CONTEXT,
   type ForMenuContext,
+  warnIfOpenWithoutContent,
 } from 'forty-cdk/core-overlay';
 import { FOR_DROPDOWN_MENU_DEFAULTS } from 'forty-cdk/defaults';
 
@@ -193,4 +194,15 @@ export class ForDropdownMenu extends MenuOverlayHost implements ForMenuContext {
 
   /** Top-level: no parent menu. */
   readonly parentMenu = null;
+
+  constructor() {
+    super();
+    warnIfOpenWithoutContent({
+      primitive: 'dropdown-menu',
+      piece: '[forMenuContent]',
+      condition: 'menu.open()',
+      open: this.open,
+      content: this.content,
+    });
+  }
 }

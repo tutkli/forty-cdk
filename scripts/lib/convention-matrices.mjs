@@ -343,6 +343,18 @@ function mountedWhileClosedAdopters(files) {
 }
 
 /**
+ * Roots adopting the dev-mode open-without-content warning, the counterpart of
+ * `mountedWhileClosedAdopters`: the call sits on the root, because the piece it
+ * reports is the one that never mounted.
+ */
+function openWithoutContentAdopters(files) {
+  const members = files
+    .filter(({ text }) => text.includes('warnIfOpenWithoutContent('))
+    .map(({ id }) => id);
+  return [{ key: 'dev-mode open-without-content warning', count: members.length, members }];
+}
+
+/**
  * The `@sanctioned-pull` ledger, grouped by the store each marked effect primes.
  * A pull is an `effect()` that exists to force a lazy fold over a transient
  * source to run; deleting one fails silently and downstream, so the roster is
@@ -593,6 +605,7 @@ const EXTRACTORS = [
   { extract: dataStateVocabularies },
   { extract: closedInertPanels },
   { extract: mountedWhileClosedAdopters },
+  { extract: openWithoutContentAdopters },
   { extract: anchoredPositioningAdopters, includeCore: true },
   { extract: sanctionedPulls, includeCore: true },
   { extract: assertionHelpers, includeCore: true },

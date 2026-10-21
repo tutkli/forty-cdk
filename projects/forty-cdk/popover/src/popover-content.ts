@@ -6,6 +6,7 @@ import {
   hostLabelledBy,
   FOR_FIELD_ANCHOR_CONTEXT,
   FOR_FIELD_CONTEXT,
+  registerHandle,
 } from 'forty-cdk/core';
 import {
   toFloatingPositioner,
@@ -62,7 +63,13 @@ export class ForPopoverContent {
   private readonly describedBy = hostDescribedBy(() => this.ctx.describedBy());
 
   constructor() {
-    this.ctx.adoptContentId(inject<ElementRef<HTMLElement>>(ElementRef).nativeElement);
+    const host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
+    this.ctx.adoptContentId(host);
+    registerHandle(
+      host,
+      (el) => this.ctx.registerContent(el),
+      (el) => this.ctx.unregisterContent(el),
+    );
     warnIfMountedWhileClosed({
       primitive: 'popover',
       piece: '[forPopoverContent]',

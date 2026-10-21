@@ -25,7 +25,11 @@ import {
   hostAriaLabel,
   isUnset,
 } from 'forty-cdk/core';
-import { type MenuActivationModality, FOR_MENU_CONTEXT } from 'forty-cdk/core-overlay';
+import {
+  type MenuActivationModality,
+  FOR_MENU_CONTEXT,
+  warnIfOpenWithoutContent,
+} from 'forty-cdk/core-overlay';
 import { MenubarMenuContext } from './menubar-menu-context';
 import {
   FOR_MENUBAR_CONTEXT,
@@ -283,6 +287,16 @@ export class ForMenubar implements ForMenubarContext {
    * covers the parts the single-owner overlay can't.
    */
   readonly menuCtx: MenubarMenuContext = new MenubarMenuContext(this, this.#defaults);
+
+  constructor() {
+    warnIfOpenWithoutContent({
+      primitive: 'menubar',
+      piece: '[forMenuContent]',
+      condition: () => `open() === '${this.value()}'`,
+      open: this.menuCtx.open,
+      content: this.menuCtx.content,
+    });
+  }
 
   // -- ForMenubarContext ----------------------------------------------------
 

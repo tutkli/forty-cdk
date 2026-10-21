@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Popover, Tooltip, Hover card, Select, Combobox, Date picker, Time picker, Dropdown menu, Menu,
+  Menubar, Navigation menu** — a surface that is still open after a render with no content piece
+  mounted warns `FORCDK-CORE-014` in dev mode
+  ([#2622](https://github.com/tutkli/forty-cdk/issues/2622)). The trigger already reads open and
+  points at a content id no element carries, and Escape and outside presses only reach a mounted
+  surface, so the surface stayed stuck until the next trigger press with nothing reported. The
+  warning names the missing piece and the `@if` from the primitive's README, fires once per entry
+  into the state, and stays silent while the surface is closed, on the server and in a production
+  build. The context menu keeps its own `FORCDK-CONTEXT-MENU-002`, since its trigger closes such an
+  open itself.
+
 ### Changed
 
 - **Popover, Tooltip, Hover card, Date picker — BREAKING.** `registerTrigger` and

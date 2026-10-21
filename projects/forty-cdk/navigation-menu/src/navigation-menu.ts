@@ -26,7 +26,11 @@ import {
   hostAriaLabel,
   type Unset,
 } from 'forty-cdk/core';
-import { injectDismissibleLayer, createDebouncedAction } from 'forty-cdk/core-overlay';
+import {
+  injectDismissibleLayer,
+  createDebouncedAction,
+  warnIfOpenWithoutContent,
+} from 'forty-cdk/core-overlay';
 import { createSkipDelayWindow, FOR_NAVIGATION_MENU_DEFAULTS } from 'forty-cdk/defaults';
 import {
   FOR_NAVIGATION_MENU_CONTEXT,
@@ -206,6 +210,13 @@ export class ForNavigationMenu implements ForNavigationMenuContext {
   readonly #surfacePointerDown = createPointerSuppression();
 
   constructor() {
+    warnIfOpenWithoutContent({
+      primitive: 'navigation-menu',
+      piece: '[forNavigationMenuContent]',
+      condition: () => `open() === '${this.value()}'`,
+      open: () => this.value() !== null,
+      content: this.activeContentHost,
+    });
     effect(() => this.#syncDismissLayer());
     inject(DestroyRef).onDestroy(() => {
       this.#cancelPending();

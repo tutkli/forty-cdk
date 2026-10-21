@@ -26,6 +26,7 @@ import {
   type Point,
   ScrollDismissDispatcher,
   type ScrollDismissRegistration,
+  warnIfOpenWithoutContent,
 } from 'forty-cdk/core-overlay';
 import {
   FOR_HOVER_CARD_CONTEXT,
@@ -143,6 +144,13 @@ export class ForHoverCard extends AnchoredOverlayPositioningBase implements ForH
 
   constructor() {
     super();
+    warnIfOpenWithoutContent({
+      primitive: 'hover-card',
+      piece: '[forHoverCardContent]',
+      condition: 'card.open()',
+      open: this.open,
+      content: this.content,
+    });
     forceCloseWhenDisabled({
       open: this.open,
       disabled: this.disabled,

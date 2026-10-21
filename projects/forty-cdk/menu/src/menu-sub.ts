@@ -35,6 +35,7 @@ import {
   MenuOverlayHost,
   type Point,
   resolveGraceSide,
+  warnIfOpenWithoutContent,
 } from 'forty-cdk/core-overlay';
 import { FOR_MENU_DEFAULTS } from 'forty-cdk/defaults';
 
@@ -289,6 +290,13 @@ export class ForMenuSub extends MenuOverlayHost implements ForMenuContext {
       });
     }
     this.parentMenu = parent;
+    warnIfOpenWithoutContent({
+      primitive: 'menu',
+      piece: '[forMenuSubContent]',
+      condition: 'sub.open()',
+      open: this.open,
+      content: this.content,
+    });
 
     inject(DestroyRef).onDestroy(() => this.#teardownPointer());
   }
