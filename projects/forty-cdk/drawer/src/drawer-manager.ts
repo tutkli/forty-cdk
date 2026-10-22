@@ -23,33 +23,38 @@ import {
 } from './drawer-context';
 import { FOR_DRAWER_DEFAULTS } from 'forty-cdk/defaults';
 import type { ForDrawerEntry } from './drawer-outlet';
+import {
+  type FOR_DRAWER_CONTRACT,
+  type ForDrawerDataOf,
+  type ForDrawerResultOf,
+} from './drawer-contract';
 import { ForDrawerOutlet } from './drawer-outlet';
 import { ForDrawerRef } from './drawer-ref';
 
 /**
  * Injection token for the `data` payload passed to `ForDrawerManager.open(component, { data })`.
  * The manager always provides this token, falling back to `null` when no `data`
- * was configured, so inject it inside the opened component:
- *
- * ```ts
- * readonly data = inject(FOR_DRAWER_DATA) as MyShape | null;
- * ```
- *
- * Prefer `injectDrawerData<T>()` for typed access without manual casts.
+ * was configured. Read it inside the opened component through `injectDrawerData()`,
+ * which types the payload instead of leaving it `unknown`.
  */
 export const FOR_DRAWER_DATA = new InjectionToken<unknown>('FOR_DRAWER_DATA');
 
 /**
- * Typed accessor for the `data` payload. Returns `T | null` because the manager
+ * Typed accessor for the `data` payload. Pass the drawer component itself when it
+ * declares a {@link FOR_DRAWER_CONTRACT}, and the payload is the `data` type that
+ * contract names; pass any other type and the payload is that type, unchecked
+ * against what `open()` was given. Returns `null` too, because the manager
  * provides `null` when `open()` is called without `data` — guard for `null`
  * before dereferencing the payload.
  */
-export function injectDrawerData<T = unknown>(): T | null {
-  return inject(FOR_DRAWER_DATA) as T | null;
+export function injectDrawerData<T = unknown>():
+  (typeof FOR_DRAWER_CONTRACT extends keyof T ? ForDrawerDataOf<T> : T) | null {
+  return inject(FOR_DRAWER_DATA) as
+    (typeof FOR_DRAWER_CONTRACT extends keyof T ? ForDrawerDataOf<T> : T) | null;
 }
 
 export interface ForDrawerOpenConfig<D = unknown> {
-  /** Payload available inside the drawer component via `injectDrawerData<T>()`. */
+  /** Payload available inside the drawer component via `injectDrawerData()`. */
   data?: D;
 
   /** Edge the drawer is anchored to. Default `'bottom'`. */
@@ -342,9 +347,15 @@ export class ForDrawerManager extends OverlayManagerCore<ForDrawerEntry> {
     });
   }
 
-  open<C, R = unknown, D = unknown>(
+  /**
+   * Opens `component` as a drawer. When the component declares a {@link FOR_DRAWER_CONTRACT},
+   * `config.data` must be the `data` type it names and the returned ref carries its result
+   * type; otherwise `data` is unchecked and the result is `unknown`. Explicit `R` / `D` type
+   * arguments override what the contract supplies.
+   */
+  open<C, R = ForDrawerResultOf<C>, D = ForDrawerDataOf<C>>(
     component: Type<C>,
-    config: ForDrawerOpenConfig<D> = {},
+    config: ForDrawerOpenConfig<NoInfer<D>> = {},
   ): ForDrawerRef<R> {
     if (config.closeThreshold !== undefined) {
       assertCloseThreshold(config.closeThreshold);

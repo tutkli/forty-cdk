@@ -100,8 +100,16 @@ import {
   ForDrawerManager,
   ForDrawerRef,
   ForDrawerTitle,
+  FOR_DRAWER_CONTRACT,
+  type ForDrawerContract,
   injectDrawerData,
 } from 'forty-cdk/drawer';
+
+interface ConfirmData {
+  message: string;
+}
+
+type ConfirmResult = 'confirm' | 'cancel';
 
 @Component({
   imports: [
@@ -126,8 +134,9 @@ import {
   `,
 })
 class ConfirmDrawer {
-  readonly data = injectDrawerData<{ message: string }>();
-  readonly ref = inject(ForDrawerRef) as ForDrawerRef<'confirm' | 'cancel'>;
+  declare readonly [FOR_DRAWER_CONTRACT]: ForDrawerContract<ConfirmData, ConfirmResult>;
+  readonly data = injectDrawerData<ConfirmDrawer>();
+  readonly ref = inject(ForDrawerRef<ConfirmResult>);
 }
 
 @Component({
@@ -138,7 +147,7 @@ class DemoHost {
   readonly #drawers = inject(ForDrawerManager);
 
   async askToDelete(): Promise<void> {
-    const ref = this.#drawers.open<ConfirmDrawer, 'confirm' | 'cancel'>(ConfirmDrawer, {
+    const ref = this.#drawers.open(ConfirmDrawer, {
       data: { message: 'This action cannot be undone.' },
       side: 'bottom',
       snapPoints: ['148px', 1],
@@ -151,7 +160,7 @@ class DemoHost {
 }
 ```
 
-`injectDrawerData<T>()` is typed `T | null`: the manager provides `null` when `open()` is called without `data`, so guard (`data?.message`) before dereferencing the payload. `await ref.closed` resolves `{ reason, result }`, whose `reason` (a `ForDrawerCloseReason`) tells apart an imperative `close()` (`'programmatic'`) from Escape / backdrop / outside / swipe / close-button dismissals.
+The `[FOR_DRAWER_CONTRACT]` member states, once, the data a drawer component reads and the result it closes with: `open()` infers both from the component, so a `data` of any other shape fails to compile and the ref is a `ForDrawerRef<ConfirmResult>`, and `injectDrawerData<ConfirmDrawer>()` reads the payload at that type. Declare it with `declare`, no initializer, and keep it public. Without the member `data` is unchecked, the result is `unknown`, and `injectDrawerData<T>()` with a plain type still types the payload as `T`; explicit type arguments override the contract. `injectDrawerData()` returns `null` too, because the manager provides `null` when `open()` is called without `data`, so guard (`data?.message`) before dereferencing the payload. `await ref.closed` resolves `{ reason, result }`, whose `reason` (a `ForDrawerCloseReason`) tells apart an imperative `close()` (`'programmatic'`) from Escape / backdrop / outside / swipe / close-button dismissals.
 
 Drawers opened by the manager share the LIFO dismissible layer with declarative ones, so Escape closes the topmost drawer first whichever API opened it. Nesting is resolved from where a drawer is declared, not from the order drawers open in: a declarative `[forDrawer]` inside a programmatic drawer's component is its child (`data-depth="1"`, and the programmatic parent reflects `data-state-nested`), but a drawer the manager opens over a declarative one is a root, so it reflects `data-depth="0"` and its declarative neighbour gets no `data-state-nested`.
 
