@@ -1,4 +1,11 @@
-import { Component, Directive, provideZonelessChangeDetection, signal } from '@angular/core';
+import {
+  Component,
+  Directive,
+  ElementRef,
+  inject,
+  provideZonelessChangeDetection,
+  signal,
+} from '@angular/core';
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import type { ReferenceElement } from '@floating-ui/dom';
 
@@ -6,6 +13,8 @@ import { pressKey } from 'forty-cdk/testing';
 
 import { flush, nextMacrotask, renderHost } from '../../../src/test-utils';
 import { type InertSiblingsHandle, InertSiblingsStack } from 'forty-cdk/core-overlay';
+import { floatingPositioner } from '../floating/floating';
+import { itemAlignedPositioner } from '../floating/item-aligned';
 import { injectOverlayShell, type OverlayShellConfig } from './overlay-shell';
 
 /**
@@ -93,12 +102,12 @@ describe('injectOverlayShell', () => {
   });
 
   describe('positioner branch', () => {
-    it("delegates to injectFloating when kind is 'floating'", async () => {
+    it('attaches the floating positioner it is handed', async () => {
       const ref = signal<HTMLElement | null>(makeReference());
       const open = signal(true);
 
       const ctx = mountShell(() => ({
-        positioner: { kind: 'floating', reference: ref, open, portal: false },
+        positioner: floatingPositioner({ reference: ref, open, portal: false }),
       }));
       await flush(ctx.fixture);
 
@@ -108,23 +117,37 @@ describe('injectOverlayShell', () => {
       ctx.destroy();
     });
 
-    it("delegates to injectItemAlignedPositioner when kind is 'item-aligned'", async () => {
+    it('attaches the item-aligned positioner it is handed', async () => {
       const ref = signal<HTMLElement | null>(makeReference());
       const open = signal(true);
 
       const ctx = mountShell(() => ({
-        positioner: {
-          kind: 'item-aligned',
+        positioner: itemAlignedPositioner({
           reference: ref,
           open,
           selectedOption: signal<HTMLElement | null>(null),
           portal: false,
+        }),
+      }));
+      await flush(ctx.fixture);
+
+      expect(ctx.surface()?.style.position).toBe('fixed');
+      expect(ctx.surface()?.dataset['position']).toBe('item-aligned');
+      ctx.destroy();
+    });
+
+    it("attaches the positioner once, from the host's injection context", async () => {
+      const attachedTo: HTMLElement[] = [];
+
+      const ctx = mountShell(() => ({
+        positioner: {
+          reference: signal<HTMLElement | null>(makeReference()),
+          attach: () => attachedTo.push(inject<ElementRef<HTMLElement>>(ElementRef).nativeElement),
         },
       }));
       await flush(ctx.fixture);
 
-      // The item-aligned helper writes the same `position: fixed` baseline.
-      expect(ctx.surface()?.style.position).toBe('fixed');
+      expect(attachedTo).toEqual([ctx.surface()]);
       ctx.destroy();
     });
   });
@@ -149,7 +172,7 @@ describe('injectOverlayShell', () => {
       const open = signal(true);
 
       const ctx = mountShell(() => ({
-        positioner: { kind: 'floating', reference: ref, open, portal: false },
+        positioner: floatingPositioner({ reference: ref, open, portal: false }),
       }));
       await flush(ctx.fixture);
 
@@ -165,7 +188,7 @@ describe('injectOverlayShell', () => {
       const calls: string[] = [];
 
       const ctx = mountShell(() => ({
-        positioner: { kind: 'floating', reference: ref, open, portal: false },
+        positioner: floatingPositioner({ reference: ref, open, portal: false }),
         dismiss: {
           dismissible: signal(true),
           emitEscapeKeyDown: (event) => calls.push(`escape:${event.type}`),
@@ -186,7 +209,7 @@ describe('injectOverlayShell', () => {
       const calls: string[] = [];
 
       const ctx = mountShell(() => ({
-        positioner: { kind: 'floating', reference: ref, open, portal: false },
+        positioner: floatingPositioner({ reference: ref, open, portal: false }),
         dismiss: {
           dismissible: signal(true),
           // Escape intentionally omitted.
@@ -213,7 +236,7 @@ describe('injectOverlayShell', () => {
       const interactVetoes: unknown[] = [];
 
       const ctx = mountShell(() => ({
-        positioner: { kind: 'floating', reference: ref, open, portal: false },
+        positioner: floatingPositioner({ reference: ref, open, portal: false }),
         dismiss: {
           dismissible: signal(true),
           requestClose: () => {},
@@ -239,7 +262,7 @@ describe('injectOverlayShell', () => {
       const calls: string[] = [];
 
       const ctx = mountShell(() => ({
-        positioner: { kind: 'floating', reference: ref, open, portal: false },
+        positioner: floatingPositioner({ reference: ref, open, portal: false }),
         dismiss: {
           dismissible: signal(true),
           requestClose: () => calls.push('close'),
@@ -263,7 +286,7 @@ describe('injectOverlayShell', () => {
       const reasons: string[] = [];
 
       const ctx = mountShell(() => ({
-        positioner: { kind: 'floating', reference: ref, open, portal: false },
+        positioner: floatingPositioner({ reference: ref, open, portal: false }),
         dismiss: {
           dismissible: signal(true),
           requestClose: (reason) => reasons.push(reason),
@@ -290,7 +313,7 @@ describe('injectOverlayShell', () => {
       const calls: string[] = [];
 
       const ctx = mountShell(() => ({
-        positioner: { kind: 'floating', reference: ref, open, portal: false },
+        positioner: floatingPositioner({ reference: ref, open, portal: false }),
         dismiss: {
           dismissible: signal(false),
           requestClose: () => calls.push('close'),
@@ -314,7 +337,7 @@ describe('injectOverlayShell', () => {
       const interactVetoes: unknown[] = [];
 
       const ctx = mountShell(() => ({
-        positioner: { kind: 'floating', reference: ref, open, portal: false },
+        positioner: floatingPositioner({ reference: ref, open, portal: false }),
         dismiss: {
           dismissible: signal(true),
           requestClose: () => calls.push('close'),
@@ -340,7 +363,7 @@ describe('injectOverlayShell', () => {
       const open = signal(true);
 
       const ctx = mountShell(() => ({
-        positioner: { kind: 'floating', reference: ref, open, portal: false },
+        positioner: floatingPositioner({ reference: ref, open, portal: false }),
         initialFocus: { move: 'first' },
       }));
       await flush(ctx.fixture);
@@ -354,7 +377,7 @@ describe('injectOverlayShell', () => {
       const open = signal(true);
 
       const ctx = mountShell(() => ({
-        positioner: { kind: 'floating', reference: ref, open, portal: false },
+        positioner: floatingPositioner({ reference: ref, open, portal: false }),
         initialFocus: { move: 'container' },
       }));
       await flush(ctx.fixture);
@@ -369,7 +392,7 @@ describe('injectOverlayShell', () => {
       let moveCalls = 0;
 
       const ctx = mountShell(() => ({
-        positioner: { kind: 'floating', reference: ref, open, portal: false },
+        positioner: floatingPositioner({ reference: ref, open, portal: false }),
         initialFocus: {
           move: () => {
             moveCalls++;
@@ -391,7 +414,7 @@ describe('injectOverlayShell', () => {
       const open = signal(true);
 
       const ctx = mountShell(() => ({
-        positioner: { kind: 'floating', reference: ref, open, portal: false },
+        positioner: floatingPositioner({ reference: ref, open, portal: false }),
         initialFocus: { move: () => false },
       }));
       await flush(ctx.fixture);
@@ -412,7 +435,7 @@ describe('injectOverlayShell', () => {
       externalInput.focus();
 
       const ctx = mountShell(() => ({
-        positioner: { kind: 'floating', reference: ref, open, portal: false },
+        positioner: floatingPositioner({ reference: ref, open, portal: false }),
         initialFocus: {
           move: 'first',
           veto: () => true,
@@ -433,7 +456,7 @@ describe('injectOverlayShell', () => {
       document.body.appendChild(triggerEl);
 
       const ctx = mountShell(() => ({
-        positioner: { kind: 'floating', reference: ref, open, portal: false },
+        positioner: floatingPositioner({ reference: ref, open, portal: false }),
         returnFocus: {
           enabled: signal(true),
           target: () => triggerEl,
@@ -456,7 +479,7 @@ describe('injectOverlayShell', () => {
       elsewhere.focus();
 
       const ctx = mountShell(() => ({
-        positioner: { kind: 'floating', reference: ref, open, portal: false },
+        positioner: floatingPositioner({ reference: ref, open, portal: false }),
         returnFocus: {
           enabled: signal(false),
           target: () => triggerEl,
@@ -479,7 +502,7 @@ describe('injectOverlayShell', () => {
       elsewhere.focus();
 
       const ctx = mountShell(() => ({
-        positioner: { kind: 'floating', reference: ref, open, portal: false },
+        positioner: floatingPositioner({ reference: ref, open, portal: false }),
         returnFocus: {
           enabled: signal(true),
           target: () => triggerEl,
@@ -503,7 +526,7 @@ describe('injectOverlayShell', () => {
       elsewhere.focus();
 
       const ctx = mountShell(() => ({
-        positioner: { kind: 'floating', reference: ref, open, portal: false },
+        positioner: floatingPositioner({ reference: ref, open, portal: false }),
         returnFocus: {
           enabled: signal(true),
           target: () => triggerEl,
@@ -525,7 +548,7 @@ describe('injectOverlayShell', () => {
       elsewhere.focus();
 
       const ctx = mountShell(() => ({
-        positioner: { kind: 'floating', reference: ref, open, portal: false },
+        positioner: floatingPositioner({ reference: ref, open, portal: false }),
       }));
       await flush(ctx.fixture);
 
@@ -542,7 +565,7 @@ describe('injectOverlayShell', () => {
       const calls: string[] = [];
 
       const ctx = mountShell(() => ({
-        positioner: { kind: 'floating', reference: ref, open, portal: false },
+        positioner: floatingPositioner({ reference: ref, open, portal: false }),
         dismiss: {
           dismissible: signal(true),
           requestClose: () => {},
@@ -576,7 +599,7 @@ describe('injectOverlayShell', () => {
       const calls: string[] = [];
 
       const ctx = mountShell(() => ({
-        positioner: { kind: 'floating', reference: ref, open, portal: false },
+        positioner: floatingPositioner({ reference: ref, open, portal: false }),
         dismiss: {
           dismissible: signal(true),
           requestClose: () => calls.push('close'),
@@ -621,7 +644,7 @@ describe('injectOverlayShell', () => {
 
       const calls: string[] = [];
       const ctx = mountShell(() => ({
-        positioner: { kind: 'floating', reference: ref, open, portal: false },
+        positioner: floatingPositioner({ reference: ref, open, portal: false }),
         dismiss: {
           dismissible: signal(true),
           requestClose: () => {},
@@ -704,7 +727,7 @@ describe('injectOverlayShell', () => {
       const open = signal(true);
 
       const m = mountShellWithModal(
-        () => ({ positioner: { kind: 'floating', reference: ref, open, portal: false } }),
+        () => ({ positioner: floatingPositioner({ reference: ref, open, portal: false }) }),
         owner,
       );
       await flush(m.fixture);
@@ -726,7 +749,7 @@ describe('injectOverlayShell', () => {
       const open = signal(true);
 
       const m = mountShellWithModal(
-        () => ({ positioner: { kind: 'floating', reference: ref, open, portal: false } }),
+        () => ({ positioner: floatingPositioner({ reference: ref, open, portal: false }) }),
         owner,
       );
 
@@ -749,7 +772,7 @@ describe('injectOverlayShell', () => {
       const open = signal(true);
 
       const m = mountShellWithModal(() => ({
-        positioner: { kind: 'floating', reference: ref, open, portal: false },
+        positioner: floatingPositioner({ reference: ref, open, portal: false }),
       }));
       await flush(m.fixture);
 
@@ -783,7 +806,7 @@ describe('injectOverlayShell', () => {
 
       const m = mountShellWithModal(
         () => ({
-          positioner: { kind: 'floating', reference: virtualAnchor, open, portal: false },
+          positioner: floatingPositioner({ reference: virtualAnchor, open, portal: false }),
           returnFocus: { enabled: signal(true), target: () => trigger },
         }),
         owner,

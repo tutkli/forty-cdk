@@ -10,6 +10,7 @@ import {
 } from 'forty-cdk/core';
 import { warnIfMountedWhileClosed } from 'forty-cdk/core-overlay';
 import {
+  floatingPositioner,
   injectOverlayShell,
   injectMenuContext,
   menuLayerNesting,
@@ -119,8 +120,7 @@ export class ForMenuContent {
     );
 
     injectOverlayShell({
-      positioner: {
-        kind: 'floating',
+      positioner: floatingPositioner({
         reference: this.ctx.anchor,
         open: this.ctx.open,
         side: this.ctx.side,
@@ -133,7 +133,7 @@ export class ForMenuContent {
         sticky: this.ctx.sticky,
         hideWhenDetached: this.ctx.hideWhenDetached,
         clipUntilPositioned: this.ctx.clipUntilPositioned,
-      },
+      }),
       dismiss: {
         dismissible: this.ctx.dismissible,
         requestClose: (reason) => this.ctx.requestClose(reason),

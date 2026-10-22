@@ -11,7 +11,7 @@ import {
   FOR_FIELD_CONTEXT,
 } from 'forty-cdk/core';
 import { injectModalShell, warnIfMountedWhileClosed } from 'forty-cdk/core-overlay';
-import { injectOverlayShell } from 'forty-cdk/core-anchored';
+import { floatingPositioner, injectOverlayShell } from 'forty-cdk/core-anchored';
 import { injectTimePickerContext } from './time-picker-context';
 
 /**
@@ -136,8 +136,7 @@ export class ForTimePickerContent {
     this.modal = signal(false).asReadonly();
     this.#publishModal();
     injectOverlayShell({
-      positioner: {
-        kind: 'floating',
+      positioner: floatingPositioner({
         reference: ctx.overlay.anchor,
         open: ctx.open,
         side: ctx.side,
@@ -150,7 +149,7 @@ export class ForTimePickerContent {
         hideWhenDetached: ctx.hideWhenDetached,
         clipUntilPositioned: ctx.clipUntilPositioned,
         onFirstPosition: () => ctx.revealInitialFocus(),
-      },
+      }),
       dismiss: {
         dismissible: ctx.dismissible,
         requestClose: (reason) => {

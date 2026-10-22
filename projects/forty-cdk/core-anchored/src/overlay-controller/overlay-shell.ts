@@ -1,4 +1,5 @@
 import { DestroyRef, ElementRef, inject, type Signal } from '@angular/core';
+import type { ReferenceElement } from '@floating-ui/dom';
 
 import {
   afterNextRenderCancellable,
@@ -19,20 +20,19 @@ import {
   type DismissibleLayerActivateOptions,
   type DismissibleLayerNesting,
 } from 'forty-cdk/core-overlay';
-import { injectFloating, type FloatingConfig } from '../floating/floating';
-import { injectItemAlignedPositioner, type ItemAlignedConfig } from '../floating/item-aligned';
 
 /**
- * Tagged-union positioner config. The shell delegates to either
- * `injectFloating` (the standard anchored placement) or
- * `injectItemAlignedPositioner` (the macOS-style overlay used by Select's
- * `position="item-aligned"` mode). Both helpers portal by default, so the
- * shell never calls `injectPortal` itself — that responsibility stays with
- * the positioner.
+ * The positioning strategy a trigger-anchored surface hands the shell, built by
+ * `floatingPositioner` or `itemAlignedPositioner`. The shell installs it once at construction, so
+ * switching strategies means remounting the surface. The installed positioner portals the host
+ * by default, so the shell never calls `injectPortal` itself.
  */
-export type OverlayShellPositionerConfig =
-  | ({ readonly kind: 'floating' } & FloatingConfig)
-  | ({ readonly kind: 'item-aligned' } & ItemAlignedConfig);
+export interface OverlayShellPositioner {
+  /** The element the surface anchors to, also read to resolve the modal that owns the surface. */
+  readonly reference: Signal<ReferenceElement | null>;
+  /** Installs the positioner on the host. Called once, from the shell's injection context. */
+  readonly attach: () => void;
+}
 
 /**
  * Outside-interaction wiring for a trigger-anchored overlay.
@@ -179,7 +179,7 @@ export interface OverlayShellTabOutConfig {
  * orthogonal to the primitive surface and trivially mockable in tests.
  */
 export interface OverlayShellConfig {
-  readonly positioner: OverlayShellPositionerConfig;
+  readonly positioner: OverlayShellPositioner;
   readonly dismiss?: OverlayShellDismissConfig;
   readonly initialFocus?: OverlayShellInitialFocusConfig;
   readonly returnFocus?: OverlayShellReturnFocusConfig;
@@ -222,17 +222,8 @@ export function injectOverlayShell(config: OverlayShellConfig): void {
   const dismissCfg = config.dismiss;
   const layer = dismissCfg !== undefined ? injectDismissibleLayer() : null;
 
-  // 2. Positioner. The kind is read once at construction; switching modes
-  //    at runtime would require unmounting + remounting the directive,
-  //    which is the expected pattern for primitives whose positioning
-  //    algorithm is structurally different (Select's two modes).
-  if (config.positioner.kind === 'item-aligned') {
-    const { kind: _ignored, ...rest } = config.positioner;
-    injectItemAlignedPositioner(rest);
-  } else {
-    const { kind: _ignored, ...rest } = config.positioner;
-    injectFloating(rest);
-  }
+  // 2. Positioner.
+  config.positioner.attach();
 
   // 3. afterNextRender — activate the layer and run initial focus once
   //    input bindings have settled. Both pieces depend on having a
@@ -355,7 +346,7 @@ export function injectOverlayShell(config: OverlayShellConfig): void {
 
   // 4. Return focus on destroy. The hook is registered AFTER the layer's
   //    destroy hook (created above) and AFTER the positioner's portal hook
-  //    (created inside injectFloating / injectItemAlignedPositioner) so it
+  //    (created inside the positioner's `attach`) so it
   //    runs last — same ordering as the pre-shell hand-rolled code.
   const rfCfg = config.returnFocus;
   if (rfCfg) {

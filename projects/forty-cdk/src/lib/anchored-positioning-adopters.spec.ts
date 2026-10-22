@@ -76,7 +76,7 @@ import { LIBRARY_CODE } from '../test-utils/source-scan';
  * over the positioner itself in
  * `core-anchored/src/floating/floating.spec.ts`, and end to end through the DOM
  * in the popover / tooltip / hover-card suites; the wiring in between is the
- * source claim the last case here makes over every `kind: 'floating'` block in
+ * source claim the last case here makes over every `floatingPositioner` block in
  * the library.
  */
 interface AnchoredRootEntry {
@@ -254,11 +254,25 @@ const ARROW_PADDING_SCOPE_PROBE = 6;
 /** The value the third arrow case binds per instance — differs from the scope probe. */
 const ARROW_PADDING_BOUND_PROBE = 12;
 
+/**
+ * Every file naming the item-aligned positioner. `injectOverlayShell` takes its positioner as a
+ * value so that only Select's content directive references `item-aligned.ts`: a second site, or
+ * the shell naming it again, puts that module in the bundle of every anchored overlay.
+ */
+const ITEM_ALIGNED_SITES: readonly string[] = [
+  'core-anchored/src/floating/item-aligned.ts',
+  'core-anchored/src/public-api.ts',
+  'select/src/select-content.ts',
+];
+
+const ITEM_ALIGNED_REFERENCE =
+  /\b(?:itemAlignedPositioner|injectItemAlignedPositioner)\b|\/item-aligned'/;
+
 const DECLARES_ARROW_PADDING = /^ {2}readonly arrowPadding = input\(/m;
 const DECLARES_ARROW_REGISTRY = /\bregisterArrow\(/;
 
 /**
- * Every file building a `kind: 'floating'` positioner block, asserted as a set
+ * Every file building a `floatingPositioner` block, asserted as a set
  * so the ledger cannot rot in either direction: a new hand-built block fails
  * until it is listed, and a site that moves onto the shared
  * `toFloatingPositioner` helper fails until it is removed.
@@ -280,7 +294,7 @@ const FLOATING_POSITIONER_SITES: readonly string[] = [
 
 /**
  * The nine inputs a content directive must forward into `injectOverlayShell`, in
- * the `kind: 'floating'` positioner block. Every one of them is an *effective*
+ * the `floatingPositioner` block. Every one of them is an *effective*
  * computed on the root, mirrored on its context, so forwarding a literal or the
  * neighbouring signal is the drift that leaves an input silently inert — which
  * is what the roots' own `side` / `align` were before #1726.
@@ -350,12 +364,15 @@ function enclosingObjectLiteral(source: string, from: number): string {
   return source.slice(open);
 }
 
-/** Every `kind: 'floating'` positioner block in library source, keyed by file. */
+/** Every `floatingPositioner` block in library source, keyed by file. */
 function floatingPositionerBlocks(): Array<{ path: string; block: string }> {
   const blocks: Array<{ path: string; block: string }> = [];
   for (const [path, source] of LIBRARY_CODE) {
-    for (const match of source.matchAll(/kind: 'floating',/g)) {
-      blocks.push({ path, block: enclosingObjectLiteral(source, match.index!) });
+    for (const match of source.matchAll(/\bfloatingPositioner\(\{/g)) {
+      blocks.push({
+        path,
+        block: enclosingObjectLiteral(source, match.index! + match[0].length - 1),
+      });
     }
   }
   return blocks;
@@ -701,6 +718,14 @@ describe('anchored positioning contract adoption (meta-guard)', () => {
     });
 
     expect(sorted(wrong)).toEqual([]);
+  });
+
+  it('leaves the item-aligned positioner to Select alone', () => {
+    const naming = [...LIBRARY_CODE]
+      .filter(([, source]) => ITEM_ALIGNED_REFERENCE.test(source))
+      .map(([path]) => path);
+
+    expect(sorted(naming)).toEqual([...ITEM_ALIGNED_SITES]);
   });
 
   it('declares arrowPadding on exactly the roots that register an arrow', () => {

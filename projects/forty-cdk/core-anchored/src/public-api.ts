@@ -38,8 +38,10 @@ export {
 export {
   type FloatingAlign,
   type FloatingFallbackAxisSideDirection,
+  floatingPositioner,
   type FloatingSide,
 } from './floating/floating';
+export { itemAlignedPositioner } from './floating/item-aligned';
 export {
   createHoverIntent,
   forceCloseWhenDisabled,
@@ -100,7 +102,7 @@ export {
 export {
   injectOverlayShell,
   type OverlayShellConfig,
-  type OverlayShellPositionerConfig,
+  type OverlayShellPositioner,
 } from './overlay-controller/overlay-shell';
 export {
   attachPointerGrace,

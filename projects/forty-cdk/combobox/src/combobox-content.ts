@@ -13,7 +13,11 @@ import {
   FOR_FIELD_CONTEXT,
 } from 'forty-cdk/core';
 import { warnIfMountedWhileClosed } from 'forty-cdk/core-overlay';
-import { injectOverlayShell, type OverlayShellConfig } from 'forty-cdk/core-anchored';
+import {
+  floatingPositioner,
+  injectOverlayShell,
+  type OverlayShellConfig,
+} from 'forty-cdk/core-anchored';
 import { injectComboboxContext } from './combobox-context';
 
 /**
@@ -152,8 +156,7 @@ export class ForComboboxContent {
     const hasTrigger = computed(() => ctx.trigger() !== null);
 
     const config: OverlayShellConfig = {
-      positioner: {
-        kind: 'floating',
+      positioner: floatingPositioner({
         reference: ctx.anchor,
         open: ctx.open,
         side: ctx.side,
@@ -166,7 +169,7 @@ export class ForComboboxContent {
         hideWhenDetached: ctx.hideWhenDetached,
         clipUntilPositioned: ctx.clipUntilPositioned,
         onFirstPosition: () => ctx.scrollActiveOptionIntoView(),
-      },
+      }),
       dismiss: {
         dismissible: ctx.dismissible,
         requestClose: (reason) => ctx.requestClose(reason),
