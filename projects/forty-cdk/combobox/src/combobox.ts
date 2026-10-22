@@ -553,7 +553,7 @@ export class ForCombobox<T = string>
       piece: '[forComboboxContent]',
       condition: 'combobox.open()',
       open: this.open,
-      content: this.content,
+      content: () => this.content() ?? this.list(),
     });
     injectHiddenInput<T>({
       name: this.name,

@@ -278,6 +278,8 @@ export const appConfig: ApplicationConfig = {
 
 `[forComboboxContent]` follows the floating-overlay convention: the consumer's signal drives `@if`, the directive emits dismiss events when it wants to be unmounted. No `[hidden]`. The visible input lives outside the overlay; only the listbox surface portals.
 
+An open combobox with neither `[forComboboxContent]` nor `[forComboboxList]` mounted warns in dev mode (`FORCDK-CORE-014`). A `[forComboboxList]` mounted on its own counts as the surface, which is the shape for a combobox embedded in a panel it does not own, such as a popover's: bind the combobox's `open` to the panel's open signal and render the input and the list inside that panel's `@if`. The input's `aria-controls` names the list and Escape on the input closes it; outside presses are the enclosing panel's to handle, because no `[forComboboxContent]` pushes a dismissible layer.
+
 ## Anchoring to a field box
 
 By default the listbox is positioned against `[forComboboxInput]`. When the input lives inside a decorated field box (padding, a prefix icon, a clear button, or the multi-mode chip cluster), anchoring to the bare `<input>` makes the panel narrower than the visible field and offset from its edge. Wrap the field box in `[forComboboxAnchor]` so floating-ui positions (and sizes, via `--for-floating-anchor-width`) the listbox against the box instead:
