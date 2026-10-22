@@ -69,7 +69,7 @@ import type { Signal } from '@angular/core';
  * `core-anchored/src/floating/floating.spec.ts`, and the wiring in between (each
  * content directive forwarding the nine effective computeds into
  * `injectOverlayShell`) is a source claim the adopter roster makes over every
- * `kind: 'floating'` block in the library. Re-running the positioner's own
+ * `floatingPositioner` block in the library. Re-running the positioner's own
  * behaviour once per adopter would assert one module thirteen times.
  *
  * Internal to the spec suite — never re-exported from `public-api.ts`.

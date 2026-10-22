@@ -6,6 +6,7 @@ import {
   type ReferenceElement,
 } from '@floating-ui/dom';
 
+import type { OverlayShellPositioner } from '../overlay-controller/overlay-shell';
 import {
   type FloatingCustomProperties,
   injectFloatingCustomProperties,
@@ -225,6 +226,14 @@ function itemAligned(
       return { x, y };
     },
   };
+}
+
+/**
+ * The `injectOverlayShell` positioner that overlays the surface on its anchor through
+ * {@link injectItemAlignedPositioner}.
+ */
+export function itemAlignedPositioner(config: ItemAlignedConfig): OverlayShellPositioner {
+  return { reference: config.reference, attach: () => injectItemAlignedPositioner(config) };
 }
 
 /**

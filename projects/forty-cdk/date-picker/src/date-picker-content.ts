@@ -9,7 +9,7 @@ import {
   FOR_FIELD_CONTEXT,
 } from 'forty-cdk/core';
 import { injectModalShell, warnIfMountedWhileClosed } from 'forty-cdk/core-overlay';
-import { injectOverlayShell } from 'forty-cdk/core-anchored';
+import { floatingPositioner, injectOverlayShell } from 'forty-cdk/core-anchored';
 import { injectDatePickerContext } from './date-picker-context';
 
 /**
@@ -115,8 +115,7 @@ export class ForDatePickerContent {
 
     this.modal = signal(false).asReadonly();
     injectOverlayShell({
-      positioner: {
-        kind: 'floating',
+      positioner: floatingPositioner({
         reference: ctx.reference,
         open: ctx.open,
         side: ctx.side,
@@ -128,7 +127,7 @@ export class ForDatePickerContent {
         sticky: ctx.sticky,
         hideWhenDetached: ctx.hideWhenDetached,
         clipUntilPositioned: ctx.clipUntilPositioned,
-      },
+      }),
       dismiss: {
         dismissible: ctx.dismissible,
         requestClose: () => ctx.requestClose(),

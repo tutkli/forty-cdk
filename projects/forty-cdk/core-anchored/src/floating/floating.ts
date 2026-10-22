@@ -14,6 +14,7 @@ import {
   size,
 } from '@floating-ui/dom';
 
+import type { OverlayShellPositioner } from '../overlay-controller/overlay-shell';
 import {
   type FloatingCustomProperties,
   injectFloatingCustomProperties,
@@ -268,6 +269,14 @@ export function buildFlipOptions(options: {
     flipOptions.fallbackPlacements = [...options.fallbackPlacements];
   }
   return flipOptions;
+}
+
+/**
+ * The `injectOverlayShell` positioner that places the surface beside its anchor through
+ * {@link injectFloating}.
+ */
+export function floatingPositioner(config: FloatingConfig): OverlayShellPositioner {
+  return { reference: config.reference, attach: () => injectFloating(config) };
 }
 
 /**

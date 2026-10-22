@@ -11,7 +11,11 @@ import {
   FOR_FIELD_CONTEXT,
 } from 'forty-cdk/core';
 import { injectModalShell, warnIfMountedWhileClosed } from 'forty-cdk/core-overlay';
-import { injectOverlayShell, type OverlayShellPositionerConfig } from 'forty-cdk/core-anchored';
+import {
+  floatingPositioner,
+  injectOverlayShell,
+  itemAlignedPositioner,
+} from 'forty-cdk/core-anchored';
 import { injectSelectContext, type SelectContext } from './select-context';
 
 /**
@@ -167,18 +171,16 @@ export class ForSelectContent {
       return;
     }
 
-    const positioner: OverlayShellPositionerConfig =
+    const positioner =
       ctx.position() === 'item-aligned'
-        ? {
-            kind: 'item-aligned',
+        ? itemAlignedPositioner({
             reference: ctx.overlay.anchor,
             open: ctx.open,
             selectedOption: ctx.selectedOptionEl,
             collisionPadding: ctx.collisionPadding,
             onFirstPosition: () => ctx.revealInitialFocus(),
-          }
-        : {
-            kind: 'floating',
+          })
+        : floatingPositioner({
             reference: ctx.overlay.anchor,
             open: ctx.open,
             side: ctx.side,
@@ -191,7 +193,7 @@ export class ForSelectContent {
             hideWhenDetached: ctx.hideWhenDetached,
             clipUntilPositioned: ctx.clipUntilPositioned,
             onFirstPosition: () => ctx.revealInitialFocus(),
-          };
+          });
 
     this.modal = signal(false).asReadonly();
     this.#publishModal();

@@ -1,7 +1,8 @@
 import type { Signal } from '@angular/core';
 import type { ReferenceElement } from '@floating-ui/dom';
 
-import type { FloatingAlign, FloatingConfig, FloatingSide } from './floating';
+import type { OverlayShellPositioner } from '../overlay-controller/overlay-shell';
+import { type FloatingAlign, floatingPositioner, type FloatingSide } from './floating';
 
 /**
  * Single source of truth for the floating-ui positioning defaults shared by
@@ -73,9 +74,8 @@ export interface AnchoredPositioningContext {
 export function toFloatingPositioner(
   ctx: AnchoredPositioningContext,
   reference: Signal<ReferenceElement | null>,
-): { kind: 'floating' } & FloatingConfig {
-  return {
-    kind: 'floating',
+): OverlayShellPositioner {
+  return floatingPositioner({
     reference,
     open: ctx.open,
     side: ctx.side,
@@ -89,5 +89,5 @@ export function toFloatingPositioner(
     hideWhenDetached: ctx.hideWhenDetached,
     clipUntilPositioned: ctx.clipUntilPositioned,
     arrow: ctx.arrow,
-  };
+  });
 }
