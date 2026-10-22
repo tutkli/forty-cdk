@@ -1,4 +1,4 @@
-import { type Signal, computed, effect, linkedSignal, signal, untracked } from '@angular/core';
+import { type Signal, computed, effect, signal, untracked } from '@angular/core';
 
 const DEFAULT_THRESHOLD = 5;
 
@@ -66,22 +66,24 @@ export function injectInfiniteScroll(options: InfiniteScrollOptions): ForInfinit
     return total > 0 && end >= total - threshold;
   });
 
-  const armed = linkedSignal<{ count: number; nearEnd: boolean }, boolean>({
-    source: () => ({ count: options.count(), nearEnd: nearEnd() }),
-    computation: () => true,
-  });
+  let armedFor: { count: number; nearEnd: boolean } | null = null;
+  let armed = false;
 
-  // @sanctioned-effect(untracked-read): both `armed` and `pending` are read
-  // through `untracked`, and `onLoadMore` runs untracked, so the effect tracks
-  // only `count` / `nearEnd` / `settled` and never cycles on the latches it writes;
-  // `settled` is written only when a caller-owned promise settles, which is
-  // outside the reactive graph entirely.
+  // @sanctioned-effect(untracked-read): `pending` is read through `untracked`, and
+  // `onLoadMore` runs untracked, so the effect tracks only `count` / `nearEnd` /
+  // `settled` and never cycles on the latch it writes; `settled` is written only
+  // when a caller-owned promise settles, which is outside the reactive graph entirely.
   effect(() => {
-    options.count();
+    const count = options.count();
+    const near = nearEnd();
     settled();
-    if (!nearEnd() || !untracked(armed)) return;
+    if (armedFor?.count !== count || armedFor.nearEnd !== near) {
+      armedFor = { count, nearEnd: near };
+      armed = true;
+    }
+    if (!near || !armed) return;
     if (untracked(pending)) return;
-    armed.set(false);
+    armed = false;
     const result = untracked(options.onLoadMore);
     if (result instanceof Promise) {
       pending.set(true);

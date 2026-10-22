@@ -2875,10 +2875,11 @@ const fortyCdkPlugin = {
     // error outright, not something a marker can license. Split the effect; do
     // not widen the rule.
     //
-    // The one shipped pull that does share its effect with writes is Combobox's
-    // (`runAutoHighlightBridge` primes the position map, then writes
-    // activedescendant through `tryResolvePending` / `seedFromIndexedSnapshot`),
-    // and it passes only because those writes are cross-file. It is safe for the
+    // Every shipped position-map pull does share its effect with writes
+    // (`runVirtualizedNavigatorBridge` primes the position map, then writes
+    // activedescendant through `tryResolvePending`; Combobox's
+    // `runAutoHighlightBridge` adds `seedFirstRenderedEnabled`), and they pass
+    // only because those writes are cross-file. They are safe for the
     // reason the proxy cannot check: the position map's sources are the ones that
     // bridge already tracks through its own `items()` read, so the pull widens
     // nothing. See the conventions section for the argument a new instance owes.
