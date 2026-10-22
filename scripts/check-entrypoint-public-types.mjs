@@ -16,16 +16,18 @@ import { UNNAMEABLE_PUBLIC_TYPES } from './lib/unnameable-public-types.mjs';
 const TYPES_DIR = join(repoRoot, 'dist', 'forty-cdk', 'types');
 
 /**
- * The internal tier ships as two entry points since
- * [#1723](https://github.com/tutkli/forty-cdk/issues/1723) — `forty-cdk/core`
- * and the overlay slice it was cut into — so every rule below reads both. A
- * blessed symbol is blessed regardless of which of the two barrels declares it;
+ * The internal tier ships as three entry points — `forty-cdk/core`, the
+ * overlay slice [#1723](https://github.com/tutkli/forty-cdk/issues/1723) cut
+ * it into, and the anchored slice
+ * [#2693](https://github.com/tutkli/forty-cdk/issues/2693) cut out of that — so
+ * every rule below reads all three. A blessed symbol is blessed regardless of
+ * which barrel declares it;
  * what the tier fixes is the single public entry point that publishes it.
  */
-const CORE_BARRELS = ['core', 'core-overlay'].map((entry) =>
+const CORE_BARRELS = ['core', 'core-overlay', 'core-anchored'].map((entry) =>
   join(repoRoot, 'projects', 'forty-cdk', entry, 'src', 'public-api.ts'),
 );
-const CORE_SOURCE_DIRS = ['core', 'core-overlay'].map((entry) =>
+const CORE_SOURCE_DIRS = ['core', 'core-overlay', 'core-anchored'].map((entry) =>
   join(repoRoot, 'projects', 'forty-cdk', entry, 'src'),
 );
 
@@ -39,6 +41,7 @@ const IGNORED_FILES = new Set([
   'forty-cdk.d.ts',
   'forty-cdk-core.d.ts',
   'forty-cdk-core-overlay.d.ts',
+  'forty-cdk-core-anchored.d.ts',
 ]);
 
 if (!existsSync(TYPES_DIR)) {
@@ -106,7 +109,7 @@ const staleBlessed = [...BLESSED_CORE_SYMBOLS].filter((name) => !coreExports.has
 
 if (staleBlessed.length) {
   console.error(
-    `[check-entrypoint-public-types] FAIL — ${staleBlessed.length} blessed symbol(s) in scripts/lib/core-blessed-tier.mjs are exported from neither forty-cdk/core nor forty-cdk/core-overlay:`,
+    `[check-entrypoint-public-types] FAIL — ${staleBlessed.length} blessed symbol(s) in scripts/lib/core-blessed-tier.mjs are exported from none of forty-cdk/core, forty-cdk/core-overlay and forty-cdk/core-anchored:`,
   );
   for (const name of staleBlessed) console.error(`  ${name}`);
   console.error(
@@ -286,7 +289,7 @@ if (
   process.exit(1);
 
 console.log(
-  `[check-entrypoint-public-types] OK — ${checkedEntries.size} entry points; ${BLESSED_CORE_SYMBOLS.size} blessed core symbols, every one exported from forty-cdk/core or forty-cdk/core-overlay and published by exactly one entry point (${Object.entries(
+  `[check-entrypoint-public-types] OK — ${checkedEntries.size} entry points; ${BLESSED_CORE_SYMBOLS.size} blessed core symbols, every one exported from an internal-tier barrel and published by exactly one entry point (${Object.entries(
     CORE_PUBLISHERS,
   )
     .map(([entry, symbols]) => `${entry}: ${symbols.length}`)

@@ -27,7 +27,7 @@ import {
   AnchoredOverlayPositioningBase,
   type FloatingFallbackAxisSideDirection,
   type MenuActivationModality,
-} from 'forty-cdk/core-overlay';
+} from 'forty-cdk/core-anchored';
 import { injectMenubarContext } from './menubar-context';
 import { FOR_MENUBAR_DEFAULTS } from 'forty-cdk/defaults';
 

@@ -356,11 +356,11 @@ const EXCLUSIONS: Readonly<
     holds: () =>
       LIBRARY_CODE.get('menubar/src/menubar.ts')?.includes('warnIfOpenWithoutContent(') === true,
   },
-  'core-overlay/src/menu-overlay/menu-overlay-host.ts': {
+  'core-anchored/src/menu-overlay/menu-overlay-host.ts': {
     reason: 'it is the abstract base of the menu roots, each of which reports under its own name',
     holds: () =>
       /export abstract class MenuOverlayHost\b/.test(
-        LIBRARY_CODE.get('core-overlay/src/menu-overlay/menu-overlay-host.ts') ?? '',
+        LIBRARY_CODE.get('core-anchored/src/menu-overlay/menu-overlay-host.ts') ?? '',
       ),
   },
 };

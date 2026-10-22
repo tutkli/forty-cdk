@@ -8,7 +8,7 @@ import {
   assertDismissibleLayerContract,
 } from '../../src/test-utils/contract';
 import { resolveActiveElement, type VetoableEvent, type VetoableNativeEvent } from 'forty-cdk/core';
-import { FOR_MENU_CONTEXT } from 'forty-cdk/core-overlay';
+import { FOR_MENU_CONTEXT } from 'forty-cdk/core-anchored';
 import { provideForContextMenuDefaults } from 'forty-cdk/defaults';
 import {
   ForMenu,

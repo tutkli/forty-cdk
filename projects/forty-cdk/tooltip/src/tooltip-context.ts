@@ -10,7 +10,7 @@ import {
   type AnchoredPositioningContext,
   type Point,
   type RootedTriggerHandle,
-} from 'forty-cdk/core-overlay';
+} from 'forty-cdk/core-anchored';
 
 /** Reason a show / hide was scheduled — `focus` bypasses the open delay, `escape` and `press` the close delay. */
 export type TooltipScheduleReason = 'hover' | 'focus' | 'escape' | 'press';

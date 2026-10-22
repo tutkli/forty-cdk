@@ -267,7 +267,7 @@ const INHERITS_THE_BLOCK =
 function anchoredEntryPoints(): Set<string> {
   const entries = new Set<string>();
   for (const [path, source] of LIBRARY_SOURCES) {
-    if (entryPointOf(path) !== 'core-overlay' && INHERITS_THE_BLOCK.test(source)) {
+    if (entryPointOf(path) !== 'core-anchored' && INHERITS_THE_BLOCK.test(source)) {
       entries.add(entryPointOf(path));
     }
   }

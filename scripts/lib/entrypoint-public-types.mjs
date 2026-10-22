@@ -2,7 +2,11 @@ import ts from 'typescript';
 
 import { BLESSED_CORE_SYMBOLS } from './core-blessed-tier.mjs';
 
-export const CORE_SPECIFIERS = new Set(['forty-cdk/core', 'forty-cdk/core-overlay']);
+export const CORE_SPECIFIERS = new Set([
+  'forty-cdk/core',
+  'forty-cdk/core-overlay',
+  'forty-cdk/core-anchored',
+]);
 
 function sourceName(element) {
   return (element.propertyName ?? element.name).text;

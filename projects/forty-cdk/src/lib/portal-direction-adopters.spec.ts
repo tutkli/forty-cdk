@@ -28,7 +28,7 @@ import { ForTooltip, ForTooltipContent, ForTooltipTrigger } from 'forty-cdk/tool
 const PORTALING_HELPER =
   /\b(?:injectPortal|injectModalShell|injectOverlayShell|injectFloating|injectItemAlignedPositioner)\(/;
 
-const INTERNAL_TIER = ['core/', 'core-overlay/'];
+const INTERNAL_TIER = ['core/', 'core-overlay/', 'core-anchored/'];
 
 const BODY_APPEND = /\.body\.(?:appendChild|append|prepend|insertBefore)\(/g;
 

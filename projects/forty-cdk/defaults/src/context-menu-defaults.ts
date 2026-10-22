@@ -5,7 +5,7 @@ import type {
   FloatingAlign,
   FloatingFallbackAxisSideDirection,
   FloatingSide,
-} from 'forty-cdk/core-overlay';
+} from 'forty-cdk/core-anchored';
 
 import { provideDefaults } from './defaults';
 

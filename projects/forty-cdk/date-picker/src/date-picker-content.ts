@@ -8,11 +8,8 @@ import {
   FOR_FIELD_ANCHOR_CONTEXT,
   FOR_FIELD_CONTEXT,
 } from 'forty-cdk/core';
-import {
-  injectModalShell,
-  injectOverlayShell,
-  warnIfMountedWhileClosed,
-} from 'forty-cdk/core-overlay';
+import { injectModalShell, warnIfMountedWhileClosed } from 'forty-cdk/core-overlay';
+import { injectOverlayShell } from 'forty-cdk/core-anchored';
 import { injectDatePickerContext } from './date-picker-context';
 
 /**

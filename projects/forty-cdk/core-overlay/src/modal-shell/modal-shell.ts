@@ -26,7 +26,7 @@ import {
 import { BodyScrollLock } from '../body-scroll-lock/body-scroll-lock';
 import { injectDismissibleLayer } from '../dismissible-layer/dismissible-layer';
 import { type InertSiblingsHandle, InertSiblingsStack } from '../inert-siblings/inert-siblings';
-import { buildOutsideVetoOptions, outsideVetoChannels } from '../overlay-controller/outside-veto';
+import { buildOutsideVetoOptions, outsideVetoChannels } from '../dismissible-layer/outside-veto';
 import { ModalActivationOrder } from './modal-activation-order';
 
 /**

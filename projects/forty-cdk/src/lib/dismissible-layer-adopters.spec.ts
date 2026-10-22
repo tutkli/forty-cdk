@@ -217,7 +217,7 @@ const EXCLUSIONS: Readonly<Record<string, string>> = {
  * `<source file>#<shell>` for every layer-pushing call site.
  *
  * A file that **declares** a shell is skipped by condition rather than by path,
- * so moving `core-overlay/overlay-controller/overlay-shell` or `core-overlay/modal-shell/modal-shell` cannot silently drop the
+ * so moving `core-anchored/overlay-controller/overlay-shell` or `core-overlay/modal-shell/modal-shell` cannot silently drop the
  * filter.
  */
 function layerCallSites(): Set<string> {

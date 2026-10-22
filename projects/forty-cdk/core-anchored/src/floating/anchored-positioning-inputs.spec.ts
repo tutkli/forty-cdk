@@ -16,7 +16,7 @@ import { LIBRARY_SOURCES } from '../../../src/test-utils/source-scan';
  */
 const BASE_SOURCES: ReadonlyArray<readonly [string, string]> = [...LIBRARY_SOURCES].filter(
   ([path]) =>
-    /^core-overlay\/src\/floating\/anchored-(?:overlay-positioning|form-value-control)-base\.ts$/.test(
+    /^core-anchored\/src\/floating\/anchored-(?:overlay-positioning|form-value-control)-base\.ts$/.test(
       path,
     ),
 );

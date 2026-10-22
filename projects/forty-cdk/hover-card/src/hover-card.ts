@@ -16,6 +16,7 @@ import {
   injectPrefersReducedMotion,
   type VetoableNativeEvent,
 } from 'forty-cdk/core';
+import { warnIfOpenWithoutContent } from 'forty-cdk/core-overlay';
 import {
   AnchoredOverlayPositioningBase,
   forceCloseWhenDisabled,
@@ -26,8 +27,7 @@ import {
   type Point,
   ScrollDismissDispatcher,
   type ScrollDismissRegistration,
-  warnIfOpenWithoutContent,
-} from 'forty-cdk/core-overlay';
+} from 'forty-cdk/core-anchored';
 import {
   FOR_HOVER_CARD_CONTEXT,
   type ForHoverCardContext,

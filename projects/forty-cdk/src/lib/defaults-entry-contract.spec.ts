@@ -74,15 +74,15 @@ describe('forty-cdk/defaults entry point', () => {
         "import { InjectionToken } from '@angular/core';",
         "import type { LocalizableText } from 'forty-cdk/core';",
         "import { resolveLocalizableText } from 'forty-cdk/core';",
-        "export { type FloatingSide } from 'forty-cdk/core-overlay';",
-        "export type { FloatingAlign } from 'forty-cdk/core-overlay';",
+        "export { type FloatingSide } from 'forty-cdk/core-anchored';",
+        "export type { FloatingAlign } from 'forty-cdk/core-anchored';",
         "import 'forty-cdk/core';",
         "import { provideDefaults } from './defaults';",
       ].join('\n');
 
       expect(foreignValueSpecifiers('probe.ts', code)).toEqual([
         "probe.ts → import from 'forty-cdk/core'",
-        "probe.ts → export from 'forty-cdk/core-overlay'",
+        "probe.ts → export from 'forty-cdk/core-anchored'",
         "probe.ts → import 'forty-cdk/core'",
       ]);
     });

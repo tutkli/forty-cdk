@@ -5,7 +5,7 @@ import { LIBRARY_CODE } from '../test-utils/source-scan';
  * ([#1764](https://github.com/tutkli/forty-cdk/issues/1764),
  * [#1768](https://github.com/tutkli/forty-cdk/issues/1768)): the open / close /
  * dismiss machine every trigger-anchored overlay surface runs is declared
- * **once**, in `core-overlay/overlay-controller/overlay-controller.ts`, and every
+ * **once**, in `core-anchored/overlay-controller/overlay-controller.ts`, and every
  * module that used to own a copy of it composes that one instead — `MenuOverlay`
  * behind the four menu roots, `ListboxOverlayController` behind `[forSelect]` /
  * `[forTimePicker]`, `[forCombobox]`'s root, and `[forMenubar]`'s multiplexed
@@ -34,7 +34,7 @@ function librarySources(): Array<readonly [string, string]> {
   return [...LIBRARY_CODE].map(([path, code]) => [path.replace(/\.ts$/, ''), code] as const);
 }
 
-const SHARED_MACHINE = 'core-overlay/src/overlay-controller/overlay-controller';
+const SHARED_MACHINE = 'core-anchored/src/overlay-controller/overlay-controller';
 const ENABLED_SCAN = 'core/src/collection/enabled-handle-navigation';
 
 /**
@@ -43,8 +43,8 @@ const ENABLED_SCAN = 'core/src/collection/enabled-handle-navigation';
  * state and the veto plumbing having actually left rather than been moved.
  */
 const COMPOSERS = [
-  'core-overlay/src/menu-overlay/menu-overlay',
-  'core-overlay/src/listbox-overlay/listbox-overlay-controller',
+  'core-anchored/src/menu-overlay/menu-overlay',
+  'core-anchored/src/listbox-overlay/listbox-overlay-controller',
   'combobox/src/combobox',
   'menubar/src/menubar-menu-context',
 ];

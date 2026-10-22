@@ -18,7 +18,7 @@ import {
   type ForMenuItemHandle,
   type MenuSiblingNavigator,
   OverlayController,
-} from 'forty-cdk/core-overlay';
+} from 'forty-cdk/core-anchored';
 import type { ForMenubarTriggerHandle } from './menubar-context';
 
 /**

@@ -1,7 +1,7 @@
 import { Component, Directive, signal } from '@angular/core';
 
 import { afterEachOverlayCleanup, renderHost } from '../../src/test-utils';
-import { FOR_MENU_CONTEXT } from 'forty-cdk/core-overlay';
+import { FOR_MENU_CONTEXT } from 'forty-cdk/core-anchored';
 import { ForMenuContent, ForMenuItem } from 'forty-cdk/menu';
 
 import { ForMenubar } from './menubar';

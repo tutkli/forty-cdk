@@ -21,17 +21,16 @@ import {
   registerHandle,
   resolveActiveElement,
 } from 'forty-cdk/core';
+import { createDebouncedAction, type DebouncedAction } from 'forty-cdk/core-overlay';
 import {
   asMenuOpenerRegistration,
-  createDebouncedAction,
   createMenuOpenerHandle,
-  type DebouncedAction,
   MENU_OPENERS,
   type MenuActivationModality,
   type MenuOpenerHandle,
   type MenuOpenerPositioning,
   releaseMenuOpener,
-} from 'forty-cdk/core-overlay';
+} from 'forty-cdk/core-anchored';
 import {
   type ContextMenuContext,
   type ForContextMenuContext,

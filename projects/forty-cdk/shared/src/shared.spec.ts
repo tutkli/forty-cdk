@@ -6,6 +6,7 @@ import {
   provideNativeDateAdapter as calendarProvideNativeDateAdapter,
 } from 'forty-cdk/calendar';
 import * as core from 'forty-cdk/core';
+import * as coreAnchored from 'forty-cdk/core-anchored';
 import * as coreOverlay from 'forty-cdk/core-overlay';
 import * as dateAdapter from 'forty-cdk/date-adapter';
 import * as idSalt from 'forty-cdk/id-salt';
@@ -20,6 +21,7 @@ import {
 
 const SOURCES: Readonly<Record<string, Readonly<Record<string, unknown>>>> = {
   'forty-cdk/core': core,
+  'forty-cdk/core-anchored': coreAnchored,
   'forty-cdk/core-overlay': coreOverlay,
   'forty-cdk/date-adapter': dateAdapter,
   'forty-cdk/id-salt': idSalt,

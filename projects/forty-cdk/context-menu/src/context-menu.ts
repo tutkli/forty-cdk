@@ -14,7 +14,7 @@ import {
   MenuOverlayHost,
   FOR_MENU_CONTEXT,
   type ForMenuContext,
-} from 'forty-cdk/core-overlay';
+} from 'forty-cdk/core-anchored';
 import { FOR_CONTEXT_MENU_CONTEXT, type ForContextMenuContext } from './context-menu-context';
 import { FOR_CONTEXT_MENU_DEFAULTS } from 'forty-cdk/defaults';
 

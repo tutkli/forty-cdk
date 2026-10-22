@@ -447,7 +447,7 @@ export const COLLECTION_FAMILY_ADOPTERS: readonly StaticAdoptionAdopter[] = [
       {
         key: '[forSelectContent]',
         channel: 'id',
-        source: 'core-overlay/src/overlay-controller/element-registry.ts',
+        source: 'core-anchored/src/overlay-controller/element-registry.ts',
         seam: 'adoptHostId',
         probe: 'probe-content',
         fallback: { generated: 'for-select-content' },
@@ -502,7 +502,7 @@ export const COLLECTION_FAMILY_ADOPTERS: readonly StaticAdoptionAdopter[] = [
       {
         key: '[forComboboxInput]',
         channel: 'id',
-        source: 'core-overlay/src/overlay-controller/element-registry.ts',
+        source: 'core-anchored/src/overlay-controller/element-registry.ts',
         seam: 'adoptHostId',
         probe: 'probe-input',
         fallback: { generated: 'for-combobox-input' },
@@ -510,7 +510,7 @@ export const COLLECTION_FAMILY_ADOPTERS: readonly StaticAdoptionAdopter[] = [
       {
         key: '[forComboboxContent]',
         channel: 'id',
-        source: 'core-overlay/src/overlay-controller/element-registry.ts',
+        source: 'core-anchored/src/overlay-controller/element-registry.ts',
         seam: 'adoptHostId',
         probe: 'probe-content',
         fallback: { generated: 'for-combobox-content' },
@@ -518,7 +518,7 @@ export const COLLECTION_FAMILY_ADOPTERS: readonly StaticAdoptionAdopter[] = [
       {
         key: '[forComboboxList]',
         channel: 'id',
-        source: 'core-overlay/src/overlay-controller/element-registry.ts',
+        source: 'core-anchored/src/overlay-controller/element-registry.ts',
         seam: 'adoptHostId',
         probe: 'probe-list',
         fallback: { generated: 'for-combobox-list' },

@@ -20,12 +20,12 @@ import {
   type VetoableEvent,
   type VetoableNativeEvent,
 } from 'forty-cdk/core';
+import { warnIfOpenWithoutContent } from 'forty-cdk/core-overlay';
 import {
   AnchoredOverlayPositioningBase,
   CloseReasonState,
   RootedTriggerSlot,
-  warnIfOpenWithoutContent,
-} from 'forty-cdk/core-overlay';
+} from 'forty-cdk/core-anchored';
 import {
   FOR_POPOVER_CONTEXT,
   type ForPopoverCloseReason,

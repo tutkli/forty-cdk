@@ -31,12 +31,13 @@ const angular = require('angular-eslint');
 
 /**
  * The entry points that ship forty-cdk's internal tier rather than a primitive:
- * `forty-cdk/core` and the overlay slice
- * [#1723](https://github.com/tutkli/forty-cdk/issues/1723) cut it into. Neither
- * is consumer-facing, so the rules below that key on "is this a primitive"
- * exempt both.
+ * `forty-cdk/core`, the overlay slice
+ * [#1723](https://github.com/tutkli/forty-cdk/issues/1723) cut it into, and the
+ * anchored slice [#2693](https://github.com/tutkli/forty-cdk/issues/2693) cut
+ * out of that. None is consumer-facing, so the rules below that key on "is this
+ * a primitive" exempt all three.
  */
-const INTERNAL_TIER_ENTRY_POINTS = new Set(['core', 'core-overlay']);
+const INTERNAL_TIER_ENTRY_POINTS = new Set(['core', 'core-overlay', 'core-anchored']);
 
 const NON_SHIPPING_LIBRARY_SOURCES = [
   '**/*.spec.ts',
@@ -1614,7 +1615,7 @@ const fortyCdkPlugin = {
     // marker cannot reach past intervening code to license a second, unrelated
     // `detectChanges()` a few lines below it). It exists because the un-drained
     // render is sometimes the *subject* of the test:
-    // `core-overlay/floating/floating.spec.ts` asserts that a config change re-arms the
+    // `core-anchored/floating/floating.spec.ts` asserts that a config change re-arms the
     // `clip-path` baseline at the retained stale position *before* the new
     // position resolves, which is observable only without the drain. Those three
     // sites are the whole ledger today.
@@ -2352,9 +2353,9 @@ const fortyCdkPlugin = {
         }
         // `_internal` and `test-utils` are not part of the public surface
         // contract; in the per-entry-point layout the former `_internal` is the
-        // internal tier (`core` plus `core-overlay`, whose barrels deliberately
-        // re-export internal helpers with no semver guarantee — `core-overlay`
-        // publishes `injectMenuContext` because `forty-cdk/menu`'s pieces reach
+        // internal tier (`core`, `core-overlay` and `core-anchored`, whose barrels
+        // deliberately re-export internal helpers with no semver guarantee —
+        // `core-anchored` publishes `injectMenuContext` because `forty-cdk/menu`'s pieces reach
         // it across an entry-point boundary), so both are exempt too.
         if (
           (perEntry && INTERNAL_TIER_ENTRY_POINTS.has(perEntry[1])) ||
@@ -2469,7 +2470,7 @@ const fortyCdkPlugin = {
     // The residual gap is deliberate and worth stating rather than assuming
     // closed: resolution does **not** follow a call into another file, so a
     // method on an injected collaborator stays opaque — the #1572 cycle itself
-    // lived in `core-overlay/menu-overlay/menu-opener-registry.ts`, one file away from
+    // lived in `core-anchored/menu-overlay/menu-opener-registry.ts`, one file away from
     // the trigger's effect, and would still slip through. Same-file, one level
     // is the version that stays a lint rule instead of becoming a type-aware
     // whole-program pass, and it catches the far more common in-file shape.

@@ -35,11 +35,12 @@ const CODE_PATTERN = /^FORCDK-[A-Z][A-Z0-9]*(?:-[A-Z][A-Z0-9]*)*-\d{3}$/;
 const LAYOUT_MODULE = 'core/src/errors/errors.ts';
 
 /**
- * The internal-tier entry points. Both declare `FORCDK-CORE-*` — the area is
- * the consumer-facing concern, and `forty-cdk/core-overlay` is no more a
- * concern a consumer imported from than `forty-cdk/core` is.
+ * The internal-tier entry points. All three declare `FORCDK-CORE-*` — the area
+ * is the consumer-facing concern, and neither `forty-cdk/core-overlay` nor
+ * `forty-cdk/core-anchored` is any more a concern a consumer imported from
+ * than `forty-cdk/core` is.
  */
-const INTERNAL_TIER: ReadonlySet<string> = new Set(['core', 'core-overlay']);
+const INTERNAL_TIER: ReadonlySet<string> = new Set(['core', 'core-overlay', 'core-anchored']);
 
 /**
  * Modules in the internal tier that report on behalf of a concern other than
@@ -55,7 +56,7 @@ const INTERNAL_TIER: ReadonlySet<string> = new Set(['core', 'core-overlay']);
 const CORE_CROSS_CONCERN: Readonly<Record<string, string>> = {
   'core-overlay/src/drawer-stack/drawer-stack.ts':
     'the drawer stack is drawer-only machinery that lives in core so nesting is coordinated app-wide',
-  'core-overlay/src/menu-overlay/menu-context.ts':
+  'core-anchored/src/menu-overlay/menu-context.ts':
     'the shared menu context backs every menu-family root, and a consumer reads it as `menu`',
 };
 

@@ -1,6 +1,6 @@
 import { entryPointOf, LIBRARY_CODE, SPEC_CODE } from '../test-utils/source-scan';
 
-const INTERNAL_TIER = new Set(['core', 'core-overlay']);
+const INTERNAL_TIER = new Set(['core', 'core-overlay', 'core-anchored']);
 
 const DECORATED_CLASS =
   /@(?:Directive|Component)\(\{([\s\S]*?)\n\}\)\s*\nexport\s+(?:abstract\s+)?class\s+(\w+)/g;

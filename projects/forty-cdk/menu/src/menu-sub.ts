@@ -21,11 +21,11 @@ import {
   type VetoableNativeEvent,
   type WritingDirection,
 } from 'forty-cdk/core';
+import { createDebouncedAction, warnIfOpenWithoutContent } from 'forty-cdk/core-overlay';
 import {
   type AnchoredPositioningSeedDefaults,
   attachPointerGrace,
   buildSubmenuGracePolygon,
-  createDebouncedAction,
   createMenuOverlay,
   MENU_OPENERS,
   type FloatingFallbackAxisSideDirection,
@@ -35,8 +35,7 @@ import {
   MenuOverlayHost,
   type Point,
   resolveGraceSide,
-  warnIfOpenWithoutContent,
-} from 'forty-cdk/core-overlay';
+} from 'forty-cdk/core-anchored';
 import { FOR_MENU_DEFAULTS } from 'forty-cdk/defaults';
 
 const openSubmenus = new WeakMap<ForMenuContext, ForMenuSub>();

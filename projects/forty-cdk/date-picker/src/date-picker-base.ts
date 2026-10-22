@@ -27,12 +27,12 @@ import {
   type WritingDirection,
 } from 'forty-cdk/core';
 import { type DateAdapter } from 'forty-cdk/date-adapter';
+import { warnIfOpenWithoutContent } from 'forty-cdk/core-overlay';
 import {
   AnchoredFormValueControlBase,
   anchorSlot,
   RootedTriggerSlot,
-  warnIfOpenWithoutContent,
-} from 'forty-cdk/core-overlay';
+} from 'forty-cdk/core-anchored';
 import { FOR_CALENDAR_CONTEXT, type ForCalendarContext } from 'forty-cdk/calendar';
 import { DATE_PICKER_TRIGGERS, type ForDatePickerContext } from './date-picker-context';
 

@@ -167,7 +167,7 @@ export interface ListboxOverlayContext<H extends ListboxOverlayOptionHandle, Foc
  * blessed surface a root publishes on `ctx.overlay` never carries them. Each primitive reads
  * its `ctx.overlay` at this type through its own internal context.
  *
- * Internal core tier — exported from `forty-cdk/core-overlay` for the library's
+ * Internal core tier — exported from `forty-cdk/core-anchored` for the library's
  * own entry points, with no semver guarantee.
  *
  * @typeParam H Primitive option-handle type.
@@ -202,7 +202,7 @@ export interface ListboxOverlayPieceContext<
  * stays in the root and is threaded through {@link ListboxOverlayControllerDeps}
  * callbacks where it must run as a side effect of a shared transition.
  *
- * Internal core tier — exported from `forty-cdk/core-overlay` for the library's
+ * Internal core tier — exported from `forty-cdk/core-anchored` for the library's
  * own entry points, with no semver guarantee.
  *
  * Construct it from a directive's field initializer, so the slot factories'

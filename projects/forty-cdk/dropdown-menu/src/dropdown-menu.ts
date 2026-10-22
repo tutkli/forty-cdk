@@ -6,6 +6,7 @@ import {
   type VetoableEvent,
   type VetoableNativeEvent,
 } from 'forty-cdk/core';
+import { warnIfOpenWithoutContent } from 'forty-cdk/core-overlay';
 import {
   type AnchoredPositioningOverride,
   type FloatingFallbackAxisSideDirection,
@@ -14,8 +15,7 @@ import {
   MenuOverlayHost,
   FOR_MENU_CONTEXT,
   type ForMenuContext,
-  warnIfOpenWithoutContent,
-} from 'forty-cdk/core-overlay';
+} from 'forty-cdk/core-anchored';
 import { FOR_DROPDOWN_MENU_DEFAULTS } from 'forty-cdk/defaults';
 
 /**

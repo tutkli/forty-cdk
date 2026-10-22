@@ -36,11 +36,8 @@ import {
   boundEntries,
   type Unset,
 } from 'forty-cdk/core';
-import {
-  AnchoredFormValueControlBase,
-  ListboxOverlayController,
-  warnIfOpenWithoutContent,
-} from 'forty-cdk/core-overlay';
+import { warnIfOpenWithoutContent } from 'forty-cdk/core-overlay';
+import { AnchoredFormValueControlBase, ListboxOverlayController } from 'forty-cdk/core-anchored';
 import {
   FOR_SELECT_CONTEXT,
   SELECT_TRIGGERS,

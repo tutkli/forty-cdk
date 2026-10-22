@@ -19,12 +19,12 @@ import { PRIMITIVE_DOCS } from './testing/doc-corpus';
  * grouped row (`side` / `align` / …) names every input it lists.
  */
 const BASE_PATH =
-  '/projects/forty-cdk/core-overlay/src/floating/anchored-overlay-positioning-base.ts';
+  '/projects/forty-cdk/core-anchored/src/floating/anchored-overlay-positioning-base.ts';
 const REGISTRY_PATH = '/projects/forty-cdk/src/lib/anchored-positioning-adopters.spec.ts';
 
 const SOURCES = {
   ...import.meta.glob(
-    '/projects/forty-cdk/core-overlay/src/floating/anchored-overlay-positioning-base.ts',
+    '/projects/forty-cdk/core-anchored/src/floating/anchored-overlay-positioning-base.ts',
     { query: '?raw', import: 'default', eager: true },
   ),
   ...import.meta.glob('/projects/forty-cdk/src/lib/anchored-positioning-adopters.spec.ts', {

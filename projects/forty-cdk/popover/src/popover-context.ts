@@ -7,7 +7,7 @@ import {
   unresolvedRootError,
   type VetoableNativeEvent,
 } from 'forty-cdk/core';
-import { type AnchoredPositioningContext, type RootedTriggerHandle } from 'forty-cdk/core-overlay';
+import { type AnchoredPositioningContext, type RootedTriggerHandle } from 'forty-cdk/core-anchored';
 
 /**
  * Why a popover requested close. `'tab'` is a Tab or Shift+Tab past either end of the content,

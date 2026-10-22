@@ -1,4 +1,4 @@
-import { type ForMenuContext, menuReturnFocusTarget } from 'forty-cdk/core-overlay';
+import { type ForMenuContext, menuReturnFocusTarget } from 'forty-cdk/core-anchored';
 
 /**
  * Handle Tab from inside a menu (regular item, checkbox / radio item, or a

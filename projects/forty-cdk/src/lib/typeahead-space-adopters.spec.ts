@@ -295,7 +295,7 @@ const CASES: readonly SpaceCase[] = [
   },
   {
     name: 'select, open option',
-    owner: 'core-overlay/src/listbox-overlay/listbox-overlay-controller.ts',
+    owner: 'core-anchored/src/listbox-overlay/listbox-overlay-controller.ts',
     host: SelectHost,
     letter: 'a',
     arm: async (r) => {
@@ -330,7 +330,7 @@ const CASES: readonly SpaceCase[] = [
   },
   {
     name: 'time-picker, open slot',
-    owner: 'core-overlay/src/listbox-overlay/listbox-overlay-controller.ts',
+    owner: 'core-anchored/src/listbox-overlay/listbox-overlay-controller.ts',
     host: TimePickerHost,
     letter: '0',
     arm: async (r) => {
@@ -365,7 +365,7 @@ const CASES: readonly SpaceCase[] = [
   },
   {
     name: 'menu, item',
-    owner: 'core-overlay/src/menu-overlay/menu-item-list.ts',
+    owner: 'core-anchored/src/menu-overlay/menu-item-list.ts',
     host: MenuHost,
     letter: 'a',
     arm: focusFirst,

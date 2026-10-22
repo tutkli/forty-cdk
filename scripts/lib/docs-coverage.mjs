@@ -58,6 +58,12 @@ export const COVERAGE_EXEMPTIONS = [
       'non-overlay bundles. Nothing in it is consumer-facing.',
   },
   {
+    slug: 'core-anchored',
+    reason:
+      'The internal tier for trigger-anchored overlays, split out of core-overlay in #2693 to keep ' +
+      'the positioning engine off modal-only bundles. Nothing in it is consumer-facing.',
+  },
+  {
     slug: 'internationalized-date',
     reason:
       'Two adapter values over an optional peer. The question a reader arrives with is which ' +

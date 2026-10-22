@@ -442,8 +442,8 @@ lone class member, a `providers: […]` array, a call on `this.` — which is ne
 `<!-- snippet: expect-error TS2305 -->` for a fence that makes its point by failing, which the gate
 then requires to fail with exactly the diagnostic codes the marker names, so a fence that starts
 failing for an unrelated reason (a dropped path alias, a typo in the specifier) is reported rather
-than counted. Whatever its marker, no fence imports from `forty-cdk/core` or
-`forty-cdk/core-overlay`: the gate names the public entry point that publishes the symbol instead.
+than counted. Whatever its marker, no fence imports from `forty-cdk/core`,
+`forty-cdk/core-overlay` or `forty-cdk/core-anchored`: the gate names the public entry point that publishes the symbol instead.
 A marker above anything other than a TypeScript fence is an error, so a stale one cannot linger,
 and the run reports how many fences carry each marker so a sweep can be reviewed.
 Prefer a fence that compiles: a snippet complete enough to paste is worth the two import lines.

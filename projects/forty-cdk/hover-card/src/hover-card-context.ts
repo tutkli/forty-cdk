@@ -7,7 +7,7 @@ import {
   type RootedHandle,
   unresolvedRootError,
 } from 'forty-cdk/core';
-import { type AnchoredPositioningContext, type Point } from 'forty-cdk/core-overlay';
+import { type AnchoredPositioningContext, type Point } from 'forty-cdk/core-anchored';
 
 /** Why an open / close was scheduled. */
 export type HoverCardScheduleReason = 'hover-trigger' | 'hover-content' | 'focus' | 'escape';

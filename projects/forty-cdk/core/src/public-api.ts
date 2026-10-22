@@ -15,10 +15,11 @@
  * dismissible-layer / inert-siblings / body-scroll-lock / drawer stacks, the
  * menu and listbox overlay controllers, the imperative manager core and the
  * hover-intent schedulers — is NOT here. It ships as
- * `forty-cdk/core-overlay`, whose barrel header records why
- * ([#1723](https://github.com/tutkli/forty-cdk/issues/1723)). The edge runs
- * one way only: that entry point imports this one, and nothing here may import
- * it back — a single reverse edge merges the two chunks and undoes the split.
+ * `forty-cdk/core-overlay` and `forty-cdk/core-anchored`, whose barrel
+ * headers record why ([#1723](https://github.com/tutkli/forty-cdk/issues/1723),
+ * [#2693](https://github.com/tutkli/forty-cdk/issues/2693)). The edges run one
+ * way only: those entry points import this one, and nothing here may import
+ * either back — a single reverse edge merges the chunks and undoes the split.
  *
  * THIS ENTRY POINT IS NOT PUBLIC. It carries no semver guarantees and is
  * exported only so forty-cdk's own entry points share one compiled module.
@@ -27,8 +28,9 @@
  * implementation surface refactorable without notice.
  *
  * Stability: this barrel is split into two tiers, and the boundary is
- * mechanical rather than advisory — and it spans `forty-cdk/core-overlay`'s
- * barrel too, which is why the gate reads both. The BLESSED tier is the
+ * mechanical rather than advisory — and it spans the `forty-cdk/core-overlay`
+ * and `forty-cdk/core-anchored` barrels too, which is why the gate reads all
+ * three. The BLESSED tier is the
  * curated set listed
  * in `scripts/lib/core-blessed-tier.mjs` — contract types and tokens the
  * library commits to, each published by exactly one public entry point
@@ -47,7 +49,8 @@
  * subclassing them is not a supported contract.
  *
  * Scope: this barrel lists only what actually crosses the entry point's
- * boundary — which now includes what `forty-cdk/core-overlay` reads, so a
+ * boundary — which now includes what `forty-cdk/core-overlay` and
+ * `forty-cdk/core-anchored` read, so a
  * symbol exported solely for that entry point (`injectFocusTrap`, the
  * `composed-tree` walkers, `MODAL_PEER_ATTRIBUTE`) belongs here. Modules
  * inside `core` import each other by relative path, so a

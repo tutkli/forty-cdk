@@ -4,7 +4,7 @@ import type {
   AnchoredPositioningSeedDefaults,
   FloatingAlign,
   FloatingSide,
-} from 'forty-cdk/core-overlay';
+} from 'forty-cdk/core-anchored';
 
 import { provideDefaults } from './defaults';
 import { SkipDelayCoordinator, provideSkipDelayScope } from './skip-delay';

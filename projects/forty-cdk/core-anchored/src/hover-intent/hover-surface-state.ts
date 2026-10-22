@@ -73,7 +73,7 @@ export interface HoverSurfaceState {
  * observed on is still the registered trigger, and `resetContent` clears the
  * content side when its element unmounts.
  *
- * Internal core tier — exported from `forty-cdk/core-overlay` for the
+ * Internal core tier — exported from `forty-cdk/core-anchored` for the
  * library's own entry points, with no semver guarantee.
  */
 export function createHoverSurfaceState(options: HoverSurfaceOptions): HoverSurfaceState {
