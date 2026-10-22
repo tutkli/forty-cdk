@@ -5,8 +5,8 @@ import { injectCalendarContext } from './calendar-context';
 
 /**
  * The year picker grid (`role="grid"`). Apply on a `<table>`. Labelled by the
- * `[forCalendarHeading]` via `aria-labelledby`. Exposes `rows()` — iterate
- * rows then cells, binding each cell's `year` to `[forCalendarYearCell]`.
+ * `[forCalendarHeading]` via `aria-labelledby` while one is mounted. Exposes
+ * `rows()` — iterate rows then cells, binding each cell's `year` to `[forCalendarYearCell]`.
  *
  * Shows an aligned block of `yearBlockSize` years in 3-column rows. Used when
  * `view === 'year'`.
@@ -24,7 +24,9 @@ import { injectCalendarContext } from './calendar-context';
 export class ForCalendarYearGrid {
   private readonly ctx = injectCalendarContext('ForCalendarYearGrid');
 
-  private readonly labelledBy = hostLabelledBy(() => this.ctx.headingId());
+  private readonly labelledBy = hostLabelledBy(() =>
+    this.ctx.hasHeading() ? this.ctx.headingId() : null,
+  );
 
   /** Rows of the year picker grid (3 columns) for the aligned block containing the visible year. */
   readonly rows = this.ctx.yearRows;

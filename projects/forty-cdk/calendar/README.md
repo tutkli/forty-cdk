@@ -393,7 +393,7 @@ The recommended path is `[forCalendarMonthSelect]` and `[forCalendarYearSelect]`
 
 The default window is **anchored to the current year** (not the visible year), so navigating far away never drops the current year off the list. Out-of-`[min, max]` entries have `disabled: true`, matching the `CalendarYearOption` shape. Both directives set the native `disabled` attribute on the `<select>` itself when the calendar is disabled.
 
-**Keep `[forCalendarHeading]` in the DOM.** The grid's `aria-labelledby` points at the heading's id. When dropdowns replace the visible heading, keep a visually-hidden `[forCalendarHeading]` so the grid stays named. Removing the heading entirely leaves `aria-labelledby` pointing at a missing element.
+**Keep `[forCalendarHeading]` in the DOM.** The grid's `aria-labelledby` points at the heading's id while a heading is mounted. When dropdowns replace the visible heading, keep a visually-hidden `[forCalendarHeading]` so the grid stays named. Without a heading the grids emit no `aria-labelledby` at all, so they are unnamed unless you name them: a static `aria-labelledby` pointing at your own title, or an `aria-label`, written on each grid.
 
 **Name each `<select>` yourself.** Neither directive names the element it sits on, and the heading names the grid, not the dropdowns. Without a name a screen reader announces only the value each one holds, so give each an `aria-label` as the snippet above does, or a `<label for>`.
 
@@ -582,7 +582,7 @@ Focus that crosses a month boundary re-pages the visible grid and keeps the focu
 Implements the [WAI-ARIA Grid pattern](https://www.w3.org/WAI/ARIA/apg/patterns/grid/).
 
 - **`role="grid"`** on the table, `columnheader` weekday headers and `gridcell` days follow the APG Date Picker Dialog technique over a real `<table>`.
-- **`aria-labelledby`** wires the grid to the heading so it names the visible period. Paging the month is announced through a dedicated off-screen `aria-live="polite"` region (owned by `[forCalendar]`), so the period is read on navigation without the heading double-announcing as both a live region and the grid's label.
+- **`aria-labelledby`** wires the grid to the heading so it names the visible period. It is emitted only while a `[forCalendarHeading]` is mounted, and a static `aria-labelledby` you write on the grid replaces it. Paging the month is announced through a dedicated off-screen `aria-live="polite"` region (owned by `[forCalendar]`), so the period is read on navigation without the heading double-announcing as both a live region and the grid's label.
 - **`aria-label`** on every cell carries the full localized date (e.g. `"Monday, June 15, 2026"`) so screen readers announce the whole date, not the bare day number that stays the cell's visible content. Outside-month padding days are suffixed (`" (outside month)"`) so they are distinguishable. Override the format via `ForCalendar`'s `dateLabel` input.
 - **`aria-selected`** is always emitted (`"true"` / `"false"`); **`aria-current="date"`** marks today; **`aria-disabled`** marks unavailable dates (truthy-only).
 - **`aria-multiselectable="true"`** is set on the day grid in `selectionMode="range"`, where a committed range selects several cells, and is absent in single mode.

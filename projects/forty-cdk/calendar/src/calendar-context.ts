@@ -158,7 +158,10 @@ export interface ForCalendarContext<D> {
   /** Whether the calendar is read-only (focusable, but selection is blocked). */
   readonly readonly: Signal<boolean>;
 
-  /** Stable id of the heading element, used for the grid's `aria-labelledby`. */
+  /**
+   * Stable id of the heading element, used for the grid's `aria-labelledby`
+   * while a `[forCalendarHeading]` is mounted.
+   */
   readonly headingId: Signal<string>;
   /** The visible month's accessible label, e.g. `"June 2026"`. */
   readonly visibleMonthLabel: Signal<string>;
@@ -330,6 +333,16 @@ export interface CalendarPieceContext<D> {
    * A no-op while the calendar is disabled.
    */
   activateDate(date: D): void;
+  /**
+   * Whether a `[forCalendarHeading]` is mounted. The grids reference
+   * {@link ForCalendarContext.headingId} through `aria-labelledby` only while it
+   * is, so a calendar without a heading ships no dangling id reference.
+   */
+  readonly hasHeading: Signal<boolean>;
+  /** Reported by `[forCalendarHeading]` at construction. */
+  registerHeading(): void;
+  /** Reported by `[forCalendarHeading]` when it is destroyed. */
+  unregisterHeading(): void;
 }
 
 /**

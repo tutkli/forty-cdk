@@ -5,8 +5,8 @@ import { injectCalendarContext } from './calendar-context';
 
 /**
  * The calendar's date table (`role="grid"`). Apply on a `<table>`. Labelled by
- * the `[forCalendarHeading]` via `aria-labelledby`, and reflects `aria-disabled`
- * / `aria-readonly` from the root. In `selectionMode="range"` it carries
+ * the `[forCalendarHeading]` via `aria-labelledby` while one is mounted, and
+ * reflects `aria-disabled` / `aria-readonly` from the root. In `selectionMode="range"` it carries
  * `aria-multiselectable="true"`, since a committed range selects several cells.
  *
  * Exposes the month's `weekDays()` (column headers) and `weeks()` (day rows)
@@ -25,7 +25,9 @@ import { injectCalendarContext } from './calendar-context';
 export class ForCalendarGrid {
   private readonly ctx = injectCalendarContext('ForCalendarGrid');
 
-  private readonly labelledBy = hostLabelledBy(() => this.ctx.headingId());
+  private readonly labelledBy = hostLabelledBy(() =>
+    this.ctx.hasHeading() ? this.ctx.headingId() : null,
+  );
 
   /** Weekday column headers for the visible month, starting at `firstDayOfWeek`. */
   readonly weekDays = this.ctx.weekDays;

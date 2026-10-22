@@ -404,6 +404,17 @@ export class ForCalendar<D> implements ForCalendarContext<D> {
   readonly #headingId = signal(this.#idGen.next('for-calendar-heading'));
   readonly headingId = this.#headingId.asReadonly();
 
+  readonly #headingCount = signal(0);
+  private readonly hasHeading = computed(() => this.#headingCount() > 0);
+
+  private registerHeading(): void {
+    this.#headingCount.update((count) => count + 1);
+  }
+
+  private unregisterHeading(): void {
+    this.#headingCount.update((count) => count - 1);
+  }
+
   /**
    * Adopts a consumer-set static `id` on the `[forCalendarHeading]` host into
    * `headingId` (the grid's `aria-labelledby` resolves to it) instead of

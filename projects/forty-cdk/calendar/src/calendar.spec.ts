@@ -498,6 +498,66 @@ class CalendarSelectDirectivesHost {
   readonly maxYear = signal<number | null>(2028);
 }
 
+@Component({
+  imports: [
+    ForCalendar,
+    ForCalendarHeading,
+    ForCalendarGrid,
+    ForCalendarMonthGrid,
+    ForCalendarYearGrid,
+  ],
+  providers: [...provideNativeDateAdapter()],
+  template: `
+    <div forCalendar [(value)]="value">
+      <table forCalendarGrid data-testid="day-grid"></table>
+      <table forCalendarMonthGrid data-testid="month-grid"></table>
+      <table forCalendarYearGrid data-testid="year-grid"></table>
+      @if (showHeading()) {
+        <h2 forCalendarHeading #heading="forCalendarHeading" data-testid="heading">
+          {{ heading.label() }}
+        </h2>
+      }
+    </div>
+  `,
+})
+class OptionalHeadingHost {
+  readonly value = signal<Date | null>(new Date(2026, 5, 15));
+  readonly showHeading = signal(false);
+}
+
+@Component({
+  imports: [ForCalendar, ForCalendarHeading, ForCalendarGrid],
+  providers: [...provideNativeDateAdapter()],
+  template: `
+    <div forCalendar [(value)]="value">
+      <table forCalendarGrid data-testid="day-grid"></table>
+      @if (showHeading()) {
+        <h2 forCalendarHeading data-testid="heading">June 2026</h2>
+      }
+    </div>
+  `,
+})
+class HeadingAfterGridHost {
+  readonly value = signal<Date | null>(new Date(2026, 5, 15));
+  readonly showHeading = signal(true);
+}
+
+@Component({
+  imports: [ForCalendar, ForCalendarGrid, ForCalendarMonthGrid, ForCalendarYearGrid],
+  providers: [...provideNativeDateAdapter()],
+  template: `
+    <p id="external-name">Pick a date</p>
+    <div forCalendar [(value)]="value">
+      <table forCalendarGrid aria-labelledby="external-name" data-testid="day-grid"></table>
+      <table forCalendarMonthGrid aria-label="Months" data-testid="month-grid"></table>
+      <table forCalendarYearGrid aria-labelledby="external-name" data-testid="year-grid"></table>
+    </div>
+  `,
+})
+class HeadinglessNamedGridsHost {
+  readonly value = signal<Date | null>(new Date(2026, 5, 15));
+}
+
 const root = (r: RenderResult<unknown>) => r.query('[forCalendar]')!;
 const cell = (r: RenderResult<unknown>, date: Date) =>
   r.query(`[data-testid="cell-${keyOf(date)}"]`)!;
@@ -528,6 +588,59 @@ describe('ForCalendar', () => {
       expect(heading.id).toBeTruthy();
       expect(grid.getAttribute('aria-labelledby')).toBe(heading.id);
       expect(heading.textContent).toContain('2026');
+    });
+
+    describe('grid naming without a heading', () => {
+      const grids = ['day-grid', 'month-grid', 'year-grid'] as const;
+
+      it.each(grids)('leaves the %s without aria-labelledby when no heading is mounted', (id) => {
+        const r = renderHost(OptionalHeadingHost);
+        expect(r.query(`[data-testid="${id}"]`)!.hasAttribute('aria-labelledby')).toBe(false);
+      });
+
+      it('keeps a consumer static aria-labelledby or aria-label on a headingless grid', () => {
+        const r = renderHost(HeadinglessNamedGridsHost);
+        const day = r.query('[data-testid="day-grid"]')!;
+        const month = r.query('[data-testid="month-grid"]')!;
+        const year = r.query('[data-testid="year-grid"]')!;
+
+        expect(day.getAttribute('aria-labelledby')).toBe('external-name');
+        expect(year.getAttribute('aria-labelledby')).toBe('external-name');
+        expect(month.hasAttribute('aria-labelledby')).toBe(false);
+        expect(month.getAttribute('aria-label')).toBe('Months');
+      });
+
+      it('pairs the grid with a heading declared after it from the first render', async () => {
+        const r = renderHost(HeadingAfterGridHost);
+        await r.flush();
+
+        const heading = r.query('[data-testid="heading"]')!;
+        expect(heading.id).toBeTruthy();
+        expect(r.query('[data-testid="day-grid"]')!.getAttribute('aria-labelledby')).toBe(
+          heading.id,
+        );
+      });
+
+      it('pairs every grid with a heading mounted after it, and drops the pairing when it leaves', async () => {
+        const r = renderHost(OptionalHeadingHost);
+        r.instance.showHeading.set(true);
+        await r.flush();
+
+        const heading = r.query('[data-testid="heading"]')!;
+        expect(heading.id).toBeTruthy();
+        for (const id of grids) {
+          expect(r.query(`[data-testid="${id}"]`)!.getAttribute('aria-labelledby')).toBe(
+            heading.id,
+          );
+        }
+
+        r.instance.showHeading.set(false);
+        await r.flush();
+
+        for (const id of grids) {
+          expect(r.query(`[data-testid="${id}"]`)!.hasAttribute('aria-labelledby')).toBe(false);
+        }
+      });
     });
 
     it('reflects role="rowgroup" on the grid header', () => {
