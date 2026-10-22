@@ -1,4 +1,4 @@
-import { computed, linkedSignal, signal, type Signal, untracked } from '@angular/core';
+import { computed, linkedSignal, signal, type Signal } from '@angular/core';
 
 import { type ListNavigationAction, moveIndex } from '../keyboard-navigation/keyboard-navigation';
 import { resolveListTypeahead } from '../typeahead/list-typeahead';
@@ -181,11 +181,11 @@ export class VirtualizedNavigator<H, E extends VirtualizedNavigatorEntry> {
    * parent move — all targeting enabled positions in practice) settles on the
    * resolved item as before.
    */
-  readonly #pendingActivePos = signal<{
+  #pendingActivePos: {
     pos: number;
     action: ListNavigationAction;
     continueOnDisabled: boolean;
-  } | null>(null);
+  } | null = null;
 
   constructor(
     deps: VirtualizedNavigatorDeps<H>,
@@ -273,13 +273,13 @@ export class VirtualizedNavigator<H, E extends VirtualizedNavigatorEntry> {
    * resolved (or continued), `false` otherwise.
    *
    * Called from the root's bridge effect, whose documented reactive trigger
-   * is `items()`. The pending slot is read **untracked**: this method writes it
-   * back to `null` on a successful resolve, and tracking the read would make
-   * that write re-invalidate the calling effect — a self-invalidation that
+   * is `items()`. The pending slot is a plain field, not a signal: this method
+   * writes it back to `null` on a successful resolve, and a tracked slot would
+   * make that write re-invalidate the calling effect — a self-invalidation that
    * double-runs the prime / fold pass in every consuming primitive.
    */
   tryResolvePending(): boolean {
-    const pending = untracked(this.#pendingActivePos);
+    const pending = this.#pendingActivePos;
     if (pending === null) {
       return false;
     }
@@ -288,12 +288,12 @@ export class VirtualizedNavigator<H, E extends VirtualizedNavigatorEntry> {
       return false;
     }
     if (pending.continueOnDisabled && this.#accessors.readEntry(match)?.disabled === true) {
-      this.#pendingActivePos.set(null);
+      this.#pendingActivePos = null;
       this.#moveFrom(pending.pos, this.#continuationDirection(pending.action));
       return true;
     }
     this.#deps.setActiveId(this.#accessors.idOf(match));
-    this.#pendingActivePos.set(null);
+    this.#pendingActivePos = null;
     this.#scrollIntoView(this.#accessors.hostOf(match));
     return true;
   }
@@ -398,7 +398,7 @@ export class VirtualizedNavigator<H, E extends VirtualizedNavigatorEntry> {
     if (this.#seedIfRendered(index)) {
       return;
     }
-    this.#pendingActivePos.set({ pos: index, action: 'next', continueOnDisabled: false });
+    this.#pendingActivePos = { pos: index, action: 'next', continueOnDisabled: false };
     this.#deps.emitScrollToIndex(index);
   }
 
@@ -441,7 +441,7 @@ export class VirtualizedNavigator<H, E extends VirtualizedNavigatorEntry> {
 
   /** Clear any pending navigation (called by the root on close). */
   resetPending(): void {
-    this.#pendingActivePos.set(null);
+    this.#pendingActivePos = null;
   }
 
   /**
@@ -466,7 +466,7 @@ export class VirtualizedNavigator<H, E extends VirtualizedNavigatorEntry> {
     if (this.#seedIfRendered(next)) {
       return;
     }
-    this.#pendingActivePos.set({ pos: next, action, continueOnDisabled: true });
+    this.#pendingActivePos = { pos: next, action, continueOnDisabled: true };
     this.#deps.emitScrollToIndex(next);
   }
 
@@ -489,7 +489,7 @@ export class VirtualizedNavigator<H, E extends VirtualizedNavigatorEntry> {
     if (inRange) {
       const live = this.#deps.items().find((it) => this.#accessors.posOf(it) === index);
       if (live) {
-        this.#pendingActivePos.set(null);
+        this.#pendingActivePos = null;
         this.#deps.setActiveId(this.#accessors.idOf(live));
         this.#scrollIntoView(this.#accessors.hostOf(live));
         return true;

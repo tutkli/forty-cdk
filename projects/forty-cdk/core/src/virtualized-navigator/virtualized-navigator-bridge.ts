@@ -47,8 +47,10 @@ export interface VirtualizedNavigatorBridgeDeps<N extends VirtualizedNavigatorBr
  * sanctioned-pull marker naming `navigator-position-map` (spelled out only at
  * the marker itself, so the library's grep ledger stays exact), and any write
  * sharing that effect must already track `items` / `totalCount` / the data
- * version — the pull drags those in. The lint bans the pair outright rather
- * than judging that overlap; Combobox's bridge is the one place it holds.
+ * version — the pull drags those in. The resolve's own activedescendant write
+ * is such a write: the lint bans the pair outright rather than judging that
+ * overlap, and this one passes only because it sits one file away, so every
+ * bridge effect relies on the overlap argument the conventions spell out.
  *
  * Internal core tier — exported from `forty-cdk/core` for the library's own
  * entry points, with no semver guarantee.

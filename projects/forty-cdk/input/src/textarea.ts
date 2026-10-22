@@ -1,8 +1,8 @@
 import { isPlatformBrowser } from '@angular/common';
 import {
+  afterRenderEffect,
   booleanAttribute,
   Directive,
-  effect,
   ElementRef,
   inject,
   input,
@@ -105,23 +105,29 @@ export class ForTextarea extends TextValueControlBase implements FormValueContro
   constructor() {
     super();
 
+    if (!this.#isBrowser) {
+      return;
+    }
+    const el = this.#element.nativeElement;
     // @sanctioned-effect(external-source): `#overflowing` mirrors the element's
     // measured scroll and client heights, and the effect never reads it.
-    effect(() => {
-      const el = this.#element.nativeElement;
-      this.value();
-      this.#box();
-      if (!this.#isBrowser) {
-        return;
-      }
-      if (this.autosize()) {
-        this.#resizeToContent(el);
-        this.#sized = true;
-      } else if (this.#sized) {
-        el.style.height = '';
-        this.#sized = false;
-      }
-      this.#overflowing.set(el.scrollHeight - el.clientHeight > 1);
+    afterRenderEffect({
+      write: () => {
+        this.value();
+        this.#box();
+        if (this.autosize()) {
+          this.#resizeToContent(el);
+          this.#sized = true;
+        } else if (this.#sized) {
+          el.style.height = '';
+          this.#sized = false;
+        }
+        return {};
+      },
+      read: (written) => {
+        written();
+        this.#overflowing.set(el.scrollHeight - el.clientHeight > 1);
+      },
     });
   }
 

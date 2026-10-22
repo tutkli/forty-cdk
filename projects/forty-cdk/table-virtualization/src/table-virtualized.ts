@@ -142,8 +142,6 @@ export class ForTableVirtualized {
       this.#registration.registerVirtualNavigation(null);
       this.#registration.registerVirtualWindow(null);
     });
-    // @sanctioned-effect(untracked-read): `tryResolvePending` reads its pending slot through
-    // `untracked`, so its write to that slot cannot re-run this effect.
     effect(() => {
       this.#registration.rows();
       this.#navigator.tryResolvePending();

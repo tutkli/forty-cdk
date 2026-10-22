@@ -1,4 +1,4 @@
-import { signal, untracked, type Signal } from '@angular/core';
+import { untracked, type Signal } from '@angular/core';
 
 import { type ForTableRowHandle } from 'forty-cdk/core';
 
@@ -96,7 +96,7 @@ export interface TableVirtualizedNavigatorDeps {
 export class TableVirtualizedNavigator {
   readonly #deps: TableVirtualizedNavigatorDeps;
 
-  readonly #pending = signal<PendingTarget | null>(null);
+  #pending: PendingTarget | null = null;
 
   constructor(deps: TableVirtualizedNavigatorDeps) {
     this.#deps = deps;
@@ -145,13 +145,12 @@ export class TableVirtualizedNavigator {
    * `true` when a pending request was resolved, `false` otherwise. Called from
    * the companion's bridge effect whenever the rendered rows change.
    *
-   * The pending slot is read untracked and the scroll and focus moves run
-   * untracked: this method writes the slot and moves DOM focus, and tracking
-   * either would re-invalidate the calling effect, whose trigger is the rows and
-   * their cells.
+   * The pending slot is a plain field and the scroll and focus moves run
+   * untracked, so nothing this method reads or writes can re-invalidate the
+   * calling effect, whose trigger is the rows and their cells.
    */
   tryResolvePending(): boolean {
-    const pending = untracked(this.#pending);
+    const pending = this.#pending;
     if (pending === null) {
       return false;
     }
@@ -165,7 +164,7 @@ export class TableVirtualizedNavigator {
    * when a far page later mounts.
    */
   clearPending(): void {
-    this.#pending.set(null);
+    this.#pending = null;
   }
 
   #resolve(row: number, col: number, direction: 1 | -1): boolean {
@@ -180,25 +179,25 @@ export class TableVirtualizedNavigator {
     while (target >= 0 && target < bound) {
       const result = this.#probeCell(target, col);
       if (result === 'focused') {
-        this.#pending.set(null);
+        this.#pending = null;
         return true;
       }
       if (result === 'unmounted') {
-        const current = untracked(this.#pending);
+        const current = this.#pending;
         const unchanged =
           current !== null &&
           current.row === target &&
           current.col === col &&
           current.direction === dir;
         if (!unchanged) {
-          this.#pending.set({ row: target, col, direction: dir });
+          this.#pending = { row: target, col, direction: dir };
           untracked(() => this.#deps.scrollToRow(target));
         }
         return false;
       }
       target += dir;
     }
-    this.#pending.set(null);
+    this.#pending = null;
     return direction === -1 && target < 0 ? this.#focusHeaderRow(col) : false;
   }
 
