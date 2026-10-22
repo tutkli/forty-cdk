@@ -15,7 +15,7 @@ import {
   type ListboxOverlayContext,
   type ListboxOverlayPieceContext,
   type RootedTriggerHandle,
-} from 'forty-cdk/core-overlay';
+} from 'forty-cdk/core-anchored';
 import type { ForTimeSlot, TimePickerGranularity } from './build-time-slots';
 
 /**

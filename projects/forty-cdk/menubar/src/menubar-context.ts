@@ -13,7 +13,7 @@ import {
   type FloatingSide,
   type MenuActivationModality,
   type MenuSiblingNavigator,
-} from 'forty-cdk/core-overlay';
+} from 'forty-cdk/core-anchored';
 
 /**
  * Per-trigger configuration that the menubar root reads when its menu is the

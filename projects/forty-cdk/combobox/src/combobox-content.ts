@@ -12,11 +12,8 @@ import {
   FOR_FIELD_ANCHOR_CONTEXT,
   FOR_FIELD_CONTEXT,
 } from 'forty-cdk/core';
-import {
-  injectOverlayShell,
-  type OverlayShellConfig,
-  warnIfMountedWhileClosed,
-} from 'forty-cdk/core-overlay';
+import { warnIfMountedWhileClosed } from 'forty-cdk/core-overlay';
+import { injectOverlayShell, type OverlayShellConfig } from 'forty-cdk/core-anchored';
 import { injectComboboxContext } from './combobox-context';
 
 /**

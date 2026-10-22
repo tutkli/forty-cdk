@@ -5,7 +5,7 @@ import type { ReferenceElement } from '@floating-ui/dom';
 import { pressKey } from 'forty-cdk/testing';
 
 import { flush, nextMacrotask, renderHost } from '../../../src/test-utils';
-import { type InertSiblingsHandle, InertSiblingsStack } from '../inert-siblings/inert-siblings';
+import { type InertSiblingsHandle, InertSiblingsStack } from 'forty-cdk/core-overlay';
 import { injectOverlayShell, type OverlayShellConfig } from './overlay-shell';
 
 /**

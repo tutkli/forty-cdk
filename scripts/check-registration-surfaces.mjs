@@ -9,7 +9,7 @@ import { repoRoot } from './lib/repo-path.mjs';
 
 const TYPES_DIR = join(repoRoot, 'dist', 'forty-cdk', 'types');
 const PROJECT_DIR = join(repoRoot, 'projects', 'forty-cdk');
-const INTERNAL_TIER_ENTRIES = new Set(['core', 'core-overlay']);
+const INTERNAL_TIER_ENTRIES = new Set(['core', 'core-overlay', 'core-anchored']);
 
 if (!existsSync(TYPES_DIR)) {
   console.error(`[check-registration-surfaces] ${TYPES_DIR} not found — run \`pnpm build\` first.`);

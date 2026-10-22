@@ -8,12 +8,8 @@ import {
   FOR_FIELD_CONTEXT,
   registerHandle,
 } from 'forty-cdk/core';
-import {
-  toFloatingPositioner,
-  injectOverlayShell,
-  warnIfDialogUnnamed,
-  warnIfMountedWhileClosed,
-} from 'forty-cdk/core-overlay';
+import { warnIfDialogUnnamed, warnIfMountedWhileClosed } from 'forty-cdk/core-overlay';
+import { toFloatingPositioner, injectOverlayShell } from 'forty-cdk/core-anchored';
 import { injectPopoverContext } from './popover-context';
 
 /**

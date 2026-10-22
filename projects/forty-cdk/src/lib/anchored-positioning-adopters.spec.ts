@@ -74,7 +74,7 @@ import { LIBRARY_CODE } from '../test-utils/source-scan';
  * state. What the positioner then does with a resolved placement
  * (`data-side` / `data-align` / the `--for-floating-*` properties) is asserted
  * over the positioner itself in
- * `core-overlay/src/floating/floating.spec.ts`, and end to end through the DOM
+ * `core-anchored/src/floating/floating.spec.ts`, and end to end through the DOM
  * in the popover / tooltip / hover-card suites; the wiring in between is the
  * source claim the last case here makes over every `kind: 'floating'` block in
  * the library.
@@ -206,7 +206,7 @@ const REGISTRY: readonly AnchoredRootEntry[] = [
  * would keep it out with nothing red.
  */
 const EXCLUSIONS: Readonly<Record<string, string>> = {
-  'core-overlay/src/menu-overlay/menu-overlay-host.ts':
+  'core-anchored/src/menu-overlay/menu-overlay-host.ts':
     'abstract base the four menu roots extend to inherit the block — not itself mountable',
   'date-picker/src/date-picker-base.ts':
     'abstract base [forDatePicker] / [forDateRangePicker] extend — not itself mountable',
@@ -264,14 +264,14 @@ const DECLARES_ARROW_REGISTRY = /\bregisterArrow\(/;
  * `toFloatingPositioner` helper fails until it is removed.
  *
  * Five of the six are hand-built. `toFloatingPositioner`
- * (`core-overlay/src/floating/anchored-positioning-inputs.ts`) is the shared
+ * (`core-anchored/src/floating/anchored-positioning-inputs.ts`) is the shared
  * one, and it covers the three roots with no collection — Popover, Tooltip and
  * HoverCard — so the five content directives below each spell the same thirteen
  * fields themselves.
  */
 const FLOATING_POSITIONER_SITES: readonly string[] = [
   'combobox/src/combobox-content.ts',
-  'core-overlay/src/floating/anchored-positioning-inputs.ts',
+  'core-anchored/src/floating/anchored-positioning-inputs.ts',
   'date-picker/src/date-picker-content.ts',
   'menu/src/menu-content.ts',
   'select/src/select-content.ts',

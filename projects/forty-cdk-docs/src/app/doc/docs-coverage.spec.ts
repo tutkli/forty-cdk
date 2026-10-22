@@ -209,10 +209,11 @@ describe('the exemption list', () => {
 describe('the library as it stands', () => {
   const documents = new Map(PRIMITIVE_DOCS.map((doc) => [doc.slug, compile(doc)]));
 
-  it('exempts exactly the three entry points someone argued for', () => {
+  it('exempts exactly the four entry points someone argued for', () => {
     expect(COVERAGE_EXEMPTIONS.map((exemption) => exemption.slug)).toEqual([
       'core',
       'core-overlay',
+      'core-anchored',
       'internationalized-date',
     ]);
   });

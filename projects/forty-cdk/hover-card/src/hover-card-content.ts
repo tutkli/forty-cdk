@@ -1,11 +1,8 @@
 import { DestroyRef, Directive, DOCUMENT, ElementRef, inject } from '@angular/core';
 
 import { composedContains, resolveActiveElement } from 'forty-cdk/core';
-import {
-  toFloatingPositioner,
-  injectOverlayShell,
-  warnIfMountedWhileClosed,
-} from 'forty-cdk/core-overlay';
+import { warnIfMountedWhileClosed } from 'forty-cdk/core-overlay';
+import { toFloatingPositioner, injectOverlayShell } from 'forty-cdk/core-anchored';
 import { injectHoverCardContext } from './hover-card-context';
 
 /**

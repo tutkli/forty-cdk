@@ -23,7 +23,7 @@ import {
   injectMenuContext,
   MENU_OPENERS,
   type MenuActivationModality,
-} from 'forty-cdk/core-overlay';
+} from 'forty-cdk/core-anchored';
 import { createMenuItemInteraction } from './menu-item-interaction';
 import { handleMenuTabOut } from './menu-tab-out';
 

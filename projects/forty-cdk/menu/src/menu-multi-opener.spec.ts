@@ -4,7 +4,7 @@ import { By } from '@angular/platform-browser';
 
 import { ForContextMenuTrigger } from 'forty-cdk/context-menu';
 import type { VetoableNativeEvent } from 'forty-cdk/core';
-import type { MenuOpenerPositioning } from 'forty-cdk/core-overlay';
+import type { MenuOpenerPositioning } from 'forty-cdk/core-anchored';
 import { provideForMenuDefaults } from 'forty-cdk/defaults';
 import { ForDropdownMenu, ForDropdownMenuTrigger } from 'forty-cdk/dropdown-menu';
 import { pressKey } from 'forty-cdk/testing';

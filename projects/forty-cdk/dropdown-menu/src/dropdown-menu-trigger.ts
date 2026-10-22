@@ -25,7 +25,7 @@ import {
   type MenuOpenerHandle,
   type MenuOpenerPositioning,
   releaseMenuOpener,
-} from 'forty-cdk/core-overlay';
+} from 'forty-cdk/core-anchored';
 
 /**
  * Resolves the trigger's menu root: the explicit reference when the

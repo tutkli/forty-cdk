@@ -18,6 +18,7 @@ import {
   injectPrefersReducedMotion,
   type VetoableNativeEvent,
 } from 'forty-cdk/core';
+import { warnIfOpenWithoutContent } from 'forty-cdk/core-overlay';
 import {
   AnchoredOverlayPositioningBase,
   forceCloseWhenDisabled,
@@ -29,8 +30,7 @@ import {
   RootedTriggerSlot,
   ScrollDismissDispatcher,
   type ScrollDismissRegistration,
-  warnIfOpenWithoutContent,
-} from 'forty-cdk/core-overlay';
+} from 'forty-cdk/core-anchored';
 import {
   FOR_TOOLTIP_CONTEXT,
   type ForTooltipContext,

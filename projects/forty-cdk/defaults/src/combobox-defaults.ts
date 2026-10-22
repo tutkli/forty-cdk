@@ -1,7 +1,7 @@
 import { InjectionToken, type Provider } from '@angular/core';
 
 import type { LocalizableText } from 'forty-cdk/core';
-import type { FloatingAlign, FloatingSide } from 'forty-cdk/core-overlay';
+import type { FloatingAlign, FloatingSide } from 'forty-cdk/core-anchored';
 
 import { provideDefaults } from './defaults';
 

@@ -66,7 +66,7 @@ import type { Signal } from '@angular/core';
  * What the contract deliberately does not own is what the positioner then
  * *does* with the resolved placement — `data-side` / `data-align` / the
  * `--for-floating-*` properties are asserted over the positioner itself in
- * `core-overlay/src/floating/floating.spec.ts`, and the wiring in between (each
+ * `core-anchored/src/floating/floating.spec.ts`, and the wiring in between (each
  * content directive forwarding the nine effective computeds into
  * `injectOverlayShell`) is a source claim the adopter roster makes over every
  * `kind: 'floating'` block in the library. Re-running the positioner's own

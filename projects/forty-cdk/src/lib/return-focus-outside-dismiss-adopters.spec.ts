@@ -313,7 +313,7 @@ describe('return focus after an outside close', () => {
   }
 });
 
-const SHELL = 'core-overlay/src/overlay-controller/overlay-shell.ts';
+const SHELL = 'core-anchored/src/overlay-controller/overlay-shell.ts';
 const OUTSIDE_REASON = /'(?:pointerDownOutside|focusOutside)'/;
 
 const PROPAGATED_OUTSIDE_CLOSE: Readonly<Record<string, { source: string; propagates: RegExp }>> = {

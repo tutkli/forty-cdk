@@ -58,7 +58,7 @@ export interface HoverIntentScheduler {
  * directive constructs it once (after its `open` signal exists) and delegates
  * its public scheduling methods to the returned handle.
  *
- * Internal core tier — exported from `forty-cdk/core-overlay` for the
+ * Internal core tier — exported from `forty-cdk/core-anchored` for the
  * library's own entry points, with no semver guarantee.
  */
 export function createHoverIntent(options: HoverIntentOptions): HoverIntentScheduler {

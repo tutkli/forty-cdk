@@ -42,8 +42,8 @@ export type {
   MenuOpenerPositioning,
   MenuSiblingNavigator,
   Point,
-} from 'forty-cdk/core-overlay';
-export { FOR_MENU_CONTEXT } from 'forty-cdk/core-overlay';
+} from 'forty-cdk/core-anchored';
+export { FOR_MENU_CONTEXT } from 'forty-cdk/core-anchored';
 export type { DateAdapter, TimeCapableDateAdapter } from 'forty-cdk/date-adapter';
 export {
   FOR_DATE_ADAPTER,

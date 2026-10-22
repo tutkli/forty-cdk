@@ -39,11 +39,8 @@ import {
   type Unset,
 } from 'forty-cdk/core';
 import { type TimeCapableDateAdapter } from 'forty-cdk/date-adapter';
-import {
-  AnchoredFormValueControlBase,
-  ListboxOverlayController,
-  warnIfOpenWithoutContent,
-} from 'forty-cdk/core-overlay';
+import { warnIfOpenWithoutContent } from 'forty-cdk/core-overlay';
+import { AnchoredFormValueControlBase, ListboxOverlayController } from 'forty-cdk/core-anchored';
 import {
   buildTimeSlots,
   selectedSlotSeconds,

@@ -3,7 +3,11 @@ import { join } from 'node:path';
 
 import ts from 'typescript';
 
-export const INTERNAL_TIER_FILES = new Set(['forty-cdk-core.d.ts', 'forty-cdk-core-overlay.d.ts']);
+export const INTERNAL_TIER_FILES = new Set([
+  'forty-cdk-core.d.ts',
+  'forty-cdk-core-overlay.d.ts',
+  'forty-cdk-core-anchored.d.ts',
+]);
 
 export const ROOT_FILE = 'forty-cdk.d.ts';
 

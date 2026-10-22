@@ -14,7 +14,7 @@ import {
   preventPointerFocus,
   type VetoableEvent,
 } from 'forty-cdk/core';
-import { injectMenuContext } from 'forty-cdk/core-overlay';
+import { injectMenuContext } from 'forty-cdk/core-anchored';
 import { createMenuItemInteraction } from './menu-item-interaction';
 import { injectMenuRadioGroupContext } from './menu-radio-group-context';
 

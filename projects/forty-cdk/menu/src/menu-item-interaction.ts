@@ -6,7 +6,7 @@ import {
   registerHandle,
   resolveListNavigation,
 } from 'forty-cdk/core';
-import { type ForMenuContext } from 'forty-cdk/core-overlay';
+import { type ForMenuContext } from 'forty-cdk/core-anchored';
 import { handleMenuHorizontalArrow } from './menu-horizontal-arrow';
 import { handleMenuTabOut } from './menu-tab-out';
 

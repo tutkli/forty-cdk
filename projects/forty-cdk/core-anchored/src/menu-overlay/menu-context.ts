@@ -8,7 +8,7 @@ import {
   type VetoableNativeEvent,
   type WritingDirection,
 } from 'forty-cdk/core';
-import type { DismissibleLayerNesting } from '../dismissible-layer/dismissible-layer';
+import type { DismissibleLayerNesting } from 'forty-cdk/core-overlay';
 import type {
   FloatingAlign,
   FloatingFallbackAxisSideDirection,

@@ -21,13 +21,14 @@ const FOCUSABILITY = [
   'type',
 ];
 const EDGE_CONSUMERS = [
-  'core-overlay/src/overlay-controller/overlay-shell.ts',
+  'core-anchored/src/overlay-controller/overlay-shell.ts',
   'core/src/focus-trap/focus-trap.ts',
 ];
 
 function modelOwners(): ReadonlyArray<readonly [string, string]> {
   return [...LIBRARY_CODE].filter(
-    ([path]) => path !== MODEL && ['core', 'core-overlay'].includes(entryPointOf(path)),
+    ([path]) =>
+      path !== MODEL && ['core', 'core-overlay', 'core-anchored'].includes(entryPointOf(path)),
   );
 }
 

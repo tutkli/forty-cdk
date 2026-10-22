@@ -14,7 +14,7 @@ import {
   type VirtualizedResume,
   type WritingDirection,
 } from 'forty-cdk/core';
-import { type FloatingAlign, type FloatingSide } from 'forty-cdk/core-overlay';
+import { type FloatingAlign, type FloatingSide } from 'forty-cdk/core-anchored';
 import { type ForComboboxOpenHighlight } from 'forty-cdk/defaults';
 import type { ComboboxVirtualizedNavigator } from './combobox-virtualized-navigator';
 

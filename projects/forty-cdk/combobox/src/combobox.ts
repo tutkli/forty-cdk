@@ -33,14 +33,14 @@ import {
   type WritingDirection,
   type Unset,
 } from 'forty-cdk/core';
+import { warnIfOpenWithoutContent } from 'forty-cdk/core-overlay';
 import {
   AnchoredFormValueControlBase,
   type AnchoredPositioningSeedDefaults,
   anchorSlot,
   injectIdentifiedSlot,
   OverlayController,
-  warnIfOpenWithoutContent,
-} from 'forty-cdk/core-overlay';
+} from 'forty-cdk/core-anchored';
 import { createActiveIdSignal, revealAutoHighlight } from './combobox-auto-highlight';
 import {
   COMBOBOX_TRIGGERS,

@@ -12,7 +12,7 @@ import {
   type FloatingAlign,
   type FloatingSide,
   type RootedTriggerHandle,
-} from 'forty-cdk/core-overlay';
+} from 'forty-cdk/core-anchored';
 
 /**
  * How a `[forDatePicker]` is composed. `'trigger'`: the trigger is the control

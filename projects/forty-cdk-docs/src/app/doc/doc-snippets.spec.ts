@@ -229,11 +229,16 @@ describe('internalTierImportsOf', () => {
     ]);
   });
 
-  it('reports forty-cdk/core-overlay too, and a symbol no entry point publishes as internal', () => {
+  it('reports forty-cdk/core-overlay and forty-cdk/core-anchored too, and a symbol no entry point publishes as internal', () => {
     const problems = internalTierImportsOf(
-      snippet('compile', "import { injectOverlayShell } from 'forty-cdk/core-overlay';"),
+      snippet(
+        'compile',
+        "import { injectModalShell } from 'forty-cdk/core-overlay';",
+        "import { injectOverlayShell } from 'forty-cdk/core-anchored';",
+      ),
     );
     expect(problems.map((problem) => problem.message)).toEqual([
+      expect.stringContaining('injectModalShell is internal by design'),
       expect.stringContaining('injectOverlayShell is internal by design'),
     ]);
   });

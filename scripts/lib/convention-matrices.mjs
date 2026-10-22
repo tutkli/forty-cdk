@@ -4,12 +4,12 @@ import { join } from 'node:path';
 import { repoRoot } from './repo-path.mjs';
 
 const LIB_DIR = join(repoRoot, 'projects', 'forty-cdk');
-const CORE_ENTRY_POINTS = ['core', 'core-overlay'];
+const CORE_ENTRY_POINTS = ['core', 'core-overlay', 'core-anchored'];
 
 /**
  * Every secondary entry point (a folder carrying its own `ng-package.json`),
- * excluding the two internal-tier entry points (`core` and the overlay slice
- * #1723 cut it into) — the internal tier is not part of the consumer-facing
+ * excluding the internal-tier entry points (`core`, the overlay slice #1723
+ * cut it into and the anchored slice #2693 cut out of that) — the internal tier is not part of the consumer-facing
  * conventions these matrices govern. The matrices that track an *internal*
  * authoring convention read `coreSourceFiles()` on top of this set.
  */
@@ -61,8 +61,8 @@ export function allSourceFiles() {
 }
 
 /**
- * The same, for the internal tier — both `forty-cdk/core` and
- * `forty-cdk/core-overlay`. Walked **recursively** because their `src/` is one
+ * The same, for the internal tier — `forty-cdk/core`,
+ * `forty-cdk/core-overlay` and `forty-cdk/core-anchored`. Walked **recursively** because their `src/` is one
  * directory per concern rather than flat, so ids carry it
  * (`<entry>/<concern>/<file>`) and stay greppable like every other row.
  */
@@ -417,8 +417,8 @@ function sanctionedPulls(files) {
  */
 function anchoredPositioningAdopters(files) {
   const declarationSites = [
-    'core-overlay/floating/anchored-overlay-positioning-base',
-    'core-overlay/floating/anchored-form-value-control-base',
+    'core-anchored/floating/anchored-overlay-positioning-base',
+    'core-anchored/floating/anchored-form-value-control-base',
   ];
   const inherits =
     /extends\s+(?:AnchoredOverlayPositioningBase|AnchoredFormValueControlBase|MenuOverlayHost|DatePickerBase)\b/;

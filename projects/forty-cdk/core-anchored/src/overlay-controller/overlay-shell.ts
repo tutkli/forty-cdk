@@ -11,15 +11,16 @@ import {
   type VetoableNativeEvent,
 } from 'forty-cdk/core';
 import {
+  buildOutsideVetoOptions,
   injectDismissibleLayer,
+  InertSiblingsStack,
+  ModalActivationOrder,
+  outsideVetoChannels,
   type DismissibleLayerActivateOptions,
   type DismissibleLayerNesting,
-} from '../dismissible-layer/dismissible-layer';
+} from 'forty-cdk/core-overlay';
 import { injectFloating, type FloatingConfig } from '../floating/floating';
-import { InertSiblingsStack } from '../inert-siblings/inert-siblings';
-import { ModalActivationOrder } from '../modal-shell/modal-activation-order';
 import { injectItemAlignedPositioner, type ItemAlignedConfig } from '../floating/item-aligned';
-import { buildOutsideVetoOptions, outsideVetoChannels } from './outside-veto';
 
 /**
  * Tagged-union positioner config. The shell delegates to either

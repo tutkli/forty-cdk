@@ -8,13 +8,13 @@ import {
   pressFocusesDescendant,
   preventPointerFocus,
 } from 'forty-cdk/core';
+import { warnIfMountedWhileClosed } from 'forty-cdk/core-overlay';
 import {
   injectOverlayShell,
   injectMenuContext,
   menuLayerNesting,
   menuReturnFocusTarget,
-  warnIfMountedWhileClosed,
-} from 'forty-cdk/core-overlay';
+} from 'forty-cdk/core-anchored';
 
 /**
  * The menu surface. Carries `role="menu"`, is portaled to `document.body`,

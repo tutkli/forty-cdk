@@ -201,7 +201,7 @@ test.describe('Select', () => {
     });
   });
 
-  // Item-aligned positioner coverage (was `core-overlay/floating/item-aligned.spec.ts`
+  // Item-aligned positioner coverage (was `core-anchored/floating/item-aligned.spec.ts`
   // — moved here per CLAUDE.md / #219). The math (selected-option vertical
   // center aligned with trigger center, viewport clamping, anchor / available-
   // height CSS vars) reads `getBoundingClientRect()` and only makes sense

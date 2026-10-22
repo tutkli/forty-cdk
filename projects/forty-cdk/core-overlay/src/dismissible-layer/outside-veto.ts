@@ -1,9 +1,6 @@
 import type { Signal } from '@angular/core';
 
-import type {
-  DismissibleLayerActivateOptions,
-  DismissibleLayerChannel,
-} from '../dismissible-layer/dismissible-layer';
+import type { DismissibleLayerActivateOptions, DismissibleLayerChannel } from './dismissible-layer';
 import { createVetoableNativeEvent, type VetoableNativeEvent } from 'forty-cdk/core';
 
 /**

@@ -2,8 +2,9 @@ import { afterNextRender, DestroyRef, inject } from '@angular/core';
 
 /**
  * `afterNextRender` whose queued callback is cancelled on destroy. Solves the
- * destroy-before-first-render hazard that both overlay shells in
- * `forty-cdk/core-overlay` share: a directive torn down between construction
+ * destroy-before-first-render hazard that both overlay shells
+ * (`forty-cdk/core-overlay`'s modal shell, `forty-cdk/core-anchored`'s
+ * overlay shell) share: a directive torn down between construction
  * and the next render (synchronous open/close test paths, fast SPA
  * mount+unmount), where the queued render callback
  * would otherwise still activate a global side effect with no hook left to

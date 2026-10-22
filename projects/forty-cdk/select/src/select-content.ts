@@ -10,12 +10,8 @@ import {
   FOR_FIELD_ANCHOR_CONTEXT,
   FOR_FIELD_CONTEXT,
 } from 'forty-cdk/core';
-import {
-  injectModalShell,
-  injectOverlayShell,
-  type OverlayShellPositionerConfig,
-  warnIfMountedWhileClosed,
-} from 'forty-cdk/core-overlay';
+import { injectModalShell, warnIfMountedWhileClosed } from 'forty-cdk/core-overlay';
+import { injectOverlayShell, type OverlayShellPositionerConfig } from 'forty-cdk/core-anchored';
 import { injectSelectContext, type SelectContext } from './select-context';
 
 /**

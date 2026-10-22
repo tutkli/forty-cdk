@@ -15,7 +15,7 @@ import {
   type FloatingSide,
   type ListboxOverlayPieceContext,
   type RootedTriggerHandle,
-} from 'forty-cdk/core-overlay';
+} from 'forty-cdk/core-anchored';
 import type {
   SelectPositionEntry,
   SelectVirtualizedNavigator,

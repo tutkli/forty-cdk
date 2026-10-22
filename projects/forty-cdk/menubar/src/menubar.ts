@@ -25,11 +25,8 @@ import {
   hostAriaLabel,
   isUnset,
 } from 'forty-cdk/core';
-import {
-  type MenuActivationModality,
-  FOR_MENU_CONTEXT,
-  warnIfOpenWithoutContent,
-} from 'forty-cdk/core-overlay';
+import { warnIfOpenWithoutContent } from 'forty-cdk/core-overlay';
+import { type MenuActivationModality, FOR_MENU_CONTEXT } from 'forty-cdk/core-anchored';
 import { MenubarMenuContext } from './menubar-menu-context';
 import {
   FOR_MENUBAR_CONTEXT,

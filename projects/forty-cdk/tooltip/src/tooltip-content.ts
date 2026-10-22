@@ -1,10 +1,7 @@
 import { DestroyRef, Directive, ElementRef, inject } from '@angular/core';
 
-import {
-  toFloatingPositioner,
-  injectOverlayShell,
-  warnIfMountedWhileClosed,
-} from 'forty-cdk/core-overlay';
+import { warnIfMountedWhileClosed } from 'forty-cdk/core-overlay';
+import { toFloatingPositioner, injectOverlayShell } from 'forty-cdk/core-anchored';
 import { injectTooltipContext } from './tooltip-context';
 
 /**
