@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.41.1] - 2026-10-22
+
+### Fixed
+
+- **Combobox** — an open combobox with a `[forComboboxList]` mounted and no `[forComboboxContent]`
+  no longer warns `FORCDK-CORE-014` ([#2702](https://github.com/tutkli/forty-cdk/issues/2702)). That
+  is the shape for a combobox embedded in a panel it does not own, such as a popover's: the input's
+  `aria-controls` names the list and Escape on the input closes it, so nothing the warning describes
+  happens. It still warns when neither piece is mounted. The combobox README's overlay section now
+  describes this shape.
+
+### Performance
+
+- **Dropdown menu, Context menu, Menubar, Popover, Tooltip, Hover card, Combobox, Date picker, Time
+  picker** — no longer retain Select's item-aligned positioner
+  ([#2701](https://github.com/tutkli/forty-cdk/issues/2701)). The overlay shell these surfaces share
+  referenced it statically, so a production build kept it whether or not the application used a
+  Select. A dropdown menu or combobox example drops about 2.4 kB minified, 0.7 to 0.8 kB gzip. An
+  application with a Select on any route still loads it once in the shared chunk.
+
 ## [0.41.0] - 2026-10-22
 
 ### Added
@@ -5137,7 +5157,8 @@ primitives.
 - **Display** — avatar, progress, meter, tree.
 - `forty-cdk/internationalized-date` secondary entry point exposing the `@internationalized/date` adapters for the date and time primitives.
 
-[Unreleased]: https://github.com/tutkli/forty-cdk/compare/v0.41.0...HEAD
+[Unreleased]: https://github.com/tutkli/forty-cdk/compare/v0.41.1...HEAD
+[0.41.1]: https://github.com/tutkli/forty-cdk/compare/v0.41.0...v0.41.1
 [0.41.0]: https://github.com/tutkli/forty-cdk/compare/v0.40.0...v0.41.0
 [0.40.0]: https://github.com/tutkli/forty-cdk/compare/v0.39.0...v0.40.0
 [0.39.0]: https://github.com/tutkli/forty-cdk/compare/v0.38.0...v0.39.0
