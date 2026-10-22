@@ -16,6 +16,12 @@ export {
   type ForDrawerSwipeEndEvent,
   type ForDrawerSwipeEvent,
 } from './drawer-context';
+export {
+  FOR_DRAWER_CONTRACT,
+  type ForDrawerContract,
+  type ForDrawerDataOf,
+  type ForDrawerResultOf,
+} from './drawer-contract';
 export { ForDrawerRef } from './drawer-ref';
 export {
   ForDrawerManager,

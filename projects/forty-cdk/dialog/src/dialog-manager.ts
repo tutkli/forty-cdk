@@ -17,33 +17,38 @@ import {
 } from './dialog-context';
 import { FOR_DIALOG_DEFAULTS } from 'forty-cdk/defaults';
 import type { ForDialogEntry } from './dialog-outlet';
+import {
+  type FOR_DIALOG_CONTRACT,
+  type ForDialogDataOf,
+  type ForDialogResultOf,
+} from './dialog-contract';
 import { ForDialogOutlet } from './dialog-outlet';
 import { ForDialogRef } from './dialog-ref';
 
 /**
  * Injection token for the `data` payload passed to `ForDialogManager.open(component, { data })`.
  * The manager always provides this token, falling back to `null` when no `data`
- * was configured, so inject it inside the opened component:
- *
- * ```ts
- * readonly data = inject(FOR_DIALOG_DATA) as MyShape | null;
- * ```
- *
- * Prefer `injectDialogData<T>()` for typed access without manual casts.
+ * was configured. Read it inside the opened component through `injectDialogData()`,
+ * which types the payload instead of leaving it `unknown`.
  */
 export const FOR_DIALOG_DATA = new InjectionToken<unknown>('FOR_DIALOG_DATA');
 
 /**
- * Typed accessor for the `data` payload. Returns `T | null` because the manager
+ * Typed accessor for the `data` payload. Pass the dialog component itself when it
+ * declares a {@link FOR_DIALOG_CONTRACT}, and the payload is the `data` type that
+ * contract names; pass any other type and the payload is that type, unchecked
+ * against what `open()` was given. Returns `null` too, because the manager
  * provides `null` when `open()` is called without `data` — guard for `null`
  * before dereferencing the payload.
  */
-export function injectDialogData<T = unknown>(): T | null {
-  return inject(FOR_DIALOG_DATA) as T | null;
+export function injectDialogData<T = unknown>():
+  (typeof FOR_DIALOG_CONTRACT extends keyof T ? ForDialogDataOf<T> : T) | null {
+  return inject(FOR_DIALOG_DATA) as
+    (typeof FOR_DIALOG_CONTRACT extends keyof T ? ForDialogDataOf<T> : T) | null;
 }
 
 export interface ForDialogOpenConfig<D = unknown> {
-  /** Payload available inside the dialog component via `injectDialogData<T>()`. */
+  /** Payload available inside the dialog component via `injectDialogData()`. */
   data?: D;
 
   /** When true (default), Escape, a backdrop click and outside interaction close the dialog. */
@@ -260,9 +265,15 @@ export class ForDialogManager extends OverlayManagerCore<ForDialogEntry> {
     });
   }
 
-  open<C, R = unknown, D = unknown>(
+  /**
+   * Opens `component` as a dialog. When the component declares a {@link FOR_DIALOG_CONTRACT},
+   * `config.data` must be the `data` type it names and the returned ref carries its result
+   * type; otherwise `data` is unchecked and the result is `unknown`. Explicit `R` / `D` type
+   * arguments override what the contract supplies.
+   */
+  open<C, R = ForDialogResultOf<C>, D = ForDialogDataOf<C>>(
     component: Type<C>,
-    config: ForDialogOpenConfig<D> = {},
+    config: ForDialogOpenConfig<NoInfer<D>> = {},
   ): ForDialogRef<R> {
     const { id, remove } = this.nextId();
 

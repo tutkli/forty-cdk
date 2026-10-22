@@ -7,9 +7,9 @@ import type { ForDialogCloseReason } from './dialog-context';
  * component to drive close imperatively. Both reactive (`isClosed`, `result`)
  * and awaitable (`closed`) APIs are exposed — pick what fits the call site.
  *
- * `R` is the close-result type. Default `unknown`; specify it on
- * `manager.open<C, R>(...)` to get type safety. `closed` resolves with
- * `{ reason, result }` — the `reason` is a `ForDialogCloseReason` telling
+ * `R` is the close-result type: the result the opened component declares through
+ * `FOR_DIALOG_CONTRACT`, else `unknown` unless `manager.open<C, R>(...)` names it.
+ * `closed` resolves with `{ reason, result }` — the `reason` is a `ForDialogCloseReason` telling
  * apart an imperative `close()` (`'programmatic'`) from Escape / backdrop /
  * outside / close-button dismissals.
  */

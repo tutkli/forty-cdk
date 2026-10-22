@@ -10,6 +10,12 @@ export {
   type ForDialogCloseReason,
   type ForDialogContext,
 } from './dialog-context';
+export {
+  FOR_DIALOG_CONTRACT,
+  type ForDialogContract,
+  type ForDialogDataOf,
+  type ForDialogResultOf,
+} from './dialog-contract';
 export { ForDialogRef } from './dialog-ref';
 export {
   ForDialogManager,

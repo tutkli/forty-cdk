@@ -9,6 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Dialog, Drawer** — a component opened by `ForDialogManager` / `ForDrawerManager` can declare
+  the data it reads and the result it closes with, once, as
+  `declare readonly [FOR_DIALOG_CONTRACT]: ForDialogContract<D, R>` (`FOR_DRAWER_CONTRACT` /
+  `ForDrawerContract` for a drawer) ([#2694](https://github.com/tutkli/forty-cdk/issues/2694)).
+  `open(component, { data })` then infers both from the component: a `data` that is not a `D`
+  fails to compile and the returned ref is a `ForDialogRef<R>`. `injectDialogData<C>()` /
+  `injectDrawerData<C>()` called with such a component returns `D | null`. Explicit type
+  arguments still win, and passing `open<C, R>` no longer silently resets `D` to `unknown` for a
+  component with a contract. A component that declares nothing, and `injectDialogData<T>()` with
+  a plain data type, keep their previous types. `ForDialogDataOf<C>` / `ForDialogResultOf<C>` and
+  the drawer pair read the two types off a component.
 - **Popover, Tooltip, Hover card, Select, Combobox, Date picker, Time picker, Dropdown menu, Menu,
   Menubar, Navigation menu** — a surface that is still open after a render with no content piece
   mounted warns `FORCDK-CORE-014` in dev mode
