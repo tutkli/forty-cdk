@@ -7,19 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.41.0] - 2026-10-22
+
 ### Added
 
-- **Dialog, Drawer** — a component opened by `ForDialogManager` / `ForDrawerManager` can declare
-  the data it reads and the result it closes with, once, as
+- **Dialog, Drawer** — a component opened by `ForDialogManager` / `ForDrawerManager` can declare the
+  data it reads and the result it closes with, once, as
   `declare readonly [FOR_DIALOG_CONTRACT]: ForDialogContract<D, R>` (`FOR_DRAWER_CONTRACT` /
   `ForDrawerContract` for a drawer) ([#2694](https://github.com/tutkli/forty-cdk/issues/2694)).
-  `open(component, { data })` then infers both from the component: a `data` that is not a `D`
-  fails to compile and the returned ref is a `ForDialogRef<R>`. `injectDialogData<C>()` /
-  `injectDrawerData<C>()` called with such a component returns `D | null`. Explicit type
-  arguments still win, and passing `open<C, R>` no longer silently resets `D` to `unknown` for a
-  component with a contract. A component that declares nothing, and `injectDialogData<T>()` with
-  a plain data type, keep their previous types. `ForDialogDataOf<C>` / `ForDialogResultOf<C>` and
-  the drawer pair read the two types off a component.
+  `open(component, { data })` then infers both from the component: a `data` that is not a `D` fails
+  to compile and the returned ref is a `ForDialogRef<R>`. `injectDialogData<C>()` /
+  `injectDrawerData<C>()` called with such a component returns `D | null`. Explicit type arguments
+  still win, and passing `open<C, R>` no longer silently resets `D` to `unknown` for a component
+  with a contract. A component that declares nothing, and `injectDialogData<T>()` with a plain data
+  type, keep their previous types. `ForDialogDataOf<C>` / `ForDialogResultOf<C>` and the drawer pair
+  read the two types off a component.
 - **Popover, Tooltip, Hover card, Select, Combobox, Date picker, Time picker, Dropdown menu, Menu,
   Menubar, Navigation menu** — a surface that is still open after a render with no content piece
   mounted warns `FORCDK-CORE-014` in dev mode
@@ -44,13 +46,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the other three tokens. **Migrate** by rendering the primitive's trigger directive, or composing
   it through `hostDirectives`, instead of registering an element by hand.
 
-- **Shared, Select, Time picker, Combobox — BREAKING.** `ListboxOverlayContext`
-  (`forty-cdk/shared`) and `ForTimePickerContext.overlay` no longer declare `registerTrigger` /
-  `unregisterTrigger` ([#2399](https://github.com/tutkli/forty-cdk/issues/2399)). The
-  `[forSelectTrigger]`, `[forTimePickerTrigger]` and `[forComboboxTrigger]` directives register
-  themselves and the root derives its trigger, so **drop any call** made through an injected context.
-  A provider of `FOR_TIME_PICKER_CONTEXT` that is not the root now also fails in dev mode with
-  `FORCDK-CORE-007` when it reaches `[forTimePickerTrigger]`.
+- **Shared, Select, Time picker, Combobox — BREAKING.** `ListboxOverlayContext` (`forty-cdk/shared`)
+  and `ForTimePickerContext.overlay` no longer declare `registerTrigger` / `unregisterTrigger`
+  ([#2399](https://github.com/tutkli/forty-cdk/issues/2399)). The `[forSelectTrigger]`,
+  `[forTimePickerTrigger]` and `[forComboboxTrigger]` directives register themselves and the root
+  derives its trigger, so **drop any call** made through an injected context. A provider of
+  `FOR_TIME_PICKER_CONTEXT` that is not the root now also fails in dev mode with `FORCDK-CORE-007`
+  when it reaches `[forTimePickerTrigger]`.
 
 - **Menu, Dropdown menu, Context menu — BREAKING.** `ForMenuContext` (`forty-cdk/shared`),
   `ForContextMenuContext` and the `ForDropdownMenu`, `ForContextMenu`, `ForMenu` and `ForMenuSub`
@@ -78,6 +80,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ([#2399](https://github.com/tutkli/forty-cdk/issues/2399)): closing returns focus to the trigger
   still mounted instead of to the body, and an open combobox keeps its picker anatomy, named by that
   trigger.
+
+- **Calendar** — a calendar with no `[forCalendarHeading]` no longer ships a dangling
+  `aria-labelledby` on its grids ([#2681](https://github.com/tutkli/forty-cdk/issues/2681)). The
+  day, month and year grids pointed at a heading id `[forCalendar]` mints whether or not a heading
+  exists, so on the server and in the browser they referenced a missing element and stayed unnamed.
+  They now emit `aria-labelledby` only while a heading is mounted, and pair with one declared after
+  the grid or mounted later; the heading reports itself through the new `hasHeading`,
+  `registerHeading` and `unregisterHeading` members of `ForCalendarContext`. **Without a heading,
+  name each grid yourself** with a static `aria-labelledby` pointing at your own title or an
+  `aria-label`, as the README now says.
+
+### Performance
+
+- **Dialog, Drawer, Navigation menu** — a root service that injects `ForDialogManager` or
+  `ForDrawerManager` no longer puts the positioning engine and `@floating-ui/dom` in the initial
+  chunk ([#2693](https://github.com/tutkli/forty-cdk/issues/2693)). Everything only a
+  trigger-anchored overlay composes moved out of the internal `forty-cdk/core-overlay` entry point
+  into a new internal `forty-cdk/core-anchored` one, so the `core-overlay` FESM these three
+  primitives load drops from 102,514 to 46,387 bytes.
+
+- **Input** — `[forTextarea]` runs its autosize and overflow measurement after render, writing the
+  height and reading `scrollHeight` / `clientHeight` in separate phases, so it no longer forces a
+  layout in the middle of change detection ([#2698](https://github.com/tutkli/forty-cdk/pull/2698)).
 
 ## [0.40.0] - 2026-10-20
 
@@ -5112,7 +5137,8 @@ primitives.
 - **Display** — avatar, progress, meter, tree.
 - `forty-cdk/internationalized-date` secondary entry point exposing the `@internationalized/date` adapters for the date and time primitives.
 
-[Unreleased]: https://github.com/tutkli/forty-cdk/compare/v0.40.0...HEAD
+[Unreleased]: https://github.com/tutkli/forty-cdk/compare/v0.41.0...HEAD
+[0.41.0]: https://github.com/tutkli/forty-cdk/compare/v0.40.0...v0.41.0
 [0.40.0]: https://github.com/tutkli/forty-cdk/compare/v0.39.0...v0.40.0
 [0.39.0]: https://github.com/tutkli/forty-cdk/compare/v0.38.0...v0.39.0
 [0.38.0]: https://github.com/tutkli/forty-cdk/compare/v0.37.0...v0.38.0
