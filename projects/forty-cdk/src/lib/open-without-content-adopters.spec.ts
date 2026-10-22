@@ -13,7 +13,13 @@ import { afterEachOverlayCleanup } from '../test-utils/overlay-cleanup';
 import { LIBRARY_CODE } from '../test-utils/source-scan';
 
 import { provideNativeDateAdapter } from 'forty-cdk/shared';
-import { ForCombobox, ForComboboxContent, ForComboboxInput } from 'forty-cdk/combobox';
+import {
+  ForCombobox,
+  ForComboboxContent,
+  ForComboboxInput,
+  ForComboboxList,
+  ForComboboxOption,
+} from 'forty-cdk/combobox';
 import { ForContextMenu, ForContextMenuTrigger } from 'forty-cdk/context-menu';
 import {
   ForDatePicker,
@@ -513,5 +519,50 @@ describe('open-without-content warning adopters (#2622)', () => {
         expect(reports()).toEqual([]);
       });
     }
+  });
+
+  describe('the combobox, whose mounted list is a surface', () => {
+    @Component({
+      imports: [
+        ForCombobox,
+        ForComboboxInput,
+        ForComboboxList,
+        ForComboboxOption,
+        ForPopover,
+        ForPopoverTrigger,
+        ForPopoverContent,
+      ],
+      changeDetection: ChangeDetectionStrategy.OnPush,
+      template: `<div forCombobox [open]="open()" (openChange)="open.set($event)">
+        <div forPopover [open]="open()" (openChange)="open.set($event)">
+          <button forPopoverTrigger>Fruit</button>
+          @if (open()) {
+            <div forPopoverContent>
+              <input forComboboxInput data-testid="input" />
+              <div forComboboxList data-testid="list">
+                <div forComboboxOption value="apple">Apple</div>
+              </div>
+            </div>
+          }
+        </div>
+      </div>`,
+    })
+    class EmbeddedListHost {
+      readonly open = signal(false);
+    }
+
+    it('stays silent while a [forComboboxList] is mounted without [forComboboxContent]', async () => {
+      const fixture = await mount(EmbeddedListHost);
+
+      fixture.componentInstance.open.set(true);
+      await flush(fixture);
+      await flush(fixture);
+
+      const input = document.querySelector('[data-testid="input"]') as HTMLElement;
+      const list = document.querySelector('[data-testid="list"]') as HTMLElement;
+      expect(list.id).not.toBe('');
+      expect(input.getAttribute('aria-controls')).toBe(list.id);
+      expect(reports()).toEqual([]);
+    });
   });
 });
