@@ -28,6 +28,7 @@ import {
 import {
   CalendarDropdownsFixture,
   CalendarFixture,
+  CalendarHeadinglessFixture,
   CalendarMonthViewFixture,
   CalendarSelectDirectivesFixture,
   CalendarYearViewFixture,
@@ -1054,6 +1055,13 @@ export const SSR_FIXTURES: readonly SsrFixture[] = [
     component: CalendarFixture,
     tabStop: '[forCalendarCell]',
     markup: [{ select: '[forCalendarGrid]', pairs: { 'aria-labelledby': '[forCalendarHeading]' } }],
+  },
+  {
+    component: CalendarHeadinglessFixture,
+    tabStop: '[forCalendarCell]',
+    markup: [
+      { select: '[forCalendarGrid]', attributes: { role: 'grid', 'aria-labelledby': null } },
+    ],
   },
   {
     component: CalendarDropdownsFixture,

@@ -1,12 +1,13 @@
-import { Directive, ElementRef, inject } from '@angular/core';
+import { DestroyRef, Directive, ElementRef, inject } from '@angular/core';
 
 import { injectCalendarContext } from './calendar-context';
 
 /**
  * The period heading. Apply on a heading element (e.g. `<h2>`) and render
  * its `label()` as the content: `<h2 forCalendarHeading #h="forCalendarHeading">{{ h.label() }}</h2>`.
- * The day, month and year grids are `aria-labelledby` this element, so it names
- * the period the active view shows.
+ * While it is mounted, the day, month and year grids are `aria-labelledby` this
+ * element, so it names the period the active view shows. Without it the grids
+ * emit no `aria-labelledby` of their own.
  *
  * It is **not** an `aria-live` region: paging announces the new
  * period through a dedicated off-screen live region owned by `[forCalendar]`,
@@ -32,5 +33,7 @@ export class ForCalendarHeading {
 
   constructor() {
     this.ctx.adoptHeadingId(inject<ElementRef<HTMLElement>>(ElementRef).nativeElement);
+    this.ctx.registerHeading();
+    inject(DestroyRef).onDestroy(() => this.ctx.unregisterHeading());
   }
 }

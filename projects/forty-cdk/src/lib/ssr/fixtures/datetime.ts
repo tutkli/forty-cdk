@@ -73,6 +73,29 @@ export class CalendarFixture {
 }
 
 @Component({
+  imports: [ForCalendar, ForCalendarGrid, ForCalendarCell],
+  providers: [...provideNativeDateAdapter()],
+  template: `
+    <div forCalendar [value]="value">
+      <table forCalendarGrid #grid="forCalendarGrid">
+        <tbody>
+          @for (week of grid.weeks(); track week.key) {
+            <tr>
+              @for (cell of week.days; track cell.key) {
+                <td forCalendarCell [date]="cell.date">{{ cell.label }}</td>
+              }
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  `,
+})
+export class CalendarHeadinglessFixture {
+  readonly value = new Date(2026, 5, 15);
+}
+
+@Component({
   imports: [ForCalendar, ForCalendarGrid, ForCalendarCell, ForCalendarHeading],
   providers: [...provideNativeDateAdapter()],
   template: `
