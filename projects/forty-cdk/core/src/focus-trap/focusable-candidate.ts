@@ -35,6 +35,7 @@ const FOCUSABLE_ATTRIBUTE_CLAUSES = ['[tabindex]:not([tabindex="-1"])', '[conten
 
 const HIDDEN_ATTRIBUTE = 'hidden';
 const INERT_ATTRIBUTE = 'inert';
+const OPEN_ATTRIBUTE = 'open';
 
 /**
  * Shared CSS selector for focusable elements. Single source of truth for the
@@ -67,6 +68,7 @@ export const FOCUSABILITY_ATTRIBUTES: readonly string[] = [
     ...[...FOCUSABLE_SELECTOR.matchAll(/\[([\w-]+)/g)].map((match) => match[1]!),
     HIDDEN_ATTRIBUTE,
     INERT_ATTRIBUTE,
+    OPEN_ATTRIBUTE,
   ]),
 ];
 
@@ -98,9 +100,13 @@ export function queryFocusableCandidates(container: HTMLElement): HTMLElement[] 
  * Reports whether `el` can currently receive focus. An element is excluded when it:
  *
  * - carries the `[hidden]` attribute;
+ * - is `:disabled`, by its own `disabled` attribute or by an ancestor `<fieldset disabled>`
+ *   (a control inside that fieldset's first `<legend>` stays enabled);
  * - carries `[inert]` itself, or is nested under an `[inert]` ancestor below `root`;
- * - is hidden via CSS (`display: none` on the element or any ancestor below `root`, or
- *   `visibility: hidden` / `collapse` on the element itself).
+ * - is not rendered: `display: none` on the element or any ancestor below `root`,
+ *   `visibility: hidden` / `collapse` on the element itself, `content-visibility: hidden` on an
+ *   ancestor below `root`, or content of a closed `<details>` below `root` outside its first
+ *   `<summary>`.
  *
  * `root` bounds the ancestor walk, so the container's own state is never consulted. Both walks
  * climb the composed tree, so an `[inert]` or `display: none` shadow host disqualifies the controls
@@ -112,8 +118,21 @@ export function queryFocusableCandidates(container: HTMLElement): HTMLElement[] 
  */
 export function isFocusableCandidate(el: HTMLElement, root: HTMLElement): boolean {
   return (
-    !el.hasAttribute(HIDDEN_ATTRIBUTE) && !hasInertAncestor(el, root) && !isCssHidden(el, root)
+    !el.hasAttribute(HIDDEN_ATTRIBUTE) &&
+    !isDisabledControl(el) &&
+    !hasInertAncestor(el, root) &&
+    !isUnrendered(el, root)
   );
+}
+
+/**
+ * Whether `el` is a form control the browser refuses to focus because it is `:disabled`: its own
+ * `disabled` attribute, or an ancestor `<fieldset disabled>` it does not sit in the first
+ * `<legend>` of. An element that has no disabled state, such as a `tabindex` host inside a disabled
+ * fieldset, reports `false`.
+ */
+export function isDisabledControl(el: Element): boolean {
+  return el.matches(':disabled');
 }
 
 /**
@@ -132,16 +151,15 @@ export function isTabbableCandidate(el: HTMLElement, root: HTMLElement): boolean
 
 /**
  * Reports whether `el` can take an explicit initial-focus move into `root`: it lives inside `root`
- * in the composed tree, is not `:disabled`, is focusable natively or through a `tabindex`
- * attribute (`tabindex="-1"` included, so a static heading qualifies), and is a focusable
- * candidate under {@link isFocusableCandidate}.
+ * in the composed tree, is focusable natively or through a `tabindex` attribute (`tabindex="-1"`
+ * included, so a static heading qualifies), and is a focusable candidate under
+ * {@link isFocusableCandidate}.
  *
  * Reads `getComputedStyle`, so callers must gate it behind `isPlatformBrowser`.
  */
 export function isInitialFocusTarget(el: HTMLElement, root: HTMLElement): boolean {
   return (
     composedContains(root, el) &&
-    !el.matches(':disabled') &&
     (el.matches(FOCUSABLE_SELECTOR) || el.hasAttribute('tabindex')) &&
     isFocusableCandidate(el, root)
   );
@@ -435,21 +453,37 @@ function hasInertAncestor(el: HTMLElement, root: HTMLElement): boolean {
   return false;
 }
 
-function isCssHidden(el: HTMLElement, root: HTMLElement): boolean {
+function isUnrendered(el: HTMLElement, root: HTMLElement): boolean {
   const win = el.ownerDocument.defaultView;
-  if (!win || typeof win.getComputedStyle !== 'function') {
-    return false;
-  }
+  const canReadStyle = !!win && typeof win.getComputedStyle === 'function';
   let cur: HTMLElement | null = el;
   while (cur && cur !== root) {
-    const style = win.getComputedStyle(cur);
-    if (style.display === 'none') {
+    if (canReadStyle) {
+      const style = win.getComputedStyle(cur);
+      if (style.display === 'none') {
+        return true;
+      }
+      if (cur === el) {
+        if (style.visibility === 'hidden' || style.visibility === 'collapse') {
+          return true;
+        }
+      } else if (style.contentVisibility === 'hidden') {
+        return true;
+      }
+    }
+    const parent = composedParentElement(cur);
+    if (parent !== null && parent !== root && isClosedDetailsContent(parent, cur)) {
       return true;
     }
-    if (cur === el && (style.visibility === 'hidden' || style.visibility === 'collapse')) {
-      return true;
-    }
-    cur = composedParentElement(cur);
+    cur = parent;
   }
   return false;
+}
+
+function isClosedDetailsContent(parent: HTMLElement, child: HTMLElement): boolean {
+  return (
+    parent.localName === 'details' &&
+    !parent.hasAttribute(OPEN_ATTRIBUTE) &&
+    child !== parent.querySelector(':scope > summary')
+  );
 }
