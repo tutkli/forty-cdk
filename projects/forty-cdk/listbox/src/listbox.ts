@@ -41,6 +41,7 @@ import {
   type Unset,
   warnOnDuplicateRegistration,
   injectRovingFocusRestore,
+  leavesControl,
 } from 'forty-cdk/core';
 import {
   FOR_LISTBOX_CONTEXT,
@@ -542,11 +543,10 @@ export class ForListbox<T = string>
     this.#activeId.set(null);
   }
 
-  private controllerFocusOut(next: EventTarget | null): void {
-    if (next instanceof Node && this.#host.nativeElement.contains(next)) {
-      return;
+  private controllerFocusOut(event: FocusEvent): void {
+    if (leavesControl(event, [this.#host.nativeElement])) {
+      this.markTouched();
     }
-    this.markTouched();
   }
 
   private moveActiveOption(direction: 'next' | 'prev'): void {
@@ -743,11 +743,9 @@ export class ForListbox<T = string>
   }
 
   private onFocusOut(event: FocusEvent): void {
-    const next = event.relatedTarget as HTMLElement | null;
-    if (next && this.#host.nativeElement.contains(next)) {
-      return;
+    if (leavesControl(event, [this.#host.nativeElement])) {
+      this.markTouched();
     }
-    this.markTouched();
   }
 
   private onPointerLeave(): void {

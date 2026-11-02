@@ -2,6 +2,7 @@ import {
   booleanAttribute,
   computed,
   Directive,
+  ElementRef,
   inject,
   input,
   model,
@@ -107,6 +108,7 @@ export class ForTimePicker<D>
   extends AnchoredFormValueControlBase
   implements FormValueControl<D | null>, ForTimePickerContext<D>
 {
+  readonly #host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
   readonly #defaults = inject(FOR_TIME_PICKER_DEFAULTS);
   protected readonly positioningDefaults = this.#defaults;
   readonly #pickerSource = inject(FOR_PICKER_SOURCE_HOST, { optional: true });
@@ -464,6 +466,10 @@ export class ForTimePicker<D>
     if (this.adoptsField()) {
       this.#fieldSlot.value()?.reset();
     }
+  }
+
+  private touchBoundaries(): readonly (Node | null)[] {
+    return [this.#host, this.overlay.content()];
   }
 
   /** Registers a projected `[forTimeField]`; the field calls it on creation. */

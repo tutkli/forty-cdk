@@ -9,6 +9,7 @@ import {
   preventPointerFocus,
   FOR_FIELD_ANCHOR_CONTEXT,
   FOR_FIELD_CONTEXT,
+  dismissMarksTouched,
 } from 'forty-cdk/core';
 import { injectModalShell, warnIfMountedWhileClosed } from 'forty-cdk/core-overlay';
 import {
@@ -158,7 +159,9 @@ export class ForSelectContent {
           // The shell builds the veto and calls this when not vetoed; mirror
           // the anchored path's touched-on-dismiss behaviour.
           requestClose: (reason) => {
-            ctx.markTouched();
+            if (dismissMarksTouched(reason)) {
+              ctx.markTouched();
+            }
             ctx.overlay.closeOverlay(reason);
           },
           emitEscapeKeyDown: (veto) => ctx.overlay.forwardEscapeKeyDown(veto),
@@ -203,7 +206,9 @@ export class ForSelectContent {
         dismissible: ctx.dismissible,
         // Mirror the modal path's touched-on-dismiss behaviour.
         requestClose: (reason) => {
-          ctx.markTouched();
+          if (dismissMarksTouched(reason)) {
+            ctx.markTouched();
+          }
           ctx.overlay.closeOverlay(reason);
         },
         emitEscapeKeyDown: (event) => ctx.overlay.emitEscapeKeyDown(event),

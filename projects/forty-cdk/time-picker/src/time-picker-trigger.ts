@@ -1,6 +1,12 @@
 import { computed, Directive, ElementRef, inject, input } from '@angular/core';
 
-import { hostButtonType, reflectDisabled, registerHandle, staticHostId } from 'forty-cdk/core';
+import {
+  hostButtonType,
+  reflectDisabled,
+  registerHandle,
+  staticHostId,
+  leavesControl,
+} from 'forty-cdk/core';
 import {
   type ForTimePickerContext,
   injectTimePickerTriggerContext,
@@ -122,16 +128,8 @@ export class ForTimePickerTrigger<D = unknown> {
   }
 
   private onFocusOut(event: FocusEvent): void {
-    const next = event.relatedTarget as HTMLElement | null;
-    if (next) {
-      const content = this.ctx().overlay.content();
-      if (content && content.contains(next)) {
-        return;
-      }
-      if (this.#host.nativeElement.contains(next)) {
-        return;
-      }
+    if (leavesControl(event, [this.#host.nativeElement, ...this.ctx().touchBoundaries()])) {
+      this.ctx().markTouched();
     }
-    this.ctx().markTouched();
   }
 }

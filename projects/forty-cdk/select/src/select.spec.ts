@@ -1885,7 +1885,7 @@ describe('ForSelect', () => {
       expect(content.parentElement).toBe(document.body);
     });
 
-    it('flips touched on a modal-mode dismiss', async () => {
+    it('leaves touched on a modal-mode Escape and flips it on a modal-mode outside press', async () => {
       @Component({
         imports: BASE_IMPORTS,
         template: `
@@ -1910,7 +1910,27 @@ describe('ForSelect', () => {
 
       pressKey(document, 'Escape');
       await flush(r.fixture);
-      expect(r.instance.touched()).toBe(true);
+      expect(r.instance.open()).toBe(false);
+      expect(r.instance.touched()).toBe(false);
+
+      r.instance.open.set(true);
+      await flush(r.fixture);
+      const outside = document.createElement('button');
+      document.body.appendChild(outside);
+      try {
+        const event = new PointerEvent('pointerdown', { bubbles: true, cancelable: true });
+        Object.defineProperty(event, 'target', { value: outside, configurable: true });
+        Object.defineProperty(event, 'composedPath', {
+          value: () => [outside],
+          configurable: true,
+        });
+        document.dispatchEvent(event);
+        await flush(r.fixture);
+        expect(r.instance.open()).toBe(false);
+        expect(r.instance.touched()).toBe(true);
+      } finally {
+        outside.remove();
+      }
     });
 
     it('routes through modal-shell, not the anchored positioner (no data-position)', async () => {

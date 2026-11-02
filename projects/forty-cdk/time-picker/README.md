@@ -346,7 +346,7 @@ By default the trigger is the control and shows the value. Set `anatomy="field"`
 
 With the field adopted:
 
-- **One form control.** `[formField]` binds once, on the picker. A typed time and a picked slot both write the picker's value and mark it dirty; focus leaving the field or the trigger marks it touched.
+- **One form control.** `[formField]` binds once, on the picker. A typed time and a picked slot both write the picker's value and mark it dirty; focus leaving the picker marks it touched, while a move between the field and the trigger does not.
 - **State is set once.** `minTime`, `maxTime`, `disabled`, `readonly`, `granularity`, `hourCycle` and `locale` on the picker apply to the field. A read-only picker blocks typing and picking alike.
 - **The field is the control.** A surrounding `[forField]` names and describes the field's `role="group"`, `aria-invalid` lands there, a label press focuses its first segment, and the picker's `focus()` goes there too.
 - **The trigger is a plain button.** It drops `role="combobox"` and the form-control `aria-*` state, and keeps `aria-haspopup="listbox"`, `aria-expanded` and `aria-controls`. Give it a name of its own.

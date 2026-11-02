@@ -65,20 +65,19 @@ describe('docs example captions perform on their demos', () => {
     });
   });
 
-  describe('field validation: "Tick and untick it, then move focus away"', () => {
-    it('surfaces the required error only once focus leaves the checkbox', async () => {
+  describe('field validation: "Tick and untick it to surface the required error"', () => {
+    it('surfaces the required error once the checkbox is unticked, with no blur', async () => {
       const { query, flush } = renderHost(FieldValidationExample);
       await flush();
+      expect(query('[forFieldError]')).toBeNull();
 
       const checkbox = query<HTMLButtonElement>('[forCheckbox]')!;
       pressWithMouse(checkbox);
       pressWithMouse(checkbox);
       await flush();
-      expect(checkbox.getAttribute('aria-checked')).toBe('false');
-      expect(query('[forFieldError]')).toBeNull();
 
-      checkbox.blur();
-      await flush();
+      expect(checkbox.getAttribute('aria-checked')).toBe('false');
+      expect(document.activeElement).toBe(checkbox);
       expect(query('[forFieldError]')!.textContent!.trim()).not.toBe('');
     });
   });

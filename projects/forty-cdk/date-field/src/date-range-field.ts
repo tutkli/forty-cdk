@@ -19,6 +19,7 @@ import {
   serializeISODate,
   type WritingDirection,
   hostAriaLabel,
+  leavesControl,
 } from 'forty-cdk/core';
 import { type DateAdapter } from 'forty-cdk/date-adapter';
 import {
@@ -349,8 +350,7 @@ export class ForDateRangeField<D>
   }
 
   private onFocusOut(event: FocusEvent): void {
-    const next = event.relatedTarget as Node | null;
-    if (!next || !this.#host.nativeElement.contains(next)) {
+    if (leavesControl(event, [this.#host.nativeElement])) {
       this.markTouched();
     }
   }

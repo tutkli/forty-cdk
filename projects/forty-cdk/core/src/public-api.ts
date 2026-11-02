@@ -205,6 +205,11 @@ export {
   injectNativeFormResetToInitial,
 } from './form-ui-control/native-form-reset';
 export { TextValueControlBase } from './form-ui-control/text-value-control-base';
+export {
+  dismissMarksTouched,
+  leavesControl,
+  type TouchDismissal,
+} from './form-ui-control/touch-timing';
 export { mirrorExternalValue, mirrorValue } from './form-ui-control/value-mirror';
 export { resolveConfigClass } from './host-attributes/config-class';
 export { reflectDisabled } from './host-attributes/disabled-reflection';

@@ -87,6 +87,7 @@ export class ForSwitch extends FormUiControlBase implements FormCheckboxControl 
       return;
     }
     this.checked.update((v) => !v);
+    this.markTouched();
   }
 
   private onKeydown(event: KeyboardEvent): void {

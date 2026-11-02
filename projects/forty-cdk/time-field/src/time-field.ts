@@ -35,6 +35,7 @@ import {
   type TimeSegmentType,
   type WritingDirection,
   hostAriaLabel,
+  leavesControl,
 } from 'forty-cdk/core';
 import { type TimeCapableDateAdapter } from 'forty-cdk/date-adapter';
 import { FOR_TIME_FIELD_CONTEXT, type ForTimeFieldContext } from './time-field-context';
@@ -365,11 +366,10 @@ export class ForTimeField<D>
   }
 
   private onFocusOut(event: FocusEvent): void {
-    const next = event.relatedTarget as Node | null;
-    if (next && this.#host.nativeElement.contains(next)) {
+    const adopter = this.#adopter();
+    if (!leavesControl(event, [this.#host.nativeElement, ...(adopter?.touchBoundaries() ?? [])])) {
       return;
     }
-    const adopter = this.#adopter();
     if (adopter) {
       adopter.markTouched();
     } else {

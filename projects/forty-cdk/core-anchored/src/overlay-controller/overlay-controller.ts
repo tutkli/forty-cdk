@@ -11,6 +11,7 @@ import {
   injectVetoableEmitter,
   type VetoableEvent,
   type VetoableNativeEvent,
+  type TouchDismissal,
 } from 'forty-cdk/core';
 import { CloseReasonState } from './close-reason-state';
 import { IdentifiedElementSlot, injectSlotId } from './element-registry';
@@ -167,10 +168,10 @@ export interface OverlayControllerDeps<Focus, CloseReason> {
   /**
    * Side effect run on a user-driven dismissal — an un-vetoed Escape, or the
    * shell's implicit close after an un-vetoed outside interaction — just before
-   * the close. Optional: only a form control has touched state to mark, so the
-   * menu overlays pass nothing.
+   * the close, receiving the channel that requested it. Optional: only a form
+   * control has touched state to mark, so the menu overlays pass nothing.
    */
-  readonly onDismiss?: () => void;
+  readonly onDismiss?: (dismissal: TouchDismissal) => void;
 }
 
 /**
@@ -354,7 +355,7 @@ export class OverlayController<Focus, CloseReason> {
       // which is how nested overlays close one layer per Escape (see the
       // listener-phase note in `core-overlay/dismissible-layer/dismissible-layer.ts`).
       event.stopPropagation();
-      this.#deps.onDismiss?.();
+      this.#deps.onDismiss?.('escape');
       this.close(this.#deps.escapeReason);
     }
   }
@@ -393,11 +394,11 @@ export class OverlayController<Focus, CloseReason> {
    * {@link lastCloseReason} (e.g. a `'tab'` close must survive so the content
    * skips its return-focus).
    */
-  requestClose(reason: CloseReason): void {
+  requestClose(reason: CloseReason & Exclude<TouchDismissal, 'escape'>): void {
     if (!this.#deps.isOpen()) {
       return;
     }
-    this.#deps.onDismiss?.();
+    this.#deps.onDismiss?.(reason);
     this.close(reason);
   }
 
