@@ -972,12 +972,17 @@ describe('ForCarousel', () => {
       expect(indicator(el, 0).getAttribute('tabindex')).toBe('-1');
     });
 
-    it('focusing a disabled dot leaves the tab stop on the current dot', async () => {
+    it('a focused disabled dot yields every tab stop until focus leaves it', async () => {
       const { el, instance, flush } = renderHost(CarouselHost);
       instance.disabledIndicators.set([2]);
       instance.active.set(1);
       await flush();
       indicator(el, 2).focus();
+      await flush();
+      expect(indicator(el, 1).getAttribute('tabindex')).toBe('-1');
+      expect(indicator(el, 2).getAttribute('tabindex')).toBe('-1');
+
+      indicator(el, 2).blur();
       await flush();
       expect(indicator(el, 1).getAttribute('tabindex')).toBe('0');
       expect(indicator(el, 2).getAttribute('tabindex')).toBe('-1');

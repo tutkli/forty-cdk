@@ -443,7 +443,7 @@ describe('ForListbox', () => {
       expect(zeros).toEqual(['apricot']);
     });
 
-    it('disabling the focused option re-engages the first-enabled fallback', async () => {
+    it('disabling the focused option re-engages the first-enabled fallback once focus leaves it', async () => {
       const { el, fixture, flush } = renderHost(ListboxHost);
       optOf(el, 'apple').focus();
       await flush();
@@ -455,7 +455,12 @@ describe('ForListbox', () => {
         { value: 'banana', label: 'Banana', disabled: false },
       ]);
       await flush();
+      const stops = (): string[] =>
+        ['apple', 'apricot', 'banana'].filter((v) => optOf(el, v).getAttribute('tabindex') === '0');
+      expect(stops()).toEqual([]);
 
+      optOf(el, 'apple').blur();
+      await flush();
       expect(optOf(el, 'apple').getAttribute('tabindex')).toBe('-1');
       const zeros = ['apple', 'apricot', 'banana'].filter(
         (v) => optOf(el, v).getAttribute('tabindex') === '0',

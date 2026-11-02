@@ -330,7 +330,7 @@ describe('ForToolbar', () => {
       expect(zeros(el)).toEqual(['two']);
     });
 
-    it('disabling the focused item re-engages the first-enabled fallback', async () => {
+    it('disabling the focused item re-engages the first-enabled fallback once focus leaves it', async () => {
       const { el, fixture, flush } = renderHost(DynamicToolbarHost);
       btn(el, 'one').focus();
       await flush();
@@ -342,7 +342,10 @@ describe('ForToolbar', () => {
         { id: 'three', disabled: false },
       ]);
       await flush();
+      expect(zeros(el)).toEqual([]);
 
+      btn(el, 'one').blur();
+      await flush();
       expect(btn(el, 'one').getAttribute('tabindex')).toBe('-1');
       expect(zeros(el)).toEqual(['two']);
     });

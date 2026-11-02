@@ -1,5 +1,4 @@
 import {
-  afterNextRender,
   booleanAttribute,
   computed,
   DestroyRef,
@@ -272,7 +271,7 @@ export class ForDropList implements ForDropListContext {
 
   constructor() {
     injectRovingFocusRestore(this.roving, {
-      skip: (departed) => this.#pointerDropped?.contains(departed) ?? false,
+      skip: (departed) => this.#consumePointerDrop(departed),
     });
     const group = this.#group;
     if (group) {
@@ -404,10 +403,17 @@ export class ForDropList implements ForDropListContext {
     items[next]?.host.focus();
   }
 
+  #consumePointerDrop(departed: Element): boolean {
+    const dropped = this.#pointerDropped;
+    this.#pointerDropped = null;
+    return dropped !== null && dropped.contains(departed);
+  }
+
   #beginLift(el: HTMLElement): number {
     if (this.effectiveDisabled() || this.isDragging()) {
       return -1;
     }
+    this.#pointerDropped = null;
     const items = this.#items.items();
     const handle = items.find((h) => h.host === el);
     this.#dropFocus?.cancel();
@@ -740,14 +746,6 @@ export class ForDropList implements ForDropListContext {
       this.#followDropFocus(liftedHost, container, currentIndex, handle);
     } else if (this.#pointerDrag) {
       this.#pointerDropped = liftedHost;
-      afterNextRender(
-        () => {
-          queueMicrotask(() => {
-            this.#pointerDropped = null;
-          });
-        },
-        { injector: this.#injector },
-      );
     }
     const animator = animate
       ? new ReorderAnimator({

@@ -1149,7 +1149,7 @@ describe('ForTree', () => {
       expect(tabbable[0]).toBe(itemOf(el, 'documents'));
     });
 
-    it('disabling the active node hands the tab stop to the node before it', async () => {
+    it('disabling the active node hands the tab stop to the node before it once focus leaves it', async () => {
       const { el, fixture } = await setup();
 
       itemOf(el, 'readme').focus();
@@ -1158,11 +1158,16 @@ describe('ForTree', () => {
 
       fixture.componentInstance.disabledIds.set(['readme']);
       await flush(fixture);
+      const stops = (): HTMLElement[] =>
+        Array.from(el.querySelectorAll<HTMLElement>('[role="treeitem"]')).filter(
+          (node) => node.getAttribute('tabindex') === '0',
+        );
+      expect(stops()).toEqual([]);
 
+      itemOf(el, 'readme').blur();
+      await flush(fixture);
       expect(itemOf(el, 'readme').getAttribute('tabindex')).toBe('-1');
-      const tabbable = Array.from(el.querySelectorAll<HTMLElement>('[role="treeitem"]')).filter(
-        (node) => node.getAttribute('tabindex') === '0',
-      );
+      const tabbable = stops();
       expect(tabbable).toHaveLength(1);
       expect(tabbable[0]).toBe(itemOf(el, 'downloads'));
     });

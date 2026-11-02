@@ -14,6 +14,7 @@ import {
   isUnset,
   navigateFromRovingItem,
   registerHandle,
+  rovingTabStop,
   unsetInput,
   FOR_HOST_ROVING_CONTEXT,
   type Unset,
@@ -88,14 +89,15 @@ export class ForToggleGroupItem {
    * are always -1.
    */
   readonly tabindex = computed<-1 | 0>(() => {
-    if (this.effectiveDisabled()) {
-      return -1;
-    }
     const owner = this.#rovingHost ?? this.group;
-    if (owner.roving.hasActive()) {
-      return owner.roving.tabindexFor(this.#host.nativeElement);
-    }
-    return owner.isFirstFocusableItem(this.#host.nativeElement) ? 0 : -1;
+    return rovingTabStop({
+      roving: owner.roving,
+      host: this.#host.nativeElement,
+      disabled: this.effectiveDisabled(),
+      selected: false,
+      hasSelected: false,
+      isFirstEnabled: owner.isFirstFocusableItem(this.#host.nativeElement),
+    });
   });
 
   constructor() {

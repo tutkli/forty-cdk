@@ -197,7 +197,7 @@ The directive does **not** apply `[hidden]`. Two patterns work:
 - **ArrowRight / ArrowLeft** in horizontal, **ArrowDown / ArrowUp** in vertical: move focus between triggers, wrapping around unless `loop` is `false`. RTL swaps Left/Right.
 - **Home / End** jump to the first / last trigger.
 - **Space / Enter** activate the focused trigger (no-op in automatic mode since arrow nav already activated it).
-- Disabled triggers are reached but not activated: automatic mode does not select one that arrow nav lands on.
+- Disabled triggers are reached but not activated: automatic mode does not select one that arrow nav lands on. While one holds focus no trigger holds the Tab stop, so `Tab` moves on to the panel and `Shift+Tab` leaves the tablist.
 
 ## Accessibility
 

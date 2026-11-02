@@ -47,7 +47,10 @@
  *     ([#2140](https://github.com/tutkli/forty-cdk/issues/2140)), and so does
  *     typeahead in a group that has it
  *     ([#2719](https://github.com/tutkli/forty-cdk/issues/2719)). Every
- *     adopter supplies that mount; the meta-guard counts it.
+ *     adopter supplies that mount; the meta-guard counts it. While it holds
+ *     focus every item yields the tab stop, so `Tab` leaves the group from it
+ *     (#2719); the same holds for a disabled item `End` reaches in a group that
+ *     declares `disabledItemsReachable`.
  *   - **An item that leaves while it holds the tab stop leaves exactly one
  *     behind** among the survivors ([#2239](https://github.com/tutkli/forty-cdk/issues/2239)).
  *     It is {@link assertRovingRemovalContract}, which the excluded trackers
@@ -384,6 +387,49 @@ export function assertRovingTabindexContract(
         dispatchKey(first, forward);
         await r.flush();
         expect(document.activeElement).toBe(second);
+      });
+    }
+
+    if (setup.mountWithInPlaceDisable) {
+      it('yields every tab stop while an item disabled in place holds focus', async () => {
+        const r = await setup.mountWithInPlaceDisable!();
+        const first = r.items[0]!;
+        first.focus();
+        await r.flush();
+        expect(tabStops(r)).toEqual([0]);
+        r.disableFirst();
+        await r.flush();
+        expect(reflectsDisabled(first)).toBe(true);
+        expect(document.activeElement).toBe(first);
+
+        expect(tabStops(r)).toEqual([]);
+
+        first.blur();
+        await r.flush();
+        expect(tabStops(r)).toHaveLength(1);
+        expect(reflectsDisabled(r.items[tabStops(r)[0]!]!)).toBe(false);
+      });
+    }
+
+    if (setup.mountWithDisabledLast && reachable) {
+      it('yields every tab stop while a disabled item reached by End holds focus', async () => {
+        const r = await setup.mountWithDisabledLast!();
+        const enabledIdx = enabled(r);
+        const last = r.items.length - 1;
+        expect(enabledIdx).not.toContain(last);
+        const first = enabledIdx[0]!;
+        r.items[first]!.focus();
+        await r.flush();
+
+        dispatchKey(r.items[first]!, 'End');
+        await r.flush();
+        expect(document.activeElement).toBe(r.items[last]);
+
+        expect(tabStops(r)).toEqual([]);
+
+        r.items[last]!.blur();
+        await r.flush();
+        expect(tabStops(r)).toHaveLength(1);
       });
     }
 

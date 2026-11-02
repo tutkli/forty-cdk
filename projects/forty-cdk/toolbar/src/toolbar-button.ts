@@ -1,6 +1,11 @@
 import { booleanAttribute, computed, Directive, ElementRef, inject, input } from '@angular/core';
 
-import { hostButtonType, registerHandle, navigateFromRovingItem } from 'forty-cdk/core';
+import {
+  hostButtonType,
+  navigateFromRovingItem,
+  registerHandle,
+  rovingTabStop,
+} from 'forty-cdk/core';
 import { injectToolbarContext } from './toolbar-context';
 
 /**
@@ -47,17 +52,19 @@ export class ForToolbarButton {
    * are always -1: they never own the toolbar's single Tab stop, and the arrow
    * keys, Home and End skip them. They keep DOM focusability (no native
    * `disabled`), so an item disabled while focused can still be left with the
-   * arrow keys.
+   * arrow keys, and while it holds focus every item yields the tab stop, so
+   * `Tab` leaves the toolbar from it.
    */
-  readonly tabindex = computed<-1 | 0>(() => {
-    if (this.effectiveDisabled()) {
-      return -1;
-    }
-    if (this.toolbar.roving.hasActive()) {
-      return this.toolbar.roving.tabindexFor(this.#host.nativeElement);
-    }
-    return this.toolbar.isFirstFocusableItem(this.#host.nativeElement) ? 0 : -1;
-  });
+  readonly tabindex = computed<-1 | 0>(() =>
+    rovingTabStop({
+      roving: this.toolbar.roving,
+      host: this.#host.nativeElement,
+      disabled: this.effectiveDisabled(),
+      selected: false,
+      hasSelected: false,
+      isFirstEnabled: this.toolbar.isFirstFocusableItem(this.#host.nativeElement),
+    }),
+  );
 
   constructor() {
     const handle = {

@@ -1,6 +1,7 @@
 import { afterEveryRender, DestroyRef, DOCUMENT, ElementRef, inject } from '@angular/core';
 
 import { resolveActiveElement } from '../composed-tree/composed-tree';
+
 /**
  * The owner of a roving group's tab stop, read by {@link injectRovingFocusRestore}:
  * a `RovingTabindex` built with `fallback: 'nearest'`, or the selection-driven
@@ -9,6 +10,8 @@ import { resolveActiveElement } from '../composed-tree/composed-tree';
 export interface RovingFocusTarget {
   /** The element that owns the group's tab stop, or `null` when none does. */
   readonly active: () => HTMLElement | null;
+  /** Receives the element holding DOM focus inside the group, or `null` once focus left it. */
+  readonly noteFocus?: (el: Element | null) => void;
 }
 
 /** Options for {@link injectRovingFocusRestore}. */
@@ -25,7 +28,9 @@ export interface RovingFocusRestoreOptions {
  * tracker's pointer says, and focus anywhere else is left alone, so a consumer
  * control that removed or collapsed the item keeps it, and so does a targeted
  * focus move another render hook makes in the same render (a keyboard drop
- * focusing the moved node).
+ * focusing the moved node). It also reports the element holding focus inside
+ * the group to the target's `noteFocus`, which a tracker reads to yield the tab
+ * stop while a disabled item holds focus.
  *
  * Pair it with a tracker built with `fallback: 'nearest'`, so the new owner is
  * the item beside the one that left rather than the first in the group, or, for
@@ -46,8 +51,10 @@ export function injectRovingFocusRestore(
 
   const onFocusIn = (event: FocusEvent): void => {
     held = event.target instanceof Element ? event.target : null;
+    roving.noteFocus?.(held);
   };
   const onFocusOut = (event: FocusEvent): void => {
+    roving.noteFocus?.(null);
     const target = event.target;
     queueMicrotask(() => {
       if (held !== null && held === target && held.isConnected) {

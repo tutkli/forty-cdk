@@ -564,7 +564,7 @@ describe('ForTabs', () => {
       expect(tabindexOf(el, 'a')).toBe('0');
     });
 
-    it('disabling the focused trigger re-engages the first-enabled fallback', async () => {
+    it('disabling the focused trigger re-engages the first-enabled fallback once focus leaves it', async () => {
       const { el, fixture, flush } = renderHost(TabsHost);
       fixture.componentInstance.active.set('a');
       await flush();
@@ -579,7 +579,10 @@ describe('ForTabs', () => {
         { value: 'c', label: 'C', disabled: false },
       ]);
       await flush();
+      expect(triggers(el).filter((t) => t.getAttribute('tabindex') === '0')).toEqual([]);
 
+      triggerOf(el, 'a').blur();
+      await flush();
       const tabbable = triggers(el).filter((t) => t.getAttribute('tabindex') === '0');
       expect(tabbable.length).toBe(1);
       expect(tabindexOf(el, 'b')).toBe('0');

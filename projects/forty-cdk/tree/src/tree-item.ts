@@ -18,6 +18,7 @@ import {
   type DisabledRovingItemKeyOptions,
   handleDisabledRovingItemKey,
   navigateFromRovingItem,
+  rovingTabStop,
   preventPointerFocus,
   resolveListNavigation,
   resolveTreeExpandCollapse,
@@ -211,16 +212,17 @@ export class ForTreeItem<T = string> implements ForTreeItemContext<T> {
   );
 
   private readonly tabindex = computed<-1 | 0>(() => {
-    if (this.effectiveDisabled()) {
-      return -1;
-    }
     if (this.#virtualized()) {
       return -1;
     }
-    if (this.#tree.roving.hasActive()) {
-      return this.#tree.roving.tabindexFor(this.#host.nativeElement);
-    }
-    return this.#tree.isFirstFocusableItem(this.#host.nativeElement) ? 0 : -1;
+    return rovingTabStop({
+      roving: this.#tree.roving,
+      host: this.#host.nativeElement,
+      disabled: this.effectiveDisabled(),
+      selected: false,
+      hasSelected: false,
+      isFirstEnabled: this.#tree.isFirstFocusableItem(this.#host.nativeElement),
+    });
   });
 
   /**

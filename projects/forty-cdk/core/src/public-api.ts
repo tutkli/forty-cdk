@@ -272,6 +272,7 @@ export {
   rovingTabStop,
   selectionTabStop,
 } from './roving-tabindex/roving-list-navigation';
+export { RovingFocusYield } from './roving-tabindex/roving-focus-yield';
 export { RovingTabindex } from './roving-tabindex/roving-tabindex';
 export { RangeSelectionEngine } from './selection/range-selection-engine';
 export {

@@ -135,6 +135,7 @@ export class ForRadio {
       selected: this.checked(),
       hasSelected: this.group.hasSelectedRadio(),
       isFirstEnabled: this.group.isFirstEnabledRadio(this.#host.nativeElement),
+      yields: this.group.yieldsTabStop(),
     }),
   );
 

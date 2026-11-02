@@ -176,13 +176,21 @@ describe('injectRovingFocusRestore', () => {
     expect(byTest(el, 'a').getAttribute('tabindex')).toBe('0');
   });
 
-  it('leaves focus on an item disabled in place', async () => {
+  it('leaves focus on an item disabled in place, every item yielding the tab stop', async () => {
     const { el, instance, flush } = await mountFocused('b');
 
     instance.disabledIds.set(['b']);
     await flush();
 
     expect(document.activeElement).toBe(byTest(el, 'b'));
+    expect(['a', 'b', 'c'].map((id) => byTest(el, id).getAttribute('tabindex'))).toEqual([
+      '-1',
+      '-1',
+      '-1',
+    ]);
+
+    byTest(el, 'b').blur();
+    await flush();
     expect(byTest(el, 'a').getAttribute('tabindex')).toBe('0');
   });
 });

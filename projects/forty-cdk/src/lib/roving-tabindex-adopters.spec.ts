@@ -172,14 +172,14 @@ const ADOPTERS: readonly RovingTabindexAdopter[] = [
     spec: 'radio-group/src/radio-group.spec.ts',
     trackers: [],
     handWrittenLadder: 'radio-group/src/radio.ts',
-    readBacks: ['hasSelectedRadio()', 'isFirstEnabledRadio('],
+    readBacks: ['hasSelectedRadio()', 'isFirstEnabledRadio(', 'yieldsTabStop()'],
   },
   {
     root: '[forCarousel]',
     spec: 'carousel/src/carousel.spec.ts',
     trackers: [],
     handWrittenLadder: 'carousel/src/carousel-indicator.ts',
-    readBacks: ['hasCurrentIndicator()', 'isFirstEnabledIndicator('],
+    readBacks: ['hasCurrentIndicator()', 'isFirstEnabledIndicator(', 'yieldsTabStop()'],
   },
 ];
 
@@ -277,6 +277,13 @@ const FOCUS_RESTORE_MOUNT = 'mountWithFocusRestore:';
 
 /** The shared ladder a declared member must still resolve its tab stop through. */
 const SHARED_LADDER = 'selectionTabStop(';
+
+/**
+ * The shared ladder an item piece of a tracker resolves its tab stop through.
+ * A root may read the tracker itself, since the yield to a focused disabled
+ * item lives in the tracker's own reads.
+ */
+const ROVING_LADDER = 'rovingTabStop(';
 
 /** The source declaring the grid resolver whose Home / End are row-scoped. */
 const KEYBOARD_NAVIGATION = 'core/src/keyboard-navigation/keyboard-navigation.ts';
@@ -504,6 +511,25 @@ describe('roving-tabindex contract adoption (meta-guard)', () => {
     expect(
       sorted(pieces.filter(([, source]) => !source.includes(ITEM_NAVIGATION)).map(([p]) => p)),
     ).toEqual([]);
+  });
+
+  it('computes every item piece tab stop through the shared ladder, never off the tracker', () => {
+    const trackerFiles = new Set(trackerSites().map((site) => site.id.split('::')[0]!));
+    const entryPoints = new Set(ADOPTERS.flatMap((adopter) => adopter.trackers.map(entryPointOf)));
+    const handRolled = [...LIBRARY_CODE.entries()]
+      .filter(
+        ([path, source]) =>
+          entryPoints.has(entryPointOf(path)) &&
+          !trackerFiles.has(path) &&
+          /\.roving\.(?:tabindexFor|hasActive)\(/.test(source),
+      )
+      .map(([path]) => path);
+    const viaLadder = [...LIBRARY_CODE.entries()].filter(
+      ([path, source]) => entryPoints.has(entryPointOf(path)) && source.includes(ROVING_LADDER),
+    );
+
+    expect(viaLadder.length).toBeGreaterThanOrEqual(6);
+    expect(sorted(handRolled)).toEqual([]);
   });
 
   it('routes the keys of a disabled item piece running typeahead through the shared handler', () => {

@@ -523,7 +523,7 @@ describe('ForDropList + ForDraggable', () => {
       expect(d.hasAttribute('data-disabled')).toBe(true);
     });
 
-    it('the active item becoming disabled hands the tab stop to the first enabled item', async () => {
+    it('the active item becoming disabled hands the tab stop to the first enabled item once focus leaves it', async () => {
       const { el, fixture } = renderHost(SingleListHost);
       const second = itemEl(el, 2);
       second.focus();
@@ -536,6 +536,14 @@ describe('ForDropList + ForDraggable', () => {
         { id: 3, label: 'Gamma' },
       ]);
       fixture.detectChanges();
+      await flush(fixture);
+      expect(draggables(el).map((item) => item.getAttribute('tabindex'))).toEqual([
+        '-1',
+        '-1',
+        '-1',
+      ]);
+
+      second.blur();
       await flush(fixture);
       expect(second.getAttribute('tabindex')).toBe('-1');
       expect(itemEl(el, 1).getAttribute('tabindex')).toBe('0');

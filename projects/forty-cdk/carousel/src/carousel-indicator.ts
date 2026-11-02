@@ -77,6 +77,7 @@ export class ForCarouselIndicator {
       selected: this.current(),
       hasSelected: this.ctx.hasCurrentIndicator(),
       isFirstEnabled: this.ctx.isFirstEnabledIndicator(this.#host.nativeElement),
+      yields: this.ctx.yieldsTabStop(),
     }),
   );
 
