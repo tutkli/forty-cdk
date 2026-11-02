@@ -311,6 +311,7 @@ describe('ForOtpInput', () => {
     },
     {
       flags: ['disabled', 'readonly', 'required', 'invalid', 'pending', 'touched', 'dirty', 'name'],
+      nativeRequired: true,
     },
   );
 
@@ -1072,10 +1073,11 @@ describe('ForOtpInput', () => {
       expect(input.value).toBe('999999');
     });
 
-    it('flows schema-driven required into aria-required on the input', async () => {
+    it('flows schema-driven required into the native required attribute on the input', async () => {
       const r = renderHost(SignalFormsHost);
       await flush(r.fixture);
-      expect(r.el.querySelector('input')!.getAttribute('aria-required')).toBe('true');
+      expect(r.el.querySelector('input')!.required).toBe(true);
+      expect(r.el.querySelector('input')!.hasAttribute('aria-required')).toBe(false);
     });
   });
 

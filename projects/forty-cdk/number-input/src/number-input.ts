@@ -3,6 +3,7 @@ import type { FormValueControl } from '@angular/forms/signals';
 
 import {
   reflectDisabled,
+  reflectRequired,
   FormUiControlBase,
   mirrorExternalValue,
   injectHiddenInput,
@@ -67,7 +68,6 @@ import { FOR_NUMBER_INPUT_DEFAULTS } from 'forty-cdk/defaults';
     '[attr.aria-valuemax]': 'max() ?? null',
     '[attr.aria-valuetext]': 'valueText()',
     '[attr.aria-readonly]': 'readonly() ? "true" : null',
-    '[attr.aria-required]': 'required() ? "true" : null',
     '[attr.aria-invalid]': 'invalid() ? "true" : null',
     '[attr.aria-busy]': 'pending() ? "true" : null',
     '[attr.readonly]': 'readonly() ? "" : null',
@@ -221,6 +221,7 @@ export class ForNumberInput
   constructor() {
     super();
     reflectDisabled(this.effectiveDisabled);
+    reflectRequired(this.required);
     this.#syncHiddenInput = injectHiddenInput({
       name: this.name,
       values: computed(() => {

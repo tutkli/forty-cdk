@@ -25,6 +25,7 @@ import {
   hostAriaLabel,
   injectNativeFormReset,
   mirrorValue,
+  reflectRequired,
 } from 'forty-cdk/core';
 import { FOR_OTP_INPUT_CONTEXT, type ForOtpInputContext } from './otp-input-context';
 import {
@@ -245,12 +246,13 @@ export class ForOtpInput
       el.toggleAttribute('readonly', this.readonly());
       setAttr(el, 'aria-label', this.#field?.labelledBy() ? null : this.resolvedAriaLabel());
       setAttr(el, 'aria-readonly', this.readonly() ? 'true' : null);
-      setAttr(el, 'aria-required', this.required() ? 'true' : null);
       setAttr(el, 'aria-invalid', this.invalid() ? 'true' : null);
       setAttr(el, 'aria-busy', this.pending() ? 'true' : null);
       el.toggleAttribute('data-disabled', this.effectiveDisabled());
       el.toggleAttribute('data-readonly', this.readonly());
     });
+
+    reflectRequired(this.required, this.#inputEl);
 
     mirrorValue(this.#inputEl, this.#clampedValue, () => this.#composing);
 

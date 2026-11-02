@@ -9,14 +9,7 @@ import { ForField, ForFieldControl, ForFieldDescription, ForLabel } from 'forty-
     <div forField class="field">
       <label forLabel class="field-label">
         <span class="field-label-text">Email address</span>
-        <input
-          forFieldControl
-          class="input"
-          type="email"
-          placeholder="jane@example.com"
-          required
-          aria-required="true"
-        />
+        <input forFieldControl class="input" type="email" placeholder="jane@example.com" required />
       </label>
       <p forFieldDescription class="field-desc">We'll only use this to send receipts.</p>
     </div>

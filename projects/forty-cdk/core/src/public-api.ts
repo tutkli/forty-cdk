@@ -207,6 +207,7 @@ export { TextValueControlBase } from './form-ui-control/text-value-control-base'
 export { mirrorExternalValue, mirrorValue } from './form-ui-control/value-mirror';
 export { resolveConfigClass } from './host-attributes/config-class';
 export { reflectDisabled } from './host-attributes/disabled-reflection';
+export { reflectRequired } from './host-attributes/required-reflection';
 export { hostAriaLabel, hostDescribedBy, hostLabelledBy } from './host-attributes/host-aria';
 export { adoptHostId, hostId, resolveHostId, staticHostId } from './host-attributes/host-id';
 export { hostStaticAttribute } from './host-attributes/host-static-attribute';

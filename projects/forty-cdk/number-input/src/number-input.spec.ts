@@ -185,7 +185,10 @@ describe('ForNumberInput', () => {
     },
     // `name` is excluded: the visible spinbutton does not carry it (the hidden
     // input does — see the native-submission block below).
-    { flags: ['disabled', 'readonly', 'required', 'invalid', 'pending', 'touched', 'dirty'] },
+    {
+      flags: ['disabled', 'readonly', 'required', 'invalid', 'pending', 'touched', 'dirty'],
+      nativeRequired: true,
+    },
   );
 
   describe('parsing live input', () => {
@@ -1665,10 +1668,11 @@ describe('ForNumberInput', () => {
       expect(input.value).toBe('9');
     });
 
-    it('flows schema-driven required into aria-required', async () => {
+    it('flows schema-driven required into the native required attribute', async () => {
       const { el, flush } = renderHost(SignalFormsHost);
       await flush();
-      expect(byId(el, 'qty').getAttribute('aria-required')).toBe('true');
+      expect(byId(el, 'qty').required).toBe(true);
+      expect(byId(el, 'qty').hasAttribute('aria-required')).toBe(false);
     });
 
     it('takes its lower bound from the schema min rule, with no [min] binding', async () => {

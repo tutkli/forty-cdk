@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Input, Textarea, Search, Number input, OTP input** — `required` now reaches the native element
+  as the `required` attribute, and these controls no longer emit `aria-required`
+  ([#2731](https://github.com/tutkli/forty-cdk/issues/2731)). The native attribute already exposes
+  the field as required to assistive technology, the same single channel `disabled` uses. Styles
+  keyed on `[aria-required]` on these hosts move to `:required` or `[required]`. On the OTP input
+  the attribute lands on the injected `<input>`.
+
+### Fixed
+
+- **Field, Input, Textarea, Search, Number input, OTP input** — a bound `[required]`, or a
+  `[formField]` whose schema marks the field required, now sets the native `required` attribute
+  ([#2731](https://github.com/tutkli/forty-cdk/issues/2731)). Before, the directive's own
+  `required` input claimed the binding and nothing wrote it back, so `:required` / `:invalid` never
+  matched and the browser submitted the empty field; on `[forFieldControl]` a screen reader was not
+  told the field was required either. A `required` attribute written in the template is never
+  removed.
+
 ## [0.41.1] - 2026-10-22
 
 ### Fixed
