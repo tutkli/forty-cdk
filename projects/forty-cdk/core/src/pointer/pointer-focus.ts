@@ -1,7 +1,7 @@
 import { DestroyRef, ElementRef, inject } from '@angular/core';
 
 import { composedParentElement, resolveEventTarget } from '../composed-tree/composed-tree';
-import { FOCUSABLE_SELECTOR } from '../focus-trap/focusable-candidate';
+import { FOCUSABLE_SELECTOR, isDisabledControl } from '../focus-trap/focusable-candidate';
 
 export function preventPointerFocus(when: (event: MouseEvent) => boolean = () => true): void {
   const host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
@@ -13,8 +13,6 @@ export function preventPointerFocus(when: (event: MouseEvent) => boolean = () =>
   host.addEventListener('mousedown', onMouseDown);
   inject(DestroyRef).onDestroy(() => host.removeEventListener('mousedown', onMouseDown));
 }
-
-const DISABLEABLE_CONTROLS = new Set(['button', 'input', 'select', 'textarea']);
 
 export function pressFocusesDescendant(event: Event, host: Element): boolean {
   return mouseFocusTarget(resolveEventTarget(event), host) !== null;
@@ -35,17 +33,6 @@ export function mouseFocusTarget(
 
 function isMouseFocusable(el: Element): boolean {
   return (el.hasAttribute('tabindex') || el.matches(FOCUSABLE_SELECTOR)) && !isDisabledControl(el);
-}
-
-function isDisabledControl(el: Element): boolean {
-  if (!DISABLEABLE_CONTROLS.has(el.localName)) {
-    return false;
-  }
-  if (el.hasAttribute('disabled')) {
-    return true;
-  }
-  const fieldset = el.closest('fieldset[disabled]');
-  return fieldset !== null && !fieldset.querySelector(':scope > legend')?.contains(el);
 }
 
 export function focusAfterPress(host: HTMLElement): void {
