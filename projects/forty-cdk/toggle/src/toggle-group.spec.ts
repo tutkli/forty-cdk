@@ -183,6 +183,20 @@ describe('ForToggleGroup', () => {
           r.instance.items.update(([first, ...rest]) => [{ ...first!, disabled: true }, ...rest]),
       };
     },
+    mountWithFocusRestore: async () => {
+      const r = renderHost(ToggleGroupHost);
+      await r.flush();
+      return {
+        items: toggleItems(r.el),
+        flush: r.flush,
+        removedIndex: 1,
+        remove: () => r.instance.items.update((list) => list.filter((_, i) => i !== 1)),
+        disable: () =>
+          r.instance.items.update((list) =>
+            list.map((item, i) => (i === 1 ? { ...item, disabled: true } : item)),
+          ),
+      };
+    },
     mountWithRemoval: async () => {
       const r = renderHost(ToggleGroupHost);
       await r.flush();

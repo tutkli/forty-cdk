@@ -98,7 +98,7 @@ export class ForComboboxChip<T = string> {
   }
 
   private onKeyDown(event: KeyboardEvent): void {
-    if (this.ctx.effectiveDisabled() || this.ctx.readonly()) {
+    if (this.ctx.effectiveDisabled()) {
       return;
     }
     const chips = this.ctx.chips();
@@ -138,7 +138,7 @@ export class ForComboboxChip<T = string> {
       case 'Backspace':
       case 'Delete': {
         const v = this.value();
-        if (isUnset(v)) {
+        if (isUnset(v) || this.ctx.readonly()) {
           break;
         }
         event.preventDefault();

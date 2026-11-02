@@ -41,6 +41,8 @@ export interface ForRadioGroupContext {
 
   /** True when some registered, enabled radio's value matches the group's current value. */
   readonly hasSelectedRadio: Signal<boolean>;
+  /** True while a disabled radio holds DOM focus, when no radio holds the Tab stop. */
+  readonly yieldsTabStop: Signal<boolean>;
 
   isSelected(value: string | Unset): boolean;
   /** Selects `value` if the group is interactive. */

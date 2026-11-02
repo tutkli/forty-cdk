@@ -24,6 +24,7 @@ import {
   type VetoableNativeEvent,
   hostAriaLabel,
   isUnset,
+  injectRovingFocusRestore,
 } from 'forty-cdk/core';
 import { warnIfOpenWithoutContent } from 'forty-cdk/core-overlay';
 import { type MenuActivationModality, FOR_MENU_CONTEXT } from 'forty-cdk/core-anchored';
@@ -268,7 +269,9 @@ export class ForMenubar implements ForMenubarContext {
    * stop falls back to the first enabled trigger. The active pointer is
    * self-healing (a detached / disabled trigger no longer owns the stop).
    */
-  readonly roving = new RovingTabindex(() => this.#triggerCollection.items());
+  readonly roving = new RovingTabindex(() => this.#triggerCollection.items(), {
+    fallback: 'nearest',
+  });
 
   readonly #triggerTypeahead = injectTypeahead();
 
@@ -286,6 +289,7 @@ export class ForMenubar implements ForMenubarContext {
   readonly menuCtx: MenubarMenuContext = new MenubarMenuContext(this, this.#defaults);
 
   constructor() {
+    injectRovingFocusRestore(this.roving);
     warnIfOpenWithoutContent({
       primitive: 'menubar',
       piece: '[forMenuContent]',

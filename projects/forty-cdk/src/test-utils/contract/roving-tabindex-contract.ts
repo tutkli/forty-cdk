@@ -44,8 +44,13 @@
  *     the required `mount`, so every adopter the meta-guard counts runs it.
  *   - **An item disabled while it holds focus keeps the keyboard** — the
  *     forward arrow still moves focus off it
- *     ([#2140](https://github.com/tutkli/forty-cdk/issues/2140)). Every
- *     adopter supplies that mount; the meta-guard counts it.
+ *     ([#2140](https://github.com/tutkli/forty-cdk/issues/2140)), and so does
+ *     typeahead in a group that has it
+ *     ([#2719](https://github.com/tutkli/forty-cdk/issues/2719)). Every
+ *     adopter supplies that mount; the meta-guard counts it. While it holds
+ *     focus every item yields the tab stop, so `Tab` leaves the group from it
+ *     (#2719); the same holds for a disabled item `End` reaches in a group that
+ *     declares `disabledItemsReachable`.
  *   - **An item that leaves while it holds the tab stop leaves exactly one
  *     behind** among the survivors ([#2239](https://github.com/tutkli/forty-cdk/issues/2239)).
  *     It is {@link assertRovingRemovalContract}, which the excluded trackers
@@ -200,6 +205,13 @@ export interface RovingTabindexContractOptions {
    * so they are announced; every other adopter skips them.
    */
   disabledItemsReachable?: boolean;
+  /**
+   * For a group with typeahead: a printable key and the index into the items
+   * of `mountWithInPlaceDisable` it must move focus to from the disabled first
+   * item. The target must not be the second item, so the case cannot pass on
+   * an arrow.
+   */
+  typeaheadFromDisabled?: { key: string; target: number };
 }
 
 const dispatchKey = (
@@ -375,6 +387,68 @@ export function assertRovingTabindexContract(
         dispatchKey(first, forward);
         await r.flush();
         expect(document.activeElement).toBe(second);
+      });
+    }
+
+    if (setup.mountWithInPlaceDisable) {
+      it('yields every tab stop while an item disabled in place holds focus', async () => {
+        const r = await setup.mountWithInPlaceDisable!();
+        const first = r.items[0]!;
+        first.focus();
+        await r.flush();
+        expect(tabStops(r)).toEqual([0]);
+        r.disableFirst();
+        await r.flush();
+        expect(reflectsDisabled(first)).toBe(true);
+        expect(document.activeElement).toBe(first);
+
+        expect(tabStops(r)).toEqual([]);
+
+        first.blur();
+        await r.flush();
+        expect(tabStops(r)).toHaveLength(1);
+        expect(reflectsDisabled(r.items[tabStops(r)[0]!]!)).toBe(false);
+      });
+    }
+
+    if (setup.mountWithDisabledLast && reachable) {
+      it('yields every tab stop while a disabled item reached by End holds focus', async () => {
+        const r = await setup.mountWithDisabledLast!();
+        const enabledIdx = enabled(r);
+        const last = r.items.length - 1;
+        expect(enabledIdx).not.toContain(last);
+        const first = enabledIdx[0]!;
+        r.items[first]!.focus();
+        await r.flush();
+
+        dispatchKey(r.items[first]!, 'End');
+        await r.flush();
+        expect(document.activeElement).toBe(r.items[last]);
+
+        expect(tabStops(r)).toEqual([]);
+
+        r.items[last]!.blur();
+        await r.flush();
+        expect(tabStops(r)).toHaveLength(1);
+      });
+    }
+
+    if (setup.mountWithInPlaceDisable && options.typeaheadFromDisabled) {
+      const { key, target } = options.typeaheadFromDisabled;
+      it('typeahead moves focus off an item disabled while it holds focus', async () => {
+        const r = await setup.mountWithInPlaceDisable!();
+        expect(target).toBeGreaterThan(1);
+        const first = r.items[0]!;
+        first.focus();
+        await r.flush();
+        r.disableFirst();
+        await r.flush();
+        expect(reflectsDisabled(first)).toBe(true);
+        expect(document.activeElement).toBe(first);
+
+        dispatchKey(first, key);
+        await r.flush();
+        expect(document.activeElement).toBe(r.items[target]);
       });
     }
 

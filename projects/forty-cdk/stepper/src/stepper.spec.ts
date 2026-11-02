@@ -634,6 +634,20 @@ describe('ForStepper', () => {
             r.instance.steps.update(([first, ...rest]) => [{ ...first!, disabled: true }, ...rest]),
         };
       },
+      mountWithFocusRestore: async () => {
+        const r = renderHost(StepperHost);
+        await r.flush();
+        return {
+          items: triggers(r.el),
+          flush: r.flush,
+          removedIndex: 2,
+          remove: () => r.instance.steps.update((list) => list.slice(0, 2)),
+          disable: () =>
+            r.instance.steps.update((list) =>
+              list.map((item, i) => (i === 2 ? { ...item, disabled: true } : item)),
+            ),
+        };
+      },
       mountWithRemoval: async () => {
         const r = renderHost(StepperHost);
         await r.flush();

@@ -258,14 +258,21 @@ export {
   type HostRovingContext,
   type HostRovingItemHandle,
 } from './roving-tabindex/host-roving-context';
-export { injectRovingFocusRestore } from './roving-tabindex/roving-focus-restore';
 export {
+  injectRovingFocusRestore,
+  type RovingFocusRestoreOptions,
+  type RovingFocusTarget,
+} from './roving-tabindex/roving-focus-restore';
+export {
+  type DisabledRovingItemKeyOptions,
+  handleDisabledRovingItemKey,
   navigateFromRovingItem,
   type RovingItemNavigationOptions,
   rovingListTarget,
   rovingTabStop,
   selectionTabStop,
 } from './roving-tabindex/roving-list-navigation';
+export { RovingFocusYield } from './roving-tabindex/roving-focus-yield';
 export { RovingTabindex } from './roving-tabindex/roving-tabindex';
 export { RangeSelectionEngine } from './selection/range-selection-engine';
 export {

@@ -189,7 +189,7 @@ export const appConfig: ApplicationConfig = {
 
 ## Keyboard
 
-- **Tab** moves focus into / out of the group; lands on the selected radio (or the first enabled one if nothing is selected).
+- **Tab** moves focus into / out of the group; lands on the selected radio (or the first enabled one if nothing is selected). Removing the focused radio moves focus to the radio that then holds the Tab stop, without selecting it, so focus never falls to `<body>`.
 - **Space** / **Enter** select the focused radio (Space is APG; Enter is harmless). A `<button>` host gets both natively; any other host has them synthesized.
 - **ArrowDown** / **ArrowUp** / **ArrowRight** / **ArrowLeft**: all four cursors move focus AND change selection ("selection on focus"), wrapping at the ends, in either orientation (per the WAI-ARIA Radio Group pattern). RTL swaps Left/Right.
 - **Home** / **End** jump to the first / last enabled radio (and select it).

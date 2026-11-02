@@ -40,6 +40,7 @@ import {
   preventPointerFocus,
   type Unset,
   warnOnDuplicateRegistration,
+  injectRovingFocusRestore,
 } from 'forty-cdk/core';
 import {
   FOR_LISTBOX_CONTEXT,
@@ -219,7 +220,7 @@ export class ForListbox<T = string>
     transform: booleanAttribute,
   });
 
-  readonly roving = new RovingTabindex(() => this.#options.items());
+  readonly roving = new RovingTabindex(() => this.#options.items(), { fallback: 'nearest' });
   readonly #typeahead = injectTypeahead();
 
   readonly #options = new Collection<ForListboxOptionHandle<T>>();
@@ -365,6 +366,7 @@ export class ForListbox<T = string>
 
   constructor() {
     super();
+    injectRovingFocusRestore(this.roving);
     injectHiddenInput<T>({
       name: this.name,
       values: this.value,

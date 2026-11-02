@@ -564,6 +564,8 @@ Chips are intentionally **out of the Tab cycle**: Tab from outside lands on the 
 | **Backspace / Delete** | Remove this chip + focus the previous chip (or the input if it was the only / last chip). |
 | **Escape**             | Return focus to the input.                                                                |
 
+On a `readonly` combobox the chips keep the arrow keys and Escape, and Backspace / Delete remove nothing.
+
 In RTL the chip cluster lays out right-to-left, so **ArrowRight** moves to the visually-next chip (DOM-previous) and **ArrowLeft** moves to the visually-previous one (DOM-next, hopping to the input at the leftmost visual edge).
 
 `[forComboboxChipRemove]` is a click-only target (also out of Tab cycle) with auto-generated `aria-label="Remove <chip label>"`. The name is computed per chip, so the piece takes no `[ariaLabel]` input and ignores a static `aria-label` attribute. Localize it centrally by overriding the scope's builder:

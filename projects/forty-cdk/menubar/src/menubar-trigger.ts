@@ -17,6 +17,8 @@ import {
   hostId,
   IdGenerator,
   isHoverCapablePointer,
+  type DisabledRovingItemKeyOptions,
+  handleDisabledRovingItemKey,
   navigateFromRovingItem,
   preventPointerFocus,
   unsetInput,
@@ -229,7 +231,7 @@ export class ForMenubarTrigger extends AnchoredOverlayPositioningBase {
   private onKeyDown(event: KeyboardEvent): void {
     this.#pointerActivation = false;
     if (this.effectiveDisabled()) {
-      this.#navigate(event);
+      handleDisabledRovingItemKey(event, this.#keyOptions());
       return;
     }
     const orientation = this.menubar.orientation();
@@ -261,7 +263,7 @@ export class ForMenubarTrigger extends AnchoredOverlayPositioningBase {
     }
 
     // Trigger-row navigation (cross-axis to the open key, per APG).
-    if (this.#navigate(event)) {
+    if (navigateFromRovingItem(event, this.#keyOptions())) {
       return;
     }
 
@@ -276,13 +278,14 @@ export class ForMenubarTrigger extends AnchoredOverlayPositioningBase {
     }
   }
 
-  #navigate(event: KeyboardEvent): boolean {
-    return navigateFromRovingItem(event, {
+  #keyOptions(): DisabledRovingItemKeyOptions {
+    return {
       groupDisabled: this.menubar.disabled(),
       orientation: this.menubar.orientation(),
       dir: this.menubar.dir(),
       navigate: (action) => this.menubar.navigateTriggers(this.#host.nativeElement, action),
-    });
+      typeahead: (e) => this.menubar.handleTriggerTypeahead(e),
+    };
   }
 
   private onFocus(): void {

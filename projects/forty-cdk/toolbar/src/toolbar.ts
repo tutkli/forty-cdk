@@ -18,6 +18,7 @@ import {
   RovingTabindex,
   injectTextDirection,
   hostAriaLabel,
+  injectRovingFocusRestore,
 } from 'forty-cdk/core';
 import {
   FOR_TOOLBAR_CONTEXT,
@@ -115,11 +116,15 @@ export class ForToolbar implements ForToolbarContext {
    * matching Tabs / Tree. Before any focus, `active()` is `null` and the
    * tabindex falls back to the first-enabled entry point.
    */
-  readonly roving = new RovingTabindex(() => this.#items.items());
+  readonly roving = new RovingTabindex(() => this.#items.items(), { fallback: 'nearest' });
 
   readonly #items = new Collection<ForToolbarItemHandle>();
 
   readonly #firstEnabledHost = computed(() => firstEnabledHost(this.#items.items()));
+
+  constructor() {
+    injectRovingFocusRestore(this.roving);
+  }
 
   navigate(currentItem: HTMLElement, action: ListNavigationAction): void {
     if (this.disabled()) {

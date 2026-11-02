@@ -133,6 +133,17 @@ describe('ForToolbar', () => {
         disableFirst: () => r.fixture.componentInstance.firstDisabled.set(true),
       };
     },
+    mountWithFocusRestore: async () => {
+      const r = renderHost(ToolbarHost);
+      await r.flush();
+      return {
+        items: collectFocusables(r.el),
+        flush: r.flush,
+        removedIndex: 1,
+        remove: () => r.fixture.componentInstance.middleShown.set(false),
+        disable: () => r.fixture.componentInstance.middleDisabled.set(true),
+      };
+    },
     mountWithRemoval: async () => {
       const r = renderHost(ToolbarHost);
       await r.flush();
@@ -319,7 +330,7 @@ describe('ForToolbar', () => {
       expect(zeros(el)).toEqual(['two']);
     });
 
-    it('disabling the focused item re-engages the first-enabled fallback', async () => {
+    it('disabling the focused item re-engages the first-enabled fallback once focus leaves it', async () => {
       const { el, fixture, flush } = renderHost(DynamicToolbarHost);
       btn(el, 'one').focus();
       await flush();
@@ -331,7 +342,10 @@ describe('ForToolbar', () => {
         { id: 'three', disabled: false },
       ]);
       await flush();
+      expect(zeros(el)).toEqual([]);
 
+      btn(el, 'one').blur();
+      await flush();
       expect(btn(el, 'one').getAttribute('tabindex')).toBe('-1');
       expect(zeros(el)).toEqual(['two']);
     });

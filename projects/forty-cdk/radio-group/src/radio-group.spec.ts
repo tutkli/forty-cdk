@@ -241,6 +241,21 @@ describe('ForRadioGroup', () => {
         await r.flush();
         return { items: radioItems(r.el), enabledIndices: [0, 2], flush: r.flush };
       },
+      mountWithFocusRestore: async () => {
+        const r = renderHost(RadioGroupHost);
+        r.instance.color.set('green');
+        await r.flush();
+        return {
+          items: radioItems(r.el),
+          flush: r.flush,
+          removedIndex: 1,
+          remove: () => r.instance.options.update((list) => list.filter((_, i) => i !== 1)),
+          disable: () =>
+            r.instance.options.update((list) =>
+              list.map((item, i) => (i === 1 ? { ...item, disabled: true } : item)),
+            ),
+        };
+      },
       mountWithInPlaceDisable: async () => {
         const r = renderHost(RadioGroupHost);
         r.instance.color.set(null);

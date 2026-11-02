@@ -474,7 +474,8 @@ Reflected on the `[forCarouselViewport]` host this directive is applied to:
 Keyboard navigation lives on the indicator group. Only the current
 indicator is in the tab order, including after prev / next, autoplay or a drag
 moved the slide. Arrow keys move focus and activate the target slide
-automatically.
+automatically. Removing the focused indicator moves focus to the indicator that
+then holds the Tab stop, so focus never falls to `<body>`.
 
 | Key                        | Action                                                                |
 | -------------------------- | --------------------------------------------------------------------- |

@@ -15,6 +15,8 @@ import {
   focusAfterPress,
   hostButtonType,
   isUnset,
+  type DisabledRovingItemKeyOptions,
+  handleDisabledRovingItemKey,
   navigateFromRovingItem,
   registerHandle,
   hostId,
@@ -224,7 +226,7 @@ export class ForListboxOption<T = string> {
 
   private onKeyDown(event: KeyboardEvent): void {
     if (this.effectiveDisabled()) {
-      this.#navigate(event);
+      handleDisabledRovingItemKey(event, this.#keyOptions());
       return;
     }
 
@@ -276,19 +278,20 @@ export class ForListboxOption<T = string> {
       }
     }
 
-    if (this.#navigate(event)) {
+    if (navigateFromRovingItem(event, this.#keyOptions())) {
       return;
     }
     this.#group.handleTypeahead(event);
   }
 
-  #navigate(event: KeyboardEvent): boolean {
-    return navigateFromRovingItem(event, {
+  #keyOptions(): DisabledRovingItemKeyOptions {
+    return {
       groupDisabled: this.#group.effectiveDisabled(),
       orientation: this.#group.orientation(),
       dir: this.#group.dir(),
       pageKeys: true,
       navigate: (action) => this.#group.navigate(this.#host.nativeElement, action),
-    });
+      typeahead: (e) => this.#group.handleTypeahead(e),
+    };
   }
 }
