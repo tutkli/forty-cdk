@@ -15,6 +15,7 @@ import {
   registerHandle,
   unsetInput,
   type Unset,
+  isHistoryChord,
 } from 'forty-cdk/core';
 import {
   injectSliderContext,
@@ -150,7 +151,12 @@ export class ForSliderThumb {
 
   private onKeyDown(event: KeyboardEvent): void {
     const index = this.index();
-    if (this.ctx.effectiveDisabled() || this.ctx.readonly() || isUnset(index)) {
+    if (
+      this.ctx.effectiveDisabled() ||
+      this.ctx.readonly() ||
+      isUnset(index) ||
+      isHistoryChord(event)
+    ) {
       return;
     }
     switch (event.key) {

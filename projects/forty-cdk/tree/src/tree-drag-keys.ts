@@ -1,4 +1,4 @@
-import { resolveLiftedDragControl } from 'forty-cdk/core';
+import { isHistoryChord, resolveLiftedDragControl } from 'forty-cdk/core';
 
 /**
  * Tree-specific keyboard resolver for `ForTreeNodeDrag`. Framework-free and unit-testable in
@@ -26,6 +26,9 @@ export function resolveTreeDragLiftedAction(
   const control = resolveLiftedDragControl(event);
   if (control) {
     return control;
+  }
+  if (isHistoryChord(event)) {
+    return null;
   }
   const key = event.key;
   if (key === 'ArrowDown') {

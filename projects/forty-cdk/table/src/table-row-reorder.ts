@@ -31,6 +31,7 @@ import {
   type PointerDragSession,
   resolveLiftedDragControl,
   resolveWindowedReorder,
+  isHistoryChord,
 } from 'forty-cdk/core';
 import { isInteractiveDescendant } from './interactive-descendant';
 import { injectTableContext, injectTableRegistration } from './table-context';
@@ -273,7 +274,7 @@ export class ForTableRowReorder {
       this.#cancelActive();
       return;
     }
-    if (!LIFTED_NAV_KEYS.has(event.key)) {
+    if (!LIFTED_NAV_KEYS.has(event.key) || isHistoryChord(event)) {
       return;
     }
     event.preventDefault();

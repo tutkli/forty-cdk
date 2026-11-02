@@ -214,6 +214,7 @@ export { hostButtonType } from './host-attributes/host-type';
 export { MODAL_EXEMPT_ATTRIBUTE, MODAL_PEER_ATTRIBUTE } from './host-attributes/modal-attributes';
 export { IdGenerator } from './id-generator/id-generator';
 export { isImeComposing } from './keyboard-navigation/ime-composition';
+export { isHistoryChord, isShortcutChord } from './keyboard-navigation/modifier-chord';
 export {
   type GridNavigationAction,
   type ListNavigationAction,

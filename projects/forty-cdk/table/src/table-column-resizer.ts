@@ -22,6 +22,7 @@ import {
   type PointerDragSession,
   DRAG_DEAD_ZONE_PX,
   hostButtonType,
+  isHistoryChord,
 } from 'forty-cdk/core';
 import { injectTableCellTabIndex } from './cell-tab-index';
 import { assertColumnName, injectTableContext, injectTableRegistration } from './table-context';
@@ -352,7 +353,7 @@ export class ForTableColumnResizer {
     if (this.disabled()) {
       return;
     }
-    const delta = this.#keyDelta(event.key);
+    const delta = isHistoryChord(event) ? null : this.#keyDelta(event.key);
     if (delta === null) {
       return;
     }

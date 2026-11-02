@@ -21,6 +21,7 @@ import {
   clamp,
   roundToStepPrecision,
   DRAG_DEAD_ZONE_PX,
+  isHistoryChord,
 } from 'forty-cdk/core';
 
 /**
@@ -277,7 +278,7 @@ export class ForPaneResizer {
   }
 
   private onKeyDown(event: KeyboardEvent): void {
-    if (this.disabled()) {
+    if (this.disabled() || isHistoryChord(event)) {
       return;
     }
 

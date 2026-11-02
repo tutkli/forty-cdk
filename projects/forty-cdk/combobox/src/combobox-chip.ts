@@ -2,6 +2,7 @@ import { computed, Directive, ElementRef, inject, input, type InputSignal } from
 
 import {
   assertInputBound,
+  isHistoryChord,
   isImeComposing,
   isUnset,
   registerHandle,
@@ -114,6 +115,9 @@ export class ForComboboxChip<T = string> {
     const rtl = this.ctx.dir() === 'rtl';
     const prevKey = rtl ? 'ArrowRight' : 'ArrowLeft';
     const nextKey = rtl ? 'ArrowLeft' : 'ArrowRight';
+    if ((event.key === prevKey || event.key === nextKey) && isHistoryChord(event)) {
+      return;
+    }
 
     switch (event.key) {
       case prevKey: {

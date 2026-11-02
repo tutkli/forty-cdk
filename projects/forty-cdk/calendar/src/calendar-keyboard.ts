@@ -1,3 +1,5 @@
+import { isHistoryChord } from 'forty-cdk/core';
+
 /**
  * The directional intents a calendar grid keyboard move can express. Each
  * sub-grid (day / month / year) maps these onto its own coordinate space —
@@ -23,7 +25,8 @@ export interface CalendarGridMoves<T> {
 
 /**
  * Resolve a calendar grid keydown into the target the move lands on, or `null`
- * when the key is not a navigation key. `rtl` mirrors the horizontal arrows.
+ * when the key is not a navigation key or is held with Alt or Meta, which leaves
+ * the browser its history shortcuts. `rtl` mirrors the horizontal arrows.
  * Shared by all three sub-grids via their {@link CalendarGridMoves} mapping.
  */
 export function resolveCalendarGridMove<T>(
@@ -31,6 +34,9 @@ export function resolveCalendarGridMove<T>(
   rtl: boolean,
   moves: CalendarGridMoves<T>,
 ): T | null {
+  if (isHistoryChord(event)) {
+    return null;
+  }
   switch (event.key) {
     case 'ArrowLeft':
       return moves.horizontal(rtl ? 1 : -1);
@@ -68,7 +74,13 @@ export function calendarGridRowBounds(
   return { start, end: Math.min(start + columns - 1, last) };
 }
 
-/** Whether a keydown is the activation key (`Enter` / `Space`) every sub-grid selects on. */
+/**
+ * Whether a keydown is the activation key (`Enter` / `Space`) every sub-grid selects on. A key
+ * held with Ctrl, Alt or Meta is a browser shortcut and never activates.
+ */
 export function isCalendarActivationKey(event: KeyboardEvent): boolean {
+  if (event.ctrlKey || isHistoryChord(event)) {
+    return false;
+  }
   return event.key === 'Enter' || event.key === ' ' || event.key === 'Spacebar';
 }

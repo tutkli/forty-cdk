@@ -24,6 +24,7 @@ import {
   unsetInput,
   isUnset,
   type Unset,
+  isHistoryChord,
 } from 'forty-cdk/core';
 import {
   AnchoredOverlayPositioningBase,
@@ -256,7 +257,10 @@ export class ForMenubarTrigger extends AnchoredOverlayPositioningBase {
         this.#open('last');
         return;
       }
-    } else if (event.key === (dir === 'rtl' ? 'ArrowLeft' : 'ArrowRight')) {
+    } else if (
+      event.key === (dir === 'rtl' ? 'ArrowLeft' : 'ArrowRight') &&
+      !isHistoryChord(event)
+    ) {
       event.preventDefault();
       this.#open('first');
       return;

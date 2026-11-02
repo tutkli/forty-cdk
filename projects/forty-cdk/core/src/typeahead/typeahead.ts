@@ -1,6 +1,7 @@
 import { DestroyRef, inject, signal } from '@angular/core';
 
 import { isImeComposing } from '../keyboard-navigation/ime-composition';
+import { isShortcutChord } from '../keyboard-navigation/modifier-chord';
 
 export interface TypeaheadOptions {
   /** Milliseconds before the buffer is reset. Default 500. */
@@ -103,19 +104,6 @@ export class Typeahead {
       this.#timeoutId = null;
     }, this.#debounceMs);
   }
-}
-
-function isShortcutChord(event: KeyboardEvent): boolean {
-  if (event.metaKey) {
-    return true;
-  }
-  if (event.getModifierState?.('AltGraph')) {
-    return false;
-  }
-  if (event.ctrlKey) {
-    return true;
-  }
-  return event.altKey && event.key.length === 1 && event.key.charCodeAt(0) < 0x80;
 }
 
 /**
