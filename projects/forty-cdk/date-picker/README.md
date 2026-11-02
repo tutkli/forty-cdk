@@ -425,7 +425,7 @@ The default anatomy makes the trigger the control: it shows the value and takes 
 
 With the field adopted:
 
-- **One form control.** The picker stays the `FormValueControl`, so `[formField]` binds once, on the picker. A typed date and a calendar pick both write the picker's value, and both mark it dirty; a pick marks it touched, and so does focus leaving the field.
+- **One form control.** The picker stays the `FormValueControl`, so `[formField]` binds once, on the picker. A typed date and a calendar pick both write the picker's value, and both mark it dirty; a pick marks it touched, and so does focus leaving the picker, while a move between the field and the trigger does not.
 - **State is set once.** `minDate`, `maxDate`, `disabled`, `readonly`, `granularity`, `hourCycle` and `locale` on the picker apply to the field. A read-only picker blocks typing and picking alike.
 - **The field is the control.** A surrounding `[forField]` names and describes the field's `role="group"`, `aria-invalid` lands there, a label press focuses its first segment, and the picker's `focus()` goes there too.
 - **The trigger is a plain button.** It drops `role="combobox"` and the form-control `aria-*` state, and keeps `aria-haspopup="dialog"`, `aria-expanded` and `aria-controls`. Give it a name of its own.
@@ -482,7 +482,7 @@ readonly booking = form(this.model, (p) => required(p.stay));
 </div>
 ```
 
-- **Form value.** The committed `DateRange<D> | null` is the `value` model. `null` is the empty state. Pair it with `required(p.stay)` so `invalid()` flips when the form demands a range and none is committed. `touched` fires on commit and on close, exactly like the single-date picker.
+- **Form value.** The committed `DateRange<D> | null` is the `value` model. `null` is the empty state. Pair it with `required(p.stay)` so `invalid()` flips when the form demands a range and none is committed. `touched` fires on commit and on an outside dismissal, never on Escape, exactly like the single-date picker.
 - **Validity.** `start <= end` is guaranteed by construction and is never an error. Forward `minDate` / `maxDate` to the calendar's `[min]` / `[max]` so out-of-range days are disabled in the grid; a range picked in a calendar without them is clamped into `[minDate, maxDate]` on commit. Forward `minRangeLength` / `maxRangeLength` to the calendar's `[minRangeLength]` / `[maxRangeLength]` (a too-short / too-long range is rejected as a no-op by the calendar's two-click flow).
 - **Native submission.** When `name` is set, two hidden inputs `<name>-start` / `<name>-end` mirror the committed endpoints as ISO `YYYY-MM-DD` for native `<form>` posts. A native reset of the owning `<form>` returns `value` to what it held when the picker first rendered.
 - **Bounds naming.** `minDate` / `maxDate` (not `min` / `max`) for the same reason as `ForDatePicker`, and additionally because `FormUiControl.min` / `max` are typed `NonNullable<TValue>` (the range object itself), which is meaningless as a bound.

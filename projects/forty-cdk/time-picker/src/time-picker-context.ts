@@ -153,6 +153,11 @@ export interface ForTimePickerContext<D = unknown> {
  */
 export interface TimePickerPieceContext {
   /**
+   * The elements that make up the picker as one control: its root and its open
+   * surface. A focus move between them does not mark the picker touched.
+   */
+  touchBoundaries(): readonly (Node | null)[];
+  /**
    * Host element of the slot the pointer is over, `null` when the pointer is
    * over none. Self-heals on read: a host that has left the registered set or
    * become disabled is discounted, so the focused slot reclaims the highlight.

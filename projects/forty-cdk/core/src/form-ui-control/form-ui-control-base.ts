@@ -78,16 +78,19 @@ export abstract class FormUiControlBase {
   readonly errors = input<readonly FieldValidationError[]>([]);
 
   /**
-   * Set to true on blur (via {@link markTouched}). Two-way bindable for
-   * standalone consumers; under `[formField]` the directive pushes the field's
+   * Set to true on the first touch-producing interaction (see {@link touch}).
+   * Two-way bindable for standalone consumers; under `[formField]` the directive pushes the field's
    * touched state down through this input, so the form stays the source of
    * truth (e.g. a form reset clears it).
    */
   readonly touched = model<boolean>(false);
 
   /**
-   * Emitted on every touch-producing interaction (blur, dismiss,
-   * selection-commit) — including repeats once the control is already touched.
+   * Emitted on every touch-producing interaction — including repeats once the
+   * control is already touched. Those are: focus leaving the control (a move
+   * between its own parts, such as a picker's field and trigger, is not a
+   * leave), an activation or selection commit, and a dismissal by an outside
+   * press or outside focus. Escape is not one: it leaves focus in the control.
    * The {@link touched} model itself only changes on the first, and Signal
    * Forms' `markAsTouched()` is idempotent, so re-emission is safe. No control
    * once-guards this. `[formField]` listens to this output to mark the field

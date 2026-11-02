@@ -22,6 +22,7 @@ import {
   injectTextDirection,
   isUnset,
   injectRovingFocusRestore,
+  leavesControl,
 } from 'forty-cdk/core';
 import { FOR_TOGGLE_DEFAULTS } from 'forty-cdk/defaults';
 import {
@@ -254,10 +255,8 @@ export class ForToggleGroup
   }
 
   private onFocusOut(event: FocusEvent): void {
-    const next = event.relatedTarget as HTMLElement | null;
-    if (next && this.#host.nativeElement.contains(next)) {
-      return;
+    if (leavesControl(event, [this.#host.nativeElement])) {
+      this.markTouched();
     }
-    this.markTouched();
   }
 }

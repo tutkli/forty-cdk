@@ -15,6 +15,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the field as required to assistive technology, the same single channel `disabled` uses. Styles
   keyed on `[aria-required]` on these hosts move to `:required` or `[required]`. On the OTP input
   the attribute lands on the injected `<input>`.
+- **Select, Time picker, Date picker, Date range picker** — Escape no longer marks the control
+  touched ([#2732](https://github.com/tutkli/forty-cdk/issues/2732)). It leaves focus in the
+  control, so it now matches the Combobox: an outside press, outside focus, a pick and focus
+  leaving the control touch it, Escape does not. On the date pickers `close()` no longer marks the
+  control touched, and `ForDatePickerContext.requestClose` takes the dismissal channel
+  (`'escape' | 'pointerDownOutside' | 'focusOutside'`).
 
 ### Fixed
 
@@ -25,6 +31,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   matched and the browser submitted the empty field; on `[forFieldControl]` a screen reader was not
   told the field was required either. A `required` attribute written in the template is never
   removed.
+- **Checkbox, Switch, Toggle** — activating the control marks it touched
+  ([#2732](https://github.com/tutkli/forty-cdk/issues/2732)). Before, only a blur did, and Safari
+  and Firefox on macOS do not focus a pressed `<button>`, so a pointer user who ticked and unticked
+  a required checkbox never saw its error.
+- **Date picker, Time picker** — in the field anatomy, moving focus between the typed segments and
+  the trigger no longer marks the picker touched
+  ([#2732](https://github.com/tutkli/forty-cdk/issues/2732)), so a required error no longer shows
+  before the user has had a chance to pick. Leaving the picker still marks it touched.
 
 ## [0.41.1] - 2026-10-22
 

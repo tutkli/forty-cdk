@@ -149,7 +149,7 @@ export class ForListboxController<T = string> {
 
   private onFocusOut(event: FocusEvent): void {
     if (this.active()) {
-      this.listbox()?.controllerFocusOut(event.relatedTarget);
+      this.listbox()?.controllerFocusOut(event);
     }
   }
 }

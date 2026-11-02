@@ -23,6 +23,7 @@ import {
   type Unset,
   injectRovingFocusRestore,
   RovingFocusYield,
+  leavesControl,
 } from 'forty-cdk/core';
 import {
   FOR_RADIO_GROUP_CONTEXT,
@@ -217,10 +218,8 @@ export class ForRadioGroup
   }
 
   private onFocusOut(event: FocusEvent): void {
-    const next = event.relatedTarget as HTMLElement | null;
-    if (next && this.#host.nativeElement.contains(next)) {
-      return;
+    if (leavesControl(event, [this.#host.nativeElement])) {
+      this.markTouched();
     }
-    this.markTouched();
   }
 }

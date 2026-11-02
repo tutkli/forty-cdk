@@ -9,6 +9,7 @@ import {
   preventPointerFocus,
   FOR_FIELD_ANCHOR_CONTEXT,
   FOR_FIELD_CONTEXT,
+  dismissMarksTouched,
 } from 'forty-cdk/core';
 import { injectModalShell, warnIfMountedWhileClosed } from 'forty-cdk/core-overlay';
 import { floatingPositioner, injectOverlayShell } from 'forty-cdk/core-anchored';
@@ -120,7 +121,9 @@ export class ForTimePickerContent {
         dismiss: {
           dismissible: ctx.dismissible,
           requestClose: (reason) => {
-            ctx.markTouched();
+            if (dismissMarksTouched(reason)) {
+              ctx.markTouched();
+            }
             ctx.overlay.closeOverlay(reason);
           },
           emitEscapeKeyDown: (veto) => ctx.overlay.forwardEscapeKeyDown(veto),
@@ -153,7 +156,9 @@ export class ForTimePickerContent {
       dismiss: {
         dismissible: ctx.dismissible,
         requestClose: (reason) => {
-          ctx.markTouched();
+          if (dismissMarksTouched(reason)) {
+            ctx.markTouched();
+          }
           ctx.overlay.closeOverlay(reason);
         },
         emitEscapeKeyDown: (event) => ctx.overlay.emitEscapeKeyDown(event),

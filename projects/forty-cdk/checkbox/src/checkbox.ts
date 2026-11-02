@@ -140,6 +140,7 @@ export class ForCheckbox extends FormUiControlBase implements FormCheckboxContro
       this.indeterminate.set(false);
     }
     this.checked.update((v) => !v);
+    this.markTouched();
   }
 
   private onKeydown(event: KeyboardEvent): void {

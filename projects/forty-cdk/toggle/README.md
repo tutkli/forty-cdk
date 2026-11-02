@@ -100,7 +100,7 @@ export class DemoAlignment {
 | `dirty`    | `input<boolean>`                                          | Reflected as `data-dirty`.<br>**Default:** `false`                                                                                                                                  |
 | `name`     | `input<string>`                                           | When non-empty, a hidden input is mounted for native form submission (`name=on` while checked).<br>**Default:** `''`                                                                |
 | `errors`   | `input<readonly ValidationError.WithOptionalFieldTree[]>` | Validation errors surfaced by Signal Forms.<br>**Default:** `[]`                                                                                                                    |
-| `touched`  | `model<boolean>`                                          | Two-way bindable. Set to `true` on blur.<br>**Default:** `false`                                                                                                                    |
+| `touched`  | `model<boolean>`                                          | Two-way bindable. Set to `true` on activation and on blur.<br>**Default:** `false`                                                                                                  |
 
 | Data attribute  | Values                   |
 | --------------- | ------------------------ |

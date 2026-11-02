@@ -216,9 +216,9 @@ export interface ListboxPieceContext {
   clearActiveOption(): void;
   /**
    * Reported by the controller when DOM focus leaves it. Marks the listbox
-   * touched unless `next` is inside the listbox host.
+   * touched unless focus moves inside the listbox host.
    */
-  controllerFocusOut(next: EventTarget | null): void;
+  controllerFocusOut(event: FocusEvent): void;
 }
 
 /** The registration protocol of `[forListboxVirtualized]`. */

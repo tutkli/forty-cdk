@@ -144,7 +144,7 @@ One class and one directive, four states. The control's own `required`, `invalid
 
 ### Validation with Signal Forms
 
-`[forFieldError]` reads the control's Signal Forms errors automatically. You render `err.messages()`; the field wires `aria-errormessage` and folds the id into `aria-describedby` while invalid. The `[forCheckbox]` auto-associates because it extends the shared form base. Tick and untick it, then move focus away, to surface the required error.
+`[forFieldError]` reads the control's Signal Forms errors automatically. You render `err.messages()`; the field wires `aria-errormessage` and folds the id into `aria-describedby` while invalid. The `[forCheckbox]` auto-associates because it extends the shared form base. Tick and untick it to surface the required error.
 
 ## API
 
