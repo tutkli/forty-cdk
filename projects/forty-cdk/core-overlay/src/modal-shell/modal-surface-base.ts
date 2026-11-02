@@ -312,6 +312,16 @@ export abstract class ModalSurfaceBase<Reason extends string> {
   }
 
   /**
+   * Ends the surface's modal side effects ahead of its destroy and returns focus, to
+   * `returnFocusTarget` when one is passed. Called by the programmatic managers at close intent, so
+   * only the DOM removal waits for the exit animation. Part of the internal composition surface
+   * with no semver guarantee; declarative consumers never need this.
+   */
+  releaseModalShell(returnFocusTarget?: HTMLElement | null): void {
+    this.#shell?.release(returnFocusTarget);
+  }
+
+  /**
    * Whether this surface is the topmost layer owning the pointer channel. Read by the backdrop
    * piece through the internal context to decide whether a press on it is this surface's.
    */

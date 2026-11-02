@@ -209,7 +209,11 @@ describe('OverlayManagerCore', () => {
       const host = document.createElement('div');
       host.setAttribute('data-test-overlay-id', id);
       document.body.appendChild(host);
-      manager.lastOutlet!.host!.registerSurface(id, { host, backdrop: () => null });
+      manager.lastOutlet!.host!.registerSurface(id, {
+        host,
+        backdrop: () => null,
+        release: () => undefined,
+      });
       return { host, ref };
     }
 
@@ -560,6 +564,7 @@ describe('OverlayManagerCore', () => {
         manager.lastOutlet!.host!.registerSurface(first.id, {
           host: firstHost,
           backdrop: () => null,
+          release: () => undefined,
         });
 
         next.focus();
@@ -594,6 +599,7 @@ describe('OverlayManagerCore', () => {
         manager.lastOutlet!.host!.registerSurface(first.id, {
           host: firstHost,
           backdrop: () => null,
+          release: () => undefined,
         });
         next.focus();
         const second = manager.openTracked();

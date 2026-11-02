@@ -47,7 +47,7 @@ test.describe('Drawer (programmatic — #677)', () => {
 
     // The 250ms exit transition must play before the host leaves the DOM.
     expect(elapsed).toBeGreaterThanOrEqual(150);
-    // Full teardown still runs after the animation: focus returns to the opener
+    // Focus returns to the opener, which it reached at close intent
     // — on WebKit too. WebKit does not focus a `<button>` on `mousedown` (and
     // blurs an already-focused one), so the opener must be re-focused inside
     // the click handler before `open()` for the manager to capture it as the
@@ -55,5 +55,32 @@ test.describe('Drawer (programmatic — #677)', () => {
     // `ForDrawerTrigger.onClick`). With that in place the return-focus is
     // reliable across browsers — no WebKit gate needed (#136).
     await expect(el(page, 'open-prog-drawer')).toBeFocused();
+  });
+
+  test('close() releases the modal before the exit animation removes the host', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'drawer-programmatic');
+
+    await el(page, 'open-prog-drawer').click();
+    const surface = page.locator('[role="dialog"]');
+    await expect(el(page, 'prog-drawer-panel')).toBeVisible();
+    await expect.poll(() => surface.evaluate((node) => node.getAnimations().length)).toBe(0);
+
+    const atClose = await page.evaluate(() => {
+      document.querySelector<HTMLElement>('[data-testid="prog-drawer-close"]')!.click();
+      const active = document.activeElement;
+      return {
+        mounted: document.querySelector('[role="dialog"]') !== null,
+        overflow: document.body.style.overflow,
+        inert: [...document.querySelectorAll('[inert]')].filter(
+          (node) => node.closest('[role="dialog"]') === null,
+        ).length,
+        focused: active?.getAttribute('data-testid') ?? active?.tagName ?? null,
+      };
+    });
+
+    expect(atClose).toEqual({ mounted: true, overflow: '', inert: 0, focused: 'open-prog-drawer' });
+    await expect(surface).toHaveCount(0, { timeout: 3000 });
   });
 });

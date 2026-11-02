@@ -22,6 +22,11 @@ export const routes: Routes = [
       import('./fixtures/dialog-programmatic.fixture').then((m) => m.DialogProgrammaticFixture),
   },
   {
+    path: 'overlay-close-all',
+    loadComponent: () =>
+      import('./fixtures/overlay-close-all.fixture').then((m) => m.OverlayCloseAllFixture),
+  },
+  {
     path: 'dialog-swap',
     loadComponent: () => import('./fixtures/dialog-swap.fixture').then((m) => m.DialogSwapFixture),
   },

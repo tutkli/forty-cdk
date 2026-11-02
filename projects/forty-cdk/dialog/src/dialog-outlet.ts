@@ -103,6 +103,7 @@ export class ForDialogSurface {
       this.#outlet.registerSurface(this.id(), {
         host: this.#host.nativeElement,
         backdrop: () => this.#dialog.backdropElement(),
+        release: (target) => this.#dialog.releaseModalShell(target),
       });
     });
   }

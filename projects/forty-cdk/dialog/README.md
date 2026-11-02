@@ -279,7 +279,7 @@ this.dialogs.open(ConfirmDialog, { data, alert: true, class: 'my-dialog my-dialo
 
 The tokens go on the real `[forDialog]` host alongside `data-state` / `role` / `aria-modal`, merged and de-duped, never clobbering those attributes.
 
-**Enter / exit animations.** A programmatic dialog is portaled to `document.body` and torn down imperatively, so the consumer can't attach `animate.leave` to the host the way a declarative `@if` block can. Pass `animateEnter` / `animateLeave` (CSS class names) instead: the manager applies `animateEnter` on mount (via `animate.enter`) and, on `close()`, keeps the host mounted with `animateLeave` until its CSS animations / transitions finish before tearing down. `close()` still resolves its promise and flips `isClosed()` immediately. Only the visual teardown waits. With no class (or under `prefers-reduced-motion`, if your CSS disables the animation) close is immediate.
+**Enter / exit animations.** A programmatic dialog is portaled to `document.body` and torn down imperatively, so the consumer can't attach `animate.leave` to the host the way a declarative `@if` block can. Pass `animateEnter` / `animateLeave` (CSS class names) instead: the manager applies `animateEnter` on mount (via `animate.enter`) and, on `close()`, keeps the host mounted with `animateLeave` until its CSS animations / transitions finish before tearing down. `close()` still resolves its promise and flips `isClosed()` immediately, and the overlay stops being modal at the same moment: its focus trap, inert siblings, scroll lock and Escape layer are released and focus returns. Only the DOM removal waits. With no class (or under `prefers-reduced-motion`, if your CSS disables the animation) close is immediate.
 
 <!-- snippet: fragment -->
 

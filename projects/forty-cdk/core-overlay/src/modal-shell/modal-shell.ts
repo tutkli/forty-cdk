@@ -20,6 +20,7 @@ import {
   isInitialFocusTarget,
   MODAL_EXEMPT_ATTRIBUTE,
   resolveActiveElement,
+  ReturnFocusResolver,
   type VetoableEvent,
   type VetoableNativeEvent,
 } from 'forty-cdk/core';
@@ -137,10 +138,10 @@ export interface ModalShellConfig {
   readonly autoFocusOnOpen?: () => ((event: VetoableEvent) => void) | undefined;
   /**
    * `(autoFocusOnClose)` veto. Same shape as `autoFocusOnOpen`. Fired
-   * synchronously from the `DestroyRef.onDestroy` hook, BEFORE the modal /
-   * non-modal teardown so it runs reliably on every close path — including a
-   * direct `open.set(false)` from the consumer that bypasses any
-   * close-output emission.
+   * synchronously from the shell's release (at close intent, or from the
+   * destroy hook), BEFORE the modal / non-modal teardown so it runs reliably
+   * on every close path — including a direct `open.set(false)` from the
+   * consumer that bypasses any close-output emission.
    */
   readonly autoFocusOnClose?: () => ((event: VetoableEvent) => void) | undefined;
   /**
@@ -168,6 +169,7 @@ export interface ModalShellHandle {
    * stacked above it, so an outside press is the surface's to handle.
    */
   readonly isTopmostPointerLayer: () => boolean;
+  readonly release: (returnFocusTarget?: HTMLElement | null) => void;
 }
 
 /**
@@ -204,6 +206,7 @@ export function injectModalShell(config: ModalShellConfig): ModalShellHandle {
   const dismissible = injectDismissibleLayer();
   const inertStack = inject(InertSiblingsStack);
   const scrollLock = inject(BodyScrollLock);
+  const returnFocus = inject(ReturnFocusResolver);
 
   // 1. Capture the return-focus target SYNCHRONOUSLY, before any side effect
   //    runs. WebKit (#136) blurs the previously-focused element as soon as
@@ -264,7 +267,7 @@ export function injectModalShell(config: ModalShellConfig): ModalShellHandle {
   //    synchronous-teardown path the callback flushes just before the destroy
   //    hook, so it sets `activatedAsModal = true` and the destroy hook below
   //    tears the side-effect stack back down. Either way nothing leaks.
-  let destroyed = false;
+  let released = false;
   let releasePeer: (() => void) | null = null;
   const activate = (deferred: boolean): void => {
     if (deferred) {
@@ -391,7 +394,7 @@ export function injectModalShell(config: ModalShellConfig): ModalShellHandle {
   afterNextRenderCancellable(() => {
     let synchronous = true;
     order.after(enclosing, () => {
-      if (!destroyed) {
+      if (!released) {
         activate(!synchronous);
       }
       order.release(host.nativeElement);
@@ -399,13 +402,17 @@ export function injectModalShell(config: ModalShellConfig): ModalShellHandle {
     synchronous = false;
   });
 
-  // 4. Destroy. Hooks fire in registration order; the portal's destroy hook
-  //    was registered inside `injectPortal()` (above) so it runs BEFORE
-  //    ours, scheduling the element's removal for after the next frame and
-  //    any finite exit animation. We tear down the side-effect stack here in
-  //    the inverse order it was activated.
-  inject(DestroyRef).onDestroy(() => {
-    destroyed = true;
+  // 4. Release. Tears the side-effect stack down in the inverse order it was
+  //    activated, once: from `release()` at close intent when a manager drives
+  //    the exit animation, else from the destroy hook. Destroy hooks fire in
+  //    registration order; the portal's was registered inside `injectPortal()`
+  //    (above) so it runs BEFORE ours, scheduling the element's removal for
+  //    after the next frame and any finite exit animation.
+  const release = (target?: HTMLElement | null): void => {
+    if (released) {
+      return;
+    }
+    released = true;
     order.release(host.nativeElement);
     releasePeer?.();
     releasePeer = null;
@@ -429,26 +436,26 @@ export function injectModalShell(config: ModalShellConfig): ModalShellHandle {
       inertHandle?.deactivate();
       inertHandle = null;
       const shouldReturnFocus = config.returnFocus() && !skipReturnFocus;
-      const overrideTarget = config.returnFocusTarget?.() ?? null;
+      const overrideTarget = target === undefined ? (config.returnFocusTarget?.() ?? null) : target;
       // Suppress the dismissible-layer dispatcher across focus-return so the
       // synthetic `focusin` triggered by `.focus()`-ing the previous element
       // does not cascade-dismiss whatever modal is now topmost (a stacked
       // dialog opened above this one).
       dismissible.suppress(() => {
-        if (shouldReturnFocus && overrideTarget?.isConnected) {
-          focusTrap.deactivate({ returnFocus: false });
-          overrideTarget.focus();
-        } else {
-          focusTrap.deactivate({ returnFocus: shouldReturnFocus });
+        focusTrap.deactivate({ returnFocus: false });
+        if (shouldReturnFocus) {
+          returnFocus.resolve(overrideTarget, returnFocusTarget)?.focus();
         }
       });
       scrollLock.unlock(activatedContainer ?? undefined);
     }
-  });
+  };
+  inject(DestroyRef).onDestroy(() => release());
 
   return {
     isModal: () => activatedAsModal,
     modal: computed(() => activatedMode() ?? config.modal()),
     isTopmostPointerLayer: () => dismissible.isTopmostFor('pointer'),
+    release,
   };
 }
