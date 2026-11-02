@@ -267,7 +267,9 @@ export class ForCombobox<T = string>
 
   /**
    * When true (default), focus returns to the `[forComboboxTrigger]` on close
-   * in the picker anatomy. In the editable anatomy focus normally never leaves
+   * in the picker anatomy. A close from a press or focus outside the popup, or
+   * from a Tab out, leaves focus where the user moved it and emits no
+   * `(autoFocusOnClose)`. In the editable anatomy focus normally never leaves
    * the input, so this only gates the return to the input after a close that
    * unmounts the popup while focus is inside it, such as a `[forComboboxAction]`
    * whose `(activate)` closes it.

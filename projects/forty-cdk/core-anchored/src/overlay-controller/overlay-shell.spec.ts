@@ -142,6 +142,7 @@ describe('injectOverlayShell', () => {
       const ctx = mountShell(() => ({
         positioner: {
           reference: signal<HTMLElement | null>(makeReference()),
+          open: signal(true),
           attach: () => attachedTo.push(inject<ElementRef<HTMLElement>>(ElementRef).nativeElement),
         },
       }));
@@ -354,6 +355,107 @@ describe('injectOverlayShell', () => {
       expect(interactVetoes).toHaveLength(1);
       expect(calls).toEqual(['close']);
       ctx.destroy();
+    });
+  });
+
+  describe('scope of the closes the shell requests itself', () => {
+    function mountScoped(reopenOnClose: boolean) {
+      const ref = signal<HTMLElement | null>(makeReference());
+      const open = signal(true);
+      const trigger = document.createElement('button');
+      document.body.appendChild(trigger);
+      const outside = document.createElement('button');
+      document.body.appendChild(outside);
+      const calls: string[] = [];
+      const closeSurface = (): void => {
+        open.set(false);
+        if (reopenOnClose) {
+          open.set(true);
+        }
+      };
+
+      const ctx = mountShell(() => ({
+        positioner: floatingPositioner({ reference: ref, open, portal: false }),
+        dismiss: {
+          dismissible: signal(true),
+          requestClose: closeSurface,
+          emitEscapeKeyDown: () => calls.push('escape'),
+          emitPointerDownOutside: () => {},
+        },
+        returnFocus: {
+          enabled: signal(true),
+          target: () => trigger,
+          veto: () => {
+            calls.push('autoFocusOnClose');
+            return false;
+          },
+        },
+        tabOut: { target: () => trigger, close: closeSurface },
+      }));
+
+      const unmount = (): void => {
+        open.set(false);
+        ctx.close();
+      };
+      return { ctx, open, trigger, outside, calls, unmount };
+    }
+
+    function pressOutside(target: Element): void {
+      const event = new PointerEvent('pointerdown', { bubbles: true, cancelable: true });
+      Object.defineProperty(event, 'composedPath', { value: () => [target], configurable: true });
+      target.dispatchEvent(event);
+    }
+
+    it('skips the return focus and its veto after an outside close', async () => {
+      const s = mountScoped(false);
+      await flush(s.ctx.fixture);
+      s.outside.focus();
+
+      pressOutside(s.outside);
+      await flush(s.ctx.fixture);
+      s.unmount();
+
+      expect(document.activeElement).toBe(s.outside);
+      expect(s.calls).toEqual([]);
+    });
+
+    it('returns focus after a surface reopened in the task of an outside close closes again', async () => {
+      const s = mountScoped(true);
+      await flush(s.ctx.fixture);
+
+      pressOutside(s.outside);
+      await flush(s.ctx.fixture);
+      s.outside.focus();
+      s.unmount();
+
+      expect(document.activeElement).toBe(s.trigger);
+      expect(s.calls).toEqual(['autoFocusOnClose']);
+    });
+
+    it('drops the dismissible layer after a Tab out', async () => {
+      const s = mountScoped(false);
+      await flush(s.ctx.fixture);
+
+      pressKey(document.querySelector('#inside-2')!, 'Tab');
+      await flush(s.ctx.fixture);
+      pressKey(document, 'Escape');
+
+      expect(document.activeElement).toBe(s.trigger);
+      expect(s.calls).toEqual([]);
+    });
+
+    it('restores the dismissible layer and the return focus when a surface reopens after a Tab out', async () => {
+      const s = mountScoped(true);
+      await flush(s.ctx.fixture);
+
+      pressKey(document.querySelector('#inside-2')!, 'Tab');
+      await flush(s.ctx.fixture);
+      pressKey(document, 'Escape');
+      s.outside.focus();
+      s.unmount();
+
+      expect(s.calls).toEqual(['escape', 'autoFocusOnClose']);
+      expect(document.activeElement).toBe(s.trigger);
     });
   });
 

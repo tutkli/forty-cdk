@@ -93,7 +93,11 @@ describe('overlay controller fold', () => {
     );
 
     it('finds every module constructing a CloseReasonState', () => {
-      expect(owners.map(({ id }) => id).sort()).toEqual([SHARED_MACHINE, 'popover/src/popover']);
+      expect(owners.map(({ id }) => id).sort()).toEqual([
+        SHARED_MACHINE,
+        'core-anchored/src/overlay-controller/overlay-shell',
+        'popover/src/popover',
+      ]);
     });
 
     it('constructs each one over its open source', () => {

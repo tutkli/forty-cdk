@@ -34,7 +34,7 @@ import {
   pointerDownOn,
   renderHost,
 } from '../test-utils';
-import { LIBRARY_CODE } from '../test-utils/source-scan';
+import { entryPointOf, LIBRARY_CODE, LIBRARY_SOURCES } from '../test-utils/source-scan';
 
 interface OpenHost {
   readonly open: WritableSignal<boolean>;
@@ -249,6 +249,10 @@ const CASES: readonly ReturnFocusCase[] = [
   },
 ];
 
+const SURFACE =
+  '[forPopoverContent], [forMenuContent], [forSelectContent], [forComboboxContent], ' +
+  '[forDatePickerContent], [forTimePickerContent]';
+
 const CHANNELS = [
   ['pointer-down', pointerDownOn],
   ['focus', focusInOn],
@@ -278,6 +282,27 @@ describe('return focus after an outside close', () => {
 
         expect(instance.open()).toBe(false);
         expect(focusSpy).not.toHaveBeenCalled();
+      });
+
+      it(`${name} returns focus on an Escape after an outside ${channel} close reopened in the same task`, async () => {
+        const { instance, fixture, flush } = renderHost(host);
+        await flushPositioning(fixture);
+        const surface = document.querySelector(SURFACE);
+        const triggerEl = document.querySelector<HTMLElement>(trigger)!;
+
+        dispatch(outside);
+        expect(instance.open()).toBe(false);
+        triggerEl.click();
+        expect(instance.open()).toBe(true);
+        await flush();
+        expect(document.querySelector(SURFACE)).toBe(surface);
+        const focusSpy = vi.spyOn(triggerEl, 'focus');
+
+        pressKey(document.activeElement ?? document.body, 'Escape');
+        await flush();
+
+        expect(instance.open()).toBe(false);
+        expect(focusSpy).toHaveBeenCalled();
       });
     }
 
@@ -315,6 +340,18 @@ describe('return focus after an outside close', () => {
 
 const SHELL = 'core-anchored/src/overlay-controller/overlay-shell.ts';
 const OUTSIDE_REASON = /'(?:pointerDownOutside|focusOutside)'/;
+
+const RETURN_FOCUS_INPUT = /\breadonly returnFocus = input\(/;
+const MENU_CONTEXT_PROVIDER = /\bprovide:\s*FOR_MENU_CONTEXT\b/;
+
+function returnFocusDoc(source: string): string {
+  const at = source.search(RETURN_FOCUS_INPUT);
+  const before = source.slice(0, at).trimEnd();
+  if (!before.endsWith('*/')) {
+    return '';
+  }
+  return before.slice(before.lastIndexOf('/**'));
+}
 
 const PROPAGATED_OUTSIDE_CLOSE: Readonly<Record<string, { source: string; propagates: RegExp }>> = {
   'menu/src/menu-content.ts': {
@@ -392,6 +429,54 @@ describe('injectOverlayShell return-focus adopters', () => {
       .map(({ path }) => path);
 
     expect(offenders).toEqual([]);
+  });
+
+  it('documents the outside and Tab exception on the returnFocus input of every shell root', () => {
+    const shellEntryPoints = new Set(returnFocusBlocks.map(({ path }) => entryPointOf(path)));
+    const declarations = [...LIBRARY_SOURCES].filter(([, source]) =>
+      RETURN_FOCUS_INPUT.test(source),
+    );
+    const roots = declarations.filter(
+      ([path]) =>
+        shellEntryPoints.has(entryPointOf(path)) ||
+        MENU_CONTEXT_PROVIDER.test(LIBRARY_CODE.get(path) ?? ''),
+    );
+    const undocumented = roots
+      .filter(([, source]) => {
+        const doc = returnFocusDoc(source);
+        return !/\boutside\b/.test(doc) || !/\bTab\b/.test(doc);
+      })
+      .map(([path]) => path);
+
+    expect(roots.map(([path]) => path).sort()).toEqual([
+      'combobox/src/combobox.ts',
+      'context-menu/src/context-menu.ts',
+      'date-picker/src/date-picker-base.ts',
+      'dropdown-menu/src/dropdown-menu.ts',
+      'menu/src/menu-sub.ts',
+      'menu/src/menu.ts',
+      'popover/src/popover.ts',
+      'select/src/select.ts',
+      'time-picker/src/time-picker.ts',
+    ]);
+    expect(undocumented).toEqual([]);
+  });
+
+  it('leaves out only modal-shell roots', () => {
+    const shellEntryPoints = new Set(callers.map(({ path }) => entryPointOf(path)));
+    const left = [...LIBRARY_SOURCES]
+      .filter(([, source]) => RETURN_FOCUS_INPUT.test(source))
+      .filter(
+        ([path]) =>
+          !shellEntryPoints.has(entryPointOf(path)) &&
+          !MENU_CONTEXT_PROVIDER.test(LIBRARY_CODE.get(path) ?? ''),
+      )
+      .map(([path]) => path);
+
+    expect(left.length).toBeGreaterThan(0);
+    for (const path of left) {
+      expect(LIBRARY_CODE.get(path)).toMatch(/\bextends ModalSurfaceBase\b/);
+    }
   });
 
   it('keeps each propagated-close exclusion true', () => {

@@ -152,7 +152,11 @@ export class ForMenu extends MenuOverlayHost implements ForMenuContext {
   /** When true (default), Escape, pointer-down outside, and focus outside close the menu. */
   readonly dismissible = input(true, { transform: booleanAttribute });
 
-  /** When true (default), focus returns to the opener that opened the menu on close. */
+  /**
+   * When true (default), focus returns to the opener that opened the menu after a close from
+   * Escape, from activating an item or from setting `open` to `false`. A close from a press or
+   * focus outside the menu, or from a Tab out, leaves focus where the user moved it.
+   */
   readonly returnFocus = input(true, { transform: booleanAttribute });
 
   /**

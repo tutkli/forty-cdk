@@ -1,4 +1,4 @@
-import { DestroyRef, ElementRef, inject, type Signal } from '@angular/core';
+import { DestroyRef, effect, ElementRef, inject, type Signal } from '@angular/core';
 import type { ReferenceElement } from '@floating-ui/dom';
 
 import {
@@ -21,6 +21,8 @@ import {
   type DismissibleLayerNesting,
 } from 'forty-cdk/core-overlay';
 
+import { CloseReasonState } from './close-reason-state';
+
 /**
  * The positioning strategy a trigger-anchored surface hands the shell, built by
  * `floatingPositioner` or `itemAlignedPositioner`. The shell installs it once at construction, so
@@ -30,6 +32,8 @@ import {
 export interface OverlayShellPositioner {
   /** The element the surface anchors to, also read to resolve the modal that owns the surface. */
   readonly reference: Signal<ReferenceElement | null>;
+  /** Whether the surface is open. The shell scopes the closes it requests itself to one open. */
+  readonly open: Signal<boolean>;
   /** Installs the positioner on the host. Called once, from the shell's injection context. */
   readonly attach: () => void;
 }
@@ -65,7 +69,8 @@ export interface OverlayShellDismissConfig {
    * close output directly. Required alongside `dismissible`. Each wired outside
    * channel fires its own close, so a specific channel (`emitPointerDownOutside`
    * / `emitFocusOutside`) closes even without `emitInteractOutside` wired. A
-   * close requested here never returns focus on destroy.
+   * close requested here does not return focus on destroy, unless the surface
+   * reopens before it unmounts and then closes some other way.
    */
   readonly requestClose?: (reason: 'pointerDownOutside' | 'focusOutside') => void;
   /** Forwards the raw Escape `KeyboardEvent` to the consumer; close is consumer-owned. */
@@ -144,7 +149,9 @@ export interface OverlayShellInitialFocusConfig {
  *   the return after a close it requested itself, through an outside channel
  *   or a Tab out, since focus is then where the user moved it. `skip` covers
  *   the closes that reach the root another way, such as a Tab the root handles
- *   or a close propagated from a nested surface.
+ *   or a close propagated from a nested surface. The shell's own skip lasts one
+ *   open: a surface reopened while still mounted returns focus on its next
+ *   close like any other.
  */
 export interface OverlayShellReturnFocusConfig {
   readonly enabled: Signal<boolean>;
@@ -198,7 +205,9 @@ export interface OverlayShellConfig {
  * focus to the return target on destroy. Both focus moves are skipped when their `veto()` returns
  * truthy, which is how `autoFocusOnOpen` / `autoFocusOnClose` are honoured. The return is also
  * skipped when the surface closed through one of its own outside channels or a Tab out, without
- * consulting `veto`: focus already moved where the user put it.
+ * consulting `veto`: focus already moved where the user put it. That skip belongs to the open the
+ * close ended, so a surface reopened before it unmounts returns focus on its next close, and one
+ * reopened after a Tab out gets its dismissible layer back.
  *
  * Return focus runs after the portaled node has been detached, so the trigger receives the focus
  * event in a settled layout.
@@ -221,6 +230,8 @@ export function injectOverlayShell(config: OverlayShellConfig): void {
   //    route through `handleFocusIn` and trigger a spurious onFocusOutside.
   const dismissCfg = config.dismiss;
   const layer = dismissCfg !== undefined ? injectDismissibleLayer() : null;
+  let layerOptions: DismissibleLayerActivateOptions | null = null;
+  const ownClose = new CloseReasonState<'outside' | 'tab'>(config.positioner.open);
 
   // 2. Positioner.
   config.positioner.attach();
@@ -275,10 +286,7 @@ export function injectOverlayShell(config: OverlayShellConfig): void {
           requestClose
             ? {
                 ...dismissCfg,
-                requestClose: (reason) => {
-                  closedByOutside = true;
-                  requestClose(reason);
-                },
+                requestClose: (reason) => ownClose.close('outside', () => requestClose(reason)),
               }
             : dismissCfg,
         ),
@@ -300,6 +308,7 @@ export function injectOverlayShell(config: OverlayShellConfig): void {
         options.onEscapeKeyDown = dismissCfg.emitEscapeKeyDown;
       }
 
+      layerOptions = options;
       layer.activate(options);
     }
 
@@ -330,18 +339,28 @@ export function injectOverlayShell(config: OverlayShellConfig): void {
     }
   };
 
-  let tabbedOut = false;
-  let closedByOutside = false;
   const tabOutCfg = config.tabOut;
   if (tabOutCfg) {
+    const closeOnTab = (): void => ownClose.close('tab', tabOutCfg.close);
+    let layerParked = false;
     const onKeyDown = (event: KeyboardEvent): void => {
-      if (handleTabOut(event, el, tabOutCfg, dismissCfg?.dismissible?.() ?? true)) {
-        tabbedOut = true;
-        layer?.deactivate();
+      const closes = dismissCfg?.dismissible?.() ?? true;
+      if (handleTabOut(event, el, tabOutCfg.target, closes ? closeOnTab : null) && layer) {
+        layerParked = true;
+        layer.deactivate();
       }
     };
     el.addEventListener('keydown', onKeyDown);
     inject(DestroyRef).onDestroy(() => el.removeEventListener('keydown', onKeyDown));
+
+    if (layer) {
+      effect(() => {
+        if (ownClose.reason() === null && layerParked && layerOptions !== null) {
+          layerParked = false;
+          layer.activate(layerOptions);
+        }
+      });
+    }
   }
 
   // 4. Return focus on destroy. The hook is registered AFTER the layer's
@@ -351,7 +370,7 @@ export function injectOverlayShell(config: OverlayShellConfig): void {
   const rfCfg = config.returnFocus;
   if (rfCfg) {
     inject(DestroyRef).onDestroy(() => {
-      if (tabbedOut || closedByOutside || rfCfg.skip?.()) {
+      if (ownClose.reason() !== null || rfCfg.skip?.()) {
         return;
       }
       if (rfCfg.veto?.()) {
@@ -367,15 +386,15 @@ export function injectOverlayShell(config: OverlayShellConfig): void {
 
 /**
  * Moves focus to the tab-out target when a Tab press would leave the surface's Tab cycle, then
- * closes the surface when `closes`. A forward Tab keeps its default action so the browser advances
+ * runs `close` when one is given. A forward Tab keeps its default action so the browser advances
  * from the target, with the surface inert until that action has run so the advance never lands
  * back inside it; a backward one is prevented so focus stays on it. Returns whether it closed.
  */
 function handleTabOut(
   event: KeyboardEvent,
   host: HTMLElement,
-  config: OverlayShellTabOutConfig,
-  closes: boolean,
+  resolveTarget: () => HTMLElement | null,
+  close: (() => void) | null,
 ): boolean {
   if (
     event.key !== 'Tab' ||
@@ -386,7 +405,7 @@ function handleTabOut(
   ) {
     return false;
   }
-  const target = config.target();
+  const target = resolveTarget();
   if (target === null) {
     return false;
   }
@@ -406,10 +425,10 @@ function handleTabOut(
   } else {
     skipDuringDefaultAction(host);
   }
-  if (!closes) {
+  if (close === null) {
     return false;
   }
-  config.close();
+  close();
   return true;
 }
 
