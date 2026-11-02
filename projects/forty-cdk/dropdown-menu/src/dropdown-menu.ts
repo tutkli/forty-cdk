@@ -109,7 +109,11 @@ export class ForDropdownMenu extends MenuOverlayHost implements ForMenuContext {
   /** When true (default), Escape, pointer-down outside, and focus outside close the menu. */
   readonly dismissible = input(true, { transform: booleanAttribute });
 
-  /** When true (default), focus returns to the trigger on close. */
+  /**
+   * When true (default), focus returns to the trigger after a close from Escape, from activating an
+   * item or from setting `open` to `false`. A close from a press or focus outside the menu, or from
+   * a Tab out, leaves focus where the user moved it.
+   */
   readonly returnFocus = input(true, { transform: booleanAttribute });
 
   /** Manual `aria-label` on `[forMenuContent]`. Use when the trigger isn't a meaningful name. */

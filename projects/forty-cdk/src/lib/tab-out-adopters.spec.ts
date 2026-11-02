@@ -1,8 +1,6 @@
 import { entryPointOf, LIBRARY_CODE } from '../test-utils/source-scan';
 
 const OWN_TAB_HANDLING: Readonly<Record<string, string>> = {
-  combobox:
-    'focus stays on [forComboboxInput], whose keydown commits or closes on Tab before the browser moves focus',
   menu: 'every menu item and sub-trigger closes the whole menu chain on Tab through handleMenuTabOut',
 };
 
@@ -38,6 +36,7 @@ describe('focus-taking overlay surfaces route Tab out through the overlay shell'
         'popover/src/popover-content.ts',
         'date-picker/src/date-picker-content.ts',
         'hover-card/src/hover-card-content.ts',
+        'combobox/src/combobox-content.ts',
       ]),
     );
   });

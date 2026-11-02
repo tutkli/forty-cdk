@@ -3283,6 +3283,35 @@ describe('ForCombobox trigger + list (picker anatomy, issue #675)', () => {
 
       expect(r.instance.autoFocusOnCloseCount).toBe(0);
     });
+
+    it('makes the panel inert for the default action of the forward Tab', async () => {
+      const r = renderHost(PickerHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+      const content = getContent();
+      const input = getPickerInput();
+      input.focus();
+
+      pressKey(input, 'Tab');
+
+      expect(content.hasAttribute('inert')).toBe(true);
+    });
+
+    it('lands on the trigger on Shift+Tab, prevents the default action and closes', async () => {
+      const r = renderHost(PickerHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const input = getPickerInput();
+      input.focus();
+      const event = pressKey(input, 'Tab', { shiftKey: true });
+      await flush(r.fixture);
+
+      expect(event.defaultPrevented).toBe(true);
+      expect(document.activeElement).toBe(getTrigger());
+      expect(r.instance.open()).toBe(false);
+      expect(r.instance.autoFocusOnCloseCount).toBe(0);
+    });
   });
 
   describe('return-focus skip on outside-interaction close (#1389 item 4)', () => {

@@ -434,25 +434,25 @@ export const appConfig: ApplicationConfig = {
 
 Selector `[forMenu]`, `exportAs: 'forMenu'`.
 
-| Input                       | Type                                | Default          | Notes                                                      |
-| --------------------------- | ----------------------------------- | ---------------- | ---------------------------------------------------------- |
-| `open`                      | `model<boolean>`                    | `false`          | Two-way. `(openChange)` fires on internal transitions only |
-| `side`                      | `FloatingSide \| undefined`         | `'bottom'`       | From `provideForMenuDefaults`; overridable per opener      |
-| `align`                     | `FloatingAlign \| undefined`        | `'start'`        | From `provideForMenuDefaults`; overridable per opener      |
-| `sideOffset`                | `number`                            | `0`              | From `provideForMenuDefaults`; overridable per opener      |
-| `alignOffset`               | `number`                            | `0`              | Overridable per opener via `[menuPositioning]`             |
-| `avoidCollisions`           | `boolean`                           | `true`           |                                                            |
-| `fallbackAxisSideDirection` | `FloatingFallbackAxisSideDirection` | `'none'`         | From `provideForMenuDefaults`                              |
-| `collisionPadding`          | `number`                            | `8`              | From `provideForMenuDefaults`                              |
-| `sticky`                    | `'partial' \| 'always' \| false`    | `'partial'`      |                                                            |
-| `hideWhenDetached`          | `boolean`                           | `false`          |                                                            |
-| `clipUntilPositioned`       | `boolean`                           | `true`           |                                                            |
-| `loop`                      | `boolean`                           | `true`           |                                                            |
-| `dir`                       | `'ltr' \| 'rtl' \| null`            | `null` (ambient) | Reflected to the host `dir` attribute                      |
-| `disabled`                  | `boolean`                           | `false`          | Blocks openers and disables every item, submenus too       |
-| `dismissible`               | `boolean`                           | `true`           |                                                            |
-| `returnFocus`               | `boolean`                           | `true`           | Returns focus to the **active** opener                     |
-| `ariaLabel`                 | `string \| null`                    | `null`           | Wins over the per-opener `aria-labelledby` fallback        |
+| Input                       | Type                                | Default          | Notes                                                                        |
+| --------------------------- | ----------------------------------- | ---------------- | ---------------------------------------------------------------------------- |
+| `open`                      | `model<boolean>`                    | `false`          | Two-way. `(openChange)` fires on internal transitions only                   |
+| `side`                      | `FloatingSide \| undefined`         | `'bottom'`       | From `provideForMenuDefaults`; overridable per opener                        |
+| `align`                     | `FloatingAlign \| undefined`        | `'start'`        | From `provideForMenuDefaults`; overridable per opener                        |
+| `sideOffset`                | `number`                            | `0`              | From `provideForMenuDefaults`; overridable per opener                        |
+| `alignOffset`               | `number`                            | `0`              | Overridable per opener via `[menuPositioning]`                               |
+| `avoidCollisions`           | `boolean`                           | `true`           |                                                                              |
+| `fallbackAxisSideDirection` | `FloatingFallbackAxisSideDirection` | `'none'`         | From `provideForMenuDefaults`                                                |
+| `collisionPadding`          | `number`                            | `8`              | From `provideForMenuDefaults`                                                |
+| `sticky`                    | `'partial' \| 'always' \| false`    | `'partial'`      |                                                                              |
+| `hideWhenDetached`          | `boolean`                           | `false`          |                                                                              |
+| `clipUntilPositioned`       | `boolean`                           | `true`           |                                                                              |
+| `loop`                      | `boolean`                           | `true`           |                                                                              |
+| `dir`                       | `'ltr' \| 'rtl' \| null`            | `null` (ambient) | Reflected to the host `dir` attribute                                        |
+| `disabled`                  | `boolean`                           | `false`          | Blocks openers and disables every item, submenus too                         |
+| `dismissible`               | `boolean`                           | `true`           |                                                                              |
+| `returnFocus`               | `boolean`                           | `true`           | Returns focus to the **active** opener, except after an outside or Tab close |
+| `ariaLabel`                 | `string \| null`                    | `null`           | Wins over the per-opener `aria-labelledby` fallback                          |
 
 Outputs match the other trigger-anchored overlays: `(escapeKeyDown)`, `(pointerDownOutside)`, `(focusOutside)`, `(interactOutside)`, `(autoFocusOnOpen)`, `(autoFocusOnClose)`. All of them are vetoable via `preventDefault()`.
 

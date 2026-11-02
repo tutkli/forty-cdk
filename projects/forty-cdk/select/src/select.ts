@@ -253,7 +253,11 @@ export class ForSelect<T = string>
   /** When true (default), Escape, pointer-down outside, and focus outside close the listbox. */
   readonly dismissible = input(true, { transform: booleanAttribute });
 
-  /** When true (default), focus returns to the trigger on close. */
+  /**
+   * When true (default), focus returns to the trigger after a close from Escape, from picking an
+   * option or from setting `open` to `false`. A close from a press or focus outside the listbox, or
+   * from a Tab out, leaves focus where the user moved it.
+   */
   readonly returnFocus = input(true, { transform: booleanAttribute });
 
   /** Manual `aria-label` on `[forSelectContent]` when the trigger isn't a meaningful name. */

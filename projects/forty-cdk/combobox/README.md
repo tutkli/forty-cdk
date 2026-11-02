@@ -355,7 +355,7 @@ Add two parts:
 
 Why the list part is required, not optional: a `role="listbox"` may only own `option` / `group` children (`aria-required-owned-elements`). Nesting the input inside a listbox would be invalid, so the listbox role moves to `[forComboboxList]` and the input sits beside it inside the dialog surface. Put non-option chrome (`[forComboboxInput]`, `[forComboboxEmpty]`, `[forComboboxStatus]`) inside `[forComboboxContent]` but **outside** `[forComboboxList]`.
 
-**Focus hand-off.** Registering a trigger opts the combobox into the standard trigger-anchored focus model: on open, focus moves into the input (the search field inside the panel); on close, focus returns to the trigger. Both moves are vetoable via `(autoFocusOnOpen)` / `(autoFocusOnClose)` on `[forCombobox]`, and the return is gated by `[returnFocus]` (default `true`). Escape stays owned by the input. See [Focus & the `(autoFocusOnOpen)` / `(autoFocusOnClose)` hooks](#focus--the-autofocusonopen--autofocusonclose-hooks).
+**Focus hand-off.** Registering a trigger opts the combobox into the standard trigger-anchored focus model: on open, focus moves into the input (the search field inside the panel); on close, focus returns to the trigger. Both moves are vetoable via `(autoFocusOnOpen)` / `(autoFocusOnClose)` on `[forCombobox]`, and the return is gated by `[returnFocus]` (default `true`). Two closes skip the return, and emit no `(autoFocusOnClose)` either: an **outside-interaction close**, meaning a pointer-down or focus-out that lands outside the panel, leaves focus where the interaction moved it, and a `Tab` out leaves it where the browser advanced it. `Tab` from the last control in the panel continues from the trigger, and `Shift+Tab` from the first lands on it. Escape stays owned by the input. See [Focus & the `(autoFocusOnOpen)` / `(autoFocusOnClose)` hooks](#focus--the-autofocusonopen--autofocusonclose-hooks).
 
 **A trigger that registers late still owns the hand-off.** The trigger does not have to be declared before `[forComboboxContent]`, and does not have to exist when the panel first mounts. You can project it through `<ng-content>` from a wrapper, put it under a `@defer`, or gate it on an `@if` over loaded data. One caveat: focus moving _into_ the panel is a mount-time event, so a trigger that arrives while the panel is **already open** does not retroactively pull focus out of wherever you left it. From that moment on it does own the return focus, `(autoFocusOnClose)` and the Escape fallback, and the next open moves focus into the input as usual.
 
@@ -639,7 +639,7 @@ The two anatomies have different focus models:
 | `(autoFocusOnOpen)`  | Just before focus enters the input on open. | Focus stays on the trigger. |
 | `(autoFocusOnClose)` | Just before focus returns to the trigger.   | Focus stays where it is.    |
 
-Return focus is also gated by `[returnFocus]` (default `true`) and is skipped on a Tab close (Tab already advanced focus past the closing panel).
+Return focus is also gated by `[returnFocus]` (default `true`). It is skipped, and `(autoFocusOnClose)` is not emitted, after an outside-interaction close (a pointer-down or focus-out outside the panel, which leaves focus where it moved) and after a Tab close (Tab already advanced focus past the closing panel). Escape, a pick and programmatic closes still return focus.
 
 ## Object values
 
@@ -852,21 +852,21 @@ A single-select field is modeled as the same `readonly T[]`, kept at length ≤ 
 
 Focus stays in the input throughout: arrow keys move the listbox's _active descendant_ (the highlighted option), not DOM focus.
 
-| Key                                          | Action                                                                                                                               |
-| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| **ArrowDown**                                | Open listbox + move activedescendant to next enabled option (or first when none; the selection under `openHighlight="selected"`).    |
-| **ArrowUp**                                  | Open listbox + move activedescendant to previous enabled option (or last when none; the selection under `openHighlight="selected"`). |
-| **Home** _(open)_                            | Move activedescendant to first enabled option.                                                                                       |
-| **End** _(open)_                             | Move activedescendant to last enabled option.                                                                                        |
-| **PageUp** _(open)_                          | Move activedescendant to first enabled option.                                                                                       |
-| **PageDown** _(open)_                        | Move activedescendant to last enabled option.                                                                                        |
-| **Enter** _(open)_                           | Activate the activedescendant (single: replace + close; multi: toggle + stay open).                                                  |
-| **Escape** _(open)_                          | Close the listbox. Focus stays in the input.                                                                                         |
-| **Tab** _(open, no action)_                  | Close the listbox and let Tab flow to the next focusable.                                                                            |
-| **Tab / Shift+Tab** _(open, action present)_ | Move focus around the input↔actions ring without dismissing (see [Action items](#action-items)).                                     |
-| **Backspace** _(empty input, multi only)_    | Focus the last chip; a second Backspace there removes it.                                                                            |
-| **ArrowLeft / ArrowRight**                   | Move the caret, accepting a pending inline completion.                                                                               |
-| Printable keys                               | Update `query`. With `'inline'` / `'both'` autocomplete, complete the rest of the first match into the input as selected text.       |
+| Key                                          | Action                                                                                                                                    |
+| -------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| **ArrowDown**                                | Open listbox + move activedescendant to next enabled option (or first when none; the selection under `openHighlight="selected"`).         |
+| **ArrowUp**                                  | Open listbox + move activedescendant to previous enabled option (or last when none; the selection under `openHighlight="selected"`).      |
+| **Home** _(open)_                            | Move activedescendant to first enabled option.                                                                                            |
+| **End** _(open)_                             | Move activedescendant to last enabled option.                                                                                             |
+| **PageUp** _(open)_                          | Move activedescendant to first enabled option.                                                                                            |
+| **PageDown** _(open)_                        | Move activedescendant to last enabled option.                                                                                             |
+| **Enter** _(open)_                           | Activate the activedescendant (single: replace + close; multi: toggle + stay open).                                                       |
+| **Escape** _(open)_                          | Close the listbox. Focus stays in the input.                                                                                              |
+| **Tab** _(open, no action)_                  | Close the listbox and let Tab flow to the next focusable. In the picker anatomy Tab continues from the trigger and Shift+Tab lands on it. |
+| **Tab / Shift+Tab** _(open, action present)_ | Move focus around the input↔actions ring without dismissing (see [Action items](#action-items)).                                          |
+| **Backspace** _(empty input, multi only)_    | Focus the last chip; a second Backspace there removes it.                                                                                 |
+| **ArrowLeft / ArrowRight**                   | Move the caret, accepting a pending inline completion.                                                                                    |
+| Printable keys                               | Update `query`. With `'inline'` / `'both'` autocomplete, complete the rest of the first match into the input as selected text.            |
 
 With `'inline'` / `'both'` autocomplete, Tab, Enter with no option activated, and Home / End while closed also accept a pending completion (see [Autocomplete modes](#autocomplete-modes)).
 

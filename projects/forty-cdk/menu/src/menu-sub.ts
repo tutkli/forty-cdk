@@ -173,7 +173,11 @@ export class ForMenuSub extends MenuOverlayHost implements ForMenuContext {
   /** When true (default), Escape, pointer-down outside, and focus outside close the submenu. */
   readonly dismissible = input(true, { transform: booleanAttribute });
 
-  /** When true (default), focus returns to the sub-trigger on close. */
+  /**
+   * When true (default), focus returns to the sub-trigger after a close that leaves the parent menu
+   * open, such as Escape. A close from a press or focus outside the menu, or from a Tab out, leaves
+   * focus where the user moved it.
+   */
   readonly returnFocus = input(true, { transform: booleanAttribute });
 
   /** Manual `aria-label` on `[forMenuSubContent]`. Use when the sub-trigger isn't a meaningful name. */

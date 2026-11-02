@@ -152,7 +152,11 @@ export abstract class DatePickerBase<D>
   /** When true (default), Escape, pointer-down outside, and focus outside close the surface. */
   readonly dismissible = input(true, { transform: booleanAttribute });
 
-  /** When true (default), focus returns to the trigger on close. */
+  /**
+   * When true (default), focus returns to the trigger after a close from Escape, from a pick that
+   * closes the surface or from setting `open` to `false`. A close from a press or focus outside the
+   * surface, or from a Tab out, leaves focus where the user moved it.
+   */
   readonly returnFocus = input(true, { transform: booleanAttribute });
 
   /**

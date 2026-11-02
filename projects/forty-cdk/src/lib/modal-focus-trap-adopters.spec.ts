@@ -231,7 +231,7 @@ class PeerInDialogHost {
 
 const PEER_SURFACES: readonly { kind: PeerKind; shiftTabPrevented: boolean }[] = [
   { kind: 'select', shiftTabPrevented: false },
-  { kind: 'combobox', shiftTabPrevented: false },
+  { kind: 'combobox', shiftTabPrevented: true },
   { kind: 'dropdown-menu', shiftTabPrevented: false },
   { kind: 'context-menu', shiftTabPrevented: false },
   { kind: 'time-picker', shiftTabPrevented: false },

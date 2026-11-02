@@ -13,8 +13,10 @@ import { linkedSignal, type Signal, untracked, type WritableSignal } from '@angu
  *
  * Generic over the reason union so every overlay controller shares one implementation —
  * `OverlayController` (and through it `MenuOverlay`, the listbox overlays, combobox and
- * `[forMenubar]`'s multiplexed menu context) and `[forPopover]` compose it. Plain class (no
- * `inject()`) so each composes it instead of hand-copying the signal.
+ * `[forMenubar]`'s multiplexed menu context) and `[forPopover]` compose it, and
+ * `injectOverlayShell` records the closes it requests itself in one, so its return-focus skip
+ * lasts one open. Plain class (no `inject()`) so each composes it instead of hand-copying the
+ * signal.
  *
  * @typeParam Reason Close-reason union owned by the controller.
  */
