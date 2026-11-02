@@ -270,6 +270,7 @@ export class TreeVirtualizedExample {
     count: computed(() => this.flat().length),
     estimateSize: () => 32,
     scrollElement: this.scrollElement,
+    getItemKey: (index) => this.flat()[index]!.value,
   });
 
   protected expandAll(): void {

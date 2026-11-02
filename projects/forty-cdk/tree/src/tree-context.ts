@@ -226,7 +226,7 @@ export interface TreePieceContext<T = unknown> {
 export interface TreeVirtualization<T = unknown> {
   /** Length of the flattened node list, or `undefined` while the piece is present but unset. */
   readonly totalCount: Signal<number | undefined>;
-  /** The position the root resumes from once its active node unmounts. */
+  /** The position the root resumes from once its active node is no longer rendered. */
   readonly resume: VirtualizedResume<T, TreePositionEntry<T>>;
   /** The activedescendant focus model, constructed on first use. */
   focusModel(): ActiveDescendantFocusModel<T>;
@@ -244,9 +244,9 @@ export interface TreeVirtualizationHost<T = unknown> {
   readonly typeahead: Typeahead;
   /** Whether more than one node can be selected, where `selectionFollowsFocus` is inert. */
   readonly multiSelect: Signal<boolean>;
-  /** The active node's id. */
+  /** The id of the rendered row showing the active node, or `null` when none does. */
   getActiveId(): string | null;
-  /** Move the active node, forgetting any retained resume position. */
+  /** Move the active node, retaining its position and value as the resume target. */
   setActiveId(id: string | null): void;
   /** Open the pointer-suppression window before a programmatic scroll. */
   suppressPointer(): void;

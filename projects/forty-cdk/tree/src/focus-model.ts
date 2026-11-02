@@ -256,7 +256,20 @@ export type ActiveDescendantFocusModelDeps<T = unknown> = Omit<
   readonly resume: VirtualizedResume<T, TreePositionEntry<T>>;
   /** The root's typeahead buffer, shared with the other focus model. */
   readonly typeahead: Typeahead;
+  readonly compareWith: Signal<(a: T, b: T) => boolean>;
 };
+
+interface TreeLevelWalk {
+  readonly target: 'parent' | 'child';
+  readonly pos: number;
+  readonly level: number;
+  readonly origin: string | null;
+}
+
+interface TreeResumeMatch<T> {
+  readonly pos: number;
+  readonly entry: TreePositionEntry<T>;
+}
 
 /**
  * Focus engine for the virtualized tree: DOM focus stays on the container and
@@ -273,10 +286,16 @@ export class ActiveDescendantFocusModel<T = unknown> implements FocusModel<T> {
 
   readonly #core: VirtualizedNavigator<ForTreeItemHandle<T>, TreePositionEntry<T>>;
 
+  #walk: TreeLevelWalk | null = null;
+
+  #latestSnapshot: ReadonlyMap<number, TreePositionEntry<T>> | null = null;
+
+  #previousSnapshot: ReadonlyMap<number, TreePositionEntry<T>> | null = null;
+
   constructor(deps: ActiveDescendantFocusModelDeps<T>) {
     this.#deps = deps;
     this.#core = new VirtualizedNavigator(
-      { ...deps, loop: () => false, getResumePos: () => deps.resume.pos() },
+      { ...deps, loop: () => false, getResumePos: () => this.#resolveResume()?.pos ?? null },
       {
         posOf: (n) => n.itemIndex(),
         idOf: (n) => n.id(),
@@ -303,11 +322,29 @@ export class ActiveDescendantFocusModel<T = unknown> implements FocusModel<T> {
   /** @see VirtualizedNavigator.prime */
   prime(): void {
     this.#core.prime();
+    const current = this.#core.snapshotByPos();
+    if (current !== this.#latestSnapshot) {
+      this.#previousSnapshot = this.#latestSnapshot;
+      this.#latestSnapshot = current;
+    }
   }
 
   /** @see VirtualizedNavigator.tryResolvePending */
   tryResolvePending(): boolean {
-    return this.#core.tryResolvePending();
+    if (this.#core.tryResolvePending()) {
+      return true;
+    }
+    const walk = this.#walk;
+    if (walk === null || !this.#isKnown(walk.pos)) {
+      return false;
+    }
+    const active = this.#deps.getActiveId();
+    if (active !== null && active !== walk.origin) {
+      this.#walk = null;
+      return false;
+    }
+    this.#runWalk(walk);
+    return true;
   }
 
   /** @see VirtualizedNavigator.invalidateSnapshot */
@@ -321,6 +358,7 @@ export class ActiveDescendantFocusModel<T = unknown> implements FocusModel<T> {
   }
 
   focusTarget(handle: ForTreeItemHandle<T>): void {
+    this.#walk = null;
     this.#deps.setActiveId(handle.id());
   }
 
@@ -338,60 +376,77 @@ export class ActiveDescendantFocusModel<T = unknown> implements FocusModel<T> {
   }
 
   /**
-   * Re-seed `aria-activedescendant` on the retained position, emitting
+   * Re-seed `aria-activedescendant` on the retained node, emitting
    * `(scrollToIndex)` when that node is outside the rendered window so it comes
-   * back into view. A no-op while a node is already active.
+   * back into view. A retained node that is no longer at its position is found
+   * by value, and one that is no longer visible resumes on its nearest visible
+   * ancestor. A no-op while a node is already active.
    */
   resumeActive(): void {
     if (this.#deps.getActiveId() !== null) {
       return;
     }
-    const resume = this.#deps.resume.pos();
+    const resume = this.#resolveResume();
     if (resume === null) {
       return;
     }
-    this.#core.seedActive(resume);
+    this.#walk = null;
+    this.#core.seedActive(resume.pos);
+  }
+
+  resumeRendered(): boolean {
+    const resume = this.#resolveResume();
+    if (resume === null) {
+      return false;
+    }
+    const live = this.#deps.items().find((n) => n.itemIndex() === resume.pos);
+    if (!live || live.disabled()) {
+      return false;
+    }
+    this.focusTarget(live);
+    return true;
   }
 
   navigate(action: ListNavigationAction): void {
+    this.#walk = null;
     this.#core.navigate(action);
   }
 
   /**
-   * Move activedescendant to the first child of the current node: the node
-   * immediately after it in pre-order flat space, when that node sits one level
-   * deeper. No-op when there is no active node, when the active node is the
-   * last in the list, or when the next node is not its child (an open parent
-   * whose children are not in the flattened list yet). A position the window
-   * has never rendered has no known level and is taken to be the child.
+   * Move activedescendant to the first enabled child of the current node: the
+   * first node one level deeper that follows it in pre-order flat space,
+   * passing over disabled children and their subtrees. No-op when there is no
+   * active node, when the node has no child in the flattened list, or when
+   * every child is disabled. A position the window has never rendered is
+   * scrolled into view and the walk continues once it mounts.
    */
   enterChild(): void {
     const cur = this.#currentEntry();
     if (!cur) return;
-    const target = cur.pos + 1;
-    const total = this.#deps.totalCount();
-    if (total === undefined || target >= total) return;
-    const level = this.#levelAt(target);
-    if (level !== null && level !== cur.level + 1) return;
-    this.#core.seedActive(target);
+    this.#runWalk({
+      target: 'child',
+      pos: cur.pos + 1,
+      level: cur.level + 1,
+      origin: this.#deps.getActiveId(),
+    });
   }
 
   /**
-   * Move activedescendant to the nearest preceding node at a shallower level
-   * (the parent). No-op when the active node has no visible parent in the
-   * snapshot — an accepted edge case when the parent has never been rendered.
+   * Move activedescendant to the parent: the nearest preceding node at a
+   * shallower level. A position between the node and its parent that the
+   * window has never rendered is scrolled into view and the walk continues
+   * once it mounts, so the move never lands on a node past an unknown gap.
+   * No-op on a top-level node.
    */
   moveToParent(): void {
     const cur = this.#currentEntry();
-    if (!cur) return;
-    const indexed = this.#core.snapshotByPos();
-    for (let p = cur.pos - 1; p >= 0; p--) {
-      const e = indexed.get(p);
-      if (e && e.level < cur.level) {
-        this.#core.seedActive(p);
-        return;
-      }
-    }
+    if (!cur || cur.level <= 1) return;
+    this.#runWalk({
+      target: 'parent',
+      pos: cur.pos - 1,
+      level: cur.level,
+      origin: this.#deps.getActiveId(),
+    });
   }
 
   /**
@@ -408,6 +463,7 @@ export class ActiveDescendantFocusModel<T = unknown> implements FocusModel<T> {
     );
     if (pos !== null) {
       beforeMove();
+      this.#walk = null;
       this.#core.seedActive(pos);
     }
     return handled;
@@ -463,10 +519,98 @@ export class ActiveDescendantFocusModel<T = unknown> implements FocusModel<T> {
     return null;
   }
 
-  #levelAt(pos: number): number | null {
-    const live = this.#deps.items().find((n) => n.itemIndex() === pos);
-    if (live) return live.level();
-    return this.#core.snapshotByPos().get(pos)?.level ?? null;
+  #runWalk(walk: TreeLevelWalk): void {
+    this.#walk = null;
+    const total = this.#deps.totalCount();
+    if (total === undefined) return;
+    const step = walk.target === 'parent' ? -1 : 1;
+    const live = this.#liveByPos();
+    const indexed = this.#core.snapshotByPos();
+    for (let pos = walk.pos; pos >= 0 && pos < total; pos += step) {
+      const handle = live.get(pos);
+      const entry = handle
+        ? { level: handle.level(), disabled: handle.disabled() }
+        : indexed.get(pos);
+      if (entry === undefined) {
+        this.#core.resetPending();
+        this.#walk = { ...walk, pos };
+        this.#deps.emitScrollToIndex(pos);
+        return;
+      }
+      if (walk.target === 'parent') {
+        if (entry.level < walk.level) {
+          this.#core.seedActive(pos);
+          return;
+        }
+        continue;
+      }
+      if (entry.level < walk.level) return;
+      if (entry.level === walk.level && !entry.disabled) {
+        this.#core.seedActive(pos);
+        return;
+      }
+    }
+  }
+
+  #isKnown(pos: number): boolean {
+    return this.#core.snapshotByPos().has(pos) || this.#liveByPos().has(pos);
+  }
+
+  #liveByPos(): Map<number, ForTreeItemHandle<T>> {
+    const live = new Map<number, ForTreeItemHandle<T>>();
+    for (const handle of this.#deps.items()) {
+      const pos = handle.itemIndex();
+      if (pos !== null) {
+        live.set(pos, handle);
+      }
+    }
+    return live;
+  }
+
+  #resolveResume(): TreeResumeMatch<T> | null {
+    const exact = this.#deps.resume.resolve();
+    if (exact !== null) {
+      return exact;
+    }
+    const retained = this.#deps.resume.retained();
+    if (retained === null) {
+      return null;
+    }
+    return this.#findByValue(retained.value) ?? this.#visibleAncestor(retained.pos, retained.value);
+  }
+
+  #findByValue(value: T): TreeResumeMatch<T> | null {
+    const total = this.#deps.totalCount();
+    const equals = this.#deps.compareWith();
+    for (const [pos, entry] of this.#core.snapshotByPos()) {
+      if (total !== undefined && pos < total && equals(entry.value, value)) {
+        return { pos, entry };
+      }
+    }
+    return null;
+  }
+
+  #visibleAncestor(pos: number, value: T): TreeResumeMatch<T> | null {
+    const previous = this.#previousSnapshot;
+    const origin = previous?.get(pos);
+    if (!previous || !origin || !this.#deps.compareWith()(origin.value, value)) {
+      return null;
+    }
+    let level = origin.level;
+    for (let p = pos - 1; p >= 0 && level > 1; p--) {
+      const entry = previous.get(p);
+      if (!entry) {
+        return null;
+      }
+      if (entry.level < level) {
+        level = entry.level;
+        const match = this.#findByValue(entry.value);
+        if (match !== null) {
+          return match;
+        }
+      }
+    }
+    return null;
   }
 
   /** The position entry the retained target resolves to in the snapshot. */
@@ -478,7 +622,7 @@ export class ActiveDescendantFocusModel<T = unknown> implements FocusModel<T> {
     disabled: boolean;
     selectable: boolean;
   } | null {
-    const resumed = this.#deps.resume.resolve();
+    const resumed = this.#resolveResume();
     if (resumed === null) {
       return null;
     }

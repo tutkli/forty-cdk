@@ -127,6 +127,7 @@ export class ForTreeVirtualized {
         this.scrollToIndex.emit(idx);
       },
       resume: this.#resume,
+      compareWith: this.#ctx.compareWith,
       dataVersion: this.dataVersion,
       typeahead: this.#host.typeahead,
     }));
