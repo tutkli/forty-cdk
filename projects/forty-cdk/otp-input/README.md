@@ -188,7 +188,8 @@ The slot host also carries a static `aria-hidden="true"`.
 - **Character filtering happens live.** Rejected characters (per `type` / `allowedPattern`) are dropped before they reach the value and fire `(reject)`. Paste runs through `pasteTransformer`, is filtered, and sliced to `length`. A rejected keystroke never moves the insertion point: the caret stays at the position it was being edited at, so typing a disallowed character mid-code leaves the next character landing in the slot the user was on. A paste replaces the whole code and leaves the caret at the end.
 - **Fake caret is yours to style.** The slot exposes `hasFakeCaret()`; render and animate the blink in CSS, gated on `prefers-reduced-motion`. There is no JS-driven blink.
 - **Disabled reflects through one channel.** The native `disabled` attribute already exposes the unavailable state through HTML-AAM, so no `aria-disabled` is emitted alongside it. Style the disabled state with `:disabled` or `[data-disabled]`.
-- **Falsy state styling selects on absence.** `aria-readonly` / `aria-required` / `aria-invalid` / `aria-busy` are emitted only when truthy. Style the off state with `:not([aria-invalid])`, never `[aria-invalid="false"]`.
+- **Required reflects as the native attribute.** A bound `[required]`, or a `[formField]` whose schema marks the field required, sets the native `required` attribute on the injected input, which screen readers announce and native constraint validation enforces, so no `aria-required` is emitted. Style the state with `:required` or `[required]` on the input.
+- **Falsy state styling selects on absence.** `aria-readonly` / `aria-invalid` / `aria-busy` are emitted only when truthy. Style the off state with `:not([aria-invalid])`, never `[aria-invalid="false"]`.
 - **`@angular/forms` is an optional peer.** The directive runs fine on a plain `[(value)]` binding; the only `@angular/forms/signals` reference is a type import, erased at build.
 
 ## Styling

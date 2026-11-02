@@ -343,11 +343,11 @@ describe('hostDirectives wrapper built from the exported config', () => {
     expect(name.value).toBe('Lin');
   });
 
-  it('flows schema-driven required and errors into ARIA state', async () => {
+  it('flows schema-driven required and errors into the native required attribute and ARIA state', async () => {
     const { el, flush } = renderHost(WrapperFormHost);
     await flush();
     const name = byId(el, 'name');
-    expect(name.getAttribute('aria-required')).toBe('true');
+    expect(name.required).toBe(true);
     expect(name.getAttribute('aria-invalid')).toBe('true');
   });
 

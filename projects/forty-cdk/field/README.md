@@ -32,7 +32,7 @@ It renders **nothing** and imposes no layout, and there is **no control contract
 ## How the control connects
 
 - **forty-cdk controls** (`forSwitch`, `forCheckbox`, `forSlider`, `forSelect`, `forListbox`, `forCombobox`, `forRadioGroup`, `forToggle`, `forToggleGroup`) auto-wire, because they inherit the association from the shared form base. No marker needed.
-- **Native controls** add `[forFieldControl]` and drive validation state via its `invalid` / `required` / `disabled` / `touched` inputs.
+- **Native controls** add `[forFieldControl]` and drive validation state via its `invalid` / `required` / `disabled` / `touched` inputs. A bound `required` or `disabled` reaches the control as the native attribute, so native constraint validation and `:required` / `:disabled` apply as on a bare element.
 
 `ForField` owns the control's `id` (it assigns one if the control has none, otherwise it adopts the existing id), so a `<label forLabel>`'s `for` always resolves to the control.
 
@@ -129,14 +129,7 @@ import { ForField, ForFieldControl, ForFieldDescription, ForLabel } from 'forty-
     <div forField class="field">
       <label forLabel class="field-label">
         <span class="field-label-text">Email address</span>
-        <input
-          forFieldControl
-          class="input"
-          type="email"
-          placeholder="jane@example.com"
-          required
-          aria-required="true"
-        />
+        <input forFieldControl class="input" type="email" placeholder="jane@example.com" required />
       </label>
       <p forFieldDescription class="field-desc">We'll only use this to send receipts.</p>
     </div>
@@ -195,12 +188,12 @@ Positioning anchor (`[forFieldAnchor]`). Its host becomes the element the overla
 
 ### `ForFieldControl`
 
-Opt-in marker (`[forFieldControl]`) for a **native** `<input>` / `<textarea>` / `<select>` (forty-cdk controls auto-wire and don't need it). Validation state is consumer-driven. Reflects `aria-invalid` on its own host while `invalid` is true (an ARIA hook, not a styling one), and the native `disabled` attribute while its own `disabled` or a surrounding `[forFieldset]`'s is set.
+Opt-in marker (`[forFieldControl]`) for a **native** `<input>` / `<textarea>` / `<select>` (forty-cdk controls auto-wire and don't need it). Validation state is consumer-driven. Reflects `aria-invalid` on its own host while `invalid` is true (an ARIA hook, not a styling one), the native `required` attribute while `required` is true, and the native `disabled` attribute while its own `disabled` or a surrounding `[forFieldset]`'s is set. A `required` or `disabled` attribute you write yourself is never removed.
 
 | Property   | Type             | Description                                                                                                                                      |
 | ---------- | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `invalid`  | `input<boolean>` | Marks the control invalid, which drives the error region and `aria-invalid`.<br>**Default:** `false`                                             |
-| `required` | `input<boolean>` | Marks the control required, which the field reflects as `data-required`.<br>**Default:** `false`                                                 |
+| `required` | `input<boolean>` | Marks the control required, which the host reflects as the native `required` attribute and the field as `data-required`.<br>**Default:** `false` |
 | `disabled` | `input<boolean>` | Marks the control disabled, which the host reflects as the native `disabled` attribute and the field as `data-disabled`.<br>**Default:** `false` |
 | `touched`  | `input<boolean>` | Marks the control touched, which the field reflects as `data-touched`.<br>**Default:** `false`                                                   |
 

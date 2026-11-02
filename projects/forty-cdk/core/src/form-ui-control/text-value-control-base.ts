@@ -1,6 +1,7 @@
 import { Directive, ElementRef, inject, model } from '@angular/core';
 
 import { reflectDisabled } from '../host-attributes/disabled-reflection';
+import { reflectRequired } from '../host-attributes/required-reflection';
 import { FormUiControlBase } from './form-ui-control-base';
 import { injectNativeFormReset } from './native-form-reset';
 import { mirrorValue } from './value-mirror';
@@ -41,6 +42,7 @@ export abstract class TextValueControlBase extends FormUiControlBase {
     // Reflect the native `disabled` attribute non-destructively so a
     // consumer-set `disabled` on the same element survives an enabled state.
     reflectDisabled(this.effectiveDisabled);
+    reflectRequired(this.required);
 
     mirrorValue(
       () => this.#host.nativeElement,
