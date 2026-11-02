@@ -174,6 +174,10 @@ unchecks the item's own and no cloned media plays or frame reloads.
 | Lifted | Space/Enter | **Drop** (commits, emits `(dragDrop)`, focus follows the item) |
 | Lifted | Escape      | **Cancel** (no event, focus stays on item)                     |
 
+Removing the focused item outside a drop moves focus to the item that takes over the Tab stop, the one
+before it or else the one after, so focus never falls to `<body>`. A drop keeps the rules of
+[Focus after a keyboard drop](#focus-after-a-keyboard-drop).
+
 Arrow direction follows the list's `orientation` and respects RTL via `dir`. In
 `orientation="mixed"` every arrow key steps the lifted item linearly in DOM order.
 

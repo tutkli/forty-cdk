@@ -1,4 +1,5 @@
 import {
+  afterNextRender,
   booleanAttribute,
   computed,
   DestroyRef,
@@ -36,6 +37,7 @@ import {
   isUnset,
   PreviewController,
   resolveBoundaryElement,
+  injectRovingFocusRestore,
 } from 'forty-cdk/core';
 import { createAutoScroller, type AutoScroller } from './auto-scroll';
 import { clipRegion, findClippingAncestors, type ClippingAncestor } from './clip-region';
@@ -222,7 +224,7 @@ export class ForDropList implements ForDropListContext {
   /** Effective disabled — the list's own `disabled` input (fieldset wiring deferred to v2). */
   readonly effectiveDisabled = computed(() => this.disabled());
 
-  readonly roving = new RovingTabindex(() => this.#items.items());
+  readonly roving = new RovingTabindex(() => this.#items.items(), { fallback: 'nearest' });
   readonly #items = new Collection<ForDraggableHandle>();
   readonly items = this.#items.items;
 
@@ -254,6 +256,7 @@ export class ForDropList implements ForDropListContext {
   #resolveRaf: number | null = null;
   #geomCache: Map<ForDropListContext, DropListGeomEntry> | null = null;
   #dropFocus: FocusWhenMountedRef | null = null;
+  #pointerDropped: HTMLElement | null = null;
 
   /** Insertion index this list is the current drop target at, else `null`. */
   readonly dragOverIndex = this.#dragOver.asReadonly();
@@ -268,6 +271,9 @@ export class ForDropList implements ForDropListContext {
   );
 
   constructor() {
+    injectRovingFocusRestore(this.roving, {
+      skip: (departed) => this.#pointerDropped?.contains(departed) ?? false,
+    });
     const group = this.#group;
     if (group) {
       registerHandle(
@@ -732,6 +738,16 @@ export class ForDropList implements ForDropListContext {
     const preview = this.#previewController?.preview ?? null;
     if (this.#isBrowser && !this.#pointerDrag) {
       this.#followDropFocus(liftedHost, container, currentIndex, handle);
+    } else if (this.#pointerDrag) {
+      this.#pointerDropped = liftedHost;
+      afterNextRender(
+        () => {
+          queueMicrotask(() => {
+            this.#pointerDropped = null;
+          });
+        },
+        { injector: this.#injector },
+      );
     }
     const animator = animate
       ? new ReorderAnimator({

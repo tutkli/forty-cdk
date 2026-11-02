@@ -31,6 +31,7 @@ import {
   type PauseController,
   resolveText,
   type WritingDirection,
+  injectRovingFocusRestore,
 } from 'forty-cdk/core';
 import {
   type CarouselAlign,
@@ -219,6 +220,11 @@ export class ForCarousel implements ForCarouselContext {
 
   readonly #firstEnabledIndicatorHost = computed(() => firstEnabledHost(this.#indicators.items()));
 
+  readonly #tabStopIndicatorHost = computed(() => {
+    const current = this.#indicators.items()[this.effectiveIndex()];
+    return current && !current.disabled() ? current.host : this.#firstEnabledIndicatorHost();
+  });
+
   private readonly effectiveIndex = computed(() =>
     clamp(this.activeIndex(), 0, Math.max(0, this.slideCount() - 1)),
   );
@@ -255,6 +261,7 @@ export class ForCarousel implements ForCarouselContext {
   });
 
   constructor() {
+    injectRovingFocusRestore({ active: this.#tabStopIndicatorHost });
     effect(() => {
       const rotating = this.rotating();
       const interval = this.autoplayInterval();

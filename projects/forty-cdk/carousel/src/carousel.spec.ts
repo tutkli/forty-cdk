@@ -243,6 +243,18 @@ describe('ForCarousel', () => {
           disableFirst: () => r.instance.disabledIndicators.set([0]),
         };
       },
+      mountWithFocusRestore: async () => {
+        const r = renderHost(CarouselHost);
+        r.instance.active.set(1);
+        await r.flush();
+        return {
+          items: indicators(r.el),
+          flush: r.flush,
+          removedIndex: 1,
+          remove: () => r.instance.slides.update((list) => list.filter((_, i) => i !== 1)),
+          disable: () => r.instance.disabledIndicators.set([1]),
+        };
+      },
       mountWithRemoval: async () => {
         const r = renderHost(CarouselHost);
         r.instance.active.set(1);

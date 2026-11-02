@@ -491,6 +491,21 @@ describe('ForTabs', () => {
             ]),
         };
       },
+      mountWithFocusRestore: async () => {
+        const r = renderHost(TabsHost);
+        await r.flush();
+        return {
+          items: triggers(r.el),
+          flush: r.flush,
+          removedIndex: 1,
+          remove: () =>
+            r.fixture.componentInstance.tabs.update((list) => list.filter((_, i) => i !== 1)),
+          disable: () =>
+            r.fixture.componentInstance.tabs.update((list) =>
+              list.map((item, i) => (i === 1 ? { ...item, disabled: true } : item)),
+            ),
+        };
+      },
       mountWithRemoval: async () => {
         const r = renderHost(TabsHost);
         await r.flush();

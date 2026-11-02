@@ -163,7 +163,7 @@ export class DemoAlignment {
 - **ArrowLeft / ArrowRight** moves focus in horizontal mode (or vertical, swapped via `orientation`). Disabled items are skipped.
 - **ArrowUp / ArrowDown** moves focus in vertical mode.
 - **Home / End** jump to the first / last enabled item.
-- **Tab** enters and exits the group at the entry-point item. Before any interaction that is the first selected item, or the first enabled item when no value is selected; once you move focus with the arrows (or Home / End), the tab stop follows the last focused item, so Shift+Tab back into the group restores it.
+- **Tab** enters and exits the group at the entry-point item. Before any interaction that is the first selected item, or the first enabled item when no value is selected; once you move focus with the arrows (or Home / End), the tab stop follows the last focused item, so Shift+Tab back into the group restores it. Removing the focused item moves focus to the item that takes over the Tab stop, the one before it or else the one after, so focus never falls to `<body>`; focus outside the group stays where it is.
 
 Arrow keys move focus only. Selection requires an explicit click or Space / Enter. There is no selection-on-focus, unlike `[forRadioGroup]`.
 

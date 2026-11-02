@@ -20,9 +20,12 @@ import { RovingTabindex } from './roving-tabindex';
 class TestRovingGroup {
   readonly #items = signal<readonly HostRovingItemHandle[]>([]);
   readonly roving = new RovingTabindex(() => this.#items(), { fallback: 'nearest' });
+  readonly skipped = signal<readonly string[]>([]);
 
   constructor() {
-    injectRovingFocusRestore(this.roving);
+    injectRovingFocusRestore(this.roving, {
+      skip: (departed) => this.skipped().includes(departed.getAttribute('data-test') ?? ''),
+    });
   }
 
   register(handle: HostRovingItemHandle): void {
@@ -98,6 +101,16 @@ async function mountFocused(id: string) {
 }
 
 describe('injectRovingFocusRestore', () => {
+  it('moves no focus when the departure is skipped', async () => {
+    const r = await mountFocused('b');
+    r.fixture.debugElement.injector.get(TestRovingGroup).skipped.set(['b']);
+
+    r.instance.ids.set(['a', 'c']);
+    await r.flush();
+
+    expect(document.activeElement).toBe(document.body);
+  });
+
   it('moves focus to the item before the focused one when it is removed', async () => {
     const { el, instance, flush } = await mountFocused('b');
 

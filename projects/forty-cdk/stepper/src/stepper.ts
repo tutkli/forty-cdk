@@ -17,6 +17,7 @@ import {
   type WritingDirection,
   RovingTabindex,
   injectTextDirection,
+  injectRovingFocusRestore,
 } from 'forty-cdk/core';
 import {
   FOR_STEPPER_CONTEXT,
@@ -128,7 +129,7 @@ export class ForStepper implements ForStepperContext {
   readonly _dirInput = input<WritingDirection | null>(null, { alias: 'dir' });
   readonly dir = injectTextDirection(this._dirInput);
 
-  readonly roving = new RovingTabindex(() => this.#triggers.items());
+  readonly roving = new RovingTabindex(() => this.#triggers.items(), { fallback: 'nearest' });
 
   readonly #items = new Collection<ForStepperItemHandle>();
   readonly #triggers = new Collection<ForStepperTriggerHandle>();
@@ -150,6 +151,7 @@ export class ForStepper implements ForStepperContext {
   readonly #firstSelectableTriggerHost = computed(() => firstEnabledHost(this.#triggers.items()));
 
   constructor() {
+    injectRovingFocusRestore(this.roving);
     let previous: { completed: boolean; index: number } | null = null;
     effect(() => {
       const current = { completed: this.isCompleted(), index: this.selectedIndex() };

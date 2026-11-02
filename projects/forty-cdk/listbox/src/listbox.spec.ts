@@ -216,6 +216,20 @@ describe('ForListbox', () => {
             ]),
         };
       },
+      mountWithFocusRestore: async () => {
+        const r = renderHost(ListboxHost);
+        await r.flush();
+        return {
+          items: listboxItems(r.el),
+          flush: r.flush,
+          removedIndex: 1,
+          remove: () => r.instance.options.update((list) => list.filter((_, i) => i !== 1)),
+          disable: () =>
+            r.instance.options.update((list) =>
+              list.map((item, i) => (i === 1 ? { ...item, disabled: true } : item)),
+            ),
+        };
+      },
       mountWithRemoval: async () => {
         const r = renderHost(ListboxHost);
         await r.flush();

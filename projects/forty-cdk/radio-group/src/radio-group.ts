@@ -21,6 +21,7 @@ import {
   type WritingDirection,
   injectTextDirection,
   type Unset,
+  injectRovingFocusRestore,
 } from 'forty-cdk/core';
 import {
   FOR_RADIO_GROUP_CONTEXT,
@@ -123,8 +124,11 @@ export class ForRadioGroup
   /** True when some registered, enabled radio's value matches the group's current value. */
   readonly hasSelectedRadio = computed(() => this.#selectedItem() !== undefined);
 
+  readonly #tabStopHost = computed(() => this.#selectedItem()?.host ?? this.#firstEnabledHost());
+
   constructor() {
     super();
+    injectRovingFocusRestore({ active: this.#tabStopHost });
     injectHiddenInput({
       name: this.name,
       values: computed(() => {

@@ -133,6 +133,17 @@ describe('ForToolbar', () => {
         disableFirst: () => r.fixture.componentInstance.firstDisabled.set(true),
       };
     },
+    mountWithFocusRestore: async () => {
+      const r = renderHost(ToolbarHost);
+      await r.flush();
+      return {
+        items: collectFocusables(r.el),
+        flush: r.flush,
+        removedIndex: 1,
+        remove: () => r.fixture.componentInstance.middleShown.set(false),
+        disable: () => r.fixture.componentInstance.middleDisabled.set(true),
+      };
+    },
     mountWithRemoval: async () => {
       const r = renderHost(ToolbarHost);
       await r.flush();

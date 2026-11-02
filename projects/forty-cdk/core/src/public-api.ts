@@ -258,7 +258,11 @@ export {
   type HostRovingContext,
   type HostRovingItemHandle,
 } from './roving-tabindex/host-roving-context';
-export { injectRovingFocusRestore } from './roving-tabindex/roving-focus-restore';
+export {
+  injectRovingFocusRestore,
+  type RovingFocusRestoreOptions,
+  type RovingFocusTarget,
+} from './roving-tabindex/roving-focus-restore';
 export {
   type DisabledRovingItemKeyOptions,
   handleDisabledRovingItemKey,

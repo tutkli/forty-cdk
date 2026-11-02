@@ -21,6 +21,7 @@ import {
   RovingTabindex,
   injectTextDirection,
   isUnset,
+  injectRovingFocusRestore,
 } from 'forty-cdk/core';
 import { FOR_TOGGLE_DEFAULTS } from 'forty-cdk/defaults';
 import {
@@ -145,7 +146,7 @@ export class ForToggleGroup
    * Tree. Before any focus, `active()` is `null` and the tabindex falls back
    * to the first-selected / first-enabled entry point.
    */
-  readonly roving = new RovingTabindex(() => this.#items.items());
+  readonly roving = new RovingTabindex(() => this.#items.items(), { fallback: 'nearest' });
 
   readonly #items = new Collection<ForToggleGroupItemHandle>();
 
@@ -167,6 +168,7 @@ export class ForToggleGroup
 
   constructor() {
     super();
+    injectRovingFocusRestore(this.roving);
     injectHiddenInput({
       name: this.name,
       values: this.value,
