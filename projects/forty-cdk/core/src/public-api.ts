@@ -260,6 +260,8 @@ export {
 } from './roving-tabindex/host-roving-context';
 export { injectRovingFocusRestore } from './roving-tabindex/roving-focus-restore';
 export {
+  type DisabledRovingItemKeyOptions,
+  handleDisabledRovingItemKey,
   navigateFromRovingItem,
   type RovingItemNavigationOptions,
   rovingListTarget,

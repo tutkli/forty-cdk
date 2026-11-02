@@ -2,6 +2,7 @@ import { computed, signal } from '@angular/core';
 
 import { RovingTabindex } from './roving-tabindex';
 import {
+  handleDisabledRovingItemKey,
   navigateFromRovingItem,
   rovingListTarget,
   rovingTabStop,
@@ -253,5 +254,78 @@ describe('navigateFromRovingItem', () => {
     });
 
     expect(navigate.mock.calls).toEqual([['prev'], ['last']]);
+  });
+});
+
+describe('handleDisabledRovingItemKey', () => {
+  const keydown = (key: string): KeyboardEvent =>
+    new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true });
+
+  it('navigates on a navigation key without reaching typeahead', () => {
+    const navigate = vi.fn();
+    const typeahead = vi.fn(() => true);
+
+    const handled = handleDisabledRovingItemKey(keydown('ArrowDown'), {
+      groupDisabled: false,
+      orientation: 'vertical',
+      navigate,
+      typeahead,
+    });
+
+    expect(handled).toBe(true);
+    expect(navigate).toHaveBeenCalledExactlyOnceWith('next');
+    expect(typeahead).not.toHaveBeenCalled();
+  });
+
+  it('hands a key no navigation action claims to typeahead', () => {
+    const navigate = vi.fn();
+    const typeahead = vi.fn(() => true);
+    const event = keydown('c');
+
+    const handled = handleDisabledRovingItemKey(event, {
+      groupDisabled: false,
+      orientation: 'vertical',
+      navigate,
+      typeahead,
+    });
+
+    expect(handled).toBe(true);
+    expect(navigate).not.toHaveBeenCalled();
+    expect(typeahead).toHaveBeenCalledExactlyOnceWith(event);
+  });
+
+  it('reports a key typeahead declines as unhandled', () => {
+    expect(
+      handleDisabledRovingItemKey(keydown('Enter'), {
+        groupDisabled: false,
+        orientation: 'vertical',
+        navigate: vi.fn(),
+        typeahead: () => false,
+      }),
+    ).toBe(false);
+  });
+
+  it('leaves navigation and typeahead alone while the group is disabled', () => {
+    const navigate = vi.fn();
+    const typeahead = vi.fn(() => true);
+
+    expect(
+      handleDisabledRovingItemKey(keydown('ArrowDown'), {
+        groupDisabled: true,
+        orientation: 'vertical',
+        navigate,
+        typeahead,
+      }),
+    ).toBe(false);
+    expect(
+      handleDisabledRovingItemKey(keydown('c'), {
+        groupDisabled: true,
+        orientation: 'vertical',
+        navigate,
+        typeahead,
+      }),
+    ).toBe(false);
+    expect(navigate).not.toHaveBeenCalled();
+    expect(typeahead).not.toHaveBeenCalled();
   });
 });

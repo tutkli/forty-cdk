@@ -263,7 +263,7 @@ describe('ForListbox', () => {
         };
       },
     },
-    { forwardArrow: 'ArrowDown' },
+    { forwardArrow: 'ArrowDown', typeaheadFromDisabled: { key: 'b', target: 2 } },
   );
 
   assertFormControlContract(

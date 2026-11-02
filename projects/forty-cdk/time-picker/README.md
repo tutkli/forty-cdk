@@ -371,6 +371,8 @@ With `anatomy="field"` and no projected `[forTimeField]`, opening the listbox or
 | `Tab`                        | Commit the focused slot and advance focus. With `modal` set, Tab cycles inside the listbox and commits nothing                              |
 | `Escape`                     | Close without committing                                                                                                                    |
 
+A slot disabled while it holds focus, by a `minTime` / `maxTime` that moved or by its own `disabled`, keeps the arrow keys, `Home` / `End`, `PageUp` / `PageDown` and typeahead. `Enter`, `Space` and `Tab` commit nothing from it.
+
 ## Accessibility
 
 Implements the [WAI-ARIA Listbox pattern](https://www.w3.org/WAI/ARIA/apg/patterns/listbox/).

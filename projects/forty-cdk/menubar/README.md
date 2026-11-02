@@ -242,7 +242,7 @@ forty-cdk ships no styles: put your own class on each piece and key your CSS off
 - **Dismissal.** Escape and an outside pointer interaction close the open menu when `dismissible` is `true` (default). `[dismissible]="false"` suppresses both.
 - **Roving tabindex.** Only one trigger is in the tab sequence at a time: the open trigger, the most-recently-focused trigger, or the first enabled one when nothing's focused.
 - **Mount equals open.** Each menu's `[forMenuContent]` is wrapped in `@if (open() === '<value>')`, so `animate.enter` / `animate.leave` fire on mount / unmount. The directive never toggles `[hidden]`. See [Mounting the menus](#mounting-the-menus).
-- **Disabled triggers are skipped by the keyboard.** They reflect `data-disabled=""` and `aria-disabled="true"`, never the native `disabled`, are forced to `tabindex="-1"`, and are skipped by the arrows that move along the bar, Home / End, typeahead, and cross-menu nav. A click on one does nothing.
+- **Disabled triggers are skipped by the keyboard.** They reflect `data-disabled=""` and `aria-disabled="true"`, never the native `disabled`, are forced to `tabindex="-1"`, and are skipped by the arrows that move along the bar, Home / End, typeahead, and cross-menu nav. A click on one does nothing. A trigger disabled while it holds focus keeps the arrows along the bar, Home / End and typeahead, so the keyboard can leave it, while the keys that open a menu do nothing on it.
 
 ## Wrapping in a design system
 

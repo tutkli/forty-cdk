@@ -14,8 +14,11 @@ import {
   assertInputBound,
   hostButtonType,
   accessibleTextContent,
+  type DisabledRovingItemKeyOptions,
   focusAfterPress,
+  handleDisabledRovingItemKey,
   isUnset,
+  navigateFromRovingItem,
   registerHandle,
   hostId,
   injectPointerMove,
@@ -223,6 +226,7 @@ export class ForSelectOption<T = string> {
 
   private onKeyDown(event: KeyboardEvent): void {
     if (this.effectiveDisabled()) {
+      handleDisabledRovingItemKey(event, this.#keyOptions());
       return;
     }
 
@@ -282,18 +286,22 @@ export class ForSelectOption<T = string> {
       }
     }
 
-    const action = resolveListNavigation(event, {
-      orientation: this.#ctx.orientation(),
-      dir: this.#ctx.dir(),
-      pageKeys: true,
-    });
-    if (action) {
-      event.preventDefault();
-      this.#ctx.overlay.navigate(this.#host.nativeElement, action);
+    if (navigateFromRovingItem(event, this.#keyOptions())) {
       return;
     }
 
     this.#ctx.overlay.handleTypeahead(event);
+  }
+
+  #keyOptions(): DisabledRovingItemKeyOptions {
+    return {
+      groupDisabled: this.#ctx.effectiveDisabled(),
+      orientation: this.#ctx.orientation(),
+      dir: this.#ctx.dir(),
+      pageKeys: true,
+      navigate: (action) => this.#ctx.overlay.navigate(this.#host.nativeElement, action),
+      typeahead: (e) => this.#ctx.overlay.handleTypeahead(e),
+    };
   }
 
   private onPointerDown(event: PointerEvent): void {

@@ -159,3 +159,32 @@ export function navigateFromRovingItem(
   options.navigate(action);
   return true;
 }
+
+/** Options for {@link handleDisabledRovingItemKey}. */
+export interface DisabledRovingItemKeyOptions extends RovingItemNavigationOptions {
+  /**
+   * Moves focus for a key no navigation action claimed, by typeahead or by an
+   * item-specific move. Returns whether the key was handled.
+   */
+  typeahead: (event: KeyboardEvent) => boolean;
+}
+
+/**
+ * Handles a key on an item that is disabled while it holds focus: the
+ * list-navigation keys of {@link navigateFromRovingItem}, then `typeahead`.
+ * Activation and commit keys are left unconsumed, so the caller handles
+ * nothing else from a disabled item. Gated on the group only. Returns whether
+ * the key was handled.
+ */
+export function handleDisabledRovingItemKey(
+  event: KeyboardEvent,
+  options: DisabledRovingItemKeyOptions,
+): boolean {
+  if (navigateFromRovingItem(event, options)) {
+    return true;
+  }
+  if (options.groupDisabled) {
+    return false;
+  }
+  return options.typeahead(event);
+}

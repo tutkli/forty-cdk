@@ -658,7 +658,7 @@ describe('ForMenubar', () => {
         return { items: menubarTriggers(r.el), flush: r.flush };
       },
     },
-    { forwardArrow: 'ArrowRight' },
+    { forwardArrow: 'ArrowRight', typeaheadFromDisabled: { key: 'v', target: 2 } },
   );
 
   assertOverlayTriggerAriaContract(

@@ -622,7 +622,7 @@ describe('ForTree', () => {
         };
       },
     },
-    { forwardArrow: 'ArrowDown' },
+    { forwardArrow: 'ArrowDown', typeaheadFromDisabled: { key: 'r', target: 2 } },
   );
 
   describe('expansion (aria-expanded + data-state on parents only)', () => {

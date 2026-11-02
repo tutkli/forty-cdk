@@ -72,7 +72,9 @@ import { entryPointOf, LIBRARY_CODE, SPEC_CODE } from '../test-utils/source-scan
  * of an adopter routes its list-navigation keys through
  * `navigateFromRovingItem`, which gates on the group alone, and every claim
  * mounts the contract's in-place disable so that gate is exercised per
- * primitive. A tracker that pushes a concrete owner re-seeds to the nearest
+ * primitive. An item piece that also runs typeahead routes a disabled item's
+ * keys through `handleDisabledRovingItemKey`, so typeahead survives the disable
+ * too ([#2719](https://github.com/tutkli/forty-cdk/issues/2719)). A tracker that pushes a concrete owner re-seeds to the nearest
  * survivor and pairs with `injectRovingFocusRestore`, so DOM focus follows an
  * item that leaves while it is focused.
  *
@@ -226,6 +228,15 @@ const EXCLUSIONS: readonly {
 
 /** The shared item-navigation gate every item piece of an adopter calls. */
 const ITEM_NAVIGATION = 'navigateFromRovingItem(';
+
+/**
+ * The shared key handler for an item disabled while it holds focus, which every
+ * item piece running typeahead calls so typeahead survives the disable too.
+ */
+const DISABLED_ITEM_KEYS = 'handleDisabledRovingItemKey(';
+
+/** A call running a group's typeahead from one of its item pieces. */
+const TYPEAHEAD_CALL = /\.handle(?:Trigger)?Typeahead\(/;
 
 /**
  * The contract mounts every claim supplies: the in-place disable rung, and the
@@ -471,6 +482,21 @@ describe('roving-tabindex contract adoption (meta-guard)', () => {
     expect(pieces.length).toBeGreaterThanOrEqual(11);
     expect(
       sorted(pieces.filter(([, source]) => !source.includes(ITEM_NAVIGATION)).map(([p]) => p)),
+    ).toEqual([]);
+  });
+
+  it('routes the keys of a disabled item piece running typeahead through the shared handler', () => {
+    const entryPoints = new Set(ADOPTERS.flatMap((adopter) => adopter.trackers.map(entryPointOf)));
+    const pieces = [...LIBRARY_CODE.entries()].filter(
+      ([path, source]) =>
+        entryPoints.has(entryPointOf(path)) &&
+        source.includes(ITEM_NAVIGATION) &&
+        TYPEAHEAD_CALL.test(source),
+    );
+
+    expect(pieces.length).toBeGreaterThanOrEqual(3);
+    expect(
+      sorted(pieces.filter(([, source]) => !source.includes(DISABLED_ITEM_KEYS)).map(([p]) => p)),
     ).toEqual([]);
   });
 

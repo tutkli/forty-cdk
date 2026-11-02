@@ -15,6 +15,7 @@ import {
   flush,
   flushPositioning,
   renderHost,
+  type RenderResult,
   withScrollIntoViewStub,
 } from '../../src/test-utils';
 import {
@@ -2111,7 +2112,14 @@ describe('ForCombobox', () => {
     @Component({
       imports: MULTI_IMPORTS,
       template: `
-        <div forCombobox multiple [(query)]="query" [(value)]="value" [(open)]="open">
+        <div
+          forCombobox
+          multiple
+          [readonly]="readonly()"
+          [(query)]="query"
+          [(value)]="value"
+          [(open)]="open"
+        >
           <div forComboboxChips>
             @for (chip of selectedFromCtx(); track chip.value) {
               <span forComboboxChip [value]="chip.value" [attr.data-test-chip]="chip.value">
@@ -2143,6 +2151,7 @@ describe('ForCombobox', () => {
       readonly query = signal('');
       readonly value = signal<readonly string[]>([]);
       readonly open = signal(false);
+      readonly readonly = signal(false);
       readonly FRUITS = FRUITS;
 
       // Mirrors the root's `selected()` so the template can iterate without
@@ -2548,6 +2557,59 @@ describe('ForCombobox', () => {
 
         expect(r.instance.open()).toBe(true);
         expect(document.activeElement).toBe(apple);
+      });
+
+      describe('on a read-only combobox', () => {
+        const press = (el: HTMLElement, key: string): KeyboardEvent => {
+          const event = new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true });
+          el.dispatchEvent(event);
+          return event;
+        };
+
+        async function renderReadonly(): Promise<RenderResult<MultiHost>> {
+          const r = renderHost(MultiHost);
+          r.instance.value.set(['apple', 'banana']);
+          r.instance.readonly.set(true);
+          await flush(r.fixture);
+          return r;
+        }
+
+        it('moves focus between chips and to the input with the arrows', async () => {
+          const r = await renderReadonly();
+
+          getChip('banana').focus();
+          press(getChip('banana'), 'ArrowLeft');
+          await flush(r.fixture);
+          expect(document.activeElement).toBe(getChip('apple'));
+
+          press(getChip('apple'), 'ArrowRight');
+          await flush(r.fixture);
+          press(getChip('banana'), 'ArrowRight');
+          await flush(r.fixture);
+          expect(document.activeElement).toBe(getInput());
+        });
+
+        it('returns focus to the input on Escape', async () => {
+          const r = await renderReadonly();
+
+          getChip('apple').focus();
+          press(getChip('apple'), 'Escape');
+          await flush(r.fixture);
+
+          expect(document.activeElement).toBe(getInput());
+        });
+
+        it.each(['Backspace', 'Delete'])('keeps the chip on %s', async (key) => {
+          const r = await renderReadonly();
+
+          getChip('banana').focus();
+          const event = press(getChip('banana'), key);
+          await flush(r.fixture);
+
+          expect(event.defaultPrevented).toBe(false);
+          expect(r.instance.value()).toEqual(['apple', 'banana']);
+          expect(document.activeElement).toBe(getChip('banana'));
+        });
       });
 
       it('Delete on chip removes it', async () => {

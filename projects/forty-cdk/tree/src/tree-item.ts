@@ -15,6 +15,8 @@ import {
   registerHandle,
   hostId,
   injectPointerMove,
+  type DisabledRovingItemKeyOptions,
+  handleDisabledRovingItemKey,
   navigateFromRovingItem,
   preventPointerFocus,
   resolveListNavigation,
@@ -331,17 +333,12 @@ export class ForTreeItem<T = string> implements ForTreeItemContext<T> {
     }
     const tree = this.#tree;
     if (this.effectiveDisabled()) {
-      if (tree.disabled()) {
-        return;
-      }
-      if (event.key === '*') {
+      if (event.key === '*' && !tree.disabled()) {
         event.preventDefault();
         tree.expandSiblings(host);
         return;
       }
-      if (!this.#navigate(event) && !this.#expandOrCollapse(event)) {
-        tree.handleTypeahead(event);
-      }
+      handleDisabledRovingItemKey(event, this.#keyOptions());
       return;
     }
 
@@ -388,7 +385,7 @@ export class ForTreeItem<T = string> implements ForTreeItemContext<T> {
       return;
     }
 
-    if (this.#navigate(event) || this.#expandOrCollapse(event)) {
+    if (navigateFromRovingItem(event, this.#keyOptions()) || this.#expandOrCollapse(event)) {
       return;
     }
 
@@ -413,12 +410,13 @@ export class ForTreeItem<T = string> implements ForTreeItemContext<T> {
     return true;
   }
 
-  #navigate(event: KeyboardEvent): boolean {
-    return navigateFromRovingItem(event, {
+  #keyOptions(): DisabledRovingItemKeyOptions {
+    return {
       groupDisabled: this.#tree.disabled(),
       orientation: this.#tree.orientation(),
       dir: this.#tree.dir(),
       navigate: (action) => this.#tree.navigate(this.#host.nativeElement, action),
-    });
+      typeahead: (e) => this.#expandOrCollapse(e) || this.#tree.handleTypeahead(e),
+    };
   }
 }
