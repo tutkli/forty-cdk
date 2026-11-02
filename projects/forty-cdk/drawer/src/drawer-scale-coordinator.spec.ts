@@ -182,6 +182,24 @@ describe('ForDrawerScaleCoordinator', () => {
     expect(document.body.style.backgroundColor).toBe('rgb(255, 255, 255)');
   });
 
+  it('reverts wrapper + body when the application is destroyed with a drawer still registered', async () => {
+    wrapper.style.transform = 'translateZ(0)';
+    document.body.style.backgroundColor = 'rgb(255, 255, 255)';
+
+    const { coordinator, fixture } = await createHost();
+    coordinator.registerWrapper(wrapper);
+    coordinator.registerDrawer(signal(DEFAULT_CONFIG));
+    await flush(fixture);
+
+    expect(wrapper.style.transform).toContain('scale(0.95)');
+    expect(document.body.style.backgroundColor).toBe('black');
+
+    TestBed.resetTestingModule();
+
+    expect(wrapper.style.transform).toBe('translateZ(0)');
+    expect(document.body.style.backgroundColor).toBe('rgb(255, 255, 255)');
+  });
+
   it('warns in dev mode while a second wrapper stays registered, and scales the newest', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const { coordinator, fixture } = await createHost();

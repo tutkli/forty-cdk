@@ -1,6 +1,7 @@
 import { isPlatformBrowser } from '@angular/common';
 import {
   computed,
+  DestroyRef,
   DOCUMENT,
   effect,
   inject,
@@ -68,7 +69,8 @@ const TRANSITION_TIMING = 'cubic-bezier(0.32, 0.72, 0, 1)';
  * registered) drawer with a non-`null` config commands the effective scale —
  * when it unregisters or turns `scaleBackground` off, the next one down takes
  * over. Reverts to inline-style snapshots only when no registered drawer wants
- * the effect or the wrapper itself is torn down.
+ * the effect, the wrapper itself is torn down, or the application that
+ * provides the coordinator is destroyed.
  *
  * `prefers-reduced-motion: reduce` is treated as a hard kill switch:
  * while it is `true` the effect is suppressed entirely, the wrapper /
@@ -143,6 +145,8 @@ export class ForDrawerScaleCoordinator {
         this.#revert();
       }
     });
+
+    inject(DestroyRef).onDestroy(() => this.#revert());
 
     effect(() => {
       const stack = this.#drawerStack.stack();
