@@ -26,6 +26,7 @@ import {
   PreviewController,
   LiveAnnouncer,
   type WritingDirection,
+  isHistoryChord,
 } from 'forty-cdk/core';
 import { injectListboxContext, type ForListboxContext } from './listbox-context';
 import { FOR_DRAG_DROP_DEFAULTS, FOR_LISTBOX_DEFAULTS } from 'forty-cdk/defaults';
@@ -54,6 +55,9 @@ function resolveReorderAction(event: KeyboardEvent, dir: WritingDirection): Reor
   const control = resolveLiftedDragControl(event);
   if (control) {
     return control;
+  }
+  if (isHistoryChord(event)) {
+    return null;
   }
   const isRtl = dir === 'rtl';
   switch (event.key) {

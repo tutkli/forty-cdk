@@ -6,6 +6,8 @@
  * Pair with `RovingTabindex` to actually move focus.
  */
 
+import { isHistoryChord } from './modifier-chord';
+
 export type ListOrientation = 'horizontal' | 'vertical' | 'both' | 'mixed';
 export type WritingDirection = 'ltr' | 'rtl';
 
@@ -34,7 +36,7 @@ export function resolveListNavigation(
   event: KeyboardEvent,
   options: ListNavigationOptions,
 ): ListNavigationAction | null {
-  if (event.altKey || event.metaKey) {
+  if (isHistoryChord(event)) {
     return null;
   }
   const { orientation, dir = 'ltr', pageKeys = false } = options;
@@ -104,7 +106,7 @@ export function resolveGridNavigation(
   event: KeyboardEvent,
   options: GridNavigationOptions,
 ): GridNavigationAction | null {
-  if (event.altKey || (event.metaKey && event.key.startsWith('Arrow'))) {
+  if (event.altKey || (isHistoryChord(event) && event.key.startsWith('Arrow'))) {
     return null;
   }
   const { dir = 'ltr', pageKeys = false } = options;
@@ -312,7 +314,7 @@ export function resolveTreegridExpandCollapse(
   event: KeyboardEvent,
   dir: WritingDirection = 'ltr',
 ): ExpandCollapseAction | null {
-  if (event.altKey || event.metaKey) {
+  if (isHistoryChord(event)) {
     return null;
   }
   if (event.key === 'ArrowRight') {
@@ -345,7 +347,7 @@ export function resolveTreeExpandCollapse(
   event: KeyboardEvent,
   options: TreeExpandCollapseOptions,
 ): ExpandCollapseAction | null {
-  if (event.altKey || event.metaKey) {
+  if (isHistoryChord(event)) {
     return null;
   }
   const { orientation, dir = 'ltr' } = options;
