@@ -197,6 +197,7 @@ export {
   stepFocusableCycle,
 } from './focus-trap/focusable-candidate';
 export { injectHasFocusableContent } from './focus-trap/focusable-content';
+export { ReturnFocusResolver } from './focus-trap/return-focus';
 export { FormUiControlBase } from './form-ui-control/form-ui-control-base';
 export { injectHiddenInput } from './form-ui-control/hidden-input';
 export {

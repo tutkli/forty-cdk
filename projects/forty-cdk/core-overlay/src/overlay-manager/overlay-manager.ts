@@ -65,6 +65,7 @@ export interface OverlayManagerEntry {
 export interface OverlaySurface {
   readonly host: HTMLElement;
   backdrop(): HTMLElement | null;
+  release(returnFocusTarget: HTMLElement | null): void;
 }
 
 /**
@@ -263,7 +264,7 @@ export class OverlayManagerCore<TEntry extends OverlayManagerEntry> {
     }
     let handedOff = false;
     const next = entries.map((entry) => {
-      if (entry.id === id || entry.ref.isClosed() || !inside(entry.returnFocusTarget)) {
+      if (entry.id === id || !inside(entry.returnFocusTarget)) {
         return entry;
       }
       handedOff = true;
@@ -310,10 +311,16 @@ export class OverlayManagerCore<TEntry extends OverlayManagerEntry> {
     return { id, remove };
   }
 
+  #releaseSurface(id: string): void {
+    const entry = this.#entries().find((candidate) => candidate.id === id);
+    this.#surfaces.get(id)?.release(entry?.returnFocusTarget ?? null);
+  }
+
   /**
    * Hands the closing entry's return-focus origin on (see
-   * `resolveReturnFocusTarget`), then drives the exit animation on the overlay
-   * root and, in lockstep,
+   * `resolveReturnFocusTarget`) and releases its surface, so the overlay stops
+   * being modal and returns focus at close intent. Then drives the exit
+   * animation on the overlay root and, in lockstep,
    * on the portaled backdrop (both resolved from the `OverlaySurface` stored at
    * attach time — the backdrop's template `animate.leave` never fires under the
    * manager's `ngComponentOutlet` mount), then calls `remove`. Runs `remove`
@@ -328,7 +335,10 @@ export class OverlayManagerCore<TEntry extends OverlayManagerEntry> {
     remove: () => void,
   ): void {
     if (!this.#destroying) {
-      untracked(() => this.#handOffReturnFocus(id));
+      untracked(() => {
+        this.#handOffReturnFocus(id);
+        this.#releaseSurface(id);
+      });
     }
     if (this.#destroying || typeof requestAnimationFrame === 'undefined') {
       remove();

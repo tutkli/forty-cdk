@@ -26,6 +26,7 @@ import {
   resolveActiveElement,
   resolveConfigClass,
   resolveTextInput,
+  ReturnFocusResolver,
 } from 'forty-cdk/core';
 import {
   DEFAULT_TOAST_REGION,
@@ -187,8 +188,10 @@ export class ForToastViewport {
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
   readonly #defaults = inject(FOR_TOAST_DEFAULTS);
   readonly #doc = inject(DOCUMENT);
+  readonly #returnFocus = inject(ReturnFocusResolver);
   private readonly rows = viewChildren(ForToast, { read: ElementRef });
   #origin: HTMLElement | null = null;
+  #departedOrigin: HTMLElement | null = null;
 
   /**
    * How this viewport behaves over an open modal `ForDialog` / `ForDrawer`,
@@ -381,7 +384,10 @@ export class ForToastViewport {
         const ids = this.visible().map((toast) => toast.id);
         const previous = renderedIds;
         renderedIds = ids;
-        untracked(() => this.#moveFocusOffRemovedToast(previous, ids));
+        untracked(() => {
+          this.#recordRemovedRows(previous, ids);
+          this.#moveFocusOffRemovedToast(previous, ids);
+        });
       });
     }
 
@@ -424,8 +430,29 @@ export class ForToastViewport {
       !composedContains(host, active)
     ) {
       this.#origin = active;
+      this.#departedOrigin = null;
     }
     return true;
+  }
+
+  #recordRemovedRows(previous: readonly string[], current: readonly string[]): void {
+    const rows = this.rows();
+    if (rows.length !== previous.length) {
+      return;
+    }
+    const origin = this.#origin ?? this.#departedOrigin;
+    previous.forEach((id, index) => {
+      const element = rows[index]?.nativeElement;
+      if (element !== undefined && !current.includes(id)) {
+        this.#returnFocus.recordRemoval(element, () => this.#removedRowFallback(origin));
+      }
+    });
+  }
+
+  #removedRowFallback(origin: HTMLElement | null): HTMLElement {
+    return (
+      this.rows()[0]?.nativeElement ?? (origin?.isConnected ? origin : this.#host.nativeElement)
+    );
   }
 
   #moveFocusOffRemovedToast(previous: readonly string[], current: readonly string[]): void {
@@ -463,6 +490,7 @@ export class ForToastViewport {
   private onFocusOut(event: FocusEvent): void {
     const next = event.relatedTarget;
     if (next instanceof Node && !composedContains(this.#host.nativeElement, next)) {
+      this.#departedOrigin = this.#origin ?? this.#departedOrigin;
       this.#origin = null;
     }
   }
