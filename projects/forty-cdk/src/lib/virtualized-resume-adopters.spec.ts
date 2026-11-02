@@ -334,7 +334,14 @@ describe('virtualized resume position adopters (issue #2123)', () => {
 
     expect(sites.length).toBe(new Set(CASES.map((c) => c.owner)).size);
     for (const site of sites) {
-      expect(site).toMatch(/resume\.pos\(\)$/);
+      expect(site).toMatch(/resume\.pos\(\)$|#resolveResume\(\)$/);
+      if (site.endsWith('#resolveResume()')) {
+        const code = LIBRARY_CODE.get(site.slice(0, site.indexOf(':')))!;
+        const body = code.slice(code.indexOf('#resolveResume(): '));
+        expect(body, site).toMatch(
+          /^#resolveResume\(\): [^{]+\{\s+const exact = this\.#deps\.resume\.resolve\(\);/,
+        );
+      }
     }
   });
 });

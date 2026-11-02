@@ -488,9 +488,11 @@ Placed on the same element as `[forTree]` (`exportAs: 'forTreeVirtualized'`). `F
 ### Navigation flow
 
 1. Consumer flattens their visible tree into a flat list, computing `level`, `setSize`, and `posInSet` for each node (using the true sibling totals: off-window siblings contribute their real counts because the consumer knows them). A node's `itemIndex` is its position in that whole flat list, which is the `index` the virtualizer reports for its row.
-2. `injectVirtualizer({ count: flatCount, estimateSize, scrollElement })` drives the render window.
+2. `injectVirtualizer({ count: flatCount, estimateSize, scrollElement, getItemKey: (i) => flat()[i].value })` drives the render window. Keying rows by node value keeps a row bound to one node when an expand or collapse shifts the list.
 3. `[forTreeVirtualized]` on the tree host emits `(scrollToIndex)` when keyboard navigation needs a node outside the window; the consumer forwards the index to `v.scrollToIndex(idx, { align: 'auto' })`.
 4. Once the target node mounts (carrying the requested `[itemIndex]`), the bridge effect resolves the pending activedescendant.
+5. `ArrowLeft` and `ArrowRight` land where they do in the standard tree: the parent, or the first enabled child. When the rows between the active node and that target have never been rendered, the tree emits `(scrollToIndex)` for them and continues once they mount, so it never skips past an unknown row.
+6. `aria-activedescendant` follows the active node by `[value]`, not by row, so a row that comes to show another node never stays active. When a write to `[(expanded)]` collapses the active node away, the next key, or focus re-entering the tree, resumes on its nearest visible ancestor.
 
 ### Consumer example
 
@@ -600,6 +602,7 @@ export class VirtualTree {
     count: computed(() => this.flat().length),
     estimateSize: () => 32,
     scrollElement: this.scrollElement,
+    getItemKey: (index) => this.flat()[index]!.value,
   });
 }
 ```
@@ -931,19 +934,19 @@ A `[forTreeItem]` emits `data-state` only when it is a parent (a `[forTreeItemTo
 
 Vertical, LTR (mirrored for `dir="rtl"`):
 
-| Key                     | Behavior                                                                                      |
-| ----------------------- | --------------------------------------------------------------------------------------------- |
-| **ArrowDown / ArrowUp** | Move focus to the next / previous visible node (no wrap; collapsed subtrees are skipped).     |
-| **ArrowRight**          | Closed parent → expand (focus stays); open parent → focus first child; leaf → no-op.          |
-| **ArrowLeft**           | Open parent → collapse (focus stays); otherwise → focus the parent node; closed root → no-op. |
-| **Home / End**          | First / last visible node.                                                                    |
-| **Enter**               | Activate the focused node: emits [`(itemActivate)`](#fortree), then selects it unless vetoed. |
-| **Space**               | Activate like **Enter**. Single: select. Multi: toggle the focused node's selection.          |
-| **\***                  | Expand every enabled sibling parent at the focused node's level; a disabled one stays closed. |
-| **type a character**    | Typeahead: focus the next visible node whose label starts with the buffer.                    |
-| **Shift+ArrowUp/Down**  | Multi: move focus and toggle the new node's selection.                                        |
-| **Shift+Space**         | Multi: select the contiguous range from the anchor to the focused node.                       |
-| **Ctrl/Cmd+A**          | Multi: select every visible enabled node (deselects them when all are already selected).      |
+| Key                     | Behavior                                                                                                                              |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| **ArrowDown / ArrowUp** | Move focus to the next / previous visible node (no wrap; collapsed subtrees are skipped).                                             |
+| **ArrowRight**          | Closed parent → expand (focus stays); open parent → focus its first enabled child (no-op when every child is disabled); leaf → no-op. |
+| **ArrowLeft**           | Open parent → collapse (focus stays); otherwise → focus the parent node; closed root → no-op.                                         |
+| **Home / End**          | First / last visible node.                                                                                                            |
+| **Enter**               | Activate the focused node: emits [`(itemActivate)`](#fortree), then selects it unless vetoed.                                         |
+| **Space**               | Activate like **Enter**. Single: select. Multi: toggle the focused node's selection.                                                  |
+| **\***                  | Expand every enabled sibling parent at the focused node's level; a disabled one stays closed.                                         |
+| **type a character**    | Typeahead: focus the next visible node whose label starts with the buffer.                                                            |
+| **Shift+ArrowUp/Down**  | Multi: move focus and toggle the new node's selection.                                                                                |
+| **Shift+Space**         | Multi: select the contiguous range from the anchor to the focused node.                                                               |
+| **Ctrl/Cmd+A**          | Multi: select every visible enabled node (deselects them when all are already selected).                                              |
 
 Under `dir="rtl"` the expand / collapse arrows swap: **ArrowLeft** expands and **ArrowRight** collapses.
 

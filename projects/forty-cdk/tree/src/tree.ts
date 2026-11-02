@@ -30,6 +30,7 @@ import {
   injectTypeahead,
   hostAriaLabel,
   type Unset,
+  unsetInput,
 } from 'forty-cdk/core';
 import { type FocusModel, RovingFocusModel } from './focus-model';
 import {
@@ -323,7 +324,25 @@ export class ForTree<T = string> implements ForTreeContext<T>, ForTreeContainerC
    */
   readonly totalCount = computed(() => this.#virtualization()?.totalCount());
 
-  readonly #activeId = signal<string | null>(null);
+  readonly #active = signal<{ readonly id: string; readonly value: T | Unset } | null>(null);
+
+  readonly #activeId = computed<string | null>(() => {
+    const active = this.#active();
+    if (active === null) {
+      return null;
+    }
+    const items = this.#items.items();
+    const target = active.value;
+    if (isUnset(target)) {
+      return items.some((handle) => handle.id() === active.id) ? active.id : null;
+    }
+    const equals = this.compareWith();
+    const shown = items.find((handle) => {
+      const value = handle.value();
+      return !isUnset(value) && equals(value, target);
+    });
+    return shown ? shown.id() : null;
+  });
 
   readonly #pointer = createPointerHighlight({
     items: () => this.#visibleHandles(),
@@ -380,10 +399,13 @@ export class ForTree<T = string> implements ForTreeContext<T>, ForTreeContainerC
   }
 
   #setActiveId(id: string | null): void {
-    if (id !== null) {
+    const handle = id === null ? undefined : this.#items.items().find((h) => h.id() === id);
+    if (handle) {
+      this.#virtualization()?.resume.retain(handle.itemIndex(), handle.value());
+    } else {
       this.#virtualization()?.resume.clear();
     }
-    this.#activeId.set(id);
+    this.#active.set(id === null ? null : { id, value: handle ? handle.value() : unsetInput<T>() });
   }
 
   private registerVirtualization(virtualization: TreeVirtualization): TreeVirtualizationHost {
@@ -610,6 +632,7 @@ export class ForTree<T = string> implements ForTreeContext<T>, ForTreeContainerC
   private onHostFocusIn(): void {
     if (!this.#virtualized() || this.disabled()) return;
     if (this.#activeId() !== null) return;
+    if (this.#virtualModel().focusModel().resumeRendered()) return;
     const items = this.#items.items();
     if (items.length === 0) return;
     const ordered = [...items].sort((a, b) => (a.itemIndex() ?? 0) - (b.itemIndex() ?? 0));
@@ -721,10 +744,6 @@ export class ForTree<T = string> implements ForTreeContext<T>, ForTreeContainerC
 
   unregisterItem(handle: ForTreeItemHandle<T>): void {
     this.#items.unregister(handle);
-    if (this.#virtualized() && this.#activeId() === handle.id()) {
-      this.#virtualModel().resume.retain(handle.itemIndex(), handle.value());
-      this.#activeId.set(null);
-    }
   }
 
   indexOfHost(el: HTMLElement): number {

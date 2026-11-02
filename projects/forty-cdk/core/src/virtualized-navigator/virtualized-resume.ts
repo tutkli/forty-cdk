@@ -94,6 +94,10 @@ export class VirtualizedResume<T, E extends VirtualizedResumeEntry<T>> {
     return { pos: target.pos, entry };
   }
 
+  retained(): { readonly pos: number; readonly value: T } | null {
+    return this.#target();
+  }
+
   /** The resolved position alone, in the shape the navigator's `getResumePos` takes. */
   pos(): number | null {
     return this.resolve()?.pos ?? null;

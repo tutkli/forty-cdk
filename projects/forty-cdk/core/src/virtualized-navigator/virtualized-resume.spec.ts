@@ -70,6 +70,17 @@ describe('VirtualizedResume', () => {
     expect(resume.pos()).toBe(3);
   });
 
+  it('exposes the retained target even when the snapshot no longer validates it', () => {
+    const { resume, snapshot } = setup([[3, 'c']]);
+    expect(resume.retained()).toBeNull();
+    resume.retain(3, 'c');
+    snapshot.set(new Map([[3, { id: 'id-3', disabled: false, value: 'z' }]]));
+    expect(resume.pos()).toBeNull();
+    expect(resume.retained()).toEqual({ pos: 3, value: 'c' });
+    resume.clear();
+    expect(resume.retained()).toBeNull();
+  });
+
   it('resolves nothing when the position falls outside the total', () => {
     const { resume, total } = setup([[3, 'c']]);
     resume.retain(3, 'c');
