@@ -25,6 +25,7 @@ import {
   fortyWarn,
   injectHiddenInput,
   injectNativeFormResetToInitial,
+  injectReflectedDirection,
   injectTextDirection,
   isUnset,
   type PointerDragSession,
@@ -88,7 +89,7 @@ import { FOR_SLIDER_DEFAULTS } from 'forty-cdk/defaults';
     '[attr.data-disabled]': 'effectiveDisabled() ? "" : null',
     '[attr.data-required]': 'required() ? "" : null',
     '[attr.data-readonly]': 'readonly() ? "" : null',
-    '[attr.dir]': 'dir()',
+    '[attr.dir]': 'reflectedDir()',
     '(focusout)': 'onFocusOut($event)',
   },
   providers: [{ provide: FOR_SLIDER_CONTEXT, useExisting: ForSlider }],
@@ -151,14 +152,14 @@ export class ForSlider
   readonly orientation = input<'horizontal' | 'vertical'>('horizontal');
 
   /**
-   * Writing direction. When unset (default `null`), the inherited ambient
-   * direction is resolved from the nearest ancestor carrying a `dir` attribute
-   * (or `<html dir>`), defaulting to `'ltr'`. An explicit `[dir]` always wins.
-   * The resolved value is reflected to the host `dir` attribute and flips the
-   * horizontal increase direction in RTL.
+   * Writing direction. When unset (default `null`), the inherited ambient direction is resolved
+   * from the nearest ancestor carrying a `dir` attribute (or `<html dir>`), defaulting to `'ltr'`.
+   * An explicit `[dir]` always wins. The resolved value is reflected to the host `dir` attribute
+   * when a direction is set or declared, and flips the horizontal increase direction in RTL.
    */
   readonly _dirInput = input<WritingDirection | null>(null, { alias: 'dir' });
   readonly dir = injectTextDirection(this._dirInput);
+  private readonly reflectedDir = injectReflectedDirection(this._dirInput);
 
   /**
    * Visual inversion. Flips the mapping between value and screen position

@@ -448,7 +448,7 @@ Selector `[forMenu]`, `exportAs: 'forMenu'`.
 | `hideWhenDetached`          | `boolean`                           | `false`          |                                                                              |
 | `clipUntilPositioned`       | `boolean`                           | `true`           |                                                                              |
 | `loop`                      | `boolean`                           | `true`           |                                                                              |
-| `dir`                       | `'ltr' \| 'rtl' \| null`            | `null` (ambient) | Reflected to the host `dir` attribute                                        |
+| `dir`                       | `'ltr' \| 'rtl' \| null`            | `null` (ambient) | Reflected to the host `dir` attribute when set or declared                   |
 | `disabled`                  | `boolean`                           | `false`          | Blocks openers and disables every item, submenus too                         |
 | `dismissible`               | `boolean`                           | `true`           |                                                                              |
 | `returnFocus`               | `boolean`                           | `true`           | Returns focus to the **active** opener, except after an outside or Tab close |

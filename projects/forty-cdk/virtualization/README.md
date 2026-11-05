@@ -427,23 +427,23 @@ See the [Combobox README](../combobox/README.md#virtualization) for the complete
 
 `[forVirtualViewport]` / `<for-virtual-viewport>`, exported as `forVirtualViewport`.
 
-| Property             | Type                                    | Description                                                                                                                                          |
-| -------------------- | --------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `virtualCount`       | `number`                                | Total number of items in the full list.<br>**Default:** required                                                                                     |
-| `estimateSize`       | `number \| ((index: number) => number)` | Estimated item size in pixels along the scroll axis, as one number or per index.<br>**Default:** `50`                                                |
-| `orientation`        | `'vertical' \| 'horizontal'`            | Scroll axis. Read once when the viewport initializes.<br>**Default:** `'vertical'`                                                                   |
-| `overscan`           | `number`                                | Extra items rendered beyond the visible window on each side. Read once when the viewport initializes.<br>**Default:** `5`                            |
-| `dir`                | `WritingDirection \| null`              | Writing direction, reflected to the host `dir` attribute. A horizontal list in RTL starts at the right edge.<br>**Default:** the inherited direction |
-| `getItemKey`         | `(index: number) => string \| number`   | Stable key per item, recomputed when `*forVirtualFor` receives a new array.<br>**Default:** the index                                                |
-| `endReached`         | output `void`                           | Emits when the rendered window nears the end of the list, as described under Infinite scroll.                                                        |
-| `virtualItems`       | `Signal<readonly VirtualItem[]>`        | Items in the current visible window plus overscan, plus a row pinned by `setReorderingIndex`.                                                        |
-| `totalSize`          | `Signal<number>`                        | Total scroll size in pixels.                                                                                                                         |
-| `range`              | `Signal<readonly [number, number]>`     | The `[firstIndex, lastIndex + 1)` rendered window, `[0, 0]` when empty.                                                                              |
-| `scrollToIndex`      | method                                  | Scroll so the item at `index` is in view. No-op until initialized.                                                                                   |
-| `scrollToOffset`     | method                                  | Scroll to an absolute pixel offset. No-op until initialized.                                                                                         |
-| `cancelScroll`       | method                                  | Stop a `scrollToIndex` / `scrollToOffset` still correcting its position.                                                                             |
-| `measureElement`     | method                                  | Record the measured size of a rendered item element.                                                                                                 |
-| `setReorderingIndex` | method                                  | Keep the row at `index` rendered while it is scrolled out of the window, or `null` to release it. Used by `[forVirtualReorder]`.                     |
+| Property             | Type                                    | Description                                                                                                                                                               |
+| -------------------- | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `virtualCount`       | `number`                                | Total number of items in the full list.<br>**Default:** required                                                                                                          |
+| `estimateSize`       | `number \| ((index: number) => number)` | Estimated item size in pixels along the scroll axis, as one number or per index.<br>**Default:** `50`                                                                     |
+| `orientation`        | `'vertical' \| 'horizontal'`            | Scroll axis. Read once when the viewport initializes.<br>**Default:** `'vertical'`                                                                                        |
+| `overscan`           | `number`                                | Extra items rendered beyond the visible window on each side. Read once when the viewport initializes.<br>**Default:** `5`                                                 |
+| `dir`                | `WritingDirection \| null`              | Writing direction, reflected to the host `dir` attribute when set or declared. A horizontal list in RTL starts at the right edge.<br>**Default:** the inherited direction |
+| `getItemKey`         | `(index: number) => string \| number`   | Stable key per item, recomputed when `*forVirtualFor` receives a new array.<br>**Default:** the index                                                                     |
+| `endReached`         | output `void`                           | Emits when the rendered window nears the end of the list, as described under Infinite scroll.                                                                             |
+| `virtualItems`       | `Signal<readonly VirtualItem[]>`        | Items in the current visible window plus overscan, plus a row pinned by `setReorderingIndex`.                                                                             |
+| `totalSize`          | `Signal<number>`                        | Total scroll size in pixels.                                                                                                                                              |
+| `range`              | `Signal<readonly [number, number]>`     | The `[firstIndex, lastIndex + 1)` rendered window, `[0, 0]` when empty.                                                                                                   |
+| `scrollToIndex`      | method                                  | Scroll so the item at `index` is in view. No-op until initialized.                                                                                                        |
+| `scrollToOffset`     | method                                  | Scroll to an absolute pixel offset. No-op until initialized.                                                                                                              |
+| `cancelScroll`       | method                                  | Stop a `scrollToIndex` / `scrollToOffset` still correcting its position.                                                                                                  |
+| `measureElement`     | method                                  | Record the measured size of a rendered item element.                                                                                                                      |
+| `setReorderingIndex` | method                                  | Keep the row at `index` rendered while it is scrolled out of the window, or `null` to release it. Used by `[forVirtualReorder]`.                                          |
 
 ### `ForVirtualFor`
 

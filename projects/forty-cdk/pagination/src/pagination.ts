@@ -8,7 +8,13 @@ import {
   numberAttribute,
 } from '@angular/core';
 
-import { type WritingDirection, clamp, injectTextDirection, hostAriaLabel } from 'forty-cdk/core';
+import {
+  type WritingDirection,
+  clamp,
+  injectReflectedDirection,
+  injectTextDirection,
+  hostAriaLabel,
+} from 'forty-cdk/core';
 import { FOR_PAGINATION_CONTEXT, type ForPaginationContext } from './pagination-context';
 import { FOR_PAGINATION_DEFAULTS } from 'forty-cdk/defaults';
 import { computePaginationItems, type PaginationItem } from './pagination-range';
@@ -49,7 +55,7 @@ import { computePaginationItems, type PaginationItem } from './pagination-range'
     role: 'navigation',
     '[attr.aria-label]': 'resolvedAriaLabel()',
     '[attr.data-disabled]': 'disabled() ? "" : null',
-    '[attr.dir]': 'dir()',
+    '[attr.dir]': 'reflectedDir()',
   },
   providers: [{ provide: FOR_PAGINATION_CONTEXT, useExisting: ForPagination }],
 })
@@ -87,14 +93,15 @@ export class ForPagination implements ForPaginationContext {
   readonly disabled = input(false, { transform: booleanAttribute });
 
   /**
-   * Writing direction. When unset (default `null`), the inherited ambient
-   * direction is resolved from the nearest ancestor carrying a `dir` attribute
-   * (or `<html dir>`), defaulting to `'ltr'`. An explicit `[dir]` always wins.
-   * The resolved value is reflected to the host `dir` attribute. RTL affects
-   * visual layout only — previous/next semantics do not change.
+   * Writing direction. When unset (default `null`), the inherited ambient direction is resolved
+   * from the nearest ancestor carrying a `dir` attribute (or `<html dir>`), defaulting to `'ltr'`.
+   * An explicit `[dir]` always wins. The resolved value is reflected to the host `dir` attribute
+   * when a direction is set or declared. RTL affects visual layout only — previous/next semantics
+   * do not change.
    */
   readonly _dirInput = input<WritingDirection | null>(null, { alias: 'dir' });
   readonly dir = injectTextDirection(this._dirInput);
+  private readonly reflectedDir = injectReflectedDirection(this._dirInput);
 
   /**
    * Accessible label for the navigation landmark. Supply this (or point

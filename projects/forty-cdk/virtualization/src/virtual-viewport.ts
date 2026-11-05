@@ -15,7 +15,12 @@ import {
   untracked,
 } from '@angular/core';
 
-import { injectTextDirection, type Unset, type WritingDirection } from 'forty-cdk/core';
+import {
+  injectReflectedDirection,
+  injectTextDirection,
+  type Unset,
+  type WritingDirection,
+} from 'forty-cdk/core';
 
 import {
   FOR_VIRTUAL_VIEWPORT_CONTEXT,
@@ -59,7 +64,7 @@ const DEFAULT_OVERSCAN = 5;
   providers: [{ provide: FOR_VIRTUAL_VIEWPORT_CONTEXT, useExisting: ForVirtualViewport }],
   host: {
     '[style.overflow]': '"auto"',
-    '[attr.dir]': 'dir()',
+    '[attr.dir]': 'reflectedDir()',
   },
   template: `
     <div style="position: relative" [style.width]="sizerWidth()" [style.height]="sizerHeight()">
@@ -93,11 +98,12 @@ export class ForVirtualViewport implements ForVirtualViewportContext, OnInit {
   /**
    * Writing direction. When `null` (the default) the direction is resolved from the nearest
    * ancestor carrying a `dir` attribute (or `<html dir>`), defaulting to `'ltr'`. An explicit
-   * `[dir]` always wins. The resolved value is reflected to the host `dir` attribute; a horizontal
+   * `[dir]` always wins. The resolved value is reflected to the host `dir` attribute when a direction is set or declared; a horizontal
    * list in RTL starts at the right edge of the viewport and scrolls leftwards.
    */
   readonly _dirInput = input<WritingDirection | null>(null, { alias: 'dir' });
   readonly dir = injectTextDirection(this._dirInput);
+  private readonly reflectedDir = injectReflectedDirection(this._dirInput);
 
   /**
    * Stable key for the item at `index`. Defaults to the index. Keys are

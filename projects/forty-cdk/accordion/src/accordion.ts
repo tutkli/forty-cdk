@@ -5,6 +5,7 @@ import {
   type ListNavigationAction,
   moveIndex,
   type WritingDirection,
+  injectReflectedDirection,
   injectTextDirection,
 } from 'forty-cdk/core';
 import {
@@ -41,7 +42,7 @@ import {
   host: {
     '[attr.data-orientation]': 'orientation()',
     '[attr.data-disabled]': 'disabled() ? "" : null',
-    '[attr.dir]': 'dir()',
+    '[attr.dir]': 'reflectedDir()',
   },
   providers: [{ provide: FOR_ACCORDION_CONTEXT, useExisting: ForAccordion }],
 })
@@ -75,15 +76,15 @@ export class ForAccordion implements ForAccordionContext {
   readonly orientation = input<'horizontal' | 'vertical'>('vertical');
 
   /**
-   * Writing direction. Only relevant when `orientation='horizontal'`. When
-   * unset (default `null`), the inherited ambient direction is resolved from
-   * the nearest ancestor carrying a `dir` attribute (or `<html dir>`),
-   * defaulting to `'ltr'`. An explicit `[dir]` always wins. The resolved
-   * value is reflected to the host `dir` attribute and drives arrow-key
-   * semantics.
+   * Writing direction. Only relevant when `orientation='horizontal'`. When unset (default `null`),
+   * the inherited ambient direction is resolved from the nearest ancestor carrying a `dir`
+   * attribute (or `<html dir>`), defaulting to `'ltr'`. An explicit `[dir]` always wins. The
+   * resolved value is reflected to the host `dir` attribute when a direction is set or declared,
+   * and drives arrow-key semantics.
    */
   readonly _dirInput = input<WritingDirection | null>(null, { alias: 'dir' });
   readonly dir = injectTextDirection(this._dirInput);
+  private readonly reflectedDir = injectReflectedDirection(this._dirInput);
 
   /**
    * When true (default), arrow navigation between triggers wraps at the ends —

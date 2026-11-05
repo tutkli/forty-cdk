@@ -26,6 +26,7 @@ import {
   type WritingDirection,
   RovingTabindex,
   injectRovingFocusRestore,
+  injectReflectedDirection,
   injectTextDirection,
   injectTypeahead,
   hostAriaLabel,
@@ -86,7 +87,7 @@ type VisibleEntry<T> = ForTreeVisibleNode<T>;
     '[attr.aria-disabled]': 'disabled() ? "true" : null',
     '[attr.data-orientation]': 'orientation()',
     '[attr.data-disabled]': 'disabled() ? "" : null',
-    '[attr.dir]': 'dir()',
+    '[attr.dir]': 'reflectedDir()',
     '[attr.aria-activedescendant]': 'activeDescendantId()',
     '[attr.tabindex]': 'hostTabindex()',
     '(keydown)': 'onHostKeyDown($event)',
@@ -207,14 +208,14 @@ export class ForTree<T = string> implements ForTreeContext<T>, ForTreeContainerC
   private readonly resolvedAriaLabel = hostAriaLabel(() => this.ariaLabel() || null);
 
   /**
-   * Writing direction. When unset (default `null`), the inherited ambient
-   * direction is resolved from the nearest ancestor carrying a `dir` attribute
-   * (or `<html dir>`), defaulting to `'ltr'`. An explicit `[dir]` always wins.
-   * The resolved value is reflected to the host `dir` attribute and swaps the
-   * expand / collapse arrow semantics in RTL.
+   * Writing direction. When unset (default `null`), the inherited ambient direction is resolved
+   * from the nearest ancestor carrying a `dir` attribute (or `<html dir>`), defaulting to `'ltr'`.
+   * An explicit `[dir]` always wins. The resolved value is reflected to the host `dir` attribute
+   * when a direction is set or declared, and swaps the expand / collapse arrow semantics in RTL.
    */
   readonly _dirInput = input<WritingDirection | null>(null, { alias: 'dir' });
   readonly dir = injectTextDirection(this._dirInput);
+  private readonly reflectedDir = injectReflectedDirection(this._dirInput);
 
   /**
    * Single-mode only: when true, every keyboard focus move (arrow navigation,

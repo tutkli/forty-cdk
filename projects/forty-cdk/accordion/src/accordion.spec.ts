@@ -595,7 +595,7 @@ describe('ForAccordion', () => {
       const fixture = TestBed.createComponent(AmbientHost);
       fixture.detectChanges();
       const root = fixture.nativeElement.querySelector('[forAccordion]') as HTMLElement;
-      expect(root.getAttribute('dir')).toBe('ltr');
+      expect(root.hasAttribute('dir')).toBe(false);
 
       fixture.componentInstance.ambient.set('rtl');
       await flush(fixture);

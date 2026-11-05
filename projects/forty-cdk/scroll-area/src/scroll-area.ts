@@ -1,6 +1,10 @@
 import { DestroyRef, Directive, inject, input, numberAttribute, signal } from '@angular/core';
 
-import { type WritingDirection, injectTextDirection } from 'forty-cdk/core';
+import {
+  type WritingDirection,
+  injectReflectedDirection,
+  injectTextDirection,
+} from 'forty-cdk/core';
 import {
   FOR_SCROLL_AREA_CONTEXT,
   type ForScrollAreaContext,
@@ -40,7 +44,7 @@ import { FOR_SCROLL_AREA_DEFAULTS } from 'forty-cdk/defaults';
   exportAs: 'forScrollArea',
   host: {
     '[attr.data-type]': 'type()',
-    '[attr.dir]': 'dir()',
+    '[attr.dir]': 'reflectedDir()',
     '(pointerenter)': 'onPointerEnter()',
     '(pointerleave)': 'onPointerLeave()',
   },
@@ -107,16 +111,16 @@ export class ForScrollArea implements ForScrollAreaContext {
   });
 
   /**
-   * Writing direction. When unset (default `null`), the inherited ambient
-   * direction is resolved from the nearest ancestor carrying a `dir` attribute
-   * (or `<html dir>`), defaulting to `'ltr'`. An explicit `[dir]` always wins.
-   * The resolved value is reflected to the host `dir` attribute and maps the
-   * horizontal thumb and track press to RTL scroll offsets. Placing the vertical
-   * scrollbar on the left in RTL is the consumer's CSS, keyed off `[dir="rtl"]`
-   * or `:dir(rtl)`.
+   * Writing direction. When unset (default `null`), the inherited ambient direction is resolved
+   * from the nearest ancestor carrying a `dir` attribute (or `<html dir>`), defaulting to `'ltr'`.
+   * An explicit `[dir]` always wins. The resolved value is reflected to the host `dir` attribute
+   * when a direction is set or declared, and maps the horizontal thumb and track press to RTL
+   * scroll offsets. Placing the vertical scrollbar on the left in RTL is the consumer's CSS, keyed
+   * off `[dir="rtl"]` or `:dir(rtl)`.
    */
   readonly _dirInput = input<WritingDirection | null>(null, { alias: 'dir' });
   readonly dir = injectTextDirection(this._dirInput);
+  private readonly reflectedDir = injectReflectedDirection(this._dirInput);
 
   readonly #viewport = signal<HTMLElement | null>(null);
   readonly viewport = this.#viewport.asReadonly();

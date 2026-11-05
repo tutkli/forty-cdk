@@ -1792,9 +1792,9 @@ describe('ForTable', () => {
       expect(rootEl(el).getAttribute('dir')).toBe('rtl');
     });
 
-    it('resolves the ambient direction to ltr with no ancestor dir attribute', () => {
+    it('reflects no dir when neither [dir] nor an ancestor declares one', () => {
       const { el } = renderHost(TableHost);
-      expect(rootEl(el).getAttribute('dir')).toBe('ltr');
+      expect(rootEl(el).hasAttribute('dir')).toBe(false);
     });
   });
 

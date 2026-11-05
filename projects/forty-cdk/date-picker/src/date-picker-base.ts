@@ -21,6 +21,7 @@ import {
   fortyError,
   IdGenerator,
   injectFieldAnchor,
+  injectReflectedDirection,
   injectTextDirection,
   injectVetoableEmitter,
   type VetoableEvent,
@@ -187,13 +188,14 @@ export abstract class DatePickerBase<D>
   readonly ariaLabel = input<string | null>(null);
 
   /**
-   * Writing direction. When unset (default `null`), the inherited ambient
-   * direction is resolved from the nearest ancestor carrying a `dir` attribute
-   * (or `<html dir>`), defaulting to `'ltr'`. An explicit `[dir]` always wins.
-   * The resolved value is reflected to the host `dir` attribute.
+   * Writing direction. When unset (default `null`), the inherited ambient direction is resolved
+   * from the nearest ancestor carrying a `dir` attribute (or `<html dir>`), defaulting to `'ltr'`.
+   * An explicit `[dir]` always wins. The resolved value is reflected to the host `dir` attribute
+   * when a direction is set or declared.
    */
   readonly _dirInput = input<WritingDirection | null>(null, { alias: 'dir' });
   readonly dir = injectTextDirection(this._dirInput);
+  protected readonly reflectedDir = injectReflectedDirection(this._dirInput);
 
   /**
    * Fires when the user presses Escape while this surface is the topmost

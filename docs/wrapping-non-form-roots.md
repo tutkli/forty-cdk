@@ -300,7 +300,8 @@ systems lose behaviour the primitives were built to give them:
   `data-highlighted` and the boolean flags are the styling contract
   ([Styling](styling.md)); a wrapper adds classes _next to_ them rather than replacing them.
 - **Forward `dir` rather than re-deriving it.** The root already resolves the ambient writing
-  direction and reflects it to the host; a wrapper that adds its own `[attr.dir]` fights it.
+  direction and reflects a declared one to the host; a wrapper that adds its own `[attr.dir]`
+  fights it.
 
 ## Choosing a pattern
 

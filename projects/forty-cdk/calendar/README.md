@@ -225,7 +225,7 @@ Click the heading button to cycle from day → month → year view. Click a mont
 | `readonly`          | `input<boolean>`                       | Read-only: dates stay focusable, selection is blocked. Reflected as `data-readonly`.<br>**Default:** —                                                                                                            |
 | `firstDayOfWeek`    | `input<number \| null>`                | First column's weekday, **0-6** (`0` = Sunday).<br>**Default:** `null` → the adapter's value (or `provideForCalendarDefaults`)                                                                                    |
 | `locale`            | `input<string \| null>`                | BCP 47 locale for the heading, weekday headers, month-picker options and cell `aria-label` names. The calendar system stays Gregorian.<br>**Default:** `null` → the adapter's `locale()`, then the runtime locale |
-| `dir`               | `input<'ltr' \| 'rtl' \| null>`        | Writing direction.<br>**Default:** `null` resolves the ambient direction; reflected to the host `dir` and mirrors horizontal arrows                                                                               |
+| `dir`               | `input<'ltr' \| 'rtl' \| null>`        | Writing direction.<br>**Default:** `null` resolves the ambient direction; reflected to the host `dir` when set or declared and mirrors horizontal arrows                                                          |
 
 ### Data attributes
 

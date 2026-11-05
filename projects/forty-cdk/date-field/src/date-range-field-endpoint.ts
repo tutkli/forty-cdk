@@ -4,6 +4,7 @@ import {
   type FieldSegment,
   type WritingDirection,
   hostAriaLabel,
+  injectReflectedDirection,
   resolveTextInput,
 } from 'forty-cdk/core';
 import {
@@ -32,7 +33,7 @@ import { FOR_DATE_RANGE_FIELD_DEFAULTS } from 'forty-cdk/defaults';
 @Directive({
   host: {
     role: 'group',
-    '[attr.dir]': 'dir()',
+    '[attr.dir]': 'reflectedDir()',
     '[attr.aria-label]': 'resolvedAriaLabel()',
     '[attr.aria-disabled]': 'effectiveDisabled() ? "true" : null',
     '[attr.data-disabled]': 'effectiveDisabled() ? "" : null',
@@ -60,8 +61,9 @@ export abstract class ForDateRangeFieldEndpointBase {
   /** Whether the field is read-only, reflected on the group. */
   readonly readonly: Signal<boolean> = this.root.readonly;
 
-  /** Resolved writing direction, reflected on the group. */
+  /** Resolved writing direction of the field. */
   readonly dir: Signal<WritingDirection> = this.root.dir;
+  private readonly reflectedDir = injectReflectedDirection();
 
   /**
    * The ordered, locale-derived segments (editable + literals) of this

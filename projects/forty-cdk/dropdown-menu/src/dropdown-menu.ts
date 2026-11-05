@@ -2,6 +2,7 @@ import { booleanAttribute, Directive, inject, input, model, output } from '@angu
 
 import {
   type WritingDirection,
+  injectReflectedDirection,
   injectTextDirection,
   type VetoableEvent,
   type VetoableNativeEvent,
@@ -47,7 +48,7 @@ import { FOR_DROPDOWN_MENU_DEFAULTS } from 'forty-cdk/defaults';
   host: {
     '[attr.data-state]': 'open() ? "open" : "closed"',
     '[attr.data-disabled]': 'disabled() ? "" : null',
-    '[attr.dir]': 'dir()',
+    '[attr.dir]': 'reflectedDir()',
   },
   providers: [{ provide: FOR_MENU_CONTEXT, useExisting: ForDropdownMenu }],
 })
@@ -87,16 +88,16 @@ export class ForDropdownMenu extends MenuOverlayHost implements ForMenuContext {
   readonly loop = input(this.#defaults.loop, { transform: booleanAttribute });
 
   /**
-   * Writing direction. Drives ArrowLeft / ArrowRight semantics on submenu
-   * triggers and items underneath this menu (in RTL, ArrowLeft opens a submenu
-   * and ArrowRight closes it back). When unset (default `null`), the inherited
-   * ambient direction is resolved from the nearest ancestor carrying a `dir`
-   * attribute (or `<html dir>`), defaulting to `'ltr'`. An explicit `[dir]`
-   * always wins, the resolved value is reflected to the host `dir` attribute,
-   * and it is inherited by descendant submenus.
+   * Writing direction. Drives ArrowLeft / ArrowRight semantics on submenu triggers and items
+   * underneath this menu (in RTL, ArrowLeft opens a submenu and ArrowRight closes it back). When
+   * unset (default `null`), the inherited ambient direction is resolved from the nearest ancestor
+   * carrying a `dir` attribute (or `<html dir>`), defaulting to `'ltr'`. An explicit `[dir]` always
+   * wins, the resolved value is reflected to the host `dir` attribute when a direction is set or
+   * declared, and it is inherited by descendant submenus.
    */
   readonly _dirInput = input<WritingDirection | null>(null, { alias: 'dir' });
   readonly dir = injectTextDirection(this._dirInput);
+  private readonly reflectedDir = injectReflectedDirection(this._dirInput);
 
   /**
    * When true, trigger interaction is ignored and any open menu stays open

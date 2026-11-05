@@ -31,6 +31,7 @@ import {
   selectionMembership,
   singleSelected,
   toggleInArray,
+  injectReflectedDirection,
   injectTextDirection,
   injectTypeahead,
   isUnset,
@@ -100,7 +101,7 @@ import { FOR_LISTBOX_DEFAULTS } from 'forty-cdk/defaults';
     '[attr.data-orientation]': 'orientation()',
     '[attr.data-disabled]': 'effectiveDisabled() ? "" : null',
     '[attr.data-readonly]': 'readonly() ? "" : null',
-    '[attr.dir]': 'dir()',
+    '[attr.dir]': 'reflectedDir()',
     '(keydown)': 'onHostKeyDown($event)',
     '(focusin)': 'onHostFocusIn()',
     '(focusout)': 'onFocusOut($event)',
@@ -194,14 +195,15 @@ export class ForListbox<T = string>
   readonly loop = input(this.#defaults.loop, { transform: booleanAttribute });
 
   /**
-   * Writing direction. When unset (default `null`), the inherited ambient
-   * direction is resolved from the nearest ancestor carrying a `dir` attribute
-   * (or `<html dir>`), defaulting to `'ltr'`. An explicit `[dir]` always wins.
-   * The resolved value is reflected to the host `dir` attribute and swaps
-   * ArrowLeft / ArrowRight semantics in RTL for horizontal listboxes.
+   * Writing direction. When unset (default `null`), the inherited ambient direction is resolved
+   * from the nearest ancestor carrying a `dir` attribute (or `<html dir>`), defaulting to `'ltr'`.
+   * An explicit `[dir]` always wins. The resolved value is reflected to the host `dir` attribute
+   * when a direction is set or declared, and swaps ArrowLeft / ArrowRight semantics in RTL for
+   * horizontal listboxes.
    */
   readonly _dirInput = input<WritingDirection | null>(null, { alias: 'dir' });
   readonly dir = injectTextDirection(this._dirInput);
+  private readonly reflectedDir = injectReflectedDirection(this._dirInput);
 
   /**
    * Single-mode only: when true, a keyboard focus move (arrow navigation or a

@@ -127,7 +127,7 @@ import { FOR_DATE_PICKER_DEFAULTS } from 'forty-cdk/defaults';
   selector: '[forDatePicker]',
   exportAs: 'forDatePicker',
   host: {
-    '[attr.dir]': 'dir()',
+    '[attr.dir]': 'reflectedDir()',
     '[attr.data-state]': 'open() ? "open" : "closed"',
     '[attr.data-disabled]': 'effectiveDisabled() ? "" : null',
     '[attr.data-readonly]': 'readonly() ? "" : null',

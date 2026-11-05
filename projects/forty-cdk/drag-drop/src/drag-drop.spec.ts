@@ -1795,6 +1795,21 @@ describe('ForDropList + ForDraggable', () => {
     })
     class RtlPreviewHost {}
 
+    @Component({
+      host: { 'data-fixture': 'css-only-preview-host' },
+      imports: [ForDropList, ForDraggable, ForDragPreview],
+      template: `
+        <ul forDropList>
+          <li forDraggable [dragData]="'a'" data-test-id="1">
+            ألف
+            <ng-template forDragPreview><span>ألف</span></ng-template>
+          </li>
+          <li forDraggable [dragData]="'b'" data-test-id="2">باء</li>
+        </ul>
+      `,
+    })
+    class CssOnlyPreviewHost {}
+
     function firePointer(
       target: HTMLElement,
       type: 'pointerdown' | 'pointermove' | 'pointerup',
@@ -1834,6 +1849,27 @@ describe('ForDropList + ForDraggable', () => {
         expect(preview.getAttribute('dir')).toBe('rtl');
 
         firePointer(item, 'pointerup', 20);
+      });
+
+      it(`${label} carries no dir under CSS-only RTL (#2725)`, () => {
+        document.documentElement.style.direction = 'rtl';
+        try {
+          const { el, fixture } = renderHost(CssOnlyPreviewHost);
+          const item = itemEl(el, index);
+
+          firePointer(item, 'pointerdown', 0);
+          firePointer(item, 'pointermove', 20);
+          fixture.detectChanges();
+
+          const preview = document.querySelector<HTMLElement>('[data-for-drag-preview]')!;
+          expect(preview.parentElement).toBe(document.body);
+          expect(listEl(el).hasAttribute('dir')).toBe(false);
+          expect(preview.hasAttribute('dir')).toBe(false);
+
+          firePointer(item, 'pointerup', 20);
+        } finally {
+          document.documentElement.style.removeProperty('direction');
+        }
       });
     }
   });

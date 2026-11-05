@@ -19,6 +19,7 @@ import {
   type ListNavigationAction,
   moveIndex,
   type WritingDirection,
+  injectReflectedDirection,
   injectTextDirection,
   type Unset,
   injectRovingFocusRestore,
@@ -65,7 +66,7 @@ import { FOR_RADIO_GROUP_DEFAULTS } from 'forty-cdk/defaults';
     '[attr.data-orientation]': 'orientation()',
     '[attr.data-disabled]': 'effectiveDisabled() ? "" : null',
     '[attr.data-readonly]': 'readonly() ? "" : null',
-    '[attr.dir]': 'dir()',
+    '[attr.dir]': 'reflectedDir()',
     '(focusout)': 'onFocusOut($event)',
   },
   providers: [{ provide: FOR_RADIO_GROUP_CONTEXT, useExisting: ForRadioGroup }],
@@ -90,15 +91,15 @@ export class ForRadioGroup
   readonly orientation = input<'horizontal' | 'vertical'>('vertical');
 
   /**
-   * Reading direction. When unset (default `null`), the inherited ambient
-   * direction is resolved from the nearest ancestor carrying a `dir`
-   * attribute (or `<html dir>`), defaulting to `'ltr'`. An explicit `[dir]`
-   * always wins. The resolved value is reflected to the host `dir` attribute.
-   * In RTL it mirrors the horizontal cursor pair (ArrowLeft / ArrowRight) in
-   * either orientation; the vertical pair (ArrowUp / ArrowDown) is unaffected.
+   * Reading direction. When unset (default `null`), the inherited ambient direction is resolved
+   * from the nearest ancestor carrying a `dir` attribute (or `<html dir>`), defaulting to `'ltr'`.
+   * An explicit `[dir]` always wins. The resolved value is reflected to the host `dir` attribute
+   * when a direction is set or declared. In RTL it mirrors the horizontal cursor pair (ArrowLeft /
+   * ArrowRight) in either orientation; the vertical pair (ArrowUp / ArrowDown) is unaffected.
    */
   readonly _dirInput = input<WritingDirection | null>(null, { alias: 'dir' });
   readonly dir = injectTextDirection(this._dirInput);
+  private readonly reflectedDir = injectReflectedDirection(this._dirInput);
 
   /**
    * Whether arrow navigation wraps around past the first / last enabled

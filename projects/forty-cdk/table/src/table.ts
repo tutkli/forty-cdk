@@ -29,6 +29,7 @@ import {
   resolveTreegridExpandCollapse,
   TABLE_REGISTRATION_CONTEXT,
   type WritingDirection,
+  injectReflectedDirection,
   injectTextDirection,
   RovingTabindex,
   hostAriaLabel,
@@ -105,7 +106,7 @@ const ROW_CROSSING_ACTIONS: ReadonlySet<GridNavigationAction> = new Set([
   host: {
     '[attr.role]': 'mode()',
     '[attr.aria-label]': 'resolvedAriaLabel()',
-    '[attr.dir]': 'dir()',
+    '[attr.dir]': 'reflectedDir()',
     '[attr.data-mode]': 'mode()',
     '[style.--for-table-header-height.px]': 'headerSize()?.height ?? null',
     '[attr.aria-rowcount]': 'rowCountAttr()',
@@ -137,13 +138,14 @@ export class ForTable<T = unknown> implements ForTableContext {
   private readonly resolvedAriaLabel = hostAriaLabel(() => this.ariaLabel() || null);
 
   /**
-   * Writing direction. When unset (default `null`), the inherited ambient
-   * direction is resolved from the nearest ancestor carrying a `dir` attribute
-   * (or `<html dir>`), defaulting to `'ltr'`. An explicit `[dir]` always wins.
-   * The resolved value is reflected to the host `dir` attribute.
+   * Writing direction. When unset (default `null`), the inherited ambient direction is resolved
+   * from the nearest ancestor carrying a `dir` attribute (or `<html dir>`), defaulting to `'ltr'`.
+   * An explicit `[dir]` always wins. The resolved value is reflected to the host `dir` attribute
+   * when a direction is set or declared.
    */
   readonly _dirInput = input<WritingDirection | null>(null, { alias: 'dir' });
   readonly dir = injectTextDirection(this._dirInput);
+  private readonly reflectedDir = injectReflectedDirection(this._dirInput);
 
   /**
    * Explicit override for the true total data-row count (`aria-rowcount`, and the

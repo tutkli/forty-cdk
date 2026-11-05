@@ -207,8 +207,10 @@ this.dialogs.open(ConfirmDialog, { data, class: 'dialog dialog--danger' });
   }
   ```
 
-- **RTL.** A primitive's `dir` input resolves keyboard meaning _and_ reflects the resolved
-  value back to the host's native `dir` attribute. For visual RTL set `dir` on an ancestor
+- **RTL.** A primitive's `dir` input resolves keyboard meaning _and_ is reflected to the host's
+  native `dir` attribute, as is a direction declared on an ancestor. With no `dir` declared
+  anywhere the host carries none, so a direction set only in CSS keeps reaching its subtree and
+  its overlays. For RTL keyboard semantics as well as layout, set `dir` on an ancestor
   (the standard `<html dir="rtl">`). Every `dir`-aware primitive inherits it. Style
   direction-sensitive layout with `:dir(rtl)` or `[dir='rtl']`, and prefer logical
   properties (`margin-inline-start`, `inset-inline-end`) so layout flips for free.
