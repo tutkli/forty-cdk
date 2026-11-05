@@ -19,6 +19,7 @@ import {
   injectFieldAnchor,
   injectHiddenInput,
   injectNativeFormResetToInitial,
+  injectReflectedDirection,
   injectTextDirection,
   isUnset,
   LabelCache,
@@ -96,7 +97,7 @@ import { FOR_COMBOBOX_DEFAULTS } from 'forty-cdk/defaults';
     '[attr.data-state]': 'open() ? "open" : "closed"',
     '[attr.data-disabled]': 'effectiveDisabled() ? "" : null',
     '[attr.data-readonly]': 'readonly() ? "" : null',
-    '[attr.dir]': 'dir()',
+    '[attr.dir]': 'reflectedDir()',
     '(focusout)': 'onFocusOut($event)',
   },
   providers: [{ provide: FOR_COMBOBOX_CONTEXT, useExisting: ForCombobox }],
@@ -246,16 +247,16 @@ export class ForCombobox<T = string>
   readonly autoHighlight = input(true, { transform: booleanAttribute });
 
   /**
-   * Writing direction. Drives chip-cluster keyboard navigation (ArrowLeft /
-   * ArrowRight semantics swap in RTL so they follow the visual order, not DOM
-   * order) and the default `align` of the listbox (anchors to the right edge
-   * of the input in RTL). When unset (default `null`), the inherited ambient
-   * direction is resolved from the nearest ancestor carrying a `dir` attribute
-   * (or `<html dir>`), defaulting to `'ltr'`. An explicit `[dir]` always wins
-   * and the resolved value is reflected to the host `dir` attribute.
+   * Writing direction. Drives chip-cluster keyboard navigation (ArrowLeft / ArrowRight semantics
+   * swap in RTL so they follow the visual order, not DOM order) and the default `align` of the
+   * listbox (anchors to the right edge of the input in RTL). When unset (default `null`), the
+   * inherited ambient direction is resolved from the nearest ancestor carrying a `dir` attribute
+   * (or `<html dir>`), defaulting to `'ltr'`. An explicit `[dir]` always wins and the resolved
+   * value is reflected to the host `dir` attribute when a direction is set or declared.
    */
   readonly _dirInput = input<WritingDirection | null>(null, { alias: 'dir' });
   readonly dir = injectTextDirection(this._dirInput);
+  private readonly reflectedDir = injectReflectedDirection(this._dirInput);
 
   /**
    * Whether arrow navigation wraps past the first / last enabled option. Default `true`.

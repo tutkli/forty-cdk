@@ -86,7 +86,7 @@ import { FOR_DATE_RANGE_PICKER_DEFAULTS } from 'forty-cdk/defaults';
   selector: '[forDateRangePicker]',
   exportAs: 'forDateRangePicker',
   host: {
-    '[attr.dir]': 'dir()',
+    '[attr.dir]': 'reflectedDir()',
     '[attr.data-state]': 'open() ? "open" : "closed"',
     '[attr.data-disabled]': 'effectiveDisabled() ? "" : null',
     '[attr.data-readonly]': 'readonly() ? "" : null',

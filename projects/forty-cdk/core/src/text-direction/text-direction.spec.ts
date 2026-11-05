@@ -12,7 +12,39 @@ import { TestBed } from '@angular/core/testing';
 
 import type { WritingDirection } from '../keyboard-navigation/keyboard-navigation';
 import { flush } from '../../../src/test-utils/flush';
-import { injectTextDirection } from './text-direction';
+import { injectReflectedDirection, injectTextDirection } from './text-direction';
+
+@Directive({
+  selector: '[probeReflected]',
+  host: {
+    '[attr.dir]': 'reflected()',
+    '[attr.data-resolved]': 'resolved()',
+  },
+})
+class ReflectedProbe {
+  readonly explicit = signal<WritingDirection | null>(null);
+  readonly resolved: Signal<WritingDirection> = injectTextDirection(this.explicit);
+  readonly reflected = injectReflectedDirection(this.explicit);
+}
+
+@Component({
+  imports: [ReflectedProbe],
+  template: `
+    <div [attr.dir]="ancestorDir()">
+      <span probeReflected></span>
+    </div>
+  `,
+})
+class ReflectedHost {
+  readonly ancestorDir = signal<string | null>(null);
+}
+
+function renderReflected() {
+  const fixture = TestBed.createComponent(ReflectedHost);
+  const probe = fixture.debugElement.children[0]!.children[0]!.injector.get(ReflectedProbe);
+  const host = fixture.nativeElement.querySelector('[probeReflected]') as HTMLElement;
+  return { fixture, probe, host };
+}
 
 @Directive({
   selector: '[probeDir]',
@@ -221,6 +253,65 @@ describe('injectTextDirection', () => {
       expect(host.getAttribute('dir')).toBe('rtl');
 
       rtlBox.remove();
+    });
+  });
+
+  describe('injectReflectedDirection', () => {
+    beforeEach(() => {
+      TestBed.configureTestingModule({
+        providers: [provideZonelessChangeDetection()],
+      });
+    });
+
+    it('reflects no dir when nothing is declared, while the resolved value defaults to ltr', async () => {
+      const { fixture, host } = renderReflected();
+      await flush(fixture);
+      expect(host.hasAttribute('dir')).toBe(false);
+      expect(host.getAttribute('data-resolved')).toBe('ltr');
+    });
+
+    it('reflects no dir under CSS-only RTL', async () => {
+      document.documentElement.style.direction = 'rtl';
+      try {
+        const { fixture, host } = renderReflected();
+        await flush(fixture);
+        expect(host.hasAttribute('dir')).toBe(false);
+      } finally {
+        document.documentElement.style.removeProperty('direction');
+      }
+    });
+
+    it('reflects the direction an ancestor declares and follows its runtime flip', async () => {
+      const { fixture, host } = renderReflected();
+      fixture.componentInstance.ancestorDir.set('rtl');
+      await flush(fixture);
+      expect(host.getAttribute('dir')).toBe('rtl');
+
+      fixture.componentInstance.ancestorDir.set('ltr');
+      await flush(fixture);
+      expect(host.getAttribute('dir')).toBe('ltr');
+
+      fixture.componentInstance.ancestorDir.set(null);
+      await flush(fixture);
+      expect(host.hasAttribute('dir')).toBe(false);
+    });
+
+    it('reflects the direction <html dir> declares', async () => {
+      document.documentElement.setAttribute('dir', 'rtl');
+      const { fixture, host } = renderReflected();
+      await flush(fixture);
+      expect(host.getAttribute('dir')).toBe('rtl');
+    });
+
+    it('reflects an explicit dir over the declared one, and with nothing declared', async () => {
+      const { fixture, probe, host } = renderReflected();
+      probe.explicit.set('rtl');
+      await flush(fixture);
+      expect(host.getAttribute('dir')).toBe('rtl');
+
+      fixture.componentInstance.ancestorDir.set('ltr');
+      await flush(fixture);
+      expect(host.getAttribute('dir')).toBe('rtl');
     });
   });
 

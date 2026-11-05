@@ -21,8 +21,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   leaving the control touch it, Escape does not. On the date pickers `close()` no longer marks the
   control touched, and `ForDatePickerContext.requestClose` takes the dismissal channel
   (`'escape' | 'pointerDownOutside' | 'focusOutside'`).
+- **Every primitive with a `dir` input** — the root host carries a `dir` attribute only when a
+  direction is set through `[dir]` or declared by an ancestor or `<html dir>`
+  ([#2725](https://github.com/tutkli/forty-cdk/issues/2725)). Before, a root with nothing declared
+  above it wrote `dir="ltr"` on itself, which overrode a CSS `direction: rtl` inside the root.
+  Keyboard semantics are unchanged: with nothing declared they still resolve left to right. Styles
+  keyed on `[dir="ltr"]` on a root host move to `:dir(ltr)`. The range-field
+  endpoint groups follow the same rule.
 
 ### Fixed
+
+- **Select, Combobox, Dropdown menu, Context menu, Menubar, Menu, Date picker, Date range picker,
+  Time picker, Drag and drop** — in an app that sets `direction: rtl` in CSS and no `dir`
+  attribute, the portaled listbox, menu, calendar or slot list, and a drag preview lifted from a
+  `[forDropList]`, are no longer stamped `dir="ltr"`
+  ([#2725](https://github.com/tutkli/forty-cdk/issues/2725)). They inherit the page's direction
+  where they land, as the 0.34.0 entry already said they did. A `dir` declared on an ancestor or on
+  `<html>` is still stamped on them.
+- **Text direction** — a `dir` write that changes no element's declared direction, such as a
+  root's own reflection or a portal stamp under `<html dir>`, no longer makes every
+  direction-aware root on the page re-walk its ancestors
+  ([#2725](https://github.com/tutkli/forty-cdk/issues/2725)). Opening a tooltip or mounting a
+  virtualized row in a page with hundreds of roots no longer re-resolves all of them.
 
 - **Field, Input, Textarea, Search, Number input, OTP input** — a bound `[required]`, or a
   `[formField]` whose schema marks the field required, now sets the native `required` attribute

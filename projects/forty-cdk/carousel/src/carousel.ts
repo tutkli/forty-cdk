@@ -25,6 +25,7 @@ import {
   injectElementSize,
   injectPauseController,
   injectPrefersReducedMotion,
+  injectReflectedDirection,
   injectTextDirection,
   type ListNavigationAction,
   moveIndex,
@@ -65,7 +66,7 @@ import { FOR_CAROUSEL_DEFAULTS } from 'forty-cdk/defaults';
     '[attr.aria-label]': 'resolvedAriaLabel()',
     '[attr.data-orientation]': 'orientation()',
     '[attr.data-align]': 'align()',
-    '[attr.dir]': 'dir()',
+    '[attr.dir]': 'reflectedDir()',
     '[style.--for-carousel-offset]': 'offset()',
     '[style.--for-carousel-active-index]': 'effectiveIndex()',
     '[style.--for-carousel-slide-count]': 'slideCount()',
@@ -163,14 +164,15 @@ export class ForCarousel implements ForCarouselContext {
   });
 
   /**
-   * Writing direction. When unset (default `null`), the inherited ambient
-   * direction is resolved from the nearest ancestor carrying a `dir` attribute
-   * (or `<html dir>`), defaulting to `'ltr'`. An explicit `[dir]` always wins.
-   * The resolved value is reflected to the host `dir` attribute and swaps
-   * ArrowLeft / ArrowRight semantics on the indicator group in RTL.
+   * Writing direction. When unset (default `null`), the inherited ambient direction is resolved
+   * from the nearest ancestor carrying a `dir` attribute (or `<html dir>`), defaulting to `'ltr'`.
+   * An explicit `[dir]` always wins. The resolved value is reflected to the host `dir` attribute
+   * when a direction is set or declared, and swaps ArrowLeft / ArrowRight semantics on the
+   * indicator group in RTL.
    */
   readonly _dirInput = input<WritingDirection | null>(null, { alias: 'dir' });
   readonly dir = injectTextDirection(this._dirInput);
+  private readonly reflectedDir = injectReflectedDirection(this._dirInput);
 
   readonly #destroyRef = inject(DestroyRef);
   readonly #isBrowser = isPlatformBrowser(inject(PLATFORM_ID));

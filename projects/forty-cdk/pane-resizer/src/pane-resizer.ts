@@ -17,6 +17,7 @@ import {
   type WritingDirection,
   createPointerDragSession,
   type PointerDragSession,
+  injectReflectedDirection,
   injectTextDirection,
   clamp,
   roundToStepPrecision,
@@ -80,7 +81,7 @@ import {
     '[attr.aria-controls]': 'controls()',
     '[attr.aria-disabled]': 'disabled() ? "true" : null',
     '[attr.data-disabled]': 'disabled() ? "" : null',
-    '[attr.dir]': 'dir()',
+    '[attr.dir]': 'reflectedDir()',
     '[style.touch-action]': 'touchAction()',
     '(keydown)': 'onKeyDown($event)',
     '(keyup)': 'onKeyUp($event)',
@@ -162,15 +163,16 @@ export class ForPaneResizer {
   readonly collapsible = input(false, { transform: booleanAttribute });
 
   /**
-   * Reading direction. RTL inverts ArrowLeft / ArrowRight on a vertical
-   * separator (horizontal pane stack) and the horizontal axis of pointer
-   * drag. When unset (default `null`), the inherited ambient direction is
-   * resolved from the nearest ancestor carrying a `dir` attribute (or
+   * Reading direction. RTL inverts ArrowLeft / ArrowRight on a vertical separator (horizontal pane
+   * stack) and the horizontal axis of pointer drag. When unset (default `null`), the inherited
+   * ambient direction is resolved from the nearest ancestor carrying a `dir` attribute (or
    * `<html dir>`), defaulting to `'ltr'`. An explicit `[dir]` always wins and
-   * the resolved value is reflected to the host `dir` attribute.
+   * the resolved value is reflected to the host `dir` attribute when a direction is set or
+   * declared.
    */
   readonly _dirInput = input<WritingDirection | null>(null, { alias: 'dir' });
   readonly dir = injectTextDirection(this._dirInput);
+  private readonly reflectedDir = injectReflectedDirection(this._dirInput);
 
   /**
    * `touch-action` for the divider: capture the resize axis so a finger drag

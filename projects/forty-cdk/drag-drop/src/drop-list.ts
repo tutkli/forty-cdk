@@ -32,6 +32,7 @@ import {
   type WritingDirection,
   LiveAnnouncer,
   RovingTabindex,
+  injectReflectedDirection,
   injectTextDirection,
   isUnset,
   PreviewController,
@@ -100,7 +101,7 @@ function shiftRect(rect: DragRect, dx: number, dy: number): DragRect {
   exportAs: 'forDropList',
   host: {
     '[attr.data-orientation]': 'orientation()',
-    '[attr.dir]': 'dir()',
+    '[attr.dir]': 'reflectedDir()',
     '[attr.data-disabled]': "effectiveDisabled() ? '' : null",
     '[attr.data-dragging]': "isDragging() ? '' : null",
     '[attr.data-drag-over]': "dragOverIndex() !== null ? '' : null",
@@ -142,6 +143,7 @@ export class ForDropList implements ForDropListContext {
    */
   readonly _dirInput = input<WritingDirection | null>(null, { alias: 'dir' });
   readonly dir = injectTextDirection(this._dirInput);
+  private readonly reflectedDir = injectReflectedDirection(this._dirInput);
 
   /**
    * When true, the entire list and all its items are disabled. Turning it on while an item is

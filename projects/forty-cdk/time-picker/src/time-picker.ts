@@ -30,6 +30,7 @@ import {
   injectNativeFormResetToInitial,
   type VetoableEvent,
   type VetoableNativeEvent,
+  injectReflectedDirection,
   injectTextDirection,
   FOR_TIME_VALUE_SOURCE,
   secondsOfDay,
@@ -100,7 +101,7 @@ import { FOR_TIME_PICKER_DEFAULTS } from 'forty-cdk/defaults';
     '[attr.data-state]': 'open() ? "open" : "closed"',
     '[attr.data-disabled]': 'effectiveDisabled() ? "" : null',
     '[attr.data-readonly]': 'effectiveReadonly() ? "" : null',
-    '[attr.dir]': 'dir()',
+    '[attr.dir]': 'reflectedDir()',
   },
   providers: provideForTimePicker(ForTimePicker),
 })
@@ -266,6 +267,7 @@ export class ForTimePicker<D>
    */
   readonly _dirInput = input<WritingDirection | null>(null, { alias: 'dir' });
   readonly dir = injectTextDirection(this._dirInput);
+  private readonly reflectedDir = injectReflectedDirection(this._dirInput);
 
   /**
    * Fires when the user presses Escape while this listbox is the topmost

@@ -1008,9 +1008,9 @@ describe('ForVirtualViewport — writing direction', () => {
     document.documentElement.removeAttribute('dir');
   });
 
-  it('reflects the resolved direction to the host dir attribute', async () => {
+  it('reflects an explicit dir to the host, and no dir while nothing declares one', async () => {
     const fixture = await mount();
-    expect(viewportEl(fixture).getAttribute('dir')).toBe('ltr');
+    expect(viewportEl(fixture).hasAttribute('dir')).toBe(false);
 
     fixture.componentInstance.dir.set('rtl');
     await flush(fixture);

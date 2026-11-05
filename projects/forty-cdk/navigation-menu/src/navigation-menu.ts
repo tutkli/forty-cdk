@@ -22,6 +22,7 @@ import {
   type WritingDirection,
   isUnset,
   nextEnabledHandle,
+  injectReflectedDirection,
   injectTextDirection,
   hostAriaLabel,
   type Unset,
@@ -85,7 +86,7 @@ interface NavigationMenuTransition {
     '[attr.data-state]': 'renderedValue() === null ? "closed" : "open"',
     '[attr.data-orientation]': 'orientation()',
     '[attr.data-disabled]': 'disabled() ? "" : null',
-    '[attr.dir]': 'dir()',
+    '[attr.dir]': 'reflectedDir()',
     '(focusout)': 'handleSurfaceFocusOut($event)',
   },
   providers: [{ provide: FOR_NAVIGATION_MENU_CONTEXT, useExisting: ForNavigationMenu }],
@@ -108,14 +109,14 @@ export class ForNavigationMenu implements ForNavigationMenuContext {
   readonly orientation = input<'horizontal' | 'vertical'>('horizontal');
 
   /**
-   * Writing direction. When unset (default `null`), the inherited ambient
-   * direction is resolved from the nearest ancestor carrying a `dir` attribute
-   * (or `<html dir>`), defaulting to `'ltr'`. An explicit `[dir]` always wins.
-   * The resolved value is reflected to the host `dir` attribute and swaps
-   * ArrowLeft / ArrowRight semantics in RTL.
+   * Writing direction. When unset (default `null`), the inherited ambient direction is resolved
+   * from the nearest ancestor carrying a `dir` attribute (or `<html dir>`), defaulting to `'ltr'`.
+   * An explicit `[dir]` always wins. The resolved value is reflected to the host `dir` attribute
+   * when a direction is set or declared, and swaps ArrowLeft / ArrowRight semantics in RTL.
    */
   readonly _dirInput = input<WritingDirection | null>(null, { alias: 'dir' });
   readonly dir = injectTextDirection(this._dirInput);
+  private readonly reflectedDir = injectReflectedDirection(this._dirInput);
   /**
    * Whether arrow navigation wraps past the first / last enabled trigger. Default `true`.
    * The default is read from `provideForNavigationMenuDefaults` for the surrounding

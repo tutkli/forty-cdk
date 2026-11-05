@@ -22,6 +22,7 @@ import {
   IdGenerator,
   LiveAnnouncer,
   type WritingDirection,
+  injectReflectedDirection,
   injectTextDirection,
 } from 'forty-cdk/core';
 import { type DateAdapter } from 'forty-cdk/date-adapter';
@@ -91,7 +92,7 @@ interface FocusedDateSource<D> {
   selector: '[forCalendar]',
   exportAs: 'forCalendar',
   host: {
-    '[attr.dir]': 'dir()',
+    '[attr.dir]': 'reflectedDir()',
     '[attr.data-disabled]': 'disabled() ? "" : null',
     '[attr.data-readonly]': 'readonly() ? "" : null',
     '[attr.data-view]': 'view()',
@@ -226,14 +227,15 @@ export class ForCalendar<D> implements ForCalendarContext<D> {
   readonly firstDayOfWeek = input<number | null>(this.#defaults.firstDayOfWeek);
 
   /**
-   * Writing direction. When unset (default `null`), the inherited ambient
-   * direction is resolved from the nearest ancestor carrying a `dir` attribute
-   * (or `<html dir>`), defaulting to `'ltr'`. An explicit `[dir]` always wins.
-   * The resolved value is reflected to the host `dir` attribute and swaps the
+   * Writing direction. When unset (default `null`), the inherited ambient direction is resolved
+   * from the nearest ancestor carrying a `dir` attribute (or `<html dir>`), defaulting to `'ltr'`.
+   * An explicit `[dir]` always wins. The resolved value is reflected to the host `dir` attribute
+   * when a direction is set or declared, and swaps the
    * `ArrowLeft` / `ArrowRight` semantics in RTL.
    */
   readonly _dirInput = input<WritingDirection | null>(null, { alias: 'dir' });
   readonly dir = injectTextDirection(this._dirInput);
+  private readonly reflectedDir = injectReflectedDirection(this._dirInput);
 
   /**
    * BCP 47 locale tag governing the formatted month / weekday / cell-label names

@@ -321,7 +321,11 @@ export {
   type TableVirtualRowNavigation,
   type TableVirtualWindow,
 } from './table-registration/table-registration';
-export { injectAmbientDirection, injectTextDirection } from './text-direction/text-direction';
+export {
+  injectAmbientDirection,
+  injectReflectedDirection,
+  injectTextDirection,
+} from './text-direction/text-direction';
 export {
   isRangeSelectShortcut,
   resolveListTypeahead,

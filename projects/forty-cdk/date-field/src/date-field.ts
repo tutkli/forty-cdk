@@ -20,6 +20,7 @@ import {
   injectNativeFormResetToInitial,
   type WritingDirection,
   RovingTabindex,
+  injectReflectedDirection,
   injectTextDirection,
   hostAriaLabel,
   leavesControl,
@@ -86,7 +87,7 @@ import { FOR_DATE_FIELD_DEFAULTS } from 'forty-cdk/defaults';
   exportAs: 'forDateField',
   host: {
     role: 'group',
-    '[attr.dir]': 'dir()',
+    '[attr.dir]': 'reflectedDir()',
     '[attr.aria-label]': 'resolvedAriaLabel()',
     '[attr.aria-disabled]': 'resolvedDisabled() ? "true" : null',
     '[attr.aria-invalid]': 'effectiveInvalid() ? "true" : null',
@@ -184,14 +185,15 @@ export class ForDateField<D>
   private readonly resolvedAriaLabel = hostAriaLabel(() => this.ariaLabel() || null);
 
   /**
-   * Writing direction. When unset (default `null`), the inherited ambient
-   * direction is resolved from the nearest ancestor carrying a `dir` attribute
-   * (or `<html dir>`), defaulting to `'ltr'`. An explicit `[dir]` always wins.
-   * The resolved value is reflected to the host `dir` attribute and mirrors the
-   * ArrowLeft / ArrowRight segment navigation in RTL.
+   * Writing direction. When unset (default `null`), the inherited ambient direction is resolved
+   * from the nearest ancestor carrying a `dir` attribute (or `<html dir>`), defaulting to `'ltr'`.
+   * An explicit `[dir]` always wins. The resolved value is reflected to the host `dir` attribute
+   * when a direction is set or declared, and mirrors the ArrowLeft / ArrowRight segment navigation
+   * in RTL.
    */
   readonly _dirInput = input<WritingDirection | null>(null, { alias: 'dir' });
   readonly dir = injectTextDirection(this._dirInput);
+  private readonly reflectedDir = injectReflectedDirection(this._dirInput);
 
   /** Shared roving-tabindex tracker: exactly one segment owns `tabindex=0`. */
   readonly roving = new RovingTabindex();

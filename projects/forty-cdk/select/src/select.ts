@@ -28,6 +28,7 @@ import {
   selectionMembership,
   singleSelected,
   toggleInArray,
+  injectReflectedDirection,
   injectTextDirection,
   findTypeaheadMatch,
   injectTypeahead,
@@ -85,7 +86,7 @@ import type { SelectVirtualizedNavigator } from './select-virtualized-navigator'
     '[attr.data-state]': 'open() ? "open" : "closed"',
     '[attr.data-disabled]': 'effectiveDisabled() ? "" : null',
     '[attr.data-readonly]': 'readonly() ? "" : null',
-    '[attr.dir]': 'dir()',
+    '[attr.dir]': 'reflectedDir()',
   },
   providers: [{ provide: FOR_SELECT_CONTEXT, useExisting: ForSelect }],
 })
@@ -220,13 +221,14 @@ export class ForSelect<T = string>
   readonly orientation = input<'vertical' | 'horizontal'>('vertical');
 
   /**
-   * Writing direction. When unset (default `null`), the inherited ambient
-   * direction is resolved from the nearest ancestor carrying a `dir` attribute
-   * (or `<html dir>`), defaulting to `'ltr'`. An explicit `[dir]` always wins.
-   * The resolved value is reflected to the host `dir` attribute.
+   * Writing direction. When unset (default `null`), the inherited ambient direction is resolved
+   * from the nearest ancestor carrying a `dir` attribute (or `<html dir>`), defaulting to `'ltr'`.
+   * An explicit `[dir]` always wins. The resolved value is reflected to the host `dir` attribute
+   * when a direction is set or declared.
    */
   readonly _dirInput = input<WritingDirection | null>(null, { alias: 'dir' });
   readonly dir = injectTextDirection(this._dirInput);
+  private readonly reflectedDir = injectReflectedDirection(this._dirInput);
 
   /**
    * Single-mode only. When true, a keyboard focus move (arrow navigation or a

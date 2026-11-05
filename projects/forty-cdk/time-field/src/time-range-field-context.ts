@@ -31,7 +31,7 @@ export interface ForTimeRangeFieldContext {
   readonly effectiveDisabled: Signal<boolean>;
   /** Whether the field is read-only. */
   readonly readonly: Signal<boolean>;
-  /** Resolved writing direction, reflected on each endpoint group. */
+  /** Resolved writing direction of the field. */
   readonly dir: Signal<WritingDirection>;
   /** The rendered segment list for `which` endpoint. */
   endpointSegments(which: TimeRangeFieldEndpoint): Signal<readonly FieldSegment<TimeSegmentType>[]>;

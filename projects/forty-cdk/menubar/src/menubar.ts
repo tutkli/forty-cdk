@@ -18,6 +18,7 @@ import {
   type WritingDirection,
   nextEnabledHandle,
   RovingTabindex,
+  injectReflectedDirection,
   injectTextDirection,
   injectTypeahead,
   type VetoableEvent,
@@ -86,7 +87,7 @@ import { FOR_MENUBAR_DEFAULTS } from 'forty-cdk/defaults';
     '[attr.data-state]': 'value() === null ? "closed" : "open"',
     '[attr.data-orientation]': 'orientation()',
     '[attr.data-disabled]': 'disabled() ? "" : null',
-    '[attr.dir]': 'dir()',
+    '[attr.dir]': 'reflectedDir()',
   },
   providers: [
     { provide: FOR_MENUBAR_CONTEXT, useExisting: ForMenubar },
@@ -114,14 +115,15 @@ export class ForMenubar implements ForMenubarContext {
   readonly orientation = input<'horizontal' | 'vertical'>('horizontal');
 
   /**
-   * Writing direction. When unset (default `null`), the inherited ambient
-   * direction is resolved from the nearest ancestor carrying a `dir` attribute
-   * (or `<html dir>`), defaulting to `'ltr'`. An explicit `[dir]` always wins.
-   * The resolved value is reflected to the host `dir` attribute, swaps
-   * cross-menu ArrowLeft / ArrowRight, and is inherited by descendant menus.
+   * Writing direction. When unset (default `null`), the inherited ambient direction is resolved
+   * from the nearest ancestor carrying a `dir` attribute (or `<html dir>`), defaulting to `'ltr'`.
+   * An explicit `[dir]` always wins. The resolved value is reflected to the host `dir` attribute
+   * when a direction is set or declared, swaps cross-menu ArrowLeft / ArrowRight, and is inherited
+   * by descendant menus.
    */
   readonly _dirInput = input<WritingDirection | null>(null, { alias: 'dir' });
   readonly dir = injectTextDirection(this._dirInput);
+  private readonly reflectedDir = injectReflectedDirection(this._dirInput);
   /**
    * Whether arrow navigation wraps past the first / last enabled trigger. Default `true`.
    * The default is read from `provideForMenubarDefaults` for the surrounding
