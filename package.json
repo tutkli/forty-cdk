@@ -83,7 +83,7 @@
     "@types/node": "^24.13.3",
     "@vitest/coverage-v8": "^5.0.4",
     "angular-eslint": "^22.6.0",
-    "eslint": "^10.12.0",
+    "eslint": "^10.13.0",
     "jsdom": "^30.1.2",
     "lefthook": "^2.2.2",
     "marked": "^18.1.2",
@@ -92,7 +92,7 @@
     "rxjs": "~7.8.0",
     "shiki": "^4.5.0",
     "typescript": "~6.0.3",
-    "typescript-eslint": "^8.71.2",
+    "typescript-eslint": "^8.72.1",
     "vitest": "^5.0.4"
   }
 }
