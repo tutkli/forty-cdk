@@ -12,7 +12,12 @@ import { By } from '@angular/platform-browser';
 
 import { renderHost } from '../../src/test-utils';
 import { assertRovingRemovalContract } from '../../src/test-utils/contract';
-import { ForDraggable, moveItemInArray, provideForDragDropDefaults } from 'forty-cdk/drag-drop';
+import {
+  FOR_DRAGGABLE_CONTEXT,
+  ForDraggable,
+  moveItemInArray,
+  provideForDragDropDefaults,
+} from 'forty-cdk/drag-drop';
 import { TABLE_REGISTRATION_CONTEXT, type TableRegistrationContext } from 'forty-cdk/core';
 
 import { ForTable, type TableCellActivateEvent } from './table';
@@ -6310,5 +6315,137 @@ describe('focusHeaderCell — the header-crossing resolver (#1841)', () => {
     });
 
     expect(TestBed.inject(TableRegistry).focusHeaderCell(0)).toBe(false);
+  });
+});
+
+@Directive({
+  selector: '[composedReorderHeader]',
+  hostDirectives: [
+    { directive: ForTableHeaderCell, inputs: ['name'] },
+    { directive: ForTableSortHeader, inputs: ['column'], outputs: ['sortChange'] },
+    { directive: ForDraggable, inputs: ['dragData'] },
+  ],
+})
+class ComposedReorderHeader {}
+
+@Directive({
+  selector: '[subclassedHeaderDraggable]',
+  providers: [{ provide: FOR_DRAGGABLE_CONTEXT, useExisting: SubclassedHeaderDraggable }],
+})
+class SubclassedHeaderDraggable extends ForDraggable {}
+
+@Component({
+  imports: [ForTable, ForTableHeaderRow, ForTableColumnReorder, ComposedReorderHeader],
+  host: { 'data-fixture': 'composed-reorder-header' },
+  template: `
+    <div forTable>
+      <div forTableHeaderRow forTableColumnReorder>
+        @for (col of columns(); track col) {
+          <div
+            composedReorderHeader
+            [name]="col"
+            [column]="col"
+            [dragData]="col"
+            (sortChange)="lastSort = $event"
+            [attr.data-testid]="'h-' + col"
+          >
+            {{ col }}
+          </div>
+        }
+      </div>
+    </div>
+  `,
+})
+class ComposedReorderHeaderHost {
+  readonly columns = signal(['name', 'age', 'city']);
+  lastSort: TableSortDescriptor | null = null;
+}
+
+@Component({
+  imports: [
+    ForTable,
+    ForTableHeaderRow,
+    ForTableHeaderCell,
+    ForTableSortHeader,
+    ForTableColumnReorder,
+    SubclassedHeaderDraggable,
+  ],
+  host: { 'data-fixture': 'subclassed-header-draggable' },
+  template: `
+    <div forTable>
+      <div forTableHeaderRow forTableColumnReorder>
+        @for (col of columns(); track col) {
+          <div
+            forTableHeaderCell
+            [name]="col"
+            forTableSortHeader
+            [column]="col"
+            subclassedHeaderDraggable
+            [dragData]="col"
+            (sortChange)="lastSort = $event"
+            [attr.data-testid]="'h-' + col"
+          >
+            {{ col }}
+          </div>
+        }
+      </div>
+    </div>
+  `,
+})
+class SubclassedHeaderDraggableHost {
+  readonly columns = signal(['name', 'age', 'city']);
+  lastSort: TableSortDescriptor | null = null;
+}
+
+describe.each([
+  { shape: 'one hostDirectives wrapper', host: ComposedReorderHeaderHost },
+  { shape: 'a subclassed draggable', host: SubclassedHeaderDraggableHost },
+])('a sortable, reorderable header composed through $shape (#2716)', ({ host }) => {
+  let restoreObservers: () => void;
+  beforeAll(() => {
+    restoreObservers = installObserverPolyfills();
+  });
+  afterAll(() => restoreObservers());
+
+  const headerCell = (el: HTMLElement, col: string) =>
+    el.querySelector<HTMLElement>(`[data-testid="h-${col}"]`)!;
+
+  it('yields its tab stop to the draggable: the header row holds one tab stop', () => {
+    const { el } = renderHost<ComposedReorderHeaderHost | SubclassedHeaderDraggableHost>(host);
+
+    expect(headerCell(el, 'name').getAttribute('tabindex')).toBe('0');
+    expect(headerCell(el, 'age').getAttribute('tabindex')).toBe('-1');
+    expect(el.querySelectorAll('[tabindex="0"]')).toHaveLength(1);
+  });
+
+  it('Space lifts the column and does not sort', async () => {
+    const { el, instance, flush } = renderHost<
+      ComposedReorderHeaderHost | SubclassedHeaderDraggableHost
+    >(host);
+    const h = headerCell(el, 'name');
+    h.focus();
+
+    const ev = press(h, ' ');
+    await flush();
+
+    expect(h.getAttribute('data-dragging')).toBe('');
+    expect(h.hasAttribute('aria-sort')).toBe(false);
+    expect(instance.lastSort).toBeNull();
+    expect(ev.defaultPrevented).toBe(true);
+  });
+
+  it('Enter sorts the column and does not lift', async () => {
+    const { el, instance, flush } = renderHost<
+      ComposedReorderHeaderHost | SubclassedHeaderDraggableHost
+    >(host);
+    const h = headerCell(el, 'name');
+    h.focus();
+
+    press(h, 'Enter');
+    await flush();
+
+    expect(h.getAttribute('aria-sort')).toBe('ascending');
+    expect(instance.lastSort).toEqual({ column: 'name', direction: 'ascending' });
+    expect(h.hasAttribute('data-dragging')).toBe(false);
   });
 });

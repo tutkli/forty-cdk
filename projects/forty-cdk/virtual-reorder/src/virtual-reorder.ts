@@ -21,6 +21,7 @@ import {
   createKeyboardDragMediator,
   createPointerDragSession,
   dragAnnouncementLabel,
+  findPressedDragItem,
   focusWhenMounted,
   type FocusWhenMountedRef,
   fortyError,
@@ -28,6 +29,7 @@ import {
   layoutPlaceholderInSlot,
   LiveAnnouncer,
   type PointerDragSession,
+  resolvePressedDragItem,
   resolveWindowedReorder,
 } from 'forty-cdk/core';
 import { ForVirtualViewport } from 'forty-cdk/virtualization';
@@ -99,10 +101,12 @@ function injectViewport(): ForVirtualViewport {
  *
  * A pointer press is refused outright — nothing tracked, no `'pointer'` mode, no pin — when the
  * list is `disabled`, when a **mouse** press uses a non-primary button (touch and pen presses keep
- * whatever `button` their engine reports), or when the pressed row's `[forDraggable]` is
- * `[dragDisabled]` or unregistered. That is the guard set `[forListboxReorder]` and
- * `[forTreeNodeDrag]` apply at the same seam, and it matches what this coordinator's own keyboard
- * path already refuses.
+ * whatever `button` their engine reports), when the pressed row's `[forDraggable]` is
+ * `[dragDisabled]` or unregistered, or when the row's own guard refuses the press (it lands outside
+ * the row's `[forDragHandle]`, or inside a draggable nested in it). That is the guard set
+ * `[forListboxReorder]` and `[forTreeNodeDrag]` apply at the same seam, and it matches what this
+ * coordinator's own keyboard path already refuses. A row is resolved through the list's registered
+ * items, so a `[forDraggable]` applied through `hostDirectives` or a subclass is found too.
  *
  * Hold **Shift** during a pointer drag to engage **windowed scrub**: the viewport maps onto the
  * whole dataset (top edge → first item, bottom edge → last), so a single gesture drops the lifted
@@ -434,18 +438,16 @@ export class ForVirtualReorder {
   }
 
   #trackPointerPress(event: PointerEvent): boolean {
-    const host = this.#draggableHost(event.target);
-    if (host !== null && this.#mode === 'keyboard' && host !== this.#kbLiftedHost) {
+    const items = this.#list.items();
+    const pressed = findPressedDragItem(items, event.target);
+    if (pressed !== null && this.#mode === 'keyboard' && pressed.host !== this.#kbLiftedHost) {
       this.#kbCancel(false);
     }
     if (this.#list.effectiveDisabled() || (event.pointerType === 'mouse' && event.button !== 0)) {
       return false;
     }
-    if (host === null) {
-      return false;
-    }
-    const draggable = this.#list.items().find((h) => h.host === host);
-    if (draggable === undefined || draggable.disabled()) {
+    const draggable = resolvePressedDragItem(items, event.target);
+    if (draggable === null) {
       return false;
     }
     this.#pointerMain = event.clientY;
@@ -454,7 +456,7 @@ export class ForVirtualReorder {
       this.#pointerGrab = null;
       return false;
     }
-    this.#pointerGrab = host;
+    this.#pointerGrab = draggable.host;
     return true;
   }
 
@@ -486,13 +488,6 @@ export class ForVirtualReorder {
     }
     this.#pointerMain = event.clientY;
     this.#scrubEngaged = event.shiftKey;
-  }
-
-  #draggableHost(target: EventTarget | null): HTMLElement | null {
-    if (!(target instanceof Element)) {
-      return null;
-    }
-    return target.closest<HTMLElement>('[forDraggable]');
   }
 
   #rowAt(index: number): HTMLElement | null {

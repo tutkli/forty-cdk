@@ -23,6 +23,7 @@ import {
   createKeyboardDragMediator,
   createPointerDragSession,
   dragAnnouncementLabel,
+  findPressedDragItem,
   focusWhenMounted,
   type FocusWhenMountedRef,
   isDragLiftKey,
@@ -30,6 +31,7 @@ import {
   LiveAnnouncer,
   type PointerDragSession,
   resolveLiftedDragControl,
+  resolvePressedDragItem,
   resolveWindowedReorder,
   isHistoryChord,
 } from 'forty-cdk/core';
@@ -111,8 +113,11 @@ export interface TableRowReorderDescriptor {
  *
  * A pointer press is refused outright when the rowgroup is `disabled`, when a **mouse** press
  * uses a non-primary button (touch and pen presses keep whatever `button` their engine
- * reports), or when the pressed row carries no registered `[forDraggable]` or its draggable
- * is `[dragDisabled]`.
+ * reports), when the pressed row carries no registered `[forDraggable]` or its draggable
+ * is `[dragDisabled]`, or when the row's own guard refuses the press (it lands outside the row's
+ * `[forDragHandle]`, or inside a draggable nested in it). Rows are resolved through the table's
+ * registered rows, so a row whose `[forTableRow]` or `[forDraggable]` arrives through
+ * `hostDirectives` or a subclass is found like a template-applied one.
  *
  * @example
  * ```html
@@ -535,19 +540,15 @@ export class ForTableRowReorder {
   }
 
   #trackPointerPress(event: PointerEvent): boolean {
-    const target = event.target;
-    const rowHost = target instanceof Element ? target.closest<HTMLElement>('[forTableRow]') : null;
-    if (rowHost !== null && this.#mode === 'keyboard' && rowHost !== this.#kbLiftedHost) {
+    const row = findPressedDragItem(this.#registration.rows(), event.target);
+    if (row !== null && this.#mode === 'keyboard' && row.host !== this.#kbLiftedHost) {
       this.#cancelActive(false);
     }
     if (this.#list.effectiveDisabled() || (event.pointerType === 'mouse' && event.button !== 0)) {
       return false;
     }
-    if (rowHost === null) {
-      return false;
-    }
-    const draggable = this.#list.items().find((h) => h.host === rowHost);
-    if (draggable === undefined || draggable.disabled()) {
+    const draggable = resolvePressedDragItem(this.#list.items(), event.target);
+    if (draggable === null || draggable.host !== row?.host) {
       return false;
     }
     this.#pointerMain = event.clientY;
@@ -556,7 +557,7 @@ export class ForTableRowReorder {
       this.#pointerGrab = null;
       return false;
     }
-    this.#pointerGrab = rowHost;
+    this.#pointerGrab = draggable.host;
     return true;
   }
 

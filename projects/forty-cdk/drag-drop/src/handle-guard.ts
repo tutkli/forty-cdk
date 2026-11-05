@@ -27,6 +27,11 @@ export interface PointerHandleGuard {
   unregisterNested(el: HTMLElement): void;
   /** Whether `node` belongs to this draggable rather than to a draggable nested inside it. */
   owns(node: Node): boolean;
+  /**
+   * Whether a press on `target` may start a drag: dragging is enabled, the press is not inside a
+   * nested draggable, and it lands inside a handle when any is registered. Has no side effects.
+   */
+  accepts(target: EventTarget | null): boolean;
   /** Whether a `pointerdown` event is allowed to start a drag. */
   canStart(event: PointerEvent): boolean;
   /** Cancel a `dragstart` raised from a press this guard would accept. */
@@ -76,6 +81,7 @@ export function createPointerHandleGuard(disabled: Signal<boolean>): PointerHand
       nested.update((list) => list.filter((host) => host !== el));
     },
     owns,
+    accepts,
     canStart(event: PointerEvent): boolean {
       if (event.pointerType === 'mouse' && event.button !== 0) {
         return false;
