@@ -58,8 +58,8 @@ importers:
         specifier: ^1.64.1
         version: 1.64.1
       '@tanstack/virtual-core':
-        specifier: ^3.19.4
-        version: 3.19.4
+        specifier: ^3.19.9
+        version: 3.19.9
       '@types/node':
         specifier: ^24.13.3
         version: 24.13.3
@@ -1894,8 +1894,8 @@ packages:
   '@swc/helpers@0.5.23':
     resolution: {integrity: sha512-5lSsMOTXURePglDfvuAQUqkGek9Hg2kksOYay2m0+XR++b2NWYL/4sWyuvVBIs8oKnJaxkdi9whaL/sqN13afw==}
 
-  '@tanstack/virtual-core@3.19.4':
-    resolution: {integrity: sha512-ygZ3O99Il18dl0gG0q7sH78iSkb96F07G+xK9V83eCgV8NQbcNd7R+cgcJJMFO7llBoebd0A82sCCstQq2Vp6Q==}
+  '@tanstack/virtual-core@3.19.9':
+    resolution: {integrity: sha512-Syiaf3w69dFyYv4o2mqJ1/2VtBJTNq5Hu5cVXfnzOuJKFpUojukQR13ZW+5NvdMJM7GFHeNPmveMNhoIubiFyA==}
 
   '@types/chai@5.2.3':
     resolution: {integrity: sha512-Mw558oeA9fFbv65/y4mHtXDs9bPnFMZAL/jxdPFUpOHHIXX91mcgEHbS5Lahr+pwZFR8A7GQleRWeI6cGFC2UA==}
@@ -5311,7 +5311,7 @@ snapshots:
     dependencies:
       tslib: 2.8.1
 
-  '@tanstack/virtual-core@3.19.4': {}
+  '@tanstack/virtual-core@3.19.9': {}
 
   '@types/chai@5.2.3':
     dependencies:

@@ -79,7 +79,7 @@
     "@angular/ssr": "^22.2.2",
     "@floating-ui/dom": "^1.8.0",
     "@playwright/test": "^1.64.1",
-    "@tanstack/virtual-core": "^3.19.4",
+    "@tanstack/virtual-core": "^3.19.9",
     "@types/node": "^24.13.3",
     "@vitest/coverage-v8": "^5.0.5",
     "angular-eslint": "^22.6.0",
