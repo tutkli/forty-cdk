@@ -173,18 +173,11 @@ export class ForTooltip extends AnchoredOverlayPositioningBase implements ForToo
    */
   readonly reducedMotion = injectPrefersReducedMotion();
 
-  readonly #generatedTriggerId = this.#idGen.next('for-tooltip-trigger');
-
   readonly #triggerSlot: RootedTriggerSlot = new RootedTriggerSlot(
     inject(TOOLTIP_TRIGGERS).of(this),
-    () => this.#generatedTriggerId,
   );
 
-  /**
-   * Id of the trigger element. A consumer-set `id` on the trigger host is
-   * adopted at registration and preserved; the generated
-   * `for-tooltip-trigger-*` id is only assigned when the host has none.
-   */
+  /** The active trigger's id, or `''` while no trigger is registered. */
   readonly triggerId = this.#triggerSlot.id;
 
   /** Generated id of the content element, wired to the trigger's `aria-describedby` while open. */
@@ -245,8 +238,8 @@ export class ForTooltip extends AnchoredOverlayPositioningBase implements ForToo
     });
   }
 
-  private resolveTriggerId(staticId: string | null): string {
-    return this.#triggerSlot.resolveId(staticId);
+  private activateTrigger(host: HTMLElement): void {
+    this.#triggerSlot.activate(host);
   }
 
   /** Registers the content host element so the hoverable-content grace polygon can measure it. */

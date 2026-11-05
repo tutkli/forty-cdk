@@ -87,14 +87,8 @@ export class ForPopoverContent {
         emitPointerDownOutside: (veto) => this.ctx.emitPointerDownOutside(veto),
         emitFocusOutside: (veto) => this.ctx.emitFocusOutside(veto),
         emitInteractOutside: (veto) => this.ctx.emitInteractOutside(veto),
-        // The trigger lives outside the portaled content but is logically
-        // "inside" the popover for outside-pointer / outside-focus checks
-        // — without this, clicking the trigger to close would race with
-        // its own toggle and you'd end up reopening immediately.
-        exemptElements: () => {
-          const trigger = this.ctx.trigger();
-          return trigger ? [trigger] : [];
-        },
+        // Every trigger is exempt: each toggles the popover from its own click.
+        exemptElements: () => this.ctx.triggerHosts(),
         cascadeOutsidePress: () => this.ctx.lightDismiss() === 'stack',
       },
       // `initialFocus()` is read once when the content mounts. The directive

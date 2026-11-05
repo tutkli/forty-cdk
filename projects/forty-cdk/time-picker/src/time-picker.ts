@@ -432,7 +432,7 @@ export class ForTimePicker<D>
   }
 
   protected override fieldLabelledElementId(): string | null {
-    return this.adoptsField() ? null : this.#controller.triggerId();
+    return this.adoptsField() ? null : this.#controller.triggerId() || null;
   }
 
   /**

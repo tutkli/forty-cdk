@@ -112,7 +112,10 @@ export interface ListboxOverlayControllerDeps<
  * @typeParam CloseReason Close-reason union owned by the primitive.
  */
 export interface ListboxOverlayContext<H extends ListboxOverlayOptionHandle, Focus, CloseReason> {
-  /** The trigger's stable id, adopted from a consumer-set static id when present. */
+  /**
+   * The active trigger's id, which the content names in `aria-labelledby`, or `''` while no
+   * trigger is registered.
+   */
   readonly triggerId: Signal<string>;
   /** The content surface's stable id, adopted from a consumer-set static id when present. */
   readonly contentId: Signal<string>;
@@ -120,7 +123,10 @@ export interface ListboxOverlayContext<H extends ListboxOverlayOptionHandle, Foc
   readonly initialFocus: Signal<Focus>;
   /** Reason of the most recent close, or `null` while open (or before any close). */
   readonly lastCloseReason: Signal<CloseReason | null>;
-  /** The button trigger — exempt from outside-pointer checks and the focus-return target. */
+  /**
+   * The active trigger: the one that last opened or toggled the listbox, else the newest
+   * registered. The listbox anchors to it and returns focus to it.
+   */
   readonly trigger: Signal<HTMLElement | null>;
   /**
    * Element floating-ui anchors the content against. Prefers a registered
@@ -187,7 +193,10 @@ export interface ListboxOverlayPieceContext<
    * so a Space the buffer took must not also activate.
    */
   handleTypeahead(event: KeyboardEvent): boolean;
-  resolveTriggerId(staticId: string | null): string;
+  /** Every registered trigger's host, each exempt from the outside-press and outside-focus checks. */
+  readonly triggerHosts: Signal<readonly HTMLElement[]>;
+  /** Make the trigger on `host` the active one. A trigger calls it as it opens or toggles. */
+  activateTrigger(host: HTMLElement): void;
 }
 
 /**
@@ -227,7 +236,10 @@ export class ListboxOverlayController<
   readonly #triggerSlot: RootedTriggerSlot;
   readonly #controller: OverlayController<Focus, CloseReason>;
 
-  /** The trigger's stable id, adopted from a consumer-set static id when present. */
+  /**
+   * The active trigger's id, which the content names in `aria-labelledby`, or `''` while no
+   * trigger is registered.
+   */
   readonly triggerId: Signal<string>;
 
   /** The content surface's stable id, adopted from a consumer-set static id when present. */
@@ -239,7 +251,10 @@ export class ListboxOverlayController<
   /** Reason of the most recent close, or `null` while open (or before any close). */
   readonly lastCloseReason: Signal<CloseReason | null>;
 
-  /** The button trigger — exempt from outside-pointer checks and the focus-return target. */
+  /**
+   * The active trigger: the one that last opened or toggled the listbox, else the newest
+   * registered. The listbox anchors to it and returns focus to it.
+   */
   readonly trigger: Signal<HTMLElement | null>;
 
   /**
@@ -256,13 +271,16 @@ export class ListboxOverlayController<
   /** All registered options in DOM order. */
   readonly options: Signal<readonly H[]>;
 
+  /** Every registered trigger's host, each exempt from the outside-press and outside-focus checks. */
+  readonly triggerHosts: Signal<readonly HTMLElement[]>;
+
   constructor(deps: ListboxOverlayControllerDeps<H, Focus, CloseReason>) {
     this.#deps = deps;
     let triggerSlot!: RootedTriggerSlot;
     this.#controller = new OverlayController<Focus, CloseReason>({
       idPrefix: deps.idPrefix,
-      createTrigger: (mintId) => {
-        triggerSlot = new RootedTriggerSlot(deps.triggers, mintId());
+      createTrigger: () => {
+        triggerSlot = new RootedTriggerSlot(deps.triggers);
         return triggerSlot;
       },
       defaultInitialFocus: deps.defaultInitialFocus,
@@ -287,6 +305,7 @@ export class ListboxOverlayController<
     this.initialFocus = this.#controller.initialFocus;
     this.lastCloseReason = this.#controller.lastCloseReason;
     this.trigger = this.#controller.trigger;
+    this.triggerHosts = triggerSlot.hosts;
     this.content = this.#controller.content;
     this.anchor = this.#anchorSlot.resolve(injectFieldAnchor(), this.#controller.trigger);
     this.options = this.#items.items;
@@ -296,8 +315,8 @@ export class ListboxOverlayController<
     this.#controller.setInitialFocus(target);
   }
 
-  resolveTriggerId(staticId: string | null): string {
-    return this.#triggerSlot.resolveId(staticId);
+  activateTrigger(host: HTMLElement): void {
+    this.#triggerSlot.activate(host);
   }
 
   registerAnchor(el: HTMLElement): void {

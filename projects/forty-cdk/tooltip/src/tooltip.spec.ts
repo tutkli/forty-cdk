@@ -2381,7 +2381,7 @@ describe('ForTooltip', () => {
       expect(r.query('button')).toBe(trigger);
       expect(r.instance.openA()).toBe(false);
       expect(r.instance.openB()).toBe(true);
-      expect(trigger.id).not.toBe(idUnderA);
+      expect(trigger.id).toBe(idUnderA);
       const content = document.querySelector<HTMLElement>('[role="tooltip"]')!;
       expect(trigger.getAttribute('aria-describedby')).toBe(content.id);
     });

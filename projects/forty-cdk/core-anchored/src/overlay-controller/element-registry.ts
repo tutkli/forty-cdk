@@ -1,4 +1,11 @@
-import { computed, inject, type Signal, signal, type WritableSignal } from '@angular/core';
+import {
+  computed,
+  inject,
+  linkedSignal,
+  type Signal,
+  signal,
+  type WritableSignal,
+} from '@angular/core';
 import type { ReferenceElement } from '@floating-ui/dom';
 
 import {
@@ -53,28 +60,60 @@ export class IdentifiedElementSlot<E extends HTMLElement = HTMLElement> {
   }
 }
 
+/**
+ * A trigger registered with its root. `id` is the id the trigger carries on its own host, minted
+ * per trigger; a trigger the surface never names in its ARIA wiring (a hover card's) has none.
+ */
 export interface RootedTriggerHandle<R extends object = object> extends RootedHandle<R> {
   readonly host: HTMLElement;
-  readonly staticId: string | null;
+  readonly id?: Signal<string>;
 }
 
+/**
+ * The triggers registered with one root, and which of them the surface belongs to.
+ *
+ * Every registered trigger toggles the surface, so {@link hosts} lists them all for the
+ * surface's outside-press and outside-focus exemption. One of them is **active**: the
+ * surface is positioned against it, labelled by it and returns focus to it. A trigger
+ * claims that role through {@link activate} from the interaction that opens or toggles the
+ * surface; with no claim, or once the claiming trigger unmounts, the newest registered
+ * trigger is active.
+ */
 export class RootedTriggerSlot {
-  readonly #generatedId: () => string;
-  readonly #latest: Signal<RootedTriggerHandle | null>;
+  readonly #claimed: WritableSignal<HTMLElement | null>;
+  readonly #active: Signal<RootedTriggerHandle | null>;
 
+  /** Every registered trigger's host, in registration order. */
+  readonly hosts: Signal<readonly HTMLElement[]>;
+
+  /** The active trigger's host, or `null` while no trigger is registered. */
   readonly element: Signal<HTMLElement | null>;
 
+  /** The active trigger's id, or `''` while no trigger carrying one is registered. */
   readonly id: Signal<string>;
 
-  constructor(triggers: Signal<readonly RootedTriggerHandle[]>, generatedId: () => string) {
-    this.#generatedId = generatedId;
-    this.#latest = computed(() => triggers().at(-1) ?? null);
-    this.element = computed(() => this.#latest()?.host ?? null);
-    this.id = computed(() => this.resolveId(this.#latest()?.staticId ?? null));
+  constructor(triggers: Signal<readonly RootedTriggerHandle[]>) {
+    // Holds the claiming host until it leaves the registered set, then drops it.
+    this.#claimed = linkedSignal<readonly RootedTriggerHandle[], HTMLElement | null>({
+      source: triggers,
+      computation: (list, previous) => {
+        const claimed = previous?.value ?? null;
+        return claimed !== null && list.some((handle) => handle.host === claimed) ? claimed : null;
+      },
+    });
+    this.#active = computed(() => {
+      const list = triggers();
+      const claimed = this.#claimed();
+      return list.find((handle) => handle.host === claimed) ?? list.at(-1) ?? null;
+    });
+    this.hosts = computed(() => triggers().map((handle) => handle.host));
+    this.element = computed(() => this.#active()?.host ?? null);
+    this.id = computed(() => this.#active()?.id?.() ?? '');
   }
 
-  resolveId(staticId: string | null): string {
-    return staticId || this.#generatedId();
+  /** Make the trigger on `host` the active one. Called by a trigger as it opens or toggles. */
+  activate(host: HTMLElement): void {
+    this.#claimed.set(host);
   }
 }
 

@@ -7,14 +7,17 @@ import {
   type LabelCacheEntry,
   orphanContextError,
   RootedRegistry,
-  type RootedHandle,
   unresolvedRootError,
   type Unset,
   type VetoableNativeEvent,
   type VirtualizedResume,
   type WritingDirection,
 } from 'forty-cdk/core';
-import { type FloatingAlign, type FloatingSide } from 'forty-cdk/core-anchored';
+import {
+  type FloatingAlign,
+  type FloatingSide,
+  type RootedTriggerHandle,
+} from 'forty-cdk/core-anchored';
 import { type ForComboboxOpenHighlight } from 'forty-cdk/defaults';
 import type { ComboboxVirtualizedNavigator } from './combobox-virtualized-navigator';
 
@@ -270,12 +273,17 @@ export interface ComboboxPieceContext<T = unknown> {
   readonly input: Signal<HTMLInputElement | null>;
 
   /**
-   * The optional `[forComboboxTrigger]` button (picker anatomy). When present
-   * it is the default positioning anchor (after an explicit `[forComboboxAnchor]`)
-   * and the element focus returns to on close. `null` in the editable anatomy.
+   * The active `[forComboboxTrigger]` button (picker anatomy): the one that last opened or
+   * toggled the surface, else the newest registered. When present it is the default
+   * positioning anchor (after an explicit `[forComboboxAnchor]`) and the element focus
+   * returns to on close. `null` in the editable anatomy.
    */
   readonly trigger: Signal<HTMLElement | null>;
   readonly triggerId: Signal<string | null>;
+  /** Every registered trigger's host, each exempt from the outside-press and outside-focus checks. */
+  readonly triggerHosts: Signal<readonly HTMLElement[]>;
+  /** Make the trigger on `host` the active one. A trigger calls it as it opens or toggles. */
+  activateTrigger(host: HTMLElement): void;
 
   readonly content: Signal<HTMLElement | null>;
 
@@ -467,10 +475,7 @@ export interface ComboboxPieceContext<T = unknown> {
  */
 export const FOR_COMBOBOX_CONTEXT = new InjectionToken<ForComboboxContext>('FOR_COMBOBOX_CONTEXT');
 
-export interface ComboboxTriggerHandle extends RootedHandle<object> {
-  readonly host: HTMLElement;
-  readonly id: Signal<string>;
-}
+export type ComboboxTriggerHandle = RootedTriggerHandle<object>;
 
 export const COMBOBOX_TRIGGERS = new InjectionToken<RootedRegistry<object, ComboboxTriggerHandle>>(
   'COMBOBOX_TRIGGERS',

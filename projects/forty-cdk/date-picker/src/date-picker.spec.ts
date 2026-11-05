@@ -774,7 +774,7 @@ describe('ForDatePicker', () => {
       expect(r.query('button')).toBe(t);
       expect(r.instance.openA()).toBe(false);
       expect(r.instance.openB()).toBe(true);
-      expect(t.id).not.toBe(idUnderA);
+      expect(t.id).toBe(idUnderA);
       const content = document.querySelector<HTMLElement>('[data-testid="content-b"]')!;
       expect(t.getAttribute('aria-controls')).toBe(content.id);
       expect(content.getAttribute('aria-labelledby')).toBe(t.id);

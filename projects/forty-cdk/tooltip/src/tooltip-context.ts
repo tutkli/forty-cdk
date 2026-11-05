@@ -33,10 +33,14 @@ export interface ForTooltipContext extends AnchoredPositioningContext {
   readonly hoverableContent: Signal<boolean>;
   /** Whether `prefers-reduced-motion: reduce` is active — reflected as `data-reduced-motion`. */
   readonly reducedMotion: Signal<boolean>;
-  /** Trigger element id — a consumer-set host `id` is adopted, else a generated one. */
+  /** The active trigger's id, or `''` while no trigger is registered. */
   readonly triggerId: Signal<string>;
   /** Content element id — a consumer-set host `id` is adopted, else a generated one. Referenced by the trigger's `aria-describedby` while open. */
   readonly contentId: Signal<string>;
+  /**
+   * The active trigger: the one last hovered or focused, else the newest registered. The
+   * tooltip anchors to it and describes it.
+   */
   readonly trigger: Signal<HTMLElement | null>;
 
   /** Registers the content host element so the hoverable-content grace polygon can measure it. */
@@ -86,7 +90,8 @@ export interface ForTooltipContext extends AnchoredPositioningContext {
 }
 
 export interface TooltipPieceContext {
-  resolveTriggerId(staticId: string | null): string;
+  /** Make the trigger on `host` the active one. A trigger calls it as it is hovered or focused. */
+  activateTrigger(host: HTMLElement): void;
 }
 
 export interface TooltipContext extends ForTooltipContext, TooltipPieceContext {}
@@ -151,7 +156,7 @@ export function injectTooltipTriggerContext(explicitRoot: Signal<ForTooltipConte
       token: 'FOR_TOOLTIP_CONTEXT',
       root: '[forTooltip]',
       piece: 'ForTooltipTrigger',
-      probe: () => widened.resolveTriggerId,
+      probe: () => widened.activateTrigger,
     });
     return widened;
   });

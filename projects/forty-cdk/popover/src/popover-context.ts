@@ -45,6 +45,7 @@ export interface ForPopoverContext extends AnchoredPositioningContext {
    */
   readonly lastCloseReason: Signal<ForPopoverCloseReason | null>;
 
+  /** The active trigger's id, or `''` while no trigger is registered. */
   readonly triggerId: Signal<string>;
   readonly contentId: Signal<string>;
   readonly ariaLabel: Signal<string | null>;
@@ -53,6 +54,10 @@ export interface ForPopoverContext extends AnchoredPositioningContext {
   readonly labelledBy: Signal<string | null>;
   readonly describedBy: Signal<string | null>;
 
+  /**
+   * The active trigger: the one that last opened or toggled the popover, else the newest
+   * registered. The popover anchors to it and returns focus to it.
+   */
   readonly trigger: Signal<HTMLElement | null>;
   readonly anchor: Signal<HTMLElement | null>;
   /**
@@ -141,7 +146,10 @@ export interface PopoverPieceContext {
   readonly initialFocusTarget: Signal<HTMLElement | null>;
   /** Which open overlays an outside pointer press closes, bound on `[forPopover]`. */
   readonly lightDismiss: Signal<'topmost' | 'stack'>;
-  resolveTriggerId(staticId: string | null): string;
+  /** Every registered trigger's host, each exempt from the outside-press and outside-focus checks. */
+  readonly triggerHosts: Signal<readonly HTMLElement[]>;
+  /** Make the trigger on `host` the active one. A trigger calls it as it toggles. */
+  activateTrigger(host: HTMLElement): void;
 }
 
 /**
@@ -219,7 +227,7 @@ export function injectPopoverTriggerContext(explicitRoot: Signal<ForPopoverConte
       token: 'FOR_POPOVER_CONTEXT',
       root: '[forPopover]',
       piece: 'ForPopoverTrigger',
-      probe: () => widened.resolveTriggerId,
+      probe: () => widened.activateTrigger,
     });
     return widened;
   });

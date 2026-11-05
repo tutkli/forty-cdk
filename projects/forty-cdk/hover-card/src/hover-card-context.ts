@@ -4,10 +4,13 @@ import {
   assertRootContext,
   orphanContextError,
   RootedRegistry,
-  type RootedHandle,
   unresolvedRootError,
 } from 'forty-cdk/core';
-import { type AnchoredPositioningContext, type Point } from 'forty-cdk/core-anchored';
+import {
+  type AnchoredPositioningContext,
+  type Point,
+  type RootedTriggerHandle,
+} from 'forty-cdk/core-anchored';
 
 /** Why an open / close was scheduled. */
 export type HoverCardScheduleReason = 'hover-trigger' | 'hover-content' | 'focus' | 'escape';
@@ -21,6 +24,10 @@ export interface ForHoverCardContext extends AnchoredPositioningContext {
   readonly disabled: Signal<boolean>;
   /** Whether `prefers-reduced-motion: reduce` is active — reflected as `data-reduced-motion`. */
   readonly reducedMotion: Signal<boolean>;
+  /**
+   * The active trigger: the one last hovered or focused, else the newest registered. The card
+   * anchors to it and returns focus to it.
+   */
   readonly trigger: Signal<HTMLElement | null>;
   readonly content: Signal<HTMLElement | null>;
 
@@ -85,6 +92,8 @@ export interface HoverCardPieceContext {
    * at once, ignoring `closeDelay`.
    */
   closeOnTabOut(): void;
+  /** Make the trigger on `host` the active one. A trigger calls it as it is hovered or focused. */
+  activateTrigger(host: HTMLElement): void;
 }
 
 /**
@@ -139,9 +148,7 @@ export function injectHoverCardContext(piece: string): HoverCardContext {
   return widened;
 }
 
-export interface HoverCardTriggerHandle extends RootedHandle<ForHoverCardContext> {
-  readonly host: HTMLElement;
-}
+export type HoverCardTriggerHandle = RootedTriggerHandle<ForHoverCardContext>;
 
 export const HOVER_CARD_TRIGGERS = new InjectionToken<
   RootedRegistry<ForHoverCardContext, HoverCardTriggerHandle>
@@ -156,7 +163,7 @@ export const HOVER_CARD_TRIGGERS = new InjectionToken<
  */
 export function injectHoverCardTriggerContext(explicitRoot: Signal<ForHoverCardContext | ''>): {
   readonly root: Signal<ForHoverCardContext | null>;
-  readonly ctx: Signal<ForHoverCardContext>;
+  readonly ctx: Signal<HoverCardContext>;
 } {
   const injected = inject(FOR_HOVER_CARD_CONTEXT, { optional: true });
   const root = computed(() => {
@@ -182,7 +189,7 @@ export function injectHoverCardTriggerContext(explicitRoot: Signal<ForHoverCardC
       piece: 'ForHoverCardTrigger',
       probe: () => widened.focusEnterContent,
     });
-    return resolved;
+    return widened;
   });
   return { root, ctx };
 }

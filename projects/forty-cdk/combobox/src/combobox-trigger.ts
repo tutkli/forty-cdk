@@ -112,7 +112,15 @@ export class ForComboboxTrigger<T = unknown> {
   }
 
   private onClick(): void {
+    this.#activate();
     this.ctx().toggle();
+  }
+
+  /** Make this trigger the one the surface anchors to, is labelled by and returns focus to. */
+  #activate(): void {
+    if (!this.ctx().effectiveDisabled()) {
+      this.ctx().activateTrigger(this.#host.nativeElement);
+    }
   }
 
   private onKeyDown(event: KeyboardEvent): void {
@@ -121,11 +129,13 @@ export class ForComboboxTrigger<T = unknown> {
     }
     if (event.key === 'ArrowDown') {
       event.preventDefault();
+      this.#activate();
       this.ctx().openOverlay('selected');
       return;
     }
     if (event.key === 'ArrowUp') {
       event.preventDefault();
+      this.#activate();
       this.ctx().openOverlay(this.ctx().value().length > 0 ? 'selected' : 'last');
     }
   }

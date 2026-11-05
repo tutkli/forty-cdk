@@ -95,7 +95,7 @@ export class ForSelectContent {
   private readonly resolvedAriaLabel = hostAriaLabel(() => this.ctx.ariaLabel());
 
   private readonly labelledBy = hostLabelledBy(() =>
-    this.resolvedAriaLabel() ? null : this.ctx.overlay.triggerId(),
+    this.resolvedAriaLabel() ? null : this.ctx.overlay.triggerId() || null,
   );
 
   constructor() {
@@ -215,12 +215,8 @@ export class ForSelectContent {
         emitPointerDownOutside: (veto) => ctx.overlay.emitPointerDownOutside(veto),
         emitFocusOutside: (veto) => ctx.overlay.emitFocusOutside(veto),
         emitInteractOutside: (veto) => ctx.overlay.emitInteractOutside(veto),
-        // Trigger button is exempt — its own click handler toggles open/close;
-        // without exemption pointer-down-outside would race and double-close.
-        exemptElements: injectFieldLabelExemption(() => {
-          const t = ctx.overlay.trigger();
-          return t ? [t] : [];
-        }),
+        // Every trigger is exempt: each toggles the listbox from its own click.
+        exemptElements: injectFieldLabelExemption(() => ctx.overlay.triggerHosts()),
       },
       initialFocus: {
         move: focusInitial,
