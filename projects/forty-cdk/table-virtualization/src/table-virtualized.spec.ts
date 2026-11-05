@@ -914,10 +914,12 @@ describe('ForTableVirtualized — the README anatomy under a data change (#2225)
     TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
     const fixture = TestBed.createComponent(ReadmeAnatomyHost);
     const el = fixture.nativeElement as HTMLElement;
-    Object.defineProperty(el.querySelector('[forTable]')!, 'offsetHeight', {
-      configurable: true,
-      get: () => 400,
-    });
+    for (const prop of ['offsetHeight', 'clientHeight']) {
+      Object.defineProperty(el.querySelector('[forTable]')!, prop, {
+        configurable: true,
+        get: () => 400,
+      });
+    }
     fixture.detectChanges();
     return {
       fixture,
@@ -1057,10 +1059,12 @@ describe('ForTableVirtualized — table mode and the header-inclusive row index 
     const fixture = TestBed.createComponent(host);
     setup?.(fixture.componentInstance);
     const el = fixture.nativeElement as HTMLElement;
-    Object.defineProperty(el.querySelector('[forTable]')!, 'offsetHeight', {
-      configurable: true,
-      get: () => 400,
-    });
+    for (const prop of ['offsetHeight', 'clientHeight']) {
+      Object.defineProperty(el.querySelector('[forTable]')!, prop, {
+        configurable: true,
+        get: () => 400,
+      });
+    }
     fixture.detectChanges();
     return {
       fixture,
