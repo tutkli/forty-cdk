@@ -11,13 +11,13 @@ import {
 
 import {
   type ForTableCellHandle,
+  injectHostCarriesDragItem,
   injectPointerMove,
   isImeComposing,
   registerHandle,
 } from 'forty-cdk/core';
 import {
   coerceSticky,
-  hostHasDraggable,
   injectTableContext,
   injectTableRegistration,
   type TableStickyValue,
@@ -142,7 +142,7 @@ export class ForTableHeaderCell {
   readonly sticky = input(false as TableStickyValue, { transform: coerceSticky });
 
   /** `true` when a `[forDraggable]` shares this cell and owns its host `tabindex` / lift keys instead. */
-  readonly #yieldsToDraggable = hostHasDraggable(this.#host);
+  readonly #yieldsToDraggable = injectHostCarriesDragItem(this.#host);
 
   /**
    * `true` when this header row joins the body's composite roving grid (`grid` /
@@ -154,10 +154,10 @@ export class ForTableHeaderCell {
   readonly #participates = computed(() => this.ctx.headerParticipatesInRoving());
 
   /** `true` when this cell owns its host `tabindex` / keydown as a plain roving grid cell (no draggable). */
-  readonly #inRovingGrid = computed(() => !this.#yieldsToDraggable && this.#participates());
+  readonly #inRovingGrid = computed(() => !this.#yieldsToDraggable() && this.#participates());
 
   private readonly tabindex = computed<0 | -1 | null>(() => {
-    if (this.#yieldsToDraggable) {
+    if (this.#yieldsToDraggable()) {
       return null;
     }
     if (this.#inRovingGrid()) {
@@ -172,7 +172,7 @@ export class ForTableHeaderCell {
 
   private readonly highlighted = computed(
     () =>
-      !this.#yieldsToDraggable && this.#participates() && this.ctx.isCellHighlighted(this.#host),
+      !this.#yieldsToDraggable() && this.#participates() && this.ctx.isCellHighlighted(this.#host),
   );
 
   constructor() {
@@ -226,7 +226,7 @@ export class ForTableHeaderCell {
       return;
     }
     if (
-      !this.#yieldsToDraggable ||
+      !this.#yieldsToDraggable() ||
       !this.#participates() ||
       (escape && event.defaultPrevented) ||
       this.#host.hasAttribute('data-dragging')

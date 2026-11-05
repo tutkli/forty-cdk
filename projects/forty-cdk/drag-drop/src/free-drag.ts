@@ -19,6 +19,7 @@ import {
   clampPreviewPosition,
   createPointerDragSession,
   type PointerDragSession,
+  markDragItemHost,
   resolveBoundaryElement,
 } from 'forty-cdk/core';
 import { FOR_DRAGGABLE_CONTEXT, type ForDraggableContext } from './drag-drop-context';
@@ -173,6 +174,7 @@ export class ForFreeDrag implements ForDraggableContext {
 
   constructor() {
     registerWithEnclosingDraggable(this.#host.nativeElement, 'ForFreeDrag');
+    markDragItemHost(this.#host.nativeElement);
     if (this.#isBrowser) {
       effect(() => {
         this.#applyOffset(this.#resolvedRoot(), this.position());

@@ -307,17 +307,6 @@ function columnTrackDefect(track: string): string | null {
 }
 
 /**
- * Whether a header-cell host carries a drag-drop reorder affordance
- * (`[forDraggable]` or `[forFreeDrag]`). Detected by DOM marker rather than a
- * value-import of the drag-drop context, so the sort header and header cell can
- * yield their roving `tabindex` to the draggable's own tab stop without a
- * cross-primitive value dependency (only consumers importing drag-drop bundle it).
- */
-export function hostHasDraggable(el: HTMLElement): boolean {
-  return el.hasAttribute('forDraggable') || el.hasAttribute('forFreeDrag');
-}
-
-/**
  * Whether a header-cell host carries an active sort affordance — a
  * `[forTableSortHeader]` with `sortable` currently `true`, reflected as the
  * `data-sortable` marker. Detected by DOM marker rather than a value-import of
