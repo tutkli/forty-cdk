@@ -189,16 +189,15 @@ export class ForPopover extends AnchoredOverlayPositioningBase implements ForPop
   readonly #emitAutoFocusOnOpen = injectVetoableEmitter(this.autoFocusOnOpen);
   readonly #emitAutoFocusOnClose = injectVetoableEmitter(this.autoFocusOnClose);
 
-  readonly #generatedTriggerId = this.#idGen.next('for-popover-trigger');
   readonly contentId = signal(this.#idGen.next('for-popover-content'));
 
   readonly #triggerSlot: RootedTriggerSlot = new RootedTriggerSlot(
     inject(POPOVER_TRIGGERS).of(this),
-    () => this.#generatedTriggerId,
   );
 
   readonly triggerId = this.#triggerSlot.id;
   readonly trigger = this.#triggerSlot.element;
+  private readonly triggerHosts = this.#triggerSlot.hosts;
 
   readonly #anchorEl = signal<HTMLElement | null>(null);
   readonly anchor = this.#anchorEl.asReadonly();
@@ -255,8 +254,8 @@ export class ForPopover extends AnchoredOverlayPositioningBase implements ForPop
     });
   }
 
-  private resolveTriggerId(staticId: string | null): string {
-    return this.#triggerSlot.resolveId(staticId);
+  private activateTrigger(host: HTMLElement): void {
+    this.#triggerSlot.activate(host);
   }
 
   /**

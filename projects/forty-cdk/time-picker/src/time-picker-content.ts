@@ -74,7 +74,7 @@ export class ForTimePickerContent {
   private readonly resolvedAriaLabel = hostAriaLabel(() => this.ctx.ariaLabel());
 
   private readonly labelledBy = hostLabelledBy(() =>
-    this.resolvedAriaLabel() ? null : this.ctx.overlay.triggerId(),
+    this.resolvedAriaLabel() ? null : this.ctx.overlay.triggerId() || null,
   );
 
   constructor() {
@@ -165,10 +165,7 @@ export class ForTimePickerContent {
         emitPointerDownOutside: (veto) => ctx.overlay.emitPointerDownOutside(veto),
         emitFocusOutside: (veto) => ctx.overlay.emitFocusOutside(veto),
         emitInteractOutside: (veto) => ctx.overlay.emitInteractOutside(veto),
-        exemptElements: injectFieldLabelExemption(() => {
-          const t = ctx.overlay.trigger();
-          return t ? [t] : [];
-        }),
+        exemptElements: injectFieldLabelExemption(() => ctx.overlay.triggerHosts()),
       },
       initialFocus: {
         move: focusInitial,

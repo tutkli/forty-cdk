@@ -1,6 +1,5 @@
 import {
   booleanAttribute,
-  computed,
   DestroyRef,
   Directive,
   inject,
@@ -25,6 +24,7 @@ import {
   type HoverIntentScheduler,
   type HoverSurfaceState,
   type Point,
+  RootedTriggerSlot,
   ScrollDismissDispatcher,
   type ScrollDismissRegistration,
 } from 'forty-cdk/core-anchored';
@@ -126,8 +126,10 @@ export class ForHoverCard extends AnchoredOverlayPositioningBase implements ForH
    */
   readonly reducedMotion = injectPrefersReducedMotion();
 
-  readonly #triggers = inject(HOVER_CARD_TRIGGERS).of(this);
-  readonly trigger = computed(() => this.#triggers().at(-1)?.host ?? null);
+  readonly #triggerSlot: RootedTriggerSlot = new RootedTriggerSlot(
+    inject(HOVER_CARD_TRIGGERS).of(this),
+  );
+  readonly trigger = this.#triggerSlot.element;
 
   readonly #arrowEl = signal<HTMLElement | null>(null);
   readonly arrow = this.#arrowEl.asReadonly();
@@ -250,6 +252,10 @@ export class ForHoverCard extends AnchoredOverlayPositioningBase implements ForH
 
   private focusLeaveContent(): void {
     this.#surface.blurContent();
+  }
+
+  private activateTrigger(host: HTMLElement): void {
+    this.#triggerSlot.activate(host);
   }
 
   private closeOnTabOut(): void {

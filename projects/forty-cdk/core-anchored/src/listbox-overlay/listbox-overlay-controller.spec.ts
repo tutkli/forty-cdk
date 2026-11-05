@@ -126,7 +126,7 @@ function createHarness(opts: { withNavigateFocus?: boolean } = {}): Harness {
 }
 
 function asTrigger(host: HTMLElement): RootedTriggerHandle {
-  return { host, staticId: host.id || null, root: signal(null) };
+  return { host, id: signal(host.id).asReadonly(), root: signal(null) };
 }
 
 function makeOutput<T>(): OutputEmitterRef<T> {
@@ -145,19 +145,30 @@ describe('ListboxOverlayController', () => {
     document.querySelectorAll('body > div').forEach((el) => el.remove());
   });
 
-  it('generates trigger / content ids from the configured prefix', () => {
+  it('generates the content id from the configured prefix', () => {
     const { controller } = createHarness();
-    expect(controller.triggerId()).toContain('for-listbox-test-trigger');
     expect(controller.contentId()).toContain('for-listbox-test-content');
   });
 
-  it('adopts a consumer static id on the trigger and content', () => {
+  it('names the id of the active trigger, and none while no trigger is registered', () => {
     const { controller, triggers } = createHarness();
-    const trigger = document.createElement('button');
-    trigger.id = 'my-trigger';
-    triggers.set([asTrigger(trigger)]);
-    expect(controller.triggerId()).toBe('my-trigger');
-    expect(controller.resolveTriggerId(null)).toContain('for-listbox-test-trigger');
+    expect(controller.triggerId()).toBe('');
+
+    const first = document.createElement('button');
+    first.id = 'first';
+    const second = document.createElement('button');
+    second.id = 'second';
+    triggers.set([asTrigger(first), asTrigger(second)]);
+    expect(controller.triggerId()).toBe('second');
+    expect(controller.triggerHosts()).toEqual([first, second]);
+
+    controller.activateTrigger(first);
+    expect(controller.triggerId()).toBe('first');
+    expect(controller.trigger()).toBe(first);
+  });
+
+  it('adopts a consumer static id on the content', () => {
+    const { controller } = createHarness();
 
     const content = document.createElement('div');
     content.id = 'my-content';

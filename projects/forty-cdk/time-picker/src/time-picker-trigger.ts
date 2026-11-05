@@ -4,7 +4,7 @@ import {
   hostButtonType,
   reflectDisabled,
   registerHandle,
-  staticHostId,
+  hostId,
   leavesControl,
 } from 'forty-cdk/core';
 import {
@@ -75,7 +75,6 @@ export class ForTimePickerTrigger<D = unknown> {
   private readonly buttonType = hostButtonType();
 
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
-  readonly #staticId = staticHostId(this.#host.nativeElement);
 
   /**
    * Optional explicit reference to the `[forTimePicker]` root, named after the
@@ -89,14 +88,14 @@ export class ForTimePickerTrigger<D = unknown> {
   readonly #resolved = injectTimePickerTriggerContext<D>(this.forTimePickerTrigger);
   private readonly ctx = this.#resolved.ctx;
 
-  private readonly id = computed(() => this.ctx().overlay.resolveTriggerId(this.#staticId));
+  private readonly id = hostId('for-time-picker-trigger');
 
   private readonly fieldAnatomy = computed(() => this.ctx().anatomy?.() === 'field');
 
   constructor() {
     const triggers = inject(TIME_PICKER_TRIGGERS);
     registerHandle(
-      { host: this.#host.nativeElement, staticId: this.#staticId, root: this.#resolved.root },
+      { host: this.#host.nativeElement, id: this.id, root: this.#resolved.root },
       (handle) => triggers.add(handle),
       (handle) => triggers.remove(handle),
     );
@@ -104,7 +103,15 @@ export class ForTimePickerTrigger<D = unknown> {
   }
 
   private onClick(): void {
+    this.#activate();
     this.ctx().overlay.toggle('selected');
+  }
+
+  /** Make this trigger the one the listbox anchors to, is labelled by and returns focus to. */
+  #activate(): void {
+    if (!this.ctx().effectiveDisabled()) {
+      this.ctx().overlay.activateTrigger(this.#host.nativeElement);
+    }
   }
 
   private onKeyDown(event: KeyboardEvent): void {
@@ -113,16 +120,19 @@ export class ForTimePickerTrigger<D = unknown> {
     }
     if (event.key === 'ArrowDown') {
       event.preventDefault();
+      this.#activate();
       this.ctx().overlay.openOverlay('selected');
       return;
     }
     if (event.key === 'ArrowUp') {
       event.preventDefault();
+      this.#activate();
       this.ctx().overlay.openOverlay(this.ctx().value() !== null ? 'selected' : 'last');
       return;
     }
     if (event.key === 'Home' || event.key === 'End') {
       event.preventDefault();
+      this.#activate();
       this.ctx().overlay.openOverlay(event.key === 'Home' ? 'first' : 'last');
     }
   }

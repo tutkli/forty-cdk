@@ -4,7 +4,7 @@ import {
   hostButtonType,
   reflectDisabled,
   registerHandle,
-  staticHostId,
+  hostId,
   leavesControl,
 } from 'forty-cdk/core';
 import {
@@ -86,7 +86,6 @@ export class ForDatePickerTrigger {
   private readonly buttonType = hostButtonType();
 
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
-  readonly #staticId = staticHostId(this.#host.nativeElement);
 
   /**
    * Optional explicit reference to the `[forDatePicker]` root, named after the
@@ -103,7 +102,7 @@ export class ForDatePickerTrigger {
   readonly #resolved = injectDatePickerTriggerContext(this.forDatePickerTrigger);
   private readonly ctx = this.#resolved.ctx;
 
-  private readonly id = computed(() => this.ctx().resolveTriggerId(this.#staticId));
+  private readonly id = hostId('for-date-picker-trigger');
 
   private readonly fieldAnatomy = computed(() => this.ctx().anatomy() === 'field');
 
@@ -111,7 +110,7 @@ export class ForDatePickerTrigger {
     const host = this.#host.nativeElement;
     const triggers = inject(DATE_PICKER_TRIGGERS);
     registerHandle(
-      { host, staticId: this.#staticId, root: this.#resolved.root },
+      { host, id: this.id, root: this.#resolved.root },
       (handle) => triggers.add(handle),
       (handle) => triggers.remove(handle),
     );
@@ -119,7 +118,15 @@ export class ForDatePickerTrigger {
   }
 
   private onClick(): void {
+    this.#activate();
     this.ctx().toggle();
+  }
+
+  /** Make this trigger the one the surface anchors to, is labelled by and returns focus to. */
+  #activate(): void {
+    if (!this.ctx().effectiveDisabled()) {
+      this.ctx().activateTrigger(this.#host.nativeElement);
+    }
   }
 
   private onKeyDown(event: KeyboardEvent): void {
@@ -129,6 +136,7 @@ export class ForDatePickerTrigger {
     }
     event.preventDefault();
     if (!ctx.open()) {
+      this.#activate();
       ctx.toggle();
     }
   }

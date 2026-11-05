@@ -87,17 +87,17 @@ function makeAnchorSlot() {
 }
 
 describe('RootedTriggerSlot', () => {
-  const handle = (host: HTMLElement, staticId: string | null = null) => ({
-    host,
-    staticId,
+  const handle = (id?: string) => ({
+    host: document.createElement('button'),
+    ...(id === undefined ? {} : { id: signal(id).asReadonly() }),
     root: signal<object | null>({}).asReadonly(),
   });
 
   it('resolves the newest handle, and the one before it once the newest leaves', () => {
-    const first = handle(document.createElement('button'));
-    const newest = handle(document.createElement('button'));
+    const first = handle();
+    const newest = handle();
     const triggers = signal([first, newest]);
-    const slot = new RootedTriggerSlot(triggers, () => 'generated');
+    const slot = new RootedTriggerSlot(triggers);
 
     expect(slot.element()).toBe(newest.host);
 
@@ -106,22 +106,60 @@ describe('RootedTriggerSlot', () => {
     expect(slot.element()).toBe(first.host);
   });
 
-  it('resolves no element and the generated id while no handle is registered', () => {
-    const slot = new RootedTriggerSlot(signal([]), () => 'generated');
+  it('resolves no element and an empty id while no handle is registered', () => {
+    const slot = new RootedTriggerSlot(signal([]));
 
     expect(slot.element()).toBeNull();
-    expect(slot.id()).toBe('generated');
+    expect(slot.id()).toBe('');
+    expect(slot.hosts()).toEqual([]);
   });
 
-  it("names the newest handle's static id, and the generated one when it carries none", () => {
-    const triggers = signal([handle(document.createElement('button'), 'mine')]);
-    const slot = new RootedTriggerSlot(triggers, () => 'generated');
+  it('lists every registered host', () => {
+    const first = handle();
+    const second = handle();
+    const slot = new RootedTriggerSlot(signal([first, second]));
 
-    expect(slot.id()).toBe('mine');
+    expect(slot.hosts()).toEqual([first.host, second.host]);
+  });
 
-    triggers.set([handle(document.createElement('button'))]);
+  it('resolves the trigger that claimed it, with its own id', () => {
+    const first = handle('first-id');
+    const newest = handle('newest-id');
+    const slot = new RootedTriggerSlot(signal([first, newest]));
 
-    expect(slot.id()).toBe('generated');
+    slot.activate(first.host);
+
+    expect(slot.element()).toBe(first.host);
+    expect(slot.id()).toBe('first-id');
+  });
+
+  it('keeps the claim while another trigger mounts', () => {
+    const first = handle();
+    const second = handle();
+    const triggers = signal([first, second]);
+    const slot = new RootedTriggerSlot(triggers);
+    slot.activate(first.host);
+    expect(slot.element()).toBe(first.host);
+
+    triggers.set([first, second, handle()]);
+
+    expect(slot.element()).toBe(first.host);
+  });
+
+  it('falls back to the newest survivor once the claiming trigger unmounts', () => {
+    const first = handle();
+    const second = handle();
+    const third = handle();
+    const triggers = signal([first, second, third]);
+    const slot = new RootedTriggerSlot(triggers);
+    slot.activate(first.host);
+    expect(slot.element()).toBe(first.host);
+
+    triggers.set([second, third]);
+    expect(slot.element()).toBe(third.host);
+
+    triggers.set([first, second, third]);
+    expect(slot.element()).toBe(third.host);
   });
 });
 

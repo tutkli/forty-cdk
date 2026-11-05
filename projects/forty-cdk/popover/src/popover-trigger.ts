@@ -1,6 +1,6 @@
 import { booleanAttribute, computed, Directive, ElementRef, inject, input } from '@angular/core';
 
-import { hostButtonType, reflectDisabled, registerHandle, staticHostId } from 'forty-cdk/core';
+import { hostButtonType, hostId, reflectDisabled, registerHandle } from 'forty-cdk/core';
 import {
   type ForPopoverContext,
   injectPopoverTriggerContext,
@@ -48,7 +48,6 @@ export class ForPopoverTrigger {
   private readonly buttonType = hostButtonType();
 
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
-  readonly #staticId = staticHostId(this.#host.nativeElement);
 
   /**
    * Optional explicit reference to the `[forPopover]` root, named after the
@@ -64,7 +63,7 @@ export class ForPopoverTrigger {
   readonly #resolved = injectPopoverTriggerContext(this.forPopoverTrigger);
   private readonly ctx = this.#resolved.ctx;
 
-  private readonly id = computed(() => this.ctx().resolveTriggerId(this.#staticId));
+  private readonly id = hostId('for-popover-trigger');
 
   /** Disables this trigger only, in addition to the root's `disabled`. */
   readonly disabled = input(false, { transform: booleanAttribute });
@@ -76,7 +75,7 @@ export class ForPopoverTrigger {
     const host = this.#host.nativeElement;
     const triggers = inject(POPOVER_TRIGGERS);
     registerHandle(
-      { host, staticId: this.#staticId, root: this.#resolved.root },
+      { host, id: this.id, root: this.#resolved.root },
       (handle) => triggers.add(handle),
       (handle) => triggers.remove(handle),
     );
@@ -87,6 +86,7 @@ export class ForPopoverTrigger {
     if (this.effectiveDisabled()) {
       return;
     }
+    this.ctx().activateTrigger(this.#host.nativeElement);
     this.ctx().toggle();
   }
 }

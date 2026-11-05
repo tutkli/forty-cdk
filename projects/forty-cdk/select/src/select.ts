@@ -508,8 +508,8 @@ export class ForSelect<T = string>
     return this.#controller.trigger();
   }
 
-  protected override fieldLabelledElementId(): string {
-    return this.#controller.triggerId();
+  protected override fieldLabelledElementId(): string | null {
+    return this.#controller.triggerId() || null;
   }
 
   /**

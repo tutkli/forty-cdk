@@ -83,7 +83,7 @@ export interface ForSelectOptionHandle<T = unknown> extends CollectionHandle {
  * unexported surface the pieces reach through their own token.
  */
 export interface ForSelectOverlayFacade {
-  /** The trigger's stable id, adopted from a consumer-set static id when present. */
+  /** The active trigger's id, or `''` while no trigger is registered. */
   readonly triggerId: Signal<string>;
   /** The content surface's stable id, adopted from a consumer-set static id when present. */
   readonly contentId: Signal<string>;

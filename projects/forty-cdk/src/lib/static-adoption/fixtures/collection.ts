@@ -440,7 +440,7 @@ export const COLLECTION_FAMILY_ADOPTERS: readonly StaticAdoptionAdopter[] = [
         key: '[forSelectTrigger]',
         channel: 'id',
         source: 'select/src/select-trigger.ts',
-        seam: 'staticHostId',
+        seam: 'hostId',
         probe: 'probe-trigger',
         fallback: { generated: 'for-select-trigger' },
       },

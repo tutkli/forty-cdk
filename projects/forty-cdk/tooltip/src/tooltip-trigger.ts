@@ -1,10 +1,10 @@
-import { computed, Directive, ElementRef, inject, input } from '@angular/core';
+import { Directive, ElementRef, inject, input } from '@angular/core';
 import {
   createPressFocus,
   hostDescribedBy,
+  hostId,
   isNonTouchPointer,
   registerHandle,
-  staticHostId,
 } from 'forty-cdk/core';
 
 import {
@@ -16,7 +16,7 @@ import {
 /**
  * Element that activates the tooltip on pointer hover or keyboard focus. Apply
  * on a focusable element — preferably a `<button>` so keyboard users can reach
- * it. Receives `aria-describedby` only while the tooltip is open, per APG —
+ * it. Receives `aria-describedby` only while the tooltip is open on it, per APG —
  * composed after a consumer-set **static** `aria-describedby`, which is
  * preserved rather than replaced, and beside the description and error ids of
  * a surrounding `[forField]` when the trigger is also its control. The hover
@@ -70,7 +70,6 @@ import {
 })
 export class ForTooltipTrigger {
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
-  readonly #staticId = staticHostId(this.#host.nativeElement);
 
   /**
    * Optional explicit reference to the `[forTooltip]` root, named after the
@@ -86,10 +85,12 @@ export class ForTooltipTrigger {
   readonly #resolved = injectTooltipTriggerContext(this.forTooltipTrigger);
   private readonly ctx = this.#resolved.ctx;
 
-  private readonly id = computed(() => this.ctx().resolveTriggerId(this.#staticId));
+  private readonly id = hostId('for-tooltip-trigger');
 
   private readonly describedBy = hostDescribedBy(() =>
-    this.ctx().open() ? this.ctx().contentId() : null,
+    this.ctx().open() && this.ctx().trigger() === this.#host.nativeElement
+      ? this.ctx().contentId()
+      : null,
   );
 
   readonly #pressFocus = createPressFocus();
@@ -98,7 +99,7 @@ export class ForTooltipTrigger {
     const host = this.#host.nativeElement;
     const triggers = inject(TOOLTIP_TRIGGERS);
     registerHandle(
-      { host, staticId: this.#staticId, root: this.#resolved.root },
+      { host, id: this.id, root: this.#resolved.root },
       (handle) => triggers.add(handle),
       (handle) => triggers.remove(handle),
     );
@@ -119,6 +120,7 @@ export class ForTooltipTrigger {
     if (!isNonTouchPointer(event) || !this.canOpen()) {
       return;
     }
+    this.ctx().activateTrigger(this.#host.nativeElement);
     this.ctx().pointerEnterTrigger();
   }
 
@@ -144,6 +146,7 @@ export class ForTooltipTrigger {
     if (this.#pressFocus.consume() || !this.canOpen()) {
       return;
     }
+    this.ctx().activateTrigger(this.#host.nativeElement);
     this.ctx().focusTrigger();
   }
 

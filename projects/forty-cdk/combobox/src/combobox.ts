@@ -43,6 +43,7 @@ import {
   anchorSlot,
   injectIdentifiedSlot,
   OverlayController,
+  RootedTriggerSlot,
 } from 'forty-cdk/core-anchored';
 import { createActiveIdSignal, revealAutoHighlight } from './combobox-auto-highlight';
 import {
@@ -323,8 +324,7 @@ export class ForCombobox<T = string>
   readonly autoFocusOnClose = output<VetoableEvent>();
 
   readonly #inputSlot = injectIdentifiedSlot<HTMLInputElement>('for-combobox', 'input');
-  readonly #triggers = inject(COMBOBOX_TRIGGERS).of(this);
-  readonly #latestTrigger = computed(() => this.#triggers().at(-1) ?? null);
+  readonly #triggerSlot = new RootedTriggerSlot(inject(COMBOBOX_TRIGGERS).of(this));
 
   /**
    * The open / close / dismiss machine, shared with the menu and listbox
@@ -339,7 +339,7 @@ export class ForCombobox<T = string>
     idPrefix: 'for-combobox',
     createTrigger: () => ({
       id: this.#inputSlot.id,
-      element: computed(() => this.#latestTrigger()?.host ?? null),
+      element: this.#triggerSlot.element,
     }),
     defaultInitialFocus: 'first',
     disabled: this.effectiveDisabled,
@@ -393,7 +393,8 @@ export class ForCombobox<T = string>
    */
   readonly listboxId = computed(() => (this.hasList() ? this.listId() : this.contentId()));
 
-  private readonly triggerId = computed(() => this.#latestTrigger()?.id() ?? null);
+  private readonly triggerId = computed(() => this.#triggerSlot.id() || null);
+  private readonly triggerHosts = this.#triggerSlot.hosts;
 
   readonly options = this.#items.items;
   readonly chips = this.#chips.items;
@@ -606,6 +607,10 @@ export class ForCombobox<T = string>
   /** See {@link ForComboboxContext.unregisterAnchor}. */
   unregisterAnchor(el: HTMLElement): void {
     this.#anchorSlot.unregister(el);
+  }
+
+  private activateTrigger(host: HTMLElement): void {
+    this.#triggerSlot.activate(host);
   }
 
   private registerFieldButton(el: HTMLElement): void {

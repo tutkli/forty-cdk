@@ -102,6 +102,7 @@ export class ForHoverCardTrigger {
     if (!isNonTouchPointer(event) || !this.canOpen()) {
       return;
     }
+    this.ctx().activateTrigger(this.#host.nativeElement);
     this.ctx().pointerEnterTrigger();
   }
 
@@ -122,6 +123,7 @@ export class ForHoverCardTrigger {
     if (this.#pressFocus.consume() || !this.canOpen()) {
       return;
     }
+    this.ctx().activateTrigger(this.#host.nativeElement);
     this.ctx().focusTrigger();
   }
 

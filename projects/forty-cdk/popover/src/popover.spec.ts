@@ -3,7 +3,7 @@ import { Component, provideZonelessChangeDetection, signal } from '@angular/core
 import { TestBed } from '@angular/core/testing';
 
 import { type VetoableEvent, type VetoableNativeEvent } from 'forty-cdk/core';
-import { pressKey, withReducedMotion } from 'forty-cdk/testing';
+import { pressKey, pressWithMouse, withReducedMotion } from 'forty-cdk/testing';
 import {
   afterEachOverlayCleanup,
   flush,
@@ -1362,7 +1362,7 @@ describe('ForPopover', () => {
       expect(r.query('button')).toBe(trigger);
       expect(r.instance.openA()).toBe(false);
       expect(r.instance.openB()).toBe(true);
-      expect(trigger.id).not.toBe(idUnderA);
+      expect(trigger.id).toBe(idUnderA);
       expect(trigger.getAttribute('aria-controls')).toBe(
         document.querySelector('[data-testid="content-b"]')!.id,
       );
@@ -1406,6 +1406,43 @@ describe('ForPopover', () => {
 
       expect(r.instance.open()).toBe(false);
       expect(document.activeElement).toBe(r.query('[data-testid="first"]'));
+    });
+
+    it('closes from the older trigger that opened it', async () => {
+      const r = renderHost(StackedTriggersHost);
+      const first = r.query<HTMLButtonElement>('[data-testid="first"]')!;
+      pressWithMouse(first);
+      await flush(r.fixture);
+      expect(r.instance.open()).toBe(true);
+
+      pressWithMouse(first);
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe(false);
+    });
+
+    it('returns focus to the trigger that opened it', async () => {
+      const r = renderHost(StackedTriggersHost);
+      const first = r.query<HTMLButtonElement>('[data-testid="first"]')!;
+      pressWithMouse(first);
+      await flush(r.fixture);
+
+      const inside = document.querySelector<HTMLButtonElement>('[data-testid="inside"]')!;
+      inside.focus();
+      pressKey(inside, 'Escape');
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe(false);
+      expect(document.activeElement).toBe(first);
+    });
+
+    it('gives each trigger its own generated id', () => {
+      const r = renderHost(StackedTriggersHost);
+      const first = r.query<HTMLButtonElement>('[data-testid="first"]')!;
+      const second = r.query<HTMLButtonElement>('[data-testid="second"]')!;
+
+      expect(first.id).not.toBe('');
+      expect(first.id).not.toBe(second.id);
     });
   });
 

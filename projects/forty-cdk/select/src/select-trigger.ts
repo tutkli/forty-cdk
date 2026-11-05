@@ -2,9 +2,9 @@ import { computed, Directive, ElementRef, inject, input, type Signal } from '@an
 
 import {
   hostButtonType,
+  hostId,
   reflectDisabled,
   registerHandle,
-  staticHostId,
   leavesControl,
 } from 'forty-cdk/core';
 import {
@@ -81,7 +81,6 @@ export class ForSelectTrigger<T = unknown> {
   private readonly buttonType = hostButtonType();
 
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
-  readonly #staticId = staticHostId(this.#host.nativeElement);
 
   /**
    * Optional explicit reference to the `[forSelect]` root, named after the
@@ -98,12 +97,12 @@ export class ForSelectTrigger<T = unknown> {
   readonly #root = this.#resolved.ctx;
   private readonly ctx: Signal<SelectContext<T>> = this.#root;
 
-  private readonly id = computed(() => this.#root().overlay.resolveTriggerId(this.#staticId));
+  private readonly id = hostId('for-select-trigger');
 
   constructor() {
     const triggers = inject(SELECT_TRIGGERS);
     registerHandle(
-      { host: this.#host.nativeElement, staticId: this.#staticId, root: this.#resolved.root },
+      { host: this.#host.nativeElement, id: this.id, root: this.#resolved.root },
       (handle) => triggers.add(handle),
       (handle) => triggers.remove(handle),
     );
@@ -111,7 +110,15 @@ export class ForSelectTrigger<T = unknown> {
   }
 
   private onClick(): void {
+    this.#activate();
     this.#root().overlay.toggle('selected');
+  }
+
+  /** Make this trigger the one the listbox anchors to, is labelled by and returns focus to. */
+  #activate(): void {
+    if (!this.ctx().effectiveDisabled()) {
+      this.#root().overlay.activateTrigger(this.#host.nativeElement);
+    }
   }
 
   private onKeyDown(event: KeyboardEvent): void {
@@ -120,17 +127,20 @@ export class ForSelectTrigger<T = unknown> {
     }
     if (event.key === 'ArrowDown') {
       event.preventDefault();
+      this.#activate();
       this.#root().overlay.openOverlay('selected');
       return;
     }
     if (event.key === 'ArrowUp') {
       event.preventDefault();
+      this.#activate();
       // ArrowUp lands on the selected option if any, else the last enabled.
       this.#root().overlay.openOverlay(this.ctx().value().length > 0 ? 'selected' : 'last');
       return;
     }
     if (event.key === 'Home' || event.key === 'End') {
       event.preventDefault();
+      this.#activate();
       this.#root().overlay.openOverlay(event.key === 'Home' ? 'first' : 'last');
       return;
     }

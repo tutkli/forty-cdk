@@ -43,6 +43,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   direction-aware root on the page re-walk its ancestors
   ([#2725](https://github.com/tutkli/forty-cdk/issues/2725)). Opening a tooltip or mounting a
   virtualized row in a page with hundreds of roots no longer re-resolves all of them.
+- **Popover, Tooltip, Hover card, Date picker, Date range picker, Select, Time picker, Combobox** —
+  on a root with several mounted triggers, the surface belongs to the trigger that opened it
+  ([#2723](https://github.com/tutkli/forty-cdk/issues/2723)). Before, it belonged to the newest
+  trigger whichever one was pressed: pressing an older trigger a second time closed the surface as
+  an outside press and reopened it at once, so that trigger could never close it, and the surface
+  was positioned against the newest trigger, labelled by it and returned focus to it. Pressing any
+  trigger is now never an outside press. A Tooltip describes only the trigger it is open on. Each
+  trigger also generates its own fallback `id`. Before, every trigger without a consumer `id` on
+  one Popover, Tooltip, Date picker, Select or Time picker rendered the same one.
+  A trigger keeps that `id` when its explicit root input changes. With no trigger registered,
+  `triggerId()` on these roots is `''` instead of an id no element carries.
 
 - **Field, Input, Textarea, Search, Number input, OTP input** — a bound `[required]`, or a
   `[formField]` whose schema marks the field required, now sets the native `required` attribute
