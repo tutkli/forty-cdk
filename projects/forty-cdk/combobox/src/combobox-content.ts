@@ -226,6 +226,10 @@ export class ForComboboxContent {
           return ctx.lastCloseReason() === 'tab';
         },
       },
+      tabOut: {
+        target: () => (hasTrigger() && !ctx.hasEnabledActions() ? ctx.trigger() : null),
+        close: () => ctx.closeOverlay('tab'),
+      },
     };
 
     injectOverlayShell(config);

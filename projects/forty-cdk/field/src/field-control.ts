@@ -1,6 +1,6 @@
 import { booleanAttribute, computed, Directive, inject, input } from '@angular/core';
 
-import { FOR_FIELDSET_CONTEXT, reflectDisabled } from 'forty-cdk/core';
+import { FOR_FIELDSET_CONTEXT, reflectDisabled, reflectRequired } from 'forty-cdk/core';
 import { injectFieldWiring } from './field-context';
 
 /**
@@ -12,9 +12,11 @@ import { injectFieldWiring } from './field-context';
  *
  * Validation state is consumer-driven via the `invalid` / `required` /
  * `disabled` / `touched` inputs (native controls have no Signal Forms errors
- * to surface). Reflects `aria-invalid` on the host, and the native `disabled`
+ * to surface). Reflects `aria-invalid` on the host, the native `required`
+ * attribute while its `required` input is set, and the native `disabled`
  * attribute while its own `disabled` input or a surrounding `[forFieldset]`'s
- * `disabled` is set.
+ * `disabled` is set. Neither native attribute is removed when the consumer
+ * wrote it statically.
  *
  * @example
  * ```html
@@ -34,7 +36,10 @@ import { injectFieldWiring } from './field-context';
 export class ForFieldControl {
   /** Marks the control invalid — drives the field's error region and `aria-invalid`. */
   readonly invalid = input(false, { transform: booleanAttribute });
-  /** Marks the control required — reflected by the field as `data-required`. */
+  /**
+   * Marks the control required — reflected on the host as the native `required`
+   * attribute and by the field as `data-required`.
+   */
   readonly required = input(false, { transform: booleanAttribute });
   /**
    * Marks the control disabled — reflected on the host as the native `disabled`
@@ -54,5 +59,6 @@ export class ForFieldControl {
       touched: this.touched,
     });
     reflectDisabled(computed(() => this.disabled() || (this.#fieldset?.disabled() ?? false)));
+    reflectRequired(this.required);
   }
 }

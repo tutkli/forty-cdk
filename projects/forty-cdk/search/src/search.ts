@@ -51,7 +51,6 @@ import { FOR_SEARCH_GROUP, type ForSearchContext } from './search-context';
   host: {
     role: 'searchbox',
     '[attr.aria-readonly]': 'readonly() ? "true" : null',
-    '[attr.aria-required]': 'required() ? "true" : null',
     '[attr.aria-invalid]': 'invalid() ? "true" : null',
     '[attr.aria-busy]': 'pending() ? "true" : null',
     '[attr.readonly]': 'readonly() ? "" : null',

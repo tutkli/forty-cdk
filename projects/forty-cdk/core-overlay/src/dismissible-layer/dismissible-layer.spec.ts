@@ -476,6 +476,93 @@ describe('DismissibleLayer', () => {
       below.deactivate();
     });
 
+    function shadowFrameIn(parent: HTMLElement): {
+      embed: HTMLElement;
+      shadow: ShadowRoot;
+      frame: HTMLIFrameElement;
+    } {
+      const embed = document.createElement('div');
+      parent.appendChild(embed);
+      const shadow = embed.attachShadow({ mode: 'open' });
+      const frame = document.createElement('iframe');
+      shadow.appendChild(frame);
+      return { embed, shadow, frame };
+    }
+
+    function blurWindowToShadowFrame(embed: HTMLElement, shadow: ShadowRoot, frame: Element): void {
+      vi.spyOn(shadow, 'activeElement', 'get').mockReturnValue(frame);
+      blurWindowTo(embed);
+    }
+
+    it('dispatches focus outside when focus lands on a frame rendered in an outside shadow root', () => {
+      const calls: string[] = [];
+      layer = makeLayer(host);
+      layer.activate({
+        channels: ['focus'],
+        onFocusOutside: () => calls.push('focus'),
+        onInteractOutside: () => calls.push('interact'),
+      });
+      const { embed, shadow, frame } = shadowFrameIn(outside);
+
+      blurWindowToShadowFrame(embed, shadow, frame);
+
+      expect(calls).toEqual(['focus', 'interact']);
+    });
+
+    it('does not fire for a frame rendered in a shadow root inside the host', () => {
+      const calls: string[] = [];
+      layer = makeLayer(host);
+      layer.activate({ channels: ['focus'], onFocusOutside: () => calls.push('focus') });
+      const { embed, shadow, frame } = shadowFrameIn(host);
+
+      blurWindowToShadowFrame(embed, shadow, frame);
+
+      expect(calls).toEqual([]);
+    });
+
+    it('does not fire when focus sits on a non-frame control inside an outside shadow root', () => {
+      const calls: string[] = [];
+      layer = makeLayer(host);
+      layer.activate({ channels: ['focus'], onFocusOutside: () => calls.push('focus') });
+      const { embed, shadow } = shadowFrameIn(outside);
+      const button = document.createElement('button');
+      shadow.appendChild(button);
+
+      blurWindowToShadowFrame(embed, shadow, button);
+
+      expect(calls).toEqual([]);
+    });
+
+    it('dispatches a shadow-root frame move once when the engine also reports its focusin', () => {
+      const calls: string[] = [];
+      const inner = document.createElement('div');
+      document.body.appendChild(inner);
+      const below = makeLayer(host);
+      below.activate({ channels: ['focus'], onFocusOutside: () => calls.push('below') });
+      layer = makeLayer(inner);
+      const top = layer;
+      top.activate({
+        channels: ['focus'],
+        onFocusOutside: () => {
+          calls.push('top');
+          top.deactivate();
+        },
+      });
+      const { embed, shadow, frame } = shadowFrameIn(outside);
+      const retargeted = new FocusEvent('focusin', { bubbles: true, cancelable: true });
+      Object.defineProperty(retargeted, 'target', { value: embed, configurable: true });
+      Object.defineProperty(retargeted, 'composedPath', {
+        value: () => [frame, shadow, embed],
+        configurable: true,
+      });
+
+      document.dispatchEvent(retargeted);
+      blurWindowToShadowFrame(embed, shadow, frame);
+
+      expect(calls).toEqual(['top']);
+      below.deactivate();
+    });
+
     it('does not fire while the stack is suppressed', () => {
       const calls: string[] = [];
       layer = makeLayer(host);

@@ -276,7 +276,11 @@ export function buildFlipOptions(options: {
  * {@link injectFloating}.
  */
 export function floatingPositioner(config: FloatingConfig): OverlayShellPositioner {
-  return { reference: config.reference, attach: () => injectFloating(config) };
+  return {
+    reference: config.reference,
+    open: config.open,
+    attach: () => injectFloating(config),
+  };
 }
 
 /**

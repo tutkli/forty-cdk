@@ -2,6 +2,7 @@ import { computed, Directive, ElementRef, inject, type Signal } from '@angular/c
 
 import { registerHandle } from '../collection/register-handle';
 import { isImeComposing } from '../keyboard-navigation/ime-composition';
+import { isHistoryChord, isShortcutChord } from '../keyboard-navigation/modifier-chord';
 import type { WritingDirection } from '../keyboard-navigation/keyboard-navigation';
 import type { RovingTabindex } from '../roving-tabindex/roving-tabindex';
 import { captureContent } from './editable-content';
@@ -233,8 +234,11 @@ export abstract class ForDateTimeSegmentBase {
     }
     const type = this.segment();
     const key = event.key;
-    if (this.#typeCharacter(type, key)) {
+    if (!isShortcutChord(event) && this.#typeCharacter(type, key)) {
       event.preventDefault();
+      return;
+    }
+    if (isHistoryChord(event) && isSegmentNavigationKey(key)) {
       return;
     }
     const rtl = this.ctx.dir() === 'rtl';
@@ -275,4 +279,8 @@ export abstract class ForDateTimeSegmentBase {
         return;
     }
   }
+}
+
+function isSegmentNavigationKey(key: string): boolean {
+  return key.startsWith('Arrow') || key === 'Home' || key === 'End';
 }

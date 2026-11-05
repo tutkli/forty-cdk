@@ -1810,5 +1810,54 @@ describe('ForContextMenu', () => {
       expect(r.instance.vetoes).toBe(1);
       expect(document.activeElement).toBe(region);
     });
+
+    it('returns focus to the region and emits autoFocusOnClose on an Escape after the reopen', async () => {
+      @Component({
+        imports: IMPORTS,
+        template: `
+          <div forContextMenu [(open)]="open" (autoFocusOnClose)="closeHooks = closeHooks + 1">
+            <div id="region" forContextMenuTrigger>Right-click here</div>
+            @if (open()) {
+              <div forMenuContent><button id="cut" forMenuItem>Cut</button></div>
+            }
+          </div>
+        `,
+      })
+      class CloseHookHost {
+        readonly open = signal(false);
+        closeHooks = 0;
+      }
+
+      const r = renderHost(CloseHookHost);
+      const region = r.query<HTMLElement>('#region')!;
+      rightClick(region, 50, 50);
+      await flush(r.fixture);
+      reRightClickInOneTask(region, 200, 200);
+      await flush(r.fixture);
+      expect(document.activeElement?.id).toBe('cut');
+
+      pressKey(document, 'Escape');
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe(false);
+      expect(document.activeElement).toBe(region);
+      expect(r.instance.closeHooks).toBe(1);
+    });
+
+    it('returns focus to the region when an item activated after the reopen closes the menu', async () => {
+      const r = renderHost(ContextMenuHost);
+      const region = r.query<HTMLElement>('#region')!;
+      rightClick(region, 50, 50);
+      await flush(r.fixture);
+      reRightClickInOneTask(region, 200, 200);
+      await flush(r.fixture);
+
+      document.querySelector<HTMLButtonElement>('#cut')!.click();
+      await flush(r.fixture);
+
+      expect(r.instance.lastSelected()).toBe('cut');
+      expect(r.instance.open()).toBe(false);
+      expect(document.activeElement).toBe(region);
+    });
   });
 });

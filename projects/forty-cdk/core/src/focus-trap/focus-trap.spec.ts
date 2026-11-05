@@ -734,6 +734,103 @@ describe('FocusTrap', () => {
     });
   });
 
+  describe('a control disabled by an ancestor fieldset', () => {
+    beforeEach(() => {
+      container.innerHTML = `
+        <fieldset disabled><input id="locked" /></fieldset>
+        <input id="name" />
+        <button id="save">Save</button>
+      `;
+    });
+
+    it('takes initial focus on the first control the fieldset does not disable', () => {
+      outsideBefore.focus();
+      trap = new FocusTrap(container, stack);
+      trap.activate();
+
+      expect(document.activeElement?.id).toBe('name');
+    });
+
+    it('wraps Tab from the last control to the first enabled one', () => {
+      trap = new FocusTrap(container, stack);
+      trap.activate();
+      container.querySelector<HTMLElement>('#save')!.focus();
+
+      const event = tab();
+      document.dispatchEvent(event);
+
+      expect(event.defaultPrevented).toBe(true);
+      expect(document.activeElement?.id).toBe('name');
+    });
+
+    it('wraps Shift+Tab from the first enabled control to the last one', () => {
+      trap = new FocusTrap(container, stack);
+      trap.activate();
+      container.querySelector<HTMLElement>('#name')!.focus();
+
+      const event = tab(true);
+      document.dispatchEvent(event);
+
+      expect(event.defaultPrevented).toBe(true);
+      expect(document.activeElement?.id).toBe('save');
+    });
+
+    it('pulls focus back onto the first enabled control from outside the trap', () => {
+      trap = new FocusTrap(container, stack);
+      trap.activate();
+      outsideAfter.focus();
+
+      document.dispatchEvent(tab());
+
+      expect(document.activeElement?.id).toBe('name');
+    });
+  });
+
+  describe('a trailing closed details element', () => {
+    beforeEach(() => {
+      container.innerHTML = `
+        <input id="first" />
+        <details>
+          <summary id="sum">More</summary>
+          <button id="hidden">Reset</button>
+        </details>
+      `;
+    });
+
+    it('wraps Tab from the summary to the first control', () => {
+      trap = new FocusTrap(container, stack);
+      trap.activate();
+      container.querySelector<HTMLElement>('#sum')!.focus();
+
+      const event = tab();
+      document.dispatchEvent(event);
+
+      expect(event.defaultPrevented).toBe(true);
+      expect(document.activeElement?.id).toBe('first');
+    });
+
+    it('wraps Shift+Tab from the first control onto the summary', () => {
+      trap = new FocusTrap(container, stack);
+      trap.activate();
+      container.querySelector<HTMLElement>('#first')!.focus();
+
+      document.dispatchEvent(tab(true));
+
+      expect(document.activeElement?.id).toBe('sum');
+    });
+
+    it('wraps onto the content once the details element opens', () => {
+      trap = new FocusTrap(container, stack);
+      trap.activate();
+      container.querySelector('details')!.open = true;
+      container.querySelector<HTMLElement>('#first')!.focus();
+
+      document.dispatchEvent(tab(true));
+
+      expect(document.activeElement?.id).toBe('hidden');
+    });
+  });
+
   describe('tabbable endpoints exclude tabindex="-1" candidates', () => {
     beforeEach(() => {
       container.innerHTML = `

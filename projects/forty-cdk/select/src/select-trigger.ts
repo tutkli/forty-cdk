@@ -1,6 +1,12 @@
 import { computed, Directive, ElementRef, inject, input, type Signal } from '@angular/core';
 
-import { hostButtonType, reflectDisabled, registerHandle, staticHostId } from 'forty-cdk/core';
+import {
+  hostButtonType,
+  reflectDisabled,
+  registerHandle,
+  staticHostId,
+  leavesControl,
+} from 'forty-cdk/core';
 import {
   type ForSelectContext,
   injectSelectTriggerContext,
@@ -135,18 +141,8 @@ export class ForSelectTrigger<T = unknown> {
   }
 
   private onFocusOut(event: FocusEvent): void {
-    const next = event.relatedTarget as HTMLElement | null;
-    if (next) {
-      // Focus moving into the listbox content (we just opened it) — not a leave.
-      const content = this.#root().overlay.content();
-      if (content && content.contains(next)) {
-        return;
-      }
-      // Focus going to a sibling inside the [forSelect] wrapper — also not a leave.
-      if (this.ctx().host.contains(next)) {
-        return;
-      }
+    if (leavesControl(event, [this.#root().overlay.content(), this.ctx().host])) {
+      this.ctx().markTouched();
     }
-    this.ctx().markTouched();
   }
 }

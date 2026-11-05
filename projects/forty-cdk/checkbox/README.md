@@ -130,7 +130,7 @@ One class and one directive, three states. `disabled` and `readonly` both keep t
 
 ### Signal Forms
 
-`forCheckbox` implements `FormCheckboxControl`, so a single `[formField]` binding wires the binary `checked` value into the form and pulls validity back out. The box is required: blur it unchecked and it reflects `data-invalid` / `data-touched`.
+`forCheckbox` implements `FormCheckboxControl`, so a single `[formField]` binding wires the binary `checked` value into the form and pulls validity back out. The box is required: tick and untick it and it reflects `data-invalid` / `data-touched`.
 
 ```ts
 import { Component, signal } from '@angular/core';
@@ -166,7 +166,7 @@ export class DemoCheckout {
 | `disabled` / `readonly` / `required` / `invalid` / `pending` | `input<boolean>`                                          | Reflected as the matching `aria-*` / `data-*` attributes. A disabled checkbox stays focusable (per APG), with `aria-disabled="true"` + `data-disabled` and no native `disabled`; click is a no-op.<br>**Default:** — |
 | `name`                                                       | `input<string>`                                           | Reflected on `name` (empty string omits the attribute). A native reset of the owning `<form>` restores `checked` and `indeterminate` to their first-render values.<br>**Default:** `''`                              |
 | `errors`                                                     | `input<readonly ValidationError.WithOptionalFieldTree[]>` | Validation errors fed by `[formField]`.<br>**Default:** —                                                                                                                                                            |
-| `touched`                                                    | `model<boolean>`                                          | Set to `true` on blur.<br>**Default:** `false`                                                                                                                                                                       |
+| `touched`                                                    | `model<boolean>`                                          | Set to `true` on activation and on blur.<br>**Default:** `false`                                                                                                                                                     |
 
 | Data attribute  | Values                                      |
 | --------------- | ------------------------------------------- |

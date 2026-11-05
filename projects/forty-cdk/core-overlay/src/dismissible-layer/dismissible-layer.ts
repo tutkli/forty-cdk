@@ -1,7 +1,12 @@
 import { DOCUMENT, DestroyRef, ElementRef, Injectable, PLATFORM_ID, inject } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 
-import { composedContains, isImeComposing, resolveEventTarget } from 'forty-cdk/core';
+import {
+  composedContains,
+  isImeComposing,
+  resolveActiveElement,
+  resolveEventTarget,
+} from 'forty-cdk/core';
 
 /**
  * The outside-interaction channels a {@link DismissibleLayer} can own. A layer
@@ -156,10 +161,10 @@ const EMPTY_ACTIVATE_OPTIONS: DismissibleLayerActivateOptions = { channels: [] }
  *
  * **A press inside an `<iframe>` reaches no document listener**: it is dispatched in the frame's
  * own document, and engines do not consistently fire `focusin` on the `<iframe>` element either.
- * What the host document does observe is its window's `blur` with the frame as
- * `document.activeElement`, so the stack also listens for that and dispatches it on the `'focus'`
- * channel as focus moving to the frame — once, even in an engine that also reports the frame's
- * `focusin`.
+ * What the host document does observe is its window's `blur` with the frame as the active element,
+ * resolved through open shadow roots, so the stack also listens for that and dispatches it on the
+ * `'focus'` channel as focus moving to the frame — once, even in an engine that also reports the
+ * frame's `focusin`.
  */
 @Injectable({ providedIn: 'root' })
 export class DismissibleLayerStack {
@@ -205,7 +210,7 @@ export class DismissibleLayerStack {
     }
   };
   readonly #onFocusIn = (event: Event): void => {
-    this.#lastFocusInTarget = event.target;
+    this.#lastFocusInTarget = resolveEventTarget(event);
     if (this.#suppressDepth > 0) {
       return;
     }
@@ -215,7 +220,7 @@ export class DismissibleLayerStack {
     if (this.#suppressDepth > 0) {
       return;
     }
-    const frame = this.#document.activeElement;
+    const frame = resolveActiveElement(this.#document);
     if (!(frame instanceof HTMLIFrameElement) || frame === this.#lastFocusInTarget) {
       return;
     }

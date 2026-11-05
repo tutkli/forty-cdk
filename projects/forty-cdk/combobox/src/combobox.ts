@@ -32,6 +32,8 @@ import {
   type VetoableNativeEvent,
   type WritingDirection,
   type Unset,
+  leavesControl,
+  dismissMarksTouched,
 } from 'forty-cdk/core';
 import { warnIfOpenWithoutContent } from 'forty-cdk/core-overlay';
 import {
@@ -267,7 +269,9 @@ export class ForCombobox<T = string>
 
   /**
    * When true (default), focus returns to the `[forComboboxTrigger]` on close
-   * in the picker anatomy. In the editable anatomy focus normally never leaves
+   * in the picker anatomy. A close from a press or focus outside the popup, or
+   * from a Tab out, leaves focus where the user moved it and emits no
+   * `(autoFocusOnClose)`. In the editable anatomy focus normally never leaves
    * the input, so this only gates the return to the input after a close that
    * unmounts the popup while focus is inside it, such as a `[forComboboxAction]`
    * whose `(activate)` closes it.
@@ -1057,42 +1061,27 @@ export class ForCombobox<T = string>
    * interaction. The shared machine's own open guard keeps a stale event from
    * clobbering the previous close reason.
    *
-   * The touch mark sits **ahead** of that guard rather than on the
-   * machine's `onDismiss` hook, which is where `[forSelect]` / `[forTimePicker]`
-   * put theirs: an outside interaction is this control's blur, so it marks the
-   * combobox touched exactly like {@link onFocusOut} does — whether or not the
-   * listbox was still open when the shell's event arrived. Wiring the hook
-   * instead would additionally mark touched on Escape, which leaves focus in the
-   * input and therefore blurs nothing.
+   * The touch mark sits **ahead** of that guard: an outside interaction is
+   * this control's blur, so it marks the combobox touched exactly like
+   * {@link onFocusOut} does, whether or not the listbox was still open when the
+   * shell's event arrived.
    */
   private requestClose(reason: 'pointerDownOutside' | 'focusOutside'): void {
-    this.markTouched();
+    if (dismissMarksTouched(reason)) {
+      this.markTouched();
+    }
     this.#overlay.requestClose(reason);
   }
 
   private onFocusOut(event: FocusEvent): void {
-    const next = event.relatedTarget as HTMLElement | null;
-    const inputEl = this.#inputSlot.element();
-    const content = this.content();
-    if (next) {
-      if (inputEl && inputEl.contains(next)) {
-        return;
-      }
-      if (content && content.contains(next)) {
-        return;
-      }
-      // Focus moving to a chip (multi mode) is "inside" — chips are an
-      // extension of the input area, not an outside boundary.
-      const chips = this.#chips.items();
-      for (const chip of chips) {
-        if (chip.host.contains(next)) {
-          return;
-        }
-      }
-      if (this.#fieldButtons().some((button) => button.contains(next))) {
-        return;
-      }
+    const boundaries = [
+      this.#inputSlot.element(),
+      this.content(),
+      ...this.#chips.items().map((chip) => chip.host),
+      ...this.#fieldButtons(),
+    ];
+    if (leavesControl(event, boundaries)) {
+      this.markTouched();
     }
-    this.markTouched();
   }
 }

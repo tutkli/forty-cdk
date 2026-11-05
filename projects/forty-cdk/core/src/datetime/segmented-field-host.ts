@@ -62,6 +62,11 @@ export interface SegmentedFieldHost<D> {
   commitFieldValue(value: D | null): void;
   /** Marks the picker touched. */
   markTouched(): void;
+  /**
+   * The elements that make up the picker as one control: its root and its open
+   * surface. A focus move between them does not mark the picker touched.
+   */
+  touchBoundaries(): readonly (Node | null)[];
 }
 
 /**

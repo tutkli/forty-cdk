@@ -62,7 +62,9 @@
  *         support `aria-readonly` (`roleSupportsAriaReadonly: false`)
  *       - `required`  → `aria-required="true"`; `data-required=""` alone when
  *         the control's role does not support `aria-required`
- *         (`roleSupportsAriaRequired: false`)
+ *         (`roleSupportsAriaRequired: false`); the native `required` attribute
+ *         and no `aria-required` on a native `<input>` / `<textarea>`
+ *         (`nativeRequired: true`), mirroring `disabled`
  *       - `invalid`   → `aria-invalid="true"` + `data-invalid=""`
  *       - `pending`   → `aria-busy="true"` + `data-pending=""`
  *       - `touched`   → `data-touched=""` (no ARIA mirror)
@@ -133,6 +135,7 @@ export interface FormControlContractOptions {
    * `data-required=""` and the *absence* of `aria-required`. Defaults to `true`.
    */
   roleSupportsAriaRequired?: boolean;
+  nativeRequired?: boolean;
   label?: string;
 }
 
@@ -166,6 +169,7 @@ export function assertFormControlContract(
   const customRoleStaysFocusable = options.customRoleStaysFocusable ?? false;
   const roleSupportsAriaReadonly = options.roleSupportsAriaReadonly ?? true;
   const roleSupportsAriaRequired = options.roleSupportsAriaRequired ?? true;
+  const nativeRequired = options.nativeRequired ?? false;
   const stateOf = (ctx: FormControlMountResult): HTMLElement => ctx.stateHost ?? ctx.control;
 
   const title = options.label
@@ -256,7 +260,20 @@ export function assertFormControlContract(
       });
     }
 
-    if (has('required')) {
+    if (has('required') && nativeRequired) {
+      it('reflects required → native required, never aria-required', async () => {
+        const ctx = await mount();
+        ctx.setFlag('required', true);
+        await ctx.flush();
+        expect(ctx.control.hasAttribute('required')).toBe(true);
+        expect(ctx.control.hasAttribute('aria-required')).toBe(false);
+
+        ctx.setFlag('required', false);
+        await ctx.flush();
+        expect(ctx.control.hasAttribute('required')).toBe(false);
+        expect(ctx.control.hasAttribute('aria-required')).toBe(false);
+      });
+    } else if (has('required')) {
       const requiredTitle = roleSupportsAriaRequired
         ? 'reflects required → aria-required'
         : 'reflects required → data-required only, never aria-required on an unsupporting role';

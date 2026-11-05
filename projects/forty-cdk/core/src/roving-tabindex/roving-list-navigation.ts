@@ -62,6 +62,11 @@ export interface SelectionTabStopOptions {
   hasSelected: boolean;
   /** Whether this item is the first enabled entry-point fallback. */
   isFirstEnabled: boolean;
+  /**
+   * Whether every item of the group yields the Tab stop because a disabled item
+   * holds DOM focus, so `Tab` leaves the group from it. Default `false`.
+   */
+  yields?: boolean;
 }
 
 /** Options for {@link rovingTabStop}. */
@@ -78,7 +83,7 @@ export interface RovingTabStopOptions extends SelectionTabStopOptions {
  * than by which item the user last focused. Returns `0` (Tab entry point) or
  * `-1` (arrow-reachable only):
  *
- * - disabled → `-1` (never the Tab entry point, but still arrow-reachable).
+ * - disabled, or the group yields to a focused disabled item → `-1`.
  * - selected / current → `0`.
  * - another item owns the current selection → `-1`.
  * - otherwise the first enabled item → `0`, else `-1`.
@@ -91,8 +96,8 @@ export interface RovingTabStopOptions extends SelectionTabStopOptions {
  * roving pointer to consult — see {@link rovingTabStop} for the groups that do.
  */
 export function selectionTabStop(options: SelectionTabStopOptions): 0 | -1 {
-  const { disabled, selected, hasSelected, isFirstEnabled } = options;
-  if (disabled) {
+  const { disabled, selected, hasSelected, isFirstEnabled, yields } = options;
+  if (disabled || yields === true) {
     return -1;
   }
   if (selected) {
@@ -158,4 +163,33 @@ export function navigateFromRovingItem(
   event.preventDefault();
   options.navigate(action);
   return true;
+}
+
+/** Options for {@link handleDisabledRovingItemKey}. */
+export interface DisabledRovingItemKeyOptions extends RovingItemNavigationOptions {
+  /**
+   * Moves focus for a key no navigation action claimed, by typeahead or by an
+   * item-specific move. Returns whether the key was handled.
+   */
+  typeahead: (event: KeyboardEvent) => boolean;
+}
+
+/**
+ * Handles a key on an item that is disabled while it holds focus: the
+ * list-navigation keys of {@link navigateFromRovingItem}, then `typeahead`.
+ * Activation and commit keys are left unconsumed, so the caller handles
+ * nothing else from a disabled item. Gated on the group only. Returns whether
+ * the key was handled.
+ */
+export function handleDisabledRovingItemKey(
+  event: KeyboardEvent,
+  options: DisabledRovingItemKeyOptions,
+): boolean {
+  if (navigateFromRovingItem(event, options)) {
+    return true;
+  }
+  if (options.groupDisabled) {
+    return false;
+  }
+  return options.typeahead(event);
 }

@@ -8,6 +8,7 @@ import {
   isImeComposing,
   navigateFromRovingItem,
   type Unset,
+  isHistoryChord,
 } from 'forty-cdk/core';
 import {
   injectNavigationMenuContext,
@@ -158,7 +159,7 @@ export class ForNavigationMenuTrigger {
     // ArrowDown (horizontal) / the inline-end arrow (vertical) opens the disclosure.
     const openKey =
       orientation === 'horizontal' ? 'ArrowDown' : dir === 'rtl' ? 'ArrowLeft' : 'ArrowRight';
-    if (event.key === openKey) {
+    if (event.key === openKey && !isHistoryChord(event)) {
       event.preventDefault();
       this.menu.scheduleOpen(this.value(), 'keyboard');
     }

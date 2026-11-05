@@ -197,6 +197,7 @@ export {
   stepFocusableCycle,
 } from './focus-trap/focusable-candidate';
 export { injectHasFocusableContent } from './focus-trap/focusable-content';
+export { ReturnFocusResolver } from './focus-trap/return-focus';
 export { FormUiControlBase } from './form-ui-control/form-ui-control-base';
 export { injectHiddenInput } from './form-ui-control/hidden-input';
 export {
@@ -204,9 +205,15 @@ export {
   injectNativeFormResetToInitial,
 } from './form-ui-control/native-form-reset';
 export { TextValueControlBase } from './form-ui-control/text-value-control-base';
+export {
+  dismissMarksTouched,
+  leavesControl,
+  type TouchDismissal,
+} from './form-ui-control/touch-timing';
 export { mirrorExternalValue, mirrorValue } from './form-ui-control/value-mirror';
 export { resolveConfigClass } from './host-attributes/config-class';
 export { reflectDisabled } from './host-attributes/disabled-reflection';
+export { reflectRequired } from './host-attributes/required-reflection';
 export { hostAriaLabel, hostDescribedBy, hostLabelledBy } from './host-attributes/host-aria';
 export { adoptHostId, hostId, resolveHostId, staticHostId } from './host-attributes/host-id';
 export { hostStaticAttribute } from './host-attributes/host-static-attribute';
@@ -214,6 +221,7 @@ export { hostButtonType } from './host-attributes/host-type';
 export { MODAL_EXEMPT_ATTRIBUTE, MODAL_PEER_ATTRIBUTE } from './host-attributes/modal-attributes';
 export { IdGenerator } from './id-generator/id-generator';
 export { isImeComposing } from './keyboard-navigation/ime-composition';
+export { isHistoryChord, isShortcutChord } from './keyboard-navigation/modifier-chord';
 export {
   type GridNavigationAction,
   type ListNavigationAction,
@@ -258,14 +266,21 @@ export {
   type HostRovingContext,
   type HostRovingItemHandle,
 } from './roving-tabindex/host-roving-context';
-export { injectRovingFocusRestore } from './roving-tabindex/roving-focus-restore';
 export {
+  injectRovingFocusRestore,
+  type RovingFocusRestoreOptions,
+  type RovingFocusTarget,
+} from './roving-tabindex/roving-focus-restore';
+export {
+  type DisabledRovingItemKeyOptions,
+  handleDisabledRovingItemKey,
   navigateFromRovingItem,
   type RovingItemNavigationOptions,
   rovingListTarget,
   rovingTabStop,
   selectionTabStop,
 } from './roving-tabindex/roving-list-navigation';
+export { RovingFocusYield } from './roving-tabindex/roving-focus-yield';
 export { RovingTabindex } from './roving-tabindex/roving-tabindex';
 export { RangeSelectionEngine } from './selection/range-selection-engine';
 export {

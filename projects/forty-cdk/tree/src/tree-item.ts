@@ -15,7 +15,10 @@ import {
   registerHandle,
   hostId,
   injectPointerMove,
+  type DisabledRovingItemKeyOptions,
+  handleDisabledRovingItemKey,
   navigateFromRovingItem,
+  rovingTabStop,
   preventPointerFocus,
   resolveListNavigation,
   resolveTreeExpandCollapse,
@@ -209,16 +212,17 @@ export class ForTreeItem<T = string> implements ForTreeItemContext<T> {
   );
 
   private readonly tabindex = computed<-1 | 0>(() => {
-    if (this.effectiveDisabled()) {
-      return -1;
-    }
     if (this.#virtualized()) {
       return -1;
     }
-    if (this.#tree.roving.hasActive()) {
-      return this.#tree.roving.tabindexFor(this.#host.nativeElement);
-    }
-    return this.#tree.isFirstFocusableItem(this.#host.nativeElement) ? 0 : -1;
+    return rovingTabStop({
+      roving: this.#tree.roving,
+      host: this.#host.nativeElement,
+      disabled: this.effectiveDisabled(),
+      selected: false,
+      hasSelected: false,
+      isFirstEnabled: this.#tree.isFirstFocusableItem(this.#host.nativeElement),
+    });
   });
 
   /**
@@ -331,17 +335,12 @@ export class ForTreeItem<T = string> implements ForTreeItemContext<T> {
     }
     const tree = this.#tree;
     if (this.effectiveDisabled()) {
-      if (tree.disabled()) {
-        return;
-      }
-      if (event.key === '*') {
+      if (event.key === '*' && !tree.disabled()) {
         event.preventDefault();
         tree.expandSiblings(host);
         return;
       }
-      if (!this.#navigate(event) && !this.#expandOrCollapse(event)) {
-        tree.handleTypeahead(event);
-      }
+      handleDisabledRovingItemKey(event, this.#keyOptions());
       return;
     }
 
@@ -388,7 +387,7 @@ export class ForTreeItem<T = string> implements ForTreeItemContext<T> {
       return;
     }
 
-    if (this.#navigate(event) || this.#expandOrCollapse(event)) {
+    if (navigateFromRovingItem(event, this.#keyOptions()) || this.#expandOrCollapse(event)) {
       return;
     }
 
@@ -413,12 +412,13 @@ export class ForTreeItem<T = string> implements ForTreeItemContext<T> {
     return true;
   }
 
-  #navigate(event: KeyboardEvent): boolean {
-    return navigateFromRovingItem(event, {
+  #keyOptions(): DisabledRovingItemKeyOptions {
+    return {
       groupDisabled: this.#tree.disabled(),
       orientation: this.#tree.orientation(),
       dir: this.#tree.dir(),
       navigate: (action) => this.#tree.navigate(this.#host.nativeElement, action),
-    });
+      typeahead: (e) => this.#expandOrCollapse(e) || this.#tree.handleTypeahead(e),
+    };
   }
 }

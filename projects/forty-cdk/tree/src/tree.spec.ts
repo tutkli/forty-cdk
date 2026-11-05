@@ -622,7 +622,7 @@ describe('ForTree', () => {
         };
       },
     },
-    { forwardArrow: 'ArrowDown' },
+    { forwardArrow: 'ArrowDown', typeaheadFromDisabled: { key: 'r', target: 2 } },
   );
 
   describe('expansion (aria-expanded + data-state on parents only)', () => {
@@ -1149,7 +1149,7 @@ describe('ForTree', () => {
       expect(tabbable[0]).toBe(itemOf(el, 'documents'));
     });
 
-    it('disabling the active node hands the tab stop to the node before it', async () => {
+    it('disabling the active node hands the tab stop to the node before it once focus leaves it', async () => {
       const { el, fixture } = await setup();
 
       itemOf(el, 'readme').focus();
@@ -1158,11 +1158,16 @@ describe('ForTree', () => {
 
       fixture.componentInstance.disabledIds.set(['readme']);
       await flush(fixture);
+      const stops = (): HTMLElement[] =>
+        Array.from(el.querySelectorAll<HTMLElement>('[role="treeitem"]')).filter(
+          (node) => node.getAttribute('tabindex') === '0',
+        );
+      expect(stops()).toEqual([]);
 
+      itemOf(el, 'readme').blur();
+      await flush(fixture);
       expect(itemOf(el, 'readme').getAttribute('tabindex')).toBe('-1');
-      const tabbable = Array.from(el.querySelectorAll<HTMLElement>('[role="treeitem"]')).filter(
-        (node) => node.getAttribute('tabindex') === '0',
-      );
+      const tabbable = stops();
       expect(tabbable).toHaveLength(1);
       expect(tabbable[0]).toBe(itemOf(el, 'downloads'));
     });
@@ -3055,6 +3060,108 @@ describe('ForTree', () => {
       expect(tree.getAttribute('aria-activedescendant')).toBe(lastItem.id);
     });
 
+    describe('parent and child moves match the roving tree (issue #2713)', () => {
+      const activeTestId = (el: HTMLElement): string | null => {
+        const id = treeEl(el).getAttribute('aria-activedescendant');
+        return id
+          ? (el.querySelector<HTMLElement>(`[id="${id}"]`)?.getAttribute('data-test-id') ?? null)
+          : null;
+      };
+
+      it('ArrowLeft after End reaches the parent across an unrendered gap', async () => {
+        const { el, fixture, instance } = await setupVirtual((i) => {
+          i.open.set(['root-0', 'root-1', 'root-2']);
+          i.windowSize.set(2);
+        });
+        const tree = treeEl(el);
+        tree.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
+        await flush(fixture);
+        pressKey(tree, 'End');
+        await flush(fixture);
+        await flush(fixture);
+        expect(activeTestId(el)).toBe('child-2-1');
+
+        pressKey(tree, 'ArrowLeft');
+        await flush(fixture);
+        await flush(fixture);
+        await flush(fixture);
+
+        expect(activeTestId(el)).toBe('root-2');
+        expect(instance.scrolledToIndex()).toBe(6);
+      });
+
+      it('ArrowLeft walks back across known rows without scrolling when the parent was rendered', async () => {
+        const { el, fixture, instance } = await setupVirtual((i) => {
+          i.open.set(['root-0']);
+        });
+        const tree = treeEl(el);
+        tree.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
+        await flush(fixture);
+        pressKey(tree, 'ArrowDown');
+        await flush(fixture);
+        pressKey(tree, 'ArrowDown');
+        await flush(fixture);
+        expect(activeTestId(el)).toBe('child-0-1');
+
+        pressKey(tree, 'ArrowLeft');
+        await flush(fixture);
+
+        expect(activeTestId(el)).toBe('root-0');
+        expect(instance.scrolledToIndex()).toBeNull();
+      });
+
+      it('ArrowRight into an open parent skips a disabled first child', async () => {
+        const { el, fixture } = await setupVirtual((i) => {
+          i.open.set(['root-0']);
+          i.disabledValues.set(['child-0-0']);
+        });
+        const tree = treeEl(el);
+        tree.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
+        await flush(fixture);
+        expect(activeTestId(el)).toBe('root-0');
+
+        pressKey(tree, 'ArrowRight');
+        await flush(fixture);
+
+        expect(activeTestId(el)).toBe('child-0-1');
+      });
+
+      it('ArrowRight into an open parent whose children are all disabled stays put', async () => {
+        const { el, fixture } = await setupVirtual((i) => {
+          i.open.set(['root-0']);
+          i.disabledValues.set(['child-0-0', 'child-0-1']);
+        });
+        const tree = treeEl(el);
+        tree.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
+        await flush(fixture);
+
+        pressKey(tree, 'ArrowRight');
+        await flush(fixture);
+
+        expect(activeTestId(el)).toBe('root-0');
+      });
+
+      it('ArrowRight resolves an unrendered first child once it mounts, skipping it when disabled', async () => {
+        const { el, fixture, instance } = await setupVirtual((i) => {
+          i.open.set(['root-0']);
+          i.disabledValues.set(['child-0-0']);
+          i.windowSize.set(1);
+        });
+        const tree = treeEl(el);
+        tree.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
+        await flush(fixture);
+        expect(el.querySelector('[data-test-id="child-0-0"]')).toBeNull();
+
+        pressKey(tree, 'ArrowRight');
+        await flush(fixture);
+        await flush(fixture);
+        await flush(fixture);
+
+        expect(activeTestId(el)).toBe('child-0-1');
+        expect(instance.scrolledToIndex()).toBe(2);
+      });
+    });
+
     describe('typeahead across the window (issue #1970)', () => {
       async function scrolledToTheEnd(configure?: (i: VirtualHost) => void) {
         const result = await setupVirtual((i) => {
@@ -3586,7 +3693,7 @@ describe('ForTree', () => {
         it(`ArrowDown starts from the edge when ${trigger.name} and another node took the retained position`, async () => {
           const { el, fixture, instance, tree } = await strandOnB();
 
-          trigger.refresh(instance, ['d', 'c', 'b', 'a']);
+          trigger.refresh(instance, ['d', 'c', 'x', 'a']);
           await flush(fixture);
           instance.windowStart.set(0);
           await flush(fixture);
@@ -3603,7 +3710,7 @@ describe('ForTree', () => {
         it(`Enter selects nothing when ${trigger.name} and another node took the retained position`, async () => {
           const { fixture, instance, tree } = await strandOnB();
 
-          trigger.refresh(instance, ['d', 'c', 'b', 'a']);
+          trigger.refresh(instance, ['d', 'c', 'x', 'a']);
           await flush(fixture);
           instance.windowStart.set(0);
           await flush(fixture);
@@ -3612,6 +3719,37 @@ describe('ForTree', () => {
           await flush(fixture);
           expect(instance.picked()).toEqual([]);
           expect(instance.scrolledToIndex()).toBeNull();
+        });
+
+        it(`ArrowDown resumes from the retained node at its new position when ${trigger.name} moved it`, async () => {
+          const { el, fixture, instance, tree } = await strandOnB();
+
+          trigger.refresh(instance, ['d', 'c', 'b', 'a']);
+          await flush(fixture);
+          instance.windowStart.set(0);
+          await flush(fixture);
+
+          await pressKey(tree, 'ArrowDown');
+          await flush(fixture);
+          await flush(fixture);
+          expect(instance.scrolledToIndex()).toBe(3);
+          expect(tree.getAttribute('aria-activedescendant')).toBe(
+            el.querySelector<HTMLElement>('[data-test-id="a"]')!.id,
+          );
+        });
+
+        it(`Enter selects the retained node at its new position when ${trigger.name} moved it`, async () => {
+          const { fixture, instance, tree } = await strandOnB();
+
+          trigger.refresh(instance, ['d', 'c', 'b', 'a']);
+          await flush(fixture);
+          instance.windowStart.set(0);
+          await flush(fixture);
+
+          await pressKey(tree, 'Enter');
+          await flush(fixture);
+          expect(instance.picked()).toEqual(['b']);
+          expect(instance.scrolledToIndex()).toBe(2);
         });
 
         it(`ArrowDown resumes from the retained position when ${trigger.name} and its node is unchanged`, async () => {

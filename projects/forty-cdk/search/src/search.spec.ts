@@ -118,10 +118,13 @@ describe('ForSearch', () => {
     });
   });
 
-  assertFormControlContract(() => {
-    const r = renderHost(SearchHost);
-    return contractResult(r, searchOf(r.el));
-  });
+  assertFormControlContract(
+    () => {
+      const r = renderHost(SearchHost);
+      return contractResult(r, searchOf(r.el));
+    },
+    { nativeRequired: true },
+  );
 
   describe('value binding', () => {
     it('updates the model from the native input event and toggles data-empty', async () => {
@@ -789,10 +792,11 @@ describe('ForSearch', () => {
       expect(search.value).toBe('dogs');
     });
 
-    it('flows schema-driven required into aria-required', async () => {
+    it('flows schema-driven required into the native required attribute', async () => {
       const { el, flush } = renderHost(SignalFormsHost);
       await flush();
-      expect(byId(el, 'search').getAttribute('aria-required')).toBe('true');
+      expect(byId(el, 'search').required).toBe(true);
+      expect(byId(el, 'search').hasAttribute('aria-required')).toBe(false);
     });
   });
 

@@ -55,7 +55,11 @@ export abstract class FormUiControlBase {
   /** When true, interaction is ignored but the control stays focusable; `aria-readonly="true"`. */
   readonly readonly = input(false, { transform: booleanAttribute });
 
-  /** Reflected as `aria-required="true"` when truthy. */
+  /**
+   * Marks the control required. A control hosted on a native `<input>` or
+   * `<textarea>` reflects it as the native `required` attribute, a custom-role
+   * control as `aria-required="true"` where its role supports it.
+   */
   readonly required = input(false, { transform: booleanAttribute });
 
   /** Reflected as `aria-invalid="true"` and `data-invalid` when truthy. */
@@ -74,16 +78,19 @@ export abstract class FormUiControlBase {
   readonly errors = input<readonly FieldValidationError[]>([]);
 
   /**
-   * Set to true on blur (via {@link markTouched}). Two-way bindable for
-   * standalone consumers; under `[formField]` the directive pushes the field's
+   * Set to true on the first touch-producing interaction (see {@link touch}).
+   * Two-way bindable for standalone consumers; under `[formField]` the directive pushes the field's
    * touched state down through this input, so the form stays the source of
    * truth (e.g. a form reset clears it).
    */
   readonly touched = model<boolean>(false);
 
   /**
-   * Emitted on every touch-producing interaction (blur, dismiss,
-   * selection-commit) — including repeats once the control is already touched.
+   * Emitted on every touch-producing interaction — including repeats once the
+   * control is already touched. Those are: focus leaving the control (a move
+   * between its own parts, such as a picker's field and trigger, is not a
+   * leave), an activation or selection commit, and a dismissal by an outside
+   * press or outside focus. Escape is not one: it leaves focus in the control.
    * The {@link touched} model itself only changes on the first, and Signal
    * Forms' `markAsTouched()` is idempotent, so re-emission is safe. No control
    * once-guards this. `[formField]` listens to this output to mark the field

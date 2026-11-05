@@ -69,6 +69,8 @@ export interface ForCarouselContext {
   isCurrent(index: number): boolean;
   isFirstEnabledIndicator(el: HTMLElement): boolean;
   hasCurrentIndicator(): boolean;
+  /** True while a disabled indicator holds DOM focus, when no indicator holds the Tab stop. */
+  readonly yieldsTabStop: Signal<boolean>;
 }
 
 /**

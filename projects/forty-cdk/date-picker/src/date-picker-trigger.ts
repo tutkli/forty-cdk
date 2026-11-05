@@ -1,6 +1,12 @@
 import { computed, Directive, ElementRef, inject, input } from '@angular/core';
 
-import { hostButtonType, reflectDisabled, registerHandle, staticHostId } from 'forty-cdk/core';
+import {
+  hostButtonType,
+  reflectDisabled,
+  registerHandle,
+  staticHostId,
+  leavesControl,
+} from 'forty-cdk/core';
 import {
   DATE_PICKER_TRIGGERS,
   type ForDatePickerContext,
@@ -128,18 +134,8 @@ export class ForDatePickerTrigger {
   }
 
   private onFocusOut(event: FocusEvent): void {
-    const next = event.relatedTarget as HTMLElement | null;
-    if (next) {
-      // Focus moving into the surface we just opened — not a leave.
-      const content = this.ctx().content();
-      if (content && content.contains(next)) {
-        return;
-      }
-      // Focus staying within the trigger's own subtree — not a leave.
-      if (this.#host.nativeElement.contains(next)) {
-        return;
-      }
+    if (leavesControl(event, [this.#host.nativeElement, ...this.ctx().touchBoundaries()])) {
+      this.ctx().markTouched();
     }
-    this.ctx().markTouched();
   }
 }

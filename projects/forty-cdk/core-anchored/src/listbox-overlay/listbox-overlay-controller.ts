@@ -14,6 +14,8 @@ import {
   resolveListTypeahead,
   type SingleSlotConfig,
   type VetoableNativeEvent,
+  dismissMarksTouched,
+  type TouchDismissal,
 } from 'forty-cdk/core';
 import {
   anchorSlot,
@@ -77,7 +79,7 @@ export interface ListboxOverlayControllerDeps<
   readonly escapeReason: CloseReason;
   /** Close reason set when {@link ListboxOverlayController.toggle} closes the overlay (both primitives use `'programmatic'`). */
   readonly programmaticReason: CloseReason;
-  /** Mark the control touched (mirrors the trigger blur) on Escape / outside dismissal. */
+  /** Mark the control touched on a dismissal that {@link dismissMarksTouched} counts. */
   readonly markTouched: () => void;
   /**
    * Per-primitive close side effect, run after the open model flips to `false`
@@ -157,7 +159,7 @@ export interface ListboxOverlayContext<H extends ListboxOverlayOptionHandle, Foc
   /** Modal-path Escape forwarder: emit only; the modal shell owns the close. */
   forwardEscapeKeyDown(veto: VetoableNativeEvent<KeyboardEvent>): void;
   /** Implicit close requested by the shell after an un-vetoed outside interaction. */
-  requestClose(reason: CloseReason): void;
+  requestClose(reason: CloseReason & Exclude<TouchDismissal, 'escape'>): void;
   emitAutoFocusOnOpen(): boolean;
   emitAutoFocusOnClose(): boolean;
 }
@@ -272,7 +274,11 @@ export class ListboxOverlayController<
       escapeReason: deps.escapeReason,
       programmaticReason: deps.programmaticReason,
       onClose: deps.onClose,
-      onDismiss: deps.markTouched,
+      onDismiss: (dismissal) => {
+        if (dismissMarksTouched(dismissal)) {
+          deps.markTouched();
+        }
+      },
     });
     this.#triggerSlot = triggerSlot;
     this.#anchorSlot = anchorSlot(deps.anchorSlot);
@@ -429,7 +435,7 @@ export class ListboxOverlayController<
    * already-closed overlay and clobbering its `lastCloseReason` (e.g. a `'tab'`
    * close must survive so the content skips its return-focus).
    */
-  requestClose(reason: CloseReason): void {
+  requestClose(reason: CloseReason & Exclude<TouchDismissal, 'escape'>): void {
     this.#controller.requestClose(reason);
   }
 

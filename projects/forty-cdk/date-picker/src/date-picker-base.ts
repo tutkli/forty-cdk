@@ -2,6 +2,7 @@ import {
   booleanAttribute,
   contentChild,
   Directive,
+  ElementRef,
   inject,
   input,
   model,
@@ -25,6 +26,7 @@ import {
   type VetoableEvent,
   type VetoableNativeEvent,
   type WritingDirection,
+  dismissMarksTouched,
 } from 'forty-cdk/core';
 import { type DateAdapter } from 'forty-cdk/date-adapter';
 import { warnIfOpenWithoutContent } from 'forty-cdk/core-overlay';
@@ -152,7 +154,11 @@ export abstract class DatePickerBase<D>
   /** When true (default), Escape, pointer-down outside, and focus outside close the surface. */
   readonly dismissible = input(true, { transform: booleanAttribute });
 
-  /** When true (default), focus returns to the trigger on close. */
+  /**
+   * When true (default), focus returns to the trigger after a close from Escape, from a pick that
+   * closes the surface or from setting `open` to `false`. A close from a press or focus outside the
+   * surface, or from a Tab out, leaves focus where the user moved it.
+   */
   readonly returnFocus = input(true, { transform: booleanAttribute });
 
   /**
@@ -255,6 +261,8 @@ export abstract class DatePickerBase<D>
     this.trigger,
   );
 
+  readonly #host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
+
   readonly #contentEl = signal<HTMLElement | null>(null);
   readonly content = this.#contentEl.asReadonly();
 
@@ -290,6 +298,10 @@ export abstract class DatePickerBase<D>
 
   private resolveTriggerId(staticId: string | null): string {
     return this.#triggerSlot.resolveId(staticId);
+  }
+
+  private touchBoundaries(): readonly (Node | null)[] {
+    return [this.#host, this.content()];
   }
 
   registerAnchor(el: HTMLElement): void {
@@ -339,7 +351,6 @@ export abstract class DatePickerBase<D>
   }
 
   close(): void {
-    this.markTouched();
     this.open.set(false);
   }
 
@@ -369,7 +380,7 @@ export abstract class DatePickerBase<D>
     this.escapeKeyDown.emit(veto);
     if (!veto.defaultPrevented && this.dismissible()) {
       event.stopPropagation();
-      this.close();
+      this.requestClose('escape');
     }
   }
 
@@ -393,11 +404,14 @@ export abstract class DatePickerBase<D>
   }
 
   /**
-   * Implicit close requested by either shell after an un-vetoed outside
-   * interaction (or, on the modal path, an un-vetoed Escape). Marks the control
-   * touched and closes.
+   * Close requested by an un-vetoed dismissal: Escape, or an outside
+   * interaction reported by either shell. Marks the control touched when
+   * {@link dismissMarksTouched} counts the dismissal, then closes.
    */
-  requestClose(): void {
+  requestClose(dismissal: 'escape' | 'pointerDownOutside' | 'focusOutside'): void {
+    if (dismissMarksTouched(dismissal)) {
+      this.markTouched();
+    }
     this.close();
   }
 

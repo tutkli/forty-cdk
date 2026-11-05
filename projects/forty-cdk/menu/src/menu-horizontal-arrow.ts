@@ -1,9 +1,11 @@
+import { isHistoryChord } from 'forty-cdk/core';
 import { type ForMenuContext } from 'forty-cdk/core-anchored';
 
 /**
  * Handle ArrowLeft / ArrowRight on a menu item (regular, checkbox, radio,
  * or submenu trigger when its open-key is the orthogonal arrow). Returns
  * `true` when the event was consumed (caller should stop further handling).
+ * An arrow held with Alt or Meta is left to the browser and never consumed.
  *
  * Routing precedence:
  * - Inside a submenu (`ctx.parentMenu != null`): the close-submenu key
@@ -22,7 +24,7 @@ import { type ForMenuContext } from 'forty-cdk/core-anchored';
  * - Otherwise: not handled.
  */
 export function handleMenuHorizontalArrow(event: KeyboardEvent, ctx: ForMenuContext): boolean {
-  if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') {
+  if ((event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') || isHistoryChord(event)) {
     return false;
   }
   const isRtl = ctx.dir() === 'rtl';

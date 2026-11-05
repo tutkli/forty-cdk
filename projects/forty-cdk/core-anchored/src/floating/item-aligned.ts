@@ -233,7 +233,11 @@ function itemAligned(
  * {@link injectItemAlignedPositioner}.
  */
 export function itemAlignedPositioner(config: ItemAlignedConfig): OverlayShellPositioner {
-  return { reference: config.reference, attach: () => injectItemAlignedPositioner(config) };
+  return {
+    reference: config.reference,
+    open: config.open,
+    attach: () => injectItemAlignedPositioner(config),
+  };
 }
 
 /**

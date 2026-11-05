@@ -107,7 +107,7 @@ export interface ForDatePickerContext {
 
   /** Toggle from a trigger click. Honours `disabled`. */
   toggle(): void;
-  /** Close the surface (Escape, outside-pointer, post-selection). Flips `touched`. */
+  /** Close the surface without marking the control touched. */
   close(): void;
   /** Flip the `touched` model. Called by the trigger on blur-to-outside. */
   markTouched(): void;
@@ -133,8 +133,11 @@ export interface ForDatePickerContext {
   emitPointerDownOutside(veto: VetoableNativeEvent<PointerEvent>): void;
   emitFocusOutside(veto: VetoableNativeEvent<FocusEvent>): void;
   emitInteractOutside(veto: VetoableNativeEvent<PointerEvent | FocusEvent>): void;
-  /** Implicit close requested by either shell after an un-vetoed dismissal. */
-  requestClose(): void;
+  /**
+   * Close requested by an un-vetoed dismissal. Marks the control touched for an
+   * outside interaction, not for Escape.
+   */
+  requestClose(dismissal: 'escape' | 'pointerDownOutside' | 'focusOutside'): void;
 
   /**
    * Modal-path Escape forwarder — the modal-shell builds the veto and owns the
@@ -164,6 +167,11 @@ export interface DatePickerContext extends ForDatePickerContext {
   /** How the picker is composed. */
   readonly anatomy: Signal<ForDatePickerAnatomy>;
   resolveTriggerId(staticId: string | null): string;
+  /**
+   * The elements that make up the picker as one control: its root and its open
+   * surface. A focus move between them does not mark the picker touched.
+   */
+  touchBoundaries(): readonly (Node | null)[];
 }
 
 /**

@@ -127,6 +127,7 @@ export class ForDrawerSurface {
       this.#outlet.registerSurface(this.id(), {
         host: this.#host.nativeElement,
         backdrop: () => this.#drawer.backdropElement(),
+        release: (target) => this.#drawer.releaseModalShell(target),
       });
     });
   }

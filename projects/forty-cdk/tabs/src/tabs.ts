@@ -10,6 +10,7 @@ import {
   RovingTabindex,
   injectTextDirection,
   type Unset,
+  injectRovingFocusRestore,
 } from 'forty-cdk/core';
 import {
   FOR_TABS_CONTEXT,
@@ -87,12 +88,16 @@ export class ForTabs implements ForTabsContext {
    */
   readonly loop = input(this.#defaults.loop, { transform: booleanAttribute });
 
-  readonly roving = new RovingTabindex(() => this.#triggers.items());
+  readonly roving = new RovingTabindex(() => this.#triggers.items(), { fallback: 'nearest' });
 
   readonly #triggers = new Collection<ForTabsTriggerHandle>();
   readonly #contents = new Collection<ForTabsContentHandle>();
 
   readonly #firstEnabledTriggerHost = computed(() => firstEnabledHost(this.#triggers.items()));
+
+  constructor() {
+    injectRovingFocusRestore(this.roving);
+  }
 
   isSelected(v: string | Unset): boolean {
     return this.value() === v;

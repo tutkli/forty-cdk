@@ -103,7 +103,7 @@ export class ForDatePickerContent {
         },
         dismiss: {
           dismissible: ctx.dismissible,
-          requestClose: () => ctx.requestClose(),
+          requestClose: (reason) => ctx.requestClose(reason),
           emitEscapeKeyDown: (veto) => ctx.forwardEscapeKeyDown(veto),
           emitPointerDownOutside: (veto) => ctx.emitPointerDownOutside(veto),
           emitFocusOutside: (veto) => ctx.emitFocusOutside(veto),
@@ -130,7 +130,7 @@ export class ForDatePickerContent {
       }),
       dismiss: {
         dismissible: ctx.dismissible,
-        requestClose: () => ctx.requestClose(),
+        requestClose: (reason) => ctx.requestClose(reason),
         emitEscapeKeyDown: (event) => ctx.emitEscapeKeyDown(event),
         emitPointerDownOutside: (veto) => ctx.emitPointerDownOutside(veto),
         emitFocusOutside: (veto) => ctx.emitFocusOutside(veto),
@@ -155,7 +155,7 @@ export class ForDatePickerContent {
       },
       tabOut: {
         target: () => ctx.trigger(),
-        close: () => ctx.requestClose(),
+        close: () => ctx.requestClose('focusOutside'),
       },
     });
   }

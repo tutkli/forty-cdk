@@ -20,9 +20,9 @@ const INDEPENDENT_SURFACE_SELECTOR = `[${MODAL_EXEMPT_ATTRIBUTE}], [${MODAL_PEER
 /**
  * Returns the first focusable descendant of `container`, or `null` if none exists.
  *
- * Excludes `[hidden]`, `[inert]` subtrees and elements hidden via CSS. A candidate carrying
- * `tabindex="-1"` still qualifies — this is the focusable set, not the Tab cycle. Descends into
- * open shadow roots.
+ * Excludes `[hidden]`, disabled controls, `[inert]` subtrees and content that is not rendered,
+ * the closed part of a `<details>` included. A candidate carrying `tabindex="-1"` still
+ * qualifies — this is the focusable set, not the Tab cycle. Descends into open shadow roots.
  */
 export function findFirstFocusable(container: HTMLElement): HTMLElement | null {
   const candidates = queryFocusableCandidates(container);

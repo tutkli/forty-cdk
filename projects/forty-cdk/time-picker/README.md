@@ -142,7 +142,7 @@ One class and one directive, three states. `disabled` removes the trigger from t
 | `closeOnSelect`       | `boolean`                        | Close on slot selection<br>**Default:** `true`                                                                                                                                                                                                                                                                  |
 | `modal`               | `boolean`                        | Modal (focus-trapped) mode<br>**Default:** `false`                                                                                                                                                                                                                                                              |
 | `dismissible`         | `boolean`                        | Escape / outside close<br>**Default:** `true`                                                                                                                                                                                                                                                                   |
-| `returnFocus`         | `boolean`                        | Return focus to trigger on close<br>**Default:** `true`                                                                                                                                                                                                                                                         |
+| `returnFocus`         | `boolean`                        | Return focus to the trigger on close, except after an outside or Tab close.<br>**Default:** `true`                                                                                                                                                                                                              |
 | `placeholder`         | `string`                         | Value display placeholder<br>**Default:** `''`                                                                                                                                                                                                                                                                  |
 | `formatOptions`       | `Intl.DateTimeFormatOptions`     | Format of the slot labels and `[forTimePickerValue]`. With no `hour` / `minute` / `second`, a two-digit hour and minute (plus seconds at `granularity="second"`) are filled in, matching `[forTimeField]`. The resolved `hourCycle` applies unless the options set `hour12` or `hourCycle`<br>**Default:** `{}` |
 | `ariaLabel`           | `string \| null`                 | `aria-label` on `[forTimePickerContent]`, for when the trigger is not a meaningful name<br>**Default:** `null`                                                                                                                                                                                                  |
@@ -346,7 +346,7 @@ By default the trigger is the control and shows the value. Set `anatomy="field"`
 
 With the field adopted:
 
-- **One form control.** `[formField]` binds once, on the picker. A typed time and a picked slot both write the picker's value and mark it dirty; focus leaving the field or the trigger marks it touched.
+- **One form control.** `[formField]` binds once, on the picker. A typed time and a picked slot both write the picker's value and mark it dirty; focus leaving the picker marks it touched, while a move between the field and the trigger does not.
 - **State is set once.** `minTime`, `maxTime`, `disabled`, `readonly`, `granularity`, `hourCycle` and `locale` on the picker apply to the field. A read-only picker blocks typing and picking alike.
 - **The field is the control.** A surrounding `[forField]` names and describes the field's `role="group"`, `aria-invalid` lands there, a label press focuses its first segment, and the picker's `focus()` goes there too.
 - **The trigger is a plain button.** It drops `role="combobox"` and the form-control `aria-*` state, and keeps `aria-haspopup="listbox"`, `aria-expanded` and `aria-controls`. Give it a name of its own.
@@ -370,6 +370,8 @@ With `anatomy="field"` and no projected `[forTimeField]`, opening the listbox or
 | Printable characters         | Focus the next slot whose text starts with the typed prefix, read with or without the hour's leading zero (`6` and `06` both reach `06:30`) |
 | `Tab`                        | Commit the focused slot and advance focus. With `modal` set, Tab cycles inside the listbox and commits nothing                              |
 | `Escape`                     | Close without committing                                                                                                                    |
+
+A slot disabled while it holds focus, by a `minTime` / `maxTime` that moved or by its own `disabled`, keeps the arrow keys, `Home` / `End`, `PageUp` / `PageDown` and typeahead. `Enter`, `Space` and `Tab` commit nothing from it.
 
 ## Accessibility
 

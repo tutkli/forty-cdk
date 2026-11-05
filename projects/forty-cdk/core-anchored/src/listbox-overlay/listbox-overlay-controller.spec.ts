@@ -307,13 +307,13 @@ describe('ListboxOverlayController', () => {
     expect(controller.focusFirstEnabledOption()).toBe(false);
   });
 
-  it('emitEscapeKeyDown closes when dismissible and not vetoed, marking touched', () => {
+  it('emitEscapeKeyDown closes when dismissible and not vetoed, without marking touched', () => {
     const { controller, open, touched, closed } = createHarness();
     open.set(true);
     const event = new KeyboardEvent('keydown', { key: 'Escape' });
     controller.emitEscapeKeyDown(event);
     expect(open()).toBe(false);
-    expect(touched.count).toBe(1);
+    expect(touched.count).toBe(0);
     expect(closed).toEqual(['escape']);
   });
 

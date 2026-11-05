@@ -99,7 +99,7 @@ export class SearchDefaultExample {
 
 ### Inside a Field with Signal Forms
 
-`forSearch` implements `FormValueControl<string>`, so `[formField]` auto-wires it inside `forField` exactly like `forInput`: the label adopts the control id, validation flows into `aria-errormessage`, and `aria-invalid` / `aria-required` are reflected. Type one or two characters and blur to surface the error.
+`forSearch` implements `FormValueControl<string>`, so `[formField]` auto-wires it inside `forField` exactly like `forInput`: the label adopts the control id, validation flows into `aria-errormessage`, `aria-invalid` is reflected, and `required` reaches the native `required` attribute. Type one or two characters and blur to surface the error.
 
 ## With Signal Forms and Field
 
@@ -225,10 +225,12 @@ The propagation rule for an empty, disabled, or read-only field is unchanged:
 ## Accessibility
 
 - The `role="searchbox"` attribute is set statically by the directive.
-- Validation state (`aria-required`, `aria-invalid`, `aria-readonly`) is
-  reflected as truthy-only attributes (absent when `false`). The disabled state
-  reflects through the native `disabled` attribute alone (no `aria-disabled`),
-  so style it with `:disabled` or `[data-disabled]`.
+- Validation state (`aria-invalid`, `aria-readonly`) is reflected as
+  truthy-only attributes (absent when `false`). The disabled and required
+  states reflect through the native `disabled` and `required` attributes alone
+  (no `aria-disabled`, no `aria-required`), so style them with `:disabled` /
+  `:required` or `[data-disabled]` / `[required]`. A `required` attribute you
+  write yourself is never removed.
 - `[forSearchClear]` carries `aria-label="Clear"` by default so the icon-only
   button has an accessible name. Override it per-instance with `[ariaLabel]`, or
   centrally (and for localization) with the `clearAriaLabel` key of

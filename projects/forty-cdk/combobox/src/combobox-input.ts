@@ -1,6 +1,7 @@
 import { computed, Directive, DOCUMENT, effect, ElementRef, inject } from '@angular/core';
 
 import {
+  composedContains,
   foldTypeaheadText,
   injectNativeFormReset,
   isImeComposing,
@@ -365,13 +366,22 @@ export class ForComboboxInput {
           if (this.ctx.hasEnabledActions()) {
             event.preventDefault();
             this.ctx.moveActionFocus(null, event.shiftKey ? 'prev' : 'next');
-          } else {
+          } else if (!this.#insidePickerPanel()) {
             this.ctx.trigger()?.focus();
             this.ctx.closeOverlay('tab');
           }
         }
         break;
     }
+  }
+
+  #insidePickerPanel(): boolean {
+    const content = this.ctx.content();
+    return (
+      this.ctx.trigger() !== null &&
+      content !== null &&
+      composedContains(content, this.#host.nativeElement)
+    );
   }
 
   private onFocus(): void {

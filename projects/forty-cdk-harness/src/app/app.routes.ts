@@ -22,6 +22,16 @@ export const routes: Routes = [
       import('./fixtures/dialog-programmatic.fixture').then((m) => m.DialogProgrammaticFixture),
   },
   {
+    path: 'overlay-close-all',
+    loadComponent: () =>
+      import('./fixtures/overlay-close-all.fixture').then((m) => m.OverlayCloseAllFixture),
+  },
+  {
+    path: 'focus-predicates',
+    loadComponent: () =>
+      import('./fixtures/focus-predicates.fixture').then((m) => m.FocusPredicatesFixture),
+  },
+  {
     path: 'dialog-swap',
     loadComponent: () => import('./fixtures/dialog-swap.fixture').then((m) => m.DialogSwapFixture),
   },
@@ -135,6 +145,11 @@ export const routes: Routes = [
     path: 'field-anchor',
     loadComponent: () =>
       import('./fixtures/field-anchor.fixture').then((m) => m.FieldAnchorFixture),
+  },
+  {
+    path: 'form-touch-pointer',
+    loadComponent: () =>
+      import('./fixtures/form-touch-pointer.fixture').then((m) => m.FormTouchPointerFixture),
   },
   {
     path: 'listbox',

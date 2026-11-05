@@ -74,6 +74,98 @@ describe('focusable-candidate filter', () => {
       const el = add('<button id="target">go</button>');
       expect(isFocusableCandidate(el, root)).toBe(true);
     });
+
+    it('rejects a control carrying [disabled] itself', () => {
+      const el = add('<button id="target" disabled>go</button>');
+      expect(isFocusableCandidate(el, root)).toBe(false);
+    });
+
+    it('rejects a control disabled by an ancestor fieldset', () => {
+      const el = add('<fieldset disabled><div><input id="target" /></div></fieldset>');
+      expect(isFocusableCandidate(el, root)).toBe(false);
+    });
+
+    it('accepts a control inside the first legend of a disabled fieldset', () => {
+      const el = add('<fieldset disabled><legend><input id="target" /></legend></fieldset>');
+      expect(isFocusableCandidate(el, root)).toBe(true);
+    });
+
+    it('rejects a control inside a later legend of a disabled fieldset', () => {
+      const el = add(
+        '<fieldset disabled><legend>Name</legend><legend><input id="target" /></legend></fieldset>',
+      );
+      expect(isFocusableCandidate(el, root)).toBe(false);
+    });
+
+    it('accepts a tabindex element inside a disabled fieldset, which the fieldset does not disable', () => {
+      const el = add('<fieldset disabled><div id="target" tabindex="0">cell</div></fieldset>');
+      expect(isFocusableCandidate(el, root)).toBe(true);
+    });
+
+    it('rejects the content of a closed details element', () => {
+      const el = add('<details><summary>More</summary><button id="target">go</button></details>');
+      expect(isFocusableCandidate(el, root)).toBe(false);
+    });
+
+    it('rejects content nested deeper inside a closed details element', () => {
+      const el = add(
+        '<details><summary>More</summary><div><span><button id="target">go</button></span></div></details>',
+      );
+      expect(isFocusableCandidate(el, root)).toBe(false);
+    });
+
+    it('accepts the summary of a closed details element', () => {
+      const el = add('<details><summary id="target">More</summary><button>go</button></details>');
+      expect(isFocusableCandidate(el, root)).toBe(true);
+    });
+
+    it('accepts a control inside the summary of a closed details element', () => {
+      const el = add(
+        '<details><summary><button id="target">go</button></summary><p>body</p></details>',
+      );
+      expect(isFocusableCandidate(el, root)).toBe(true);
+    });
+
+    it('rejects a second summary of a closed details element, which is content', () => {
+      const el = add(
+        '<details><summary>More</summary><summary id="target">again</summary></details>',
+      );
+      expect(isFocusableCandidate(el, root)).toBe(false);
+    });
+
+    it('accepts the content of an open details element', () => {
+      const el = add(
+        '<details open><summary>More</summary><button id="target">go</button></details>',
+      );
+      expect(isFocusableCandidate(el, root)).toBe(true);
+    });
+
+    it('rejects the summary of a closed details element nested in another closed one', () => {
+      const el = add(
+        '<details><summary>Outer</summary><details><summary id="target">Inner</summary></details></details>',
+      );
+      expect(isFocusableCandidate(el, root)).toBe(false);
+    });
+
+    it('does not consult a closed details element that is the root itself', () => {
+      root.innerHTML =
+        '<details id="closed"><summary>More</summary><button id="target">go</button></details>';
+      const details = root.querySelector<HTMLElement>('#closed')!;
+      const el = root.querySelector<HTMLElement>('#target')!;
+      expect(isFocusableCandidate(el, details)).toBe(true);
+    });
+
+    it('rejects an element under a content-visibility:hidden ancestor', () => {
+      const el = add(
+        '<div style="content-visibility:hidden"><button id="target">go</button></div>',
+      );
+      expect(isFocusableCandidate(el, root)).toBe(false);
+    });
+
+    it('accepts an element that carries content-visibility:hidden itself, since only its contents are skipped', () => {
+      const el = add('<button id="target" style="content-visibility:hidden">go</button>');
+      expect(isFocusableCandidate(el, root)).toBe(true);
+    });
   });
 
   describe('shadow DOM', () => {
@@ -252,7 +344,7 @@ describe('focusable-candidate filter', () => {
   });
 
   describe('FOCUSABILITY_ATTRIBUTES', () => {
-    it('names every attribute the selector qualifies on, plus hidden and inert', () => {
+    it('names every attribute the selector qualifies on, plus hidden, inert and open', () => {
       expect([...FOCUSABILITY_ATTRIBUTES].sort()).toEqual([
         'contenteditable',
         'controls',
@@ -260,6 +352,7 @@ describe('focusable-candidate filter', () => {
         'hidden',
         'href',
         'inert',
+        'open',
         'tabindex',
         'type',
       ]);
@@ -312,6 +405,31 @@ describe('focusable-candidate filter', () => {
 
       expect(first?.id).toBe('t1');
       expect(last?.id).toBe('t2');
+    });
+
+    it('skips a control disabled by a fieldset at the first end', () => {
+      root.innerHTML = `
+        <fieldset disabled><input id="locked" /></fieldset>
+        <input id="t1" />
+        <button id="t2">save</button>
+      `;
+
+      const { first, last } = findTabbableEdges(root);
+
+      expect(first?.id).toBe('t1');
+      expect(last?.id).toBe('t2');
+    });
+
+    it('resolves the last end to the summary of a trailing closed details element', () => {
+      root.innerHTML = `
+        <input id="t1" />
+        <details><summary id="sum">More</summary><button id="hidden">reset</button></details>
+      `;
+
+      const { first, last } = findTabbableEdges(root);
+
+      expect(first?.id).toBe('t1');
+      expect(last?.id).toBe('sum');
     });
 
     it('resolves an end that lives inside an open shadow root', () => {
@@ -455,6 +573,19 @@ describe('focusable-candidate filter', () => {
     it('wraps backward from the first candidate to the last', () => {
       const { one, two } = pair();
       expect(stepFocusableCycle(root, one, 'backward')).toBe(two);
+    });
+
+    it('skips a control disabled by a fieldset and the content of a closed details element', () => {
+      root.innerHTML = `
+        <button id="one">one</button>
+        <fieldset disabled><input /></fieldset>
+        <details><summary id="sum">More</summary><button>hidden</button></details>
+      `;
+      const one = root.querySelector<HTMLElement>('#one')!;
+      const sum = root.querySelector<HTMLElement>('#sum')!;
+
+      expect(stepFocusableCycle(root, one, 'forward')).toBe(sum);
+      expect(stepFocusableCycle(root, sum, 'forward')).toBe(one);
     });
 
     it('returns the sole candidate again when the container holds only one', () => {

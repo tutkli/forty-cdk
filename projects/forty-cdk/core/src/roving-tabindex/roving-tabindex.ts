@@ -1,6 +1,7 @@
 import { linkedSignal, type Signal, signal } from '@angular/core';
 
 import type { HostRovingItemHandle } from './host-roving-context';
+import { RovingFocusYield } from './roving-focus-yield';
 
 /**
  * Tracks the single "active" element of a roving-tabindex group: the one
@@ -37,6 +38,11 @@ import type { HostRovingItemHandle } from './host-roving-context';
  * pointer for consumers that own no roving collection (date-field /
  * time-field).
  *
+ * While a disabled item of the `items` producer holds DOM focus, as reported
+ * through {@link noteFocus}, every item **yields**: {@link tabindexFor} is `-1`
+ * for all of them and {@link hasActive} reports that the tracker owns the tab
+ * stop, so the group holds none and `Tab` / `Shift+Tab` leave it.
+ *
  * Construct directly with `new RovingTabindex()` — there is no internal
  * state requiring an injection context or `DestroyRef` cleanup.
  */
@@ -44,6 +50,8 @@ export class RovingTabindex {
   readonly #rawActive = signal<HTMLElement | null>(null);
 
   readonly #keepsDeparted: boolean;
+
+  readonly #focusYield: RovingFocusYield | null;
 
   readonly #active: Signal<HTMLElement | null>;
 
@@ -84,16 +92,21 @@ export class RovingTabindex {
       },
     });
     this.active = this.#active;
+    this.#focusYield = items ? new RovingFocusYield(items) : null;
   }
 
   /**
-   * Whether a usable active element currently owns the tab stop. `false`
-   * when nothing is active **or** the active element is stale (detached /
-   * disabled) at the time of the call, signalling the consumer to fall back to
-   * its first-enabled entry point. Reactive — wire the per-item `tabindex` gate
-   * to this rather than `active() !== null`.
+   * Whether the tracker currently owns the tab stop: a usable active element
+   * does, and so does a group whose items yield while a disabled item holds
+   * focus. `false` when nothing is active **or** the active element is stale
+   * (detached / disabled) at the time of the call, signalling the consumer to
+   * fall back to its first-enabled entry point. Reactive — wire the per-item
+   * `tabindex` gate to this rather than `active() !== null`.
    */
   hasActive(): boolean {
+    if (this.#focusYield?.yields() === true) {
+      return true;
+    }
     const el = this.#active();
     return el !== null && !isStale(el);
   }
@@ -102,16 +115,28 @@ export class RovingTabindex {
    * Returns the tabindex value for `el`: `0` if it is the active element,
    * `-1` otherwise. Reactive — wire into a host binding.
    *
-   * If no element is active yet (or the active element is stale), returns
-   * `-1` for everything. The container directive is responsible for promoting
+   * If no element is active yet (or the active element is stale), or the items
+   * yield to a focused disabled item, returns `-1` for everything. The container directive is responsible for promoting
    * one item (typically the first enabled one) to active on init.
    */
   tabindexFor(el: HTMLElement): 0 | -1 {
+    if (this.#focusYield?.yields() === true) {
+      return -1;
+    }
     const active = this.#active();
     if (active === null || isStale(active)) {
       return -1;
     }
     return active === el ? 0 : -1;
+  }
+
+  /**
+   * Report the element holding DOM focus inside the group, or `null` once focus
+   * has left it. Call it from the group host's `focusin` and `focusout`; while
+   * it names a disabled item, every item yields the tab stop.
+   */
+  noteFocus(el: Element | null): void {
+    this.#focusYield?.noteFocus(el);
   }
 
   setActive(el: HTMLElement | null): void {

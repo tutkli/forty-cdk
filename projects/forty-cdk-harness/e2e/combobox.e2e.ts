@@ -10,6 +10,7 @@ import {
   imeStart,
   imeUpdate,
   inputValue,
+  recordFocusInsWithin,
   selectionRange,
   test,
 } from './_helpers';
@@ -267,6 +268,34 @@ test.describe('Combobox', () => {
 
       await expect(el(page, 'content')).toHaveCount(0);
       await expectFocused(el(page, 'after'));
+    });
+
+    test('Tab from the inner input never re-enters the closing panel when the trigger is the last tabbable', async ({
+      page,
+    }) => {
+      await gotoFixture(page, 'combobox', { picker: '1' });
+      await page.evaluate(() => {
+        document.querySelector('[data-testid="after"]')?.setAttribute('tabindex', '-1');
+      });
+      await el(page, 'trigger').click();
+      await expectFocused(el(page, 'combo-input'));
+      const focusIns = await recordFocusInsWithin(page, 'content');
+
+      await el(page, 'combo-input').press('Tab');
+
+      await expect(el(page, 'content')).toHaveCount(0);
+      expect(await focusIns()).toBe(0);
+    });
+
+    test('Shift+Tab from the inner input lands on the trigger and closes', async ({ page }) => {
+      await gotoFixture(page, 'combobox', { picker: '1' });
+      await el(page, 'trigger').click();
+      await expectFocused(el(page, 'combo-input'));
+
+      await el(page, 'combo-input').press('Shift+Tab');
+
+      await expect(el(page, 'content')).toHaveCount(0);
+      await expectFocused(el(page, 'trigger'));
     });
 
     test('clicking an outside input does not steal focus back to the trigger', async ({ page }) => {

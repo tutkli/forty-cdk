@@ -117,7 +117,8 @@ export interface ForDrawerOpenConfig<D = unknown> {
    * keeps the host mounted with this class until its CSS animations /
    * transitions finish, then tears the drawer down — so a programmatic drawer
    * plays an exit animation. `close()` still resolves its promise and flips
-   * `isClosed()` immediately; only the visual teardown waits. With no class (or
+   * `isClosed()` immediately, and the drawer stops being modal and returns focus at
+   * the same moment; only the DOM removal waits. With no class (or
    * no animation, or under `prefers-reduced-motion`), close is immediate. Falls
    * back to `provideForDrawerDefaults({ animateLeave })`.
    */

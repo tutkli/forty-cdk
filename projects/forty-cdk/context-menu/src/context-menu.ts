@@ -112,7 +112,9 @@ export class ForContextMenu
 
   /**
    * When true (default), focus returns on close to the trigger region, or to the
-   * focused element inside it that a keyboard activation started from.
+   * focused element inside it that a keyboard activation started from. A close from
+   * a press or focus outside the menu, or from a Tab out, leaves focus where the user
+   * moved it.
    */
   readonly returnFocus = input(true, { transform: booleanAttribute });
 

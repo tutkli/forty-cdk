@@ -72,9 +72,16 @@ import { entryPointOf, LIBRARY_CODE, SPEC_CODE } from '../test-utils/source-scan
  * of an adopter routes its list-navigation keys through
  * `navigateFromRovingItem`, which gates on the group alone, and every claim
  * mounts the contract's in-place disable so that gate is exercised per
- * primitive. A tracker that pushes a concrete owner re-seeds to the nearest
- * survivor and pairs with `injectRovingFocusRestore`, so DOM focus follows an
- * item that leaves while it is focused.
+ * primitive. An item piece that also runs typeahead routes a disabled item's
+ * keys through `handleDisabledRovingItemKey`, so typeahead survives the disable
+ * too ([#2719](https://github.com/tutkli/forty-cdk/issues/2719)).
+ *
+ * **DOM focus follows an item that leaves while it is focused, in every group
+ * whose items can unmount** (#2719 revisiting #2140). Every tracker built over
+ * an items producer re-seeds to the nearest survivor and pairs with
+ * `injectRovingFocusRestore`, unless `FOCUS_RESTORE_EXCLUSIONS` names why not,
+ * and each declared member pairs with it through the owner its selection
+ * resolves.
  *
  * **It also owns the removal rule of [#2239](https://github.com/tutkli/forty-cdk/issues/2239),
  * and that one has no exclusion.** An item leaving while it holds the tab stop
@@ -165,14 +172,14 @@ const ADOPTERS: readonly RovingTabindexAdopter[] = [
     spec: 'radio-group/src/radio-group.spec.ts',
     trackers: [],
     handWrittenLadder: 'radio-group/src/radio.ts',
-    readBacks: ['hasSelectedRadio()', 'isFirstEnabledRadio('],
+    readBacks: ['hasSelectedRadio()', 'isFirstEnabledRadio(', 'yieldsTabStop()'],
   },
   {
     root: '[forCarousel]',
     spec: 'carousel/src/carousel.spec.ts',
     trackers: [],
     handWrittenLadder: 'carousel/src/carousel-indicator.ts',
-    readBacks: ['hasCurrentIndicator()', 'isFirstEnabledIndicator('],
+    readBacks: ['hasCurrentIndicator()', 'isFirstEnabledIndicator(', 'yieldsTabStop()'],
   },
 ];
 
@@ -228,6 +235,15 @@ const EXCLUSIONS: readonly {
 const ITEM_NAVIGATION = 'navigateFromRovingItem(';
 
 /**
+ * The shared key handler for an item disabled while it holds focus, which every
+ * item piece running typeahead calls so typeahead survives the disable too.
+ */
+const DISABLED_ITEM_KEYS = 'handleDisabledRovingItemKey(';
+
+/** A call running a group's typeahead from one of its item pieces. */
+const TYPEAHEAD_CALL = /\.handle(?:Trigger)?Typeahead\(/;
+
+/**
  * The contract mounts every claim supplies: the in-place disable rung, and the
  * disabled-edge mounts the Home / End skip rungs press against.
  */
@@ -237,8 +253,21 @@ const PER_CLAIM_MOUNTS = [
   'mountWithDisabledLast:',
 ] as const;
 
-/** The focus follower a push-based tracker pairs with. */
+/** The focus follower every root owning an items producer pairs with. */
 const FOCUS_RESTORE = 'injectRovingFocusRestore(';
+
+/**
+ * Trackers that own an items producer and restore no focus, each with the
+ * reason. The condition the last of the focus-restore cases checks is the grid
+ * resolver the reason rests on.
+ */
+const FOCUS_RESTORE_EXCLUSIONS: readonly { readonly tracker: string; readonly reason: string }[] = [
+  {
+    tracker: 'table/src/table.ts::#roving',
+    reason:
+      "[forTable]'s nearest survivor is a two-axis question, the same column in an adjacent row, which the one-axis re-seed of `fallback: 'nearest'` over the flattened cells answers with the last cell of the previous row; and its virtualized body unmounts the focused row on every scroll that moves it out of the window, where moving focus would scroll it back",
+  },
+];
 
 /** The contract mount every tracker supplies for the removal rung. */
 const REMOVAL = 'mountWithRemoval:';
@@ -248,6 +277,13 @@ const FOCUS_RESTORE_MOUNT = 'mountWithFocusRestore:';
 
 /** The shared ladder a declared member must still resolve its tab stop through. */
 const SHARED_LADDER = 'selectionTabStop(';
+
+/**
+ * The shared ladder an item piece of a tracker resolves its tab stop through.
+ * A root may read the tracker itself, since the yield to a focused disabled
+ * item lives in the tracker's own reads.
+ */
+const ROVING_LADDER = 'rovingTabStop(';
 
 /** The source declaring the grid resolver whose Home / End are row-scoped. */
 const KEYBOARD_NAVIGATION = 'core/src/keyboard-navigation/keyboard-navigation.ts';
@@ -437,14 +473,17 @@ describe('roving-tabindex contract adoption (meta-guard)', () => {
       )
       .map(([path]) => path);
 
-    expect(callers.length).toBeGreaterThanOrEqual(1);
+    expect(callers.length).toBeGreaterThanOrEqual(10);
     expect(
       sorted(
         callers
           .map((path) => ({
             path,
-            claim: ADOPTERS.find((adopter) =>
-              adopter.trackers.some((tracker) => tracker.startsWith(`${path}::`)),
+            claim: ADOPTERS.find(
+              (adopter) =>
+                adopter.trackers.some((tracker) => tracker.startsWith(`${path}::`)) ||
+                (adopter.handWrittenLadder !== undefined &&
+                  entryPointOf(adopter.handWrittenLadder) === entryPointOf(path)),
             ),
           }))
           .filter(({ claim }) => !claim || occurrences(claim.spec, FOCUS_RESTORE_MOUNT) < 1)
@@ -474,23 +513,83 @@ describe('roving-tabindex contract adoption (meta-guard)', () => {
     ).toEqual([]);
   });
 
-  it('re-seeds every push-based tracker to the nearest survivor and restores its focus', () => {
-    const pushed = [...LIBRARY_CODE.entries()].flatMap(([path, source]) =>
-      [...source.matchAll(/new RovingTabindex\([^;]*?fallback:\s*'([\w-]+)'/g)].map((match) => ({
-        path,
-        fallback: match[1]!,
-        restores: source.includes(FOCUS_RESTORE),
-      })),
+  it('computes every item piece tab stop through the shared ladder, never off the tracker', () => {
+    const trackerFiles = new Set(trackerSites().map((site) => site.id.split('::')[0]!));
+    const entryPoints = new Set(ADOPTERS.flatMap((adopter) => adopter.trackers.map(entryPointOf)));
+    const handRolled = [...LIBRARY_CODE.entries()]
+      .filter(
+        ([path, source]) =>
+          entryPoints.has(entryPointOf(path)) &&
+          !trackerFiles.has(path) &&
+          /\.roving\.(?:tabindexFor|hasActive)\(/.test(source),
+      )
+      .map(([path]) => path);
+    const viaLadder = [...LIBRARY_CODE.entries()].filter(
+      ([path, source]) => entryPoints.has(entryPointOf(path)) && source.includes(ROVING_LADDER),
     );
 
-    expect(pushed.length).toBeGreaterThanOrEqual(1);
+    expect(viaLadder.length).toBeGreaterThanOrEqual(6);
+    expect(sorted(handRolled)).toEqual([]);
+  });
+
+  it('routes the keys of a disabled item piece running typeahead through the shared handler', () => {
+    const entryPoints = new Set(ADOPTERS.flatMap((adopter) => adopter.trackers.map(entryPointOf)));
+    const pieces = [...LIBRARY_CODE.entries()].filter(
+      ([path, source]) =>
+        entryPoints.has(entryPointOf(path)) &&
+        source.includes(ITEM_NAVIGATION) &&
+        TYPEAHEAD_CALL.test(source),
+    );
+
+    expect(pieces.length).toBeGreaterThanOrEqual(3);
     expect(
-      sorted(
-        pushed
-          .filter((site) => site.fallback !== 'nearest' || !site.restores)
-          .map((site) => `${site.path}: fallback '${site.fallback}', restores ${site.restores}`),
-      ),
+      sorted(pieces.filter(([, source]) => !source.includes(DISABLED_ITEM_KEYS)).map(([p]) => p)),
     ).toEqual([]);
+  });
+
+  it('re-seeds every tracker owning an items producer to the nearest survivor and restores its focus', () => {
+    const owners = trackerSites().filter((site) => site.hasItemsProducer);
+    const failures = owners.flatMap((site) => {
+      const [path, member] = site.id.split('::') as [string, string];
+      const source = sourceOf(path);
+      const nearest = [
+        ...source.matchAll(/(#?[A-Za-z_$][\w$]*)\s*=\s*new RovingTabindex\(([^;]*)\);/g),
+      ].some((match) => match[1] === member && /fallback:\s*'nearest'/.test(match[2]!));
+      const restores = source.includes(FOCUS_RESTORE);
+      if (FOCUS_RESTORE_EXCLUSIONS.some((exclusion) => exclusion.tracker === site.id)) {
+        return restores ? [`${site.id}: excluded, yet restores focus`] : [];
+      }
+      return nearest && restores
+        ? []
+        : [`${site.id}: fallback 'nearest' ${nearest}, restores ${restores}`];
+    });
+
+    expect(owners.length).toBeGreaterThanOrEqual(9);
+    expect(sorted(failures)).toEqual([]);
+  });
+
+  it('restores focus from the root of every declared member', () => {
+    const declared = ADOPTERS.filter((adopter) => adopter.handWrittenLadder !== undefined);
+    const missing = declared.filter(
+      (adopter) =>
+        ![...LIBRARY_CODE.entries()].some(
+          ([path, source]) =>
+            entryPointOf(path) === entryPointOf(adopter.handWrittenLadder!) &&
+            source.includes(FOCUS_RESTORE),
+        ),
+    );
+
+    expect(declared.length).toBeGreaterThanOrEqual(2);
+    expect(sorted(missing.map((adopter) => adopter.root))).toEqual([]);
+  });
+
+  it('excludes no tracker from focus restore whose reason stopped holding', () => {
+    const stale = FOCUS_RESTORE_EXCLUSIONS.filter((exclusion) => {
+      const source = sourceOf(exclusion.tracker.split('::')[0]!);
+      return !source.includes('resolveGridNavigation(');
+    }).map((exclusion) => exclusion.tracker);
+
+    expect(sorted(stale)).toEqual([]);
   });
 
   it('excludes no tracker whose keyboard model stopped diverging', () => {

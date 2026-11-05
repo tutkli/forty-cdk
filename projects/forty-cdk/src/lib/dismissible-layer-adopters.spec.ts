@@ -326,6 +326,28 @@ for (const adopter of ADOPTERS) {
 }
 const sorted = (values: Iterable<string>): string[] => [...values].sort();
 
+const ACTIVE_ELEMENT_RESOLVER = 'core/src/composed-tree/composed-tree.ts';
+const ACTIVE_ELEMENT_SCOPE = ['core', 'core-overlay', 'core-anchored'];
+const ACTIVE_ELEMENT_READ = /\.activeElement\b/;
+
+function flatActiveElementReaders(): string[] {
+  return [...LIBRARY_CODE]
+    .filter(
+      ([path, code]) =>
+        path !== ACTIVE_ELEMENT_RESOLVER &&
+        ACTIVE_ELEMENT_SCOPE.includes(entryPointOf(path)) &&
+        ACTIVE_ELEMENT_READ.test(code),
+    )
+    .map(([path]) => path);
+}
+
+describe('focus resolution in the overlay core', () => {
+  it('reads the active element only through resolveActiveElement', () => {
+    expect(LIBRARY_CODE.get(ACTIVE_ELEMENT_RESOLVER)).toMatch(ACTIVE_ELEMENT_READ);
+    expect(sorted(flatActiveElementReaders())).toEqual([]);
+  });
+});
+
 describe('dismissible-layer contract adoption (meta-guard)', () => {
   it('finds the library sources through the glob', () => {
     expect(LIBRARY_CODE.size).toBeGreaterThan(100);

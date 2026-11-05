@@ -21,6 +21,9 @@ import {
   type WritingDirection,
   injectTextDirection,
   type Unset,
+  injectRovingFocusRestore,
+  RovingFocusYield,
+  leavesControl,
 } from 'forty-cdk/core';
 import {
   FOR_RADIO_GROUP_CONTEXT,
@@ -123,8 +126,19 @@ export class ForRadioGroup
   /** True when some registered, enabled radio's value matches the group's current value. */
   readonly hasSelectedRadio = computed(() => this.#selectedItem() !== undefined);
 
+  readonly #focusYield = new RovingFocusYield(() => this.#items.items());
+
+  /** True while a disabled radio holds DOM focus, when no radio holds the Tab stop. */
+  readonly yieldsTabStop = this.#focusYield.yields;
+
+  readonly #tabStopHost = computed(() => this.#selectedItem()?.host ?? this.#firstEnabledHost());
+
   constructor() {
     super();
+    injectRovingFocusRestore({
+      active: this.#tabStopHost,
+      noteFocus: (el) => this.#focusYield.noteFocus(el),
+    });
     injectHiddenInput({
       name: this.name,
       values: computed(() => {
@@ -204,10 +218,8 @@ export class ForRadioGroup
   }
 
   private onFocusOut(event: FocusEvent): void {
-    const next = event.relatedTarget as HTMLElement | null;
-    if (next && this.#host.nativeElement.contains(next)) {
-      return;
+    if (leavesControl(event, [this.#host.nativeElement])) {
+      this.markTouched();
     }
-    this.markTouched();
   }
 }

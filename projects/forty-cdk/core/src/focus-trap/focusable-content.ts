@@ -22,8 +22,9 @@ import {
  * Backs the WAI-ARIA Tabs rule that a `tabpanel` is itself a tab stop only when it has no focusable
  * content of its own.
  *
- * Candidates are filtered through the same predicate `FocusTrap` uses, so `[hidden]`, `[inert]` and
- * CSS-hidden elements do not count, and content inside an open shadow root does.
+ * Candidates are filtered through the same predicate `FocusTrap` uses, so `[hidden]`, disabled,
+ * `[inert]` and unrendered elements (CSS-hidden, or inside a closed `<details>`) do not count, and
+ * content inside an open shadow root does.
  *
  * A `MutationObserver` on the host's subtree re-measures on childList and attribute changes. Two
  * boundaries follow from it: the observer cannot see into a shadow root, and its `attributeFilter`

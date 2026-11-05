@@ -83,5 +83,6 @@ export class ForToggle extends FormUiControlBase implements FormCheckboxControl 
       return;
     }
     this.checked.update((v) => !v);
+    this.markTouched();
   }
 }

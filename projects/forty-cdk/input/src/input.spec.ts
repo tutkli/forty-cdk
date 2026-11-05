@@ -178,10 +178,13 @@ describe('ForInput', () => {
     });
   });
 
-  assertFormControlContract(() => {
-    const r = renderHost(InputHost);
-    return contractResult(r, inputOf(r.el));
-  });
+  assertFormControlContract(
+    () => {
+      const r = renderHost(InputHost);
+      return contractResult(r, inputOf(r.el));
+    },
+    { nativeRequired: true },
+  );
 
   describe('value binding', () => {
     it('updates the model from the native input event and toggles data-empty', async () => {
@@ -525,10 +528,11 @@ describe('ForInput', () => {
       expect(name.value).toBe('Lin');
     });
 
-    it('flows schema-driven required into aria-required', async () => {
+    it('flows schema-driven required into the native required attribute', async () => {
       const { el, flush } = renderHost(SignalFormsHost);
       await flush();
-      expect(byId(el, 'name').getAttribute('aria-required')).toBe('true');
+      expect(byId(el, 'name').required).toBe(true);
+      expect(byId(el, 'name').hasAttribute('aria-required')).toBe(false);
     });
   });
 });
@@ -541,10 +545,13 @@ describe('ForTextarea', () => {
     });
   });
 
-  assertFormControlContract(() => {
-    const r = renderHost(TextareaHost);
-    return contractResult(r, textareaOf(r.el));
-  });
+  assertFormControlContract(
+    () => {
+      const r = renderHost(TextareaHost);
+      return contractResult(r, textareaOf(r.el));
+    },
+    { nativeRequired: true },
+  );
 
   describe('value binding parity', () => {
     it('updates the model from the native input event', async () => {

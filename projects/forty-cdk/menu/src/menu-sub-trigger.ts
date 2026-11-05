@@ -12,6 +12,7 @@ import {
   fortyError,
   hostButtonType,
   hostId,
+  isHistoryChord,
   isHoverCapablePointer,
   preventPointerFocus,
   registerHandle,
@@ -185,8 +186,9 @@ export class ForMenuSubTrigger {
     const isRtl = this.submenu.dir() === 'rtl';
     const openKey = isRtl ? 'ArrowLeft' : 'ArrowRight';
     const closeParentKey = isRtl ? 'ArrowRight' : 'ArrowLeft';
+    const historyChord = isHistoryChord(event);
 
-    if (event.key === openKey) {
+    if (event.key === openKey && !historyChord) {
       event.preventDefault();
       if (!this.effectiveDisabled()) {
         this.submenu.openMenu('first');
@@ -195,7 +197,7 @@ export class ForMenuSubTrigger {
     }
 
     // Close-parent key when the *parent* is itself a submenu: collapse the parent.
-    if (event.key === closeParentKey && parent.parentMenu) {
+    if (event.key === closeParentKey && !historyChord && parent.parentMenu) {
       event.preventDefault();
       parent.closeMenu('escape');
       return;
@@ -205,7 +207,7 @@ export class ForMenuSubTrigger {
     // RTL-ArrowRight → prev). Open-key on the sub-trigger keeps its own
     // meaning (open this submenu) — only the close-direction propagates
     // up to the menubar.
-    if (event.key === closeParentKey && parent.menubar) {
+    if (event.key === closeParentKey && !historyChord && parent.menubar) {
       event.preventDefault();
       parent.menubar.switchToSibling('prev');
       return;

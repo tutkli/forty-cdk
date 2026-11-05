@@ -11,11 +11,13 @@ import {
 
 import {
   assertInputBound,
+  type DisabledRovingItemKeyOptions,
+  handleDisabledRovingItemKey,
   hostId,
   injectPointerMove,
+  navigateFromRovingItem,
   preventPointerFocus,
   registerHandle,
-  resolveListNavigation,
   unsetInput,
   type Unset,
 } from 'forty-cdk/core';
@@ -144,6 +146,7 @@ export class ForTimePickerOption<D = unknown> {
 
   private onKeyDown(event: KeyboardEvent): void {
     if (this.effectiveDisabled()) {
+      handleDisabledRovingItemKey(event, this.#keyOptions());
       return;
     }
 
@@ -165,17 +168,21 @@ export class ForTimePickerOption<D = unknown> {
       return;
     }
 
-    const action = resolveListNavigation(event, {
-      orientation: this.#ctx.orientation(),
-      dir: this.#ctx.dir(),
-      pageKeys: true,
-    });
-    if (action) {
-      event.preventDefault();
-      this.#ctx.overlay.navigate(this.#host.nativeElement, action);
+    if (navigateFromRovingItem(event, this.#keyOptions())) {
       return;
     }
 
     this.#ctx.overlay.handleTypeahead(event);
+  }
+
+  #keyOptions(): DisabledRovingItemKeyOptions {
+    return {
+      groupDisabled: this.#ctx.effectiveDisabled(),
+      orientation: this.#ctx.orientation(),
+      dir: this.#ctx.dir(),
+      pageKeys: true,
+      navigate: (action) => this.#ctx.overlay.navigate(this.#host.nativeElement, action),
+      typeahead: (e) => this.#ctx.overlay.handleTypeahead(e),
+    };
   }
 }

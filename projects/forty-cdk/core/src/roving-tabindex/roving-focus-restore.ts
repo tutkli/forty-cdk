@@ -1,7 +1,24 @@
 import { afterEveryRender, DestroyRef, DOCUMENT, ElementRef, inject } from '@angular/core';
 
 import { resolveActiveElement } from '../composed-tree/composed-tree';
-import type { RovingTabindex } from './roving-tabindex';
+
+/**
+ * The owner of a roving group's tab stop, read by {@link injectRovingFocusRestore}:
+ * a `RovingTabindex` built with `fallback: 'nearest'`, or the selection-driven
+ * owner of a group that builds no tracker.
+ */
+export interface RovingFocusTarget {
+  /** The element that owns the group's tab stop, or `null` when none does. */
+  readonly active: () => HTMLElement | null;
+  /** Receives the element holding DOM focus inside the group, or `null` once focus left it. */
+  readonly noteFocus?: (el: Element | null) => void;
+}
+
+/** Options for {@link injectRovingFocusRestore}. */
+export interface RovingFocusRestoreOptions {
+  /** Whether the departure of `departed`, which held focus, moves no focus. */
+  readonly skip?: (departed: Element) => boolean;
+}
 
 /**
  * Keeps DOM focus inside a roving group whose focused element leaves it. When a
@@ -11,25 +28,33 @@ import type { RovingTabindex } from './roving-tabindex';
  * tracker's pointer says, and focus anywhere else is left alone, so a consumer
  * control that removed or collapsed the item keeps it, and so does a targeted
  * focus move another render hook makes in the same render (a keyboard drop
- * focusing the moved node).
+ * focusing the moved node). It also reports the element holding focus inside
+ * the group to the target's `noteFocus`, which a tracker reads to yield the tab
+ * stop while a disabled item holds focus.
  *
  * Pair it with a tracker built with `fallback: 'nearest'`, so the new owner is
- * the item beside the one that left rather than the first in the group. Call it
- * in the injection context of the group's host directive; it moves no focus
- * during a server render.
+ * the item beside the one that left rather than the first in the group, or, for
+ * a group whose tab stop follows its selection and builds no tracker, with the
+ * owner that selection resolves. Call it in the injection context of the
+ * group's host directive; it moves no focus during a server render.
  *
  * Internal core tier — exported from `forty-cdk/core` for the library's own
  * entry points, with no semver guarantee.
  */
-export function injectRovingFocusRestore(roving: RovingTabindex): void {
+export function injectRovingFocusRestore(
+  roving: RovingFocusTarget,
+  options: RovingFocusRestoreOptions = {},
+): void {
   const document = inject(DOCUMENT);
   const root = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
   let held: Element | null = null;
 
   const onFocusIn = (event: FocusEvent): void => {
     held = event.target instanceof Element ? event.target : null;
+    roving.noteFocus?.(held);
   };
   const onFocusOut = (event: FocusEvent): void => {
+    roving.noteFocus?.(null);
     const target = event.target;
     queueMicrotask(() => {
       if (held !== null && held === target && held.isConnected) {
@@ -48,6 +73,9 @@ export function injectRovingFocusRestore(roving: RovingTabindex): void {
       return;
     }
     held = null;
+    if (options.skip?.(departed) === true) {
+      return;
+    }
     const active = roving.active();
     if (active === null) {
       return;

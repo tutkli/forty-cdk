@@ -641,6 +641,20 @@ describe('ForMenubar', () => {
             ]),
         };
       },
+      mountWithFocusRestore: async () => {
+        const r = renderHost(MenubarRovingHost);
+        await r.flush();
+        return {
+          items: menubarTriggers(r.el),
+          flush: r.flush,
+          removedIndex: 1,
+          remove: () => r.instance.triggers.update((list) => list.filter((_, i) => i !== 1)),
+          disable: () =>
+            r.instance.triggers.update((list) =>
+              list.map((item, i) => (i === 1 ? { ...item, disabled: true } : item)),
+            ),
+        };
+      },
       mountWithRemoval: async () => {
         const r = renderHost(MenubarRovingHost);
         await r.flush();
@@ -658,7 +672,7 @@ describe('ForMenubar', () => {
         return { items: menubarTriggers(r.el), flush: r.flush };
       },
     },
-    { forwardArrow: 'ArrowRight' },
+    { forwardArrow: 'ArrowRight', typeaheadFromDisabled: { key: 'v', target: 2 } },
   );
 
   assertOverlayTriggerAriaContract(

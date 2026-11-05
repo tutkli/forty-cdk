@@ -7,6 +7,7 @@ import {
   registerHandle,
   type Unset,
   unsetInput,
+  isHistoryChord,
 } from 'forty-cdk/core';
 import { asListboxContext, type ForListboxContext, LISTBOX_CONTROLLERS } from './listbox-context';
 
@@ -118,9 +119,8 @@ export class ForListboxController<T = string> {
       !this.active() ||
       event.defaultPrevented ||
       isImeComposing(event) ||
-      event.altKey ||
+      isHistoryChord(event) ||
       event.ctrlKey ||
-      event.metaKey ||
       event.shiftKey
     ) {
       return;
@@ -149,7 +149,7 @@ export class ForListboxController<T = string> {
 
   private onFocusOut(event: FocusEvent): void {
     if (this.active()) {
-      this.listbox()?.controllerFocusOut(event.relatedTarget);
+      this.listbox()?.controllerFocusOut(event);
     }
   }
 }

@@ -2,6 +2,7 @@ import {
   booleanAttribute,
   computed,
   Directive,
+  ElementRef,
   inject,
   input,
   model,
@@ -107,6 +108,7 @@ export class ForTimePicker<D>
   extends AnchoredFormValueControlBase
   implements FormValueControl<D | null>, ForTimePickerContext<D>
 {
+  readonly #host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
   readonly #defaults = inject(FOR_TIME_PICKER_DEFAULTS);
   protected readonly positioningDefaults = this.#defaults;
   readonly #pickerSource = inject(FOR_PICKER_SOURCE_HOST, { optional: true });
@@ -225,7 +227,11 @@ export class ForTimePicker<D>
   /** When `true` (default), Escape, pointer-down outside, and focus outside close the listbox. */
   readonly dismissible = input(true, { transform: booleanAttribute });
 
-  /** When `true` (default), focus returns to the trigger on close. */
+  /**
+   * When `true` (default), focus returns to the trigger after a close from Escape, from picking a
+   * time or from setting `open` to `false`. A close from a press or focus outside the listbox, or
+   * from a Tab out, leaves focus where the user moved it.
+   */
   readonly returnFocus = input(true, { transform: booleanAttribute });
 
   /** Placeholder shown by `[forTimePickerValue]` when no time is selected. */
@@ -460,6 +466,10 @@ export class ForTimePicker<D>
     if (this.adoptsField()) {
       this.#fieldSlot.value()?.reset();
     }
+  }
+
+  private touchBoundaries(): readonly (Node | null)[] {
+    return [this.#host, this.overlay.content()];
   }
 
   /** Registers a projected `[forTimeField]`; the field calls it on creation. */
