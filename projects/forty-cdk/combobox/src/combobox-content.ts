@@ -183,7 +183,7 @@ export class ForComboboxContent {
         emitFocusOutside: (veto) => ctx.emitFocusOutside(veto),
         emitInteractOutside: (veto) => ctx.emitInteractOutside(veto),
         // The input owns the visible focus and toggles via its own click /
-        // focus handlers; the trigger (picker anatomy) toggles via its own
+        // focus handlers; every trigger (picker anatomy) toggles via its own
         // click handler, and a toggle or clear button acts on its own press.
         // Without exemption a pointer-down on any of them would race the
         // dismissal layer.
@@ -191,8 +191,7 @@ export class ForComboboxContent {
           const els: Element[] = [];
           const input = ctx.input();
           if (input) els.push(input);
-          const trigger = ctx.trigger();
-          if (trigger) els.push(trigger);
+          els.push(...ctx.triggerHosts());
           for (const chip of ctx.chips()) els.push(chip.host);
           els.push(...ctx.fieldButtons());
           return els;

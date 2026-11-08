@@ -304,7 +304,7 @@ export function injectTimePickerTriggerContext<D = unknown>(
       token: 'FOR_TIME_PICKER_CONTEXT',
       root: '[forTimePicker]',
       piece: 'ForTimePickerTrigger',
-      probe: () => widened.overlay.resolveTriggerId,
+      probe: () => widened.overlay.activateTrigger,
     });
     return widened;
   });

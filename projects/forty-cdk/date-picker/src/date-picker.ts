@@ -145,7 +145,6 @@ export class ForDatePicker<D>
     scope: 'date-picker',
   });
 
-  protected readonly generatedTriggerId = this.idGen.next('for-date-picker-trigger');
   readonly contentId = signal(this.idGen.next('for-date-picker-content'));
 
   /**

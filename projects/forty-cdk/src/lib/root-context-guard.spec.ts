@@ -384,7 +384,7 @@ const GUARDED: readonly GuardedRoot[] = [
   {
     entryPoint: 'date-picker',
     source: 'date-picker/src/date-picker-context.ts',
-    calls: 1,
+    calls: 2,
     token: 'FOR_DATE_PICKER_CONTEXT',
     root: '[forDatePicker]',
     piece: 'ForDatePickerTrigger',

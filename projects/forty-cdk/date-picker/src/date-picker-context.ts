@@ -69,6 +69,7 @@ export interface ForDatePickerContext {
   readonly hideWhenDetached: Signal<boolean>;
   readonly clipUntilPositioned: Signal<boolean>;
 
+  /** The active trigger's id, or `''` while no trigger is registered. */
   readonly triggerId: Signal<string>;
   readonly contentId: Signal<string>;
   /** Accessible name for the dialog surface. Emits no `aria-label` while `null`. */
@@ -87,7 +88,10 @@ export interface ForDatePickerContext {
    * exemption regardless of where the surface paints.
    */
   readonly reference: Signal<ReferenceElement | null>;
-  /** The trigger button — exempt from outside-pointer checks and the return-focus target. */
+  /**
+   * The active trigger: the one that last opened or toggled the surface, else the newest
+   * registered. The surface anchors to it, is labelled by it and returns focus to it.
+   */
   readonly trigger: Signal<HTMLElement | null>;
 
   /**
@@ -157,16 +161,19 @@ export interface ForDatePickerContext {
 /**
  * The date picker's internal coordination surface: everything
  * {@link ForDatePickerContext} publishes plus the members only its own pieces
- * read. Never exported from `public-api.ts`. It is the type the trigger reads
+ * read. Never exported from `public-api.ts`. It is the type the pieces read
  * {@link FOR_DATE_PICKER_CONTEXT} at; `ForDateRangePicker` declares `anatomy`
- * and both roots declare `resolveTriggerId` TS-`private`, which keeps them out
- * of the emitted `.d.ts` while `useExisting` still satisfies this contract at
- * runtime.
+ * and both roots declare `activateTrigger` and `triggerHosts` TS-`private`,
+ * which keeps them out of the emitted `.d.ts` while `useExisting` still
+ * satisfies this contract at runtime.
  */
 export interface DatePickerContext extends ForDatePickerContext {
   /** How the picker is composed. */
   readonly anatomy: Signal<ForDatePickerAnatomy>;
-  resolveTriggerId(staticId: string | null): string;
+  /** Every registered trigger's host, each exempt from the outside-press and outside-focus checks. */
+  readonly triggerHosts: Signal<readonly HTMLElement[]>;
+  /** Make the trigger on `host` the active one. A trigger calls it as it opens or toggles. */
+  activateTrigger(host: HTMLElement): void;
   /**
    * The elements that make up the picker as one control: its root and its open
    * surface. A focus move between them does not mark the picker touched.
@@ -192,7 +199,7 @@ export const FOR_DATE_PICKER_CONTEXT = new InjectionToken<ForDatePickerContext>(
  *
  * @param piece Name of the calling directive, used in the error message.
  */
-export function injectDatePickerContext(piece: string): ForDatePickerContext {
+export function injectDatePickerContext(piece: string): DatePickerContext {
   const ctx = inject(FOR_DATE_PICKER_CONTEXT, { optional: true });
   if (!ctx) {
     throw orphanContextError({
@@ -202,7 +209,15 @@ export function injectDatePickerContext(piece: string): ForDatePickerContext {
       token: 'FOR_DATE_PICKER_CONTEXT',
     });
   }
-  return ctx;
+  const widened = ctx as DatePickerContext;
+  assertRootContext({
+    entryPoint: 'date-picker',
+    token: 'FOR_DATE_PICKER_CONTEXT',
+    root: '[forDatePicker]',
+    piece,
+    probe: () => widened.anatomy,
+  });
+  return widened;
 }
 
 export const DATE_PICKER_TRIGGERS = new InjectionToken<

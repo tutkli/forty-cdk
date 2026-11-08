@@ -3950,6 +3950,35 @@ describe('ForCombobox trigger + list (picker anatomy, issue #675)', () => {
       expect(r.instance.open()).toBe(false);
       expect(document.activeElement).toBe(first);
     });
+
+    it('closes from the older trigger that opened it', async () => {
+      const r = renderHost(StackedTriggersHost);
+      const first = r.query<HTMLButtonElement>('[data-testid="first"]')!;
+      pressWithMouse(first);
+      await flush(r.fixture);
+      expect(r.instance.open()).toBe(true);
+
+      pressWithMouse(first);
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe(false);
+    });
+
+    it('labels the surface by, and returns focus to, the trigger that opened it', async () => {
+      const r = renderHost(StackedTriggersHost);
+      const first = r.query<HTMLButtonElement>('[data-testid="first"]')!;
+      pressWithMouse(first);
+      await flush(r.fixture);
+      expect(getContent().getAttribute('aria-labelledby')).toBe(first.id);
+
+      const input = getPickerInput();
+      input.focus();
+      pressKey(input, 'Escape');
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe(false);
+      expect(document.activeElement).toBe(first);
+    });
   });
 });
 

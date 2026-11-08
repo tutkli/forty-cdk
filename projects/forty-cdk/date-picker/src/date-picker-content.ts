@@ -63,7 +63,7 @@ export class ForDatePickerContent {
   private readonly resolvedAriaLabel = hostAriaLabel(() => this.ctx.ariaLabel());
 
   private readonly labelledBy = hostLabelledBy(() =>
-    this.resolvedAriaLabel() ? null : this.ctx.triggerId(),
+    this.resolvedAriaLabel() ? null : this.ctx.triggerId() || null,
   );
 
   constructor() {
@@ -135,12 +135,8 @@ export class ForDatePickerContent {
         emitPointerDownOutside: (veto) => ctx.emitPointerDownOutside(veto),
         emitFocusOutside: (veto) => ctx.emitFocusOutside(veto),
         emitInteractOutside: (veto) => ctx.emitInteractOutside(veto),
-        // Trigger is exempt — its own click toggles open/close; without
-        // exemption pointer-down-outside would race and double-close.
-        exemptElements: injectFieldLabelExemption(() => {
-          const trigger = ctx.trigger();
-          return trigger ? [trigger] : [];
-        }),
+        // Every trigger is exempt: each toggles the surface from its own click.
+        exemptElements: injectFieldLabelExemption(() => ctx.triggerHosts()),
       },
       // Move focus to the calendar's roving cell on open; the shell falls back
       // to the content host when no cell is found.

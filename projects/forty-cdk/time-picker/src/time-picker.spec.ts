@@ -887,7 +887,7 @@ describe('ForTimePicker', () => {
       expect(r.query('button')).toBe(trigger);
       expect(r.instance.openA()).toBe(false);
       expect(r.instance.openB()).toBe(true);
-      expect(trigger.id).not.toBe(idUnderA);
+      expect(trigger.id).toBe(idUnderA);
     });
   });
 
@@ -2269,6 +2269,83 @@ describe('ForTimePicker', () => {
           'FORCDK-TIME-PICKER-004',
         );
       });
+    });
+  });
+
+  describe('several triggers on one root', () => {
+    @Component({
+      imports: BASE_IMPORTS,
+      providers: [...provideNativeDateAdapter()],
+      template: `
+        <div forTimePicker [(open)]="open" #picker="forTimePicker">
+          <button forTimePickerTrigger data-testid="first">First</button>
+          @if (second()) {
+            <button forTimePickerTrigger data-testid="second">Second</button>
+          }
+          @if (open()) {
+            <div forTimePickerContent>
+              @for (slot of picker.slots(); track slot.id) {
+                <div forTimePickerOption [value]="slot.value">{{ slot.label }}</div>
+              }
+            </div>
+          }
+        </div>
+      `,
+    })
+    class StackedTriggersHost {
+      readonly open = signal(false);
+      readonly second = signal(true);
+    }
+
+    it('returns focus to the remaining trigger after the newer one unmounts', async () => {
+      const r = renderHost(StackedTriggersHost);
+      r.query<HTMLButtonElement>('[data-testid="second"]')!.click();
+      await flush(r.fixture);
+      expect(r.instance.open()).toBe(true);
+
+      r.instance.second.set(false);
+      await flush(r.fixture);
+      pressKey(document, 'Escape');
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe(false);
+      expect(document.activeElement).toBe(r.query('[data-testid="first"]'));
+    });
+
+    it('closes from the older trigger that opened it', async () => {
+      const r = renderHost(StackedTriggersHost);
+      const first = r.query<HTMLButtonElement>('[data-testid="first"]')!;
+      pressWithMouse(first);
+      await flush(r.fixture);
+      expect(r.instance.open()).toBe(true);
+
+      pressWithMouse(first);
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe(false);
+    });
+
+    it('labels the listbox by, and returns focus to, the trigger that opened it', async () => {
+      const r = renderHost(StackedTriggersHost);
+      const first = r.query<HTMLButtonElement>('[data-testid="first"]')!;
+      pressWithMouse(first);
+      await flush(r.fixture);
+      expect(getContent()!.getAttribute('aria-labelledby')).toBe(first.id);
+
+      pressKey(document, 'Escape');
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe(false);
+      expect(document.activeElement).toBe(first);
+    });
+
+    it('gives each trigger its own generated id', () => {
+      const r = renderHost(StackedTriggersHost);
+      const first = r.query<HTMLButtonElement>('[data-testid="first"]')!;
+      const second = r.query<HTMLButtonElement>('[data-testid="second"]')!;
+
+      expect(first.id).not.toBe('');
+      expect(first.id).not.toBe(second.id);
     });
   });
 });

@@ -222,18 +222,14 @@ export abstract class DatePickerBase<D>
   readonly #emitAutoFocusOnOpen = injectVetoableEmitter(this.autoFocusOnOpen);
   readonly #emitAutoFocusOnClose = injectVetoableEmitter(this.autoFocusOnClose);
 
-  protected abstract readonly generatedTriggerId: string;
-
   readonly #triggerSlot: RootedTriggerSlot = new RootedTriggerSlot(
     inject(DATE_PICKER_TRIGGERS).of(this),
-    () => this.generatedTriggerId,
   );
 
-  /**
-   * The trigger's `id` for `aria-controls` wiring: a consumer-set static `id` on
-   * the trigger host, else a generated one.
-   */
+  /** The active trigger's id, which the surface names in `aria-labelledby`. */
   readonly triggerId = this.#triggerSlot.id;
+
+  private readonly triggerHosts = this.#triggerSlot.hosts;
 
   /** The surface's `id` for `aria-labelledby` wiring; concrete roots seed it from {@link idGen}. */
   abstract readonly contentId: WritableSignal<string>;
@@ -298,8 +294,8 @@ export abstract class DatePickerBase<D>
     });
   }
 
-  private resolveTriggerId(staticId: string | null): string {
-    return this.#triggerSlot.resolveId(staticId);
+  private activateTrigger(host: HTMLElement): void {
+    this.#triggerSlot.activate(host);
   }
 
   private touchBoundaries(): readonly (Node | null)[] {
@@ -328,7 +324,7 @@ export abstract class DatePickerBase<D>
   }
 
   protected override fieldLabelledElementId(): string | null {
-    return this.triggerId();
+    return this.triggerId() || null;
   }
 
   /**
