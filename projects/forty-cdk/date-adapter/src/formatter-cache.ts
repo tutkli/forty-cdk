@@ -14,6 +14,11 @@
  * grows to at most a few dozen entries for the lifetime of the DI-scoped adapter
  * that owns it.
  *
+ * Every formatter uses the Gregorian calendar unless `options` names another
+ * `calendar`, so a locale whose default calendar is not Gregorian (`th-TH`,
+ * `fa-IR`, `ar-SA`) still names the Gregorian month and year the calendar grid
+ * and the date fields work in.
+ *
  * @returns A function that returns the cached `Intl.DateTimeFormat` for the
  *   given `locale` (or the runtime default when omitted) and `options`.
  */
@@ -26,7 +31,7 @@ export function createFormatterCache(): (
     const key = `${locale ?? ''}${JSON.stringify(options)}`;
     let formatter = cache.get(key);
     if (formatter === undefined) {
-      formatter = new Intl.DateTimeFormat(locale, options);
+      formatter = new Intl.DateTimeFormat(locale, { calendar: 'gregory', ...options });
       cache.set(key, formatter);
     }
     return formatter;

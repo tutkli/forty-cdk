@@ -35,7 +35,11 @@ export function buildTimeSegments(
   hourCycle: 12 | 24,
   granularity: TimeGranularity,
 ): readonly FieldSpec[] {
-  const options: Intl.DateTimeFormatOptions = { hour: '2-digit', hour12: hourCycle === 12 };
+  const options: Intl.DateTimeFormatOptions = {
+    calendar: 'gregory',
+    hour: '2-digit',
+    hour12: hourCycle === 12,
+  };
   if (granularity !== 'hour') {
     options.minute = '2-digit';
   }

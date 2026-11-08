@@ -109,7 +109,7 @@ import { queryFlag } from './_query-flag';
                         [year]="y.value"
                         [attr.data-testid]="'year-cell-' + y.value"
                       >
-                        {{ y.value }}
+                        {{ y.label }}
                       </td>
                     }
                   </tr>
@@ -154,7 +154,7 @@ import { queryFlag } from './_query-flag';
                 [disabled]="opt.disabled"
                 [attr.data-testid]="'year-opt-' + opt.value"
               >
-                {{ opt.value }}
+                {{ opt.label }}
               </option>
             }
           </select>

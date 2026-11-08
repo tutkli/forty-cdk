@@ -39,6 +39,7 @@ const REFERENCE_DATE_TIME = new Date(2000, 1, 1, 13, 23, 45);
  */
 export function buildSegments(locale: string | undefined): readonly FieldSpec[] {
   const parts = new Intl.DateTimeFormat(locale, {
+    calendar: 'gregory',
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
@@ -86,6 +87,7 @@ export function buildDateTimeSegments(
     return buildSegments(locale);
   }
   const options: Intl.DateTimeFormatOptions = {
+    calendar: 'gregory',
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',

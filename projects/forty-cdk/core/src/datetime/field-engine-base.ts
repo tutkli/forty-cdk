@@ -149,6 +149,7 @@ export abstract class DateTimeFieldEngineBase<
       specs: this.specs,
       editableOrder: this.editableOrder,
       periodNames: this.periodNames,
+      locale: this.locale,
       parts: () => this.parts(),
       segmentMin: (type) => this.segmentMin(type),
       segmentMax: (type) => this.segmentMax(type),

@@ -14,7 +14,10 @@ export function resolveHourCycle(locale: string | undefined, override: 12 | 24 |
   if (override !== null) {
     return override;
   }
-  const cycle = new Intl.DateTimeFormat(locale, { hour: 'numeric' }).resolvedOptions().hourCycle;
+  const cycle = new Intl.DateTimeFormat(locale, {
+    calendar: 'gregory',
+    hour: 'numeric',
+  }).resolvedOptions().hourCycle;
   return cycle === 'h11' || cycle === 'h12' ? 12 : 24;
 }
 
@@ -37,8 +40,11 @@ export function to12(hour: number, min: 0 | 1 = 1): { h12: number; pm: boolean }
  * @param locale BCP 47 locale, or `undefined` for the runtime default.
  */
 export function twelveHourMin(locale: string | undefined): 0 | 1 {
-  const cycle = new Intl.DateTimeFormat(locale, { hour: 'numeric', hour12: true }).resolvedOptions()
-    .hourCycle;
+  const cycle = new Intl.DateTimeFormat(locale, {
+    calendar: 'gregory',
+    hour: 'numeric',
+    hour12: true,
+  }).resolvedOptions().hourCycle;
   return cycle === 'h11' ? 0 : 1;
 }
 
@@ -55,7 +61,11 @@ export function from12(h12: number, pm: boolean): number {
  * @param locale BCP 47 locale, or `undefined` for the runtime default.
  */
 export function dayPeriodNames(locale: string | undefined): { am: string; pm: string } {
-  const fmt = new Intl.DateTimeFormat(locale, { hour: 'numeric', hour12: true });
+  const fmt = new Intl.DateTimeFormat(locale, {
+    calendar: 'gregory',
+    hour: 'numeric',
+    hour12: true,
+  });
   const read = (date: Date): string =>
     fmt.formatToParts(date).find((part) => part.type === 'dayPeriod')?.value ?? '';
   return { am: read(AM_TIME) || 'AM', pm: read(PM_TIME) || 'PM' };

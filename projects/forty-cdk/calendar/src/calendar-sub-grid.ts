@@ -42,6 +42,19 @@ export interface CalendarSubGridHost<D> {
 }
 
 /**
+ * The locale `adapter.format` resolves when the calendar forwards `locale()`:
+ * the calendar's own, then the adapter's `locale()`, then the runtime default.
+ * The numbers a view renders without the adapter take their digits from it, so
+ * they match the adapter-formatted names beside them.
+ */
+export function resolveCalendarLocale<D>(host: {
+  readonly adapter: DateAdapter<D>;
+  readonly locale: () => string | null;
+}): string | undefined {
+  return host.locale() ?? host.adapter.locale?.() ?? undefined;
+}
+
+/**
  * The per-view behaviour the root composes instead of repeating
  * `switch (view())` across the view-trigger label, the prev / next disabled
  * predicates, the active-cell focus move, and paging. Each

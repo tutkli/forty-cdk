@@ -149,7 +149,7 @@ export class CalendarDropdownsFixture {
       </select>
       <select forCalendarYearSelect #y="forCalendarYearSelect" [minYear]="2020" [maxYear]="2030">
         @for (opt of y.years(); track opt.value) {
-          <option [value]="opt.value" [disabled]="opt.disabled">{{ opt.value }}</option>
+          <option [value]="opt.value" [disabled]="opt.disabled">{{ opt.label }}</option>
         }
       </select>
       <h2 forCalendarHeading #heading="forCalendarHeading">{{ heading.label() }}</h2>
@@ -220,7 +220,7 @@ export class CalendarMonthViewFixture {
           @for (row of yg.rows(); track row.key) {
             <tr>
               @for (y of row.years; track y.value) {
-                <td forCalendarYearCell [year]="y.value">{{ y.value }}</td>
+                <td forCalendarYearCell [year]="y.value">{{ y.label }}</td>
               }
             </tr>
           }

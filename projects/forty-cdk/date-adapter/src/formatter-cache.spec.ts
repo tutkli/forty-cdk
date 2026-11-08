@@ -17,6 +17,16 @@ describe('createFormatterCache', () => {
     expect(cache('en-US', { month: 'long' })).not.toBe(cache('en-US', { month: '2-digit' }));
   });
 
+  it('formats in the Gregorian calendar unless the options name another', () => {
+    const cache = createFormatterCache();
+
+    expect(cache('th-TH', { year: 'numeric' }).resolvedOptions().calendar).toBe('gregory');
+    expect(cache('fa-IR', { month: 'long' }).resolvedOptions().calendar).toBe('gregory');
+    expect(
+      cache('th-TH', { year: 'numeric', calendar: 'buddhist' }).resolvedOptions().calendar,
+    ).toBe('buddhist');
+  });
+
   it('treats an omitted locale as its own stable key', () => {
     const cache = createFormatterCache();
     const options: Intl.DateTimeFormatOptions = { month: 'long' };

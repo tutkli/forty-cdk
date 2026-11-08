@@ -210,22 +210,22 @@ Click the heading button to cycle from day → month → year view. Click a mont
 
 ### `ForCalendar`
 
-| Property            | Type                                   | Description                                                                                                                                                                                                       |
-| ------------------- | -------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `value`             | `model<D \| null>`                     | Two-way bindable selected date, or `null`. Used in `selectionMode="single"`. `(valueChange)` fires only on internal selection.<br>**Default:** `null`                                                             |
-| `selectionMode`     | `input<'single' \| 'range'>`           | `'single'` (default) keeps the single-date `value` flow. `'range'` switches to anchor → commit and exposes `range`.<br>**Default:** `'single'`                                                                    |
-| `range`             | `model<DateRange<D> \| null>`          | Two-way bindable committed range. Only used in `selectionMode="range"`. `(rangeChange)` fires only on internal commits.<br>**Default:** `null`                                                                    |
-| `minRangeLength`    | `input<number \| null>`                | Minimum inclusive day count. A commit shorter than this is a no-op.<br>**Default:** `null` (no minimum)                                                                                                           |
-| `maxRangeLength`    | `input<number \| null>`                | Maximum inclusive day count. A commit longer than this is a no-op.<br>**Default:** `null` (no maximum)                                                                                                            |
-| `min`               | `input<D \| null>`                     | Minimum selectable date (inclusive). Earlier dates are unavailable.<br>**Default:** `null`                                                                                                                        |
-| `max`               | `input<D \| null>`                     | Maximum selectable date (inclusive). Later dates are unavailable.<br>**Default:** `null`                                                                                                                          |
-| `isDateUnavailable` | `input<(date: D) => boolean>`          | Per-date predicate marking a date unavailable (present but not selectable).<br>**Default:** `() => false`                                                                                                         |
-| `dateLabel`         | `input<CalendarDateLabelFormatter<D>>` | Formats each gridcell's `aria-label` (full accessible date).<br>**Default:** localized full date, outside-month days through the scope's `outsideMonthLabel`                                                      |
-| `disabled`          | `input<boolean>`                       | Disables the whole calendar (no focus movement, no selection). Reflected as `data-disabled`.<br>**Default:** —                                                                                                    |
-| `readonly`          | `input<boolean>`                       | Read-only: dates stay focusable, selection is blocked. Reflected as `data-readonly`.<br>**Default:** —                                                                                                            |
-| `firstDayOfWeek`    | `input<number \| null>`                | First column's weekday, **0-6** (`0` = Sunday).<br>**Default:** `null` → the adapter's value (or `provideForCalendarDefaults`)                                                                                    |
-| `locale`            | `input<string \| null>`                | BCP 47 locale for the heading, weekday headers, month-picker options and cell `aria-label` names. The calendar system stays Gregorian.<br>**Default:** `null` → the adapter's `locale()`, then the runtime locale |
-| `dir`               | `input<'ltr' \| 'rtl' \| null>`        | Writing direction.<br>**Default:** `null` resolves the ambient direction; reflected to the host `dir` when set or declared and mirrors horizontal arrows                                                          |
+| Property            | Type                                   | Description                                                                                                                                                                                                                                          |
+| ------------------- | -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `value`             | `model<D \| null>`                     | Two-way bindable selected date, or `null`. Used in `selectionMode="single"`. `(valueChange)` fires only on internal selection.<br>**Default:** `null`                                                                                                |
+| `selectionMode`     | `input<'single' \| 'range'>`           | `'single'` (default) keeps the single-date `value` flow. `'range'` switches to anchor → commit and exposes `range`.<br>**Default:** `'single'`                                                                                                       |
+| `range`             | `model<DateRange<D> \| null>`          | Two-way bindable committed range. Only used in `selectionMode="range"`. `(rangeChange)` fires only on internal commits.<br>**Default:** `null`                                                                                                       |
+| `minRangeLength`    | `input<number \| null>`                | Minimum inclusive day count. A commit shorter than this is a no-op.<br>**Default:** `null` (no minimum)                                                                                                                                              |
+| `maxRangeLength`    | `input<number \| null>`                | Maximum inclusive day count. A commit longer than this is a no-op.<br>**Default:** `null` (no maximum)                                                                                                                                               |
+| `min`               | `input<D \| null>`                     | Minimum selectable date (inclusive). Earlier dates are unavailable.<br>**Default:** `null`                                                                                                                                                           |
+| `max`               | `input<D \| null>`                     | Maximum selectable date (inclusive). Later dates are unavailable.<br>**Default:** `null`                                                                                                                                                             |
+| `isDateUnavailable` | `input<(date: D) => boolean>`          | Per-date predicate marking a date unavailable (present but not selectable).<br>**Default:** `() => false`                                                                                                                                            |
+| `dateLabel`         | `input<CalendarDateLabelFormatter<D>>` | Formats each gridcell's `aria-label` (full accessible date).<br>**Default:** localized full date, outside-month days through the scope's `outsideMonthLabel`                                                                                         |
+| `disabled`          | `input<boolean>`                       | Disables the whole calendar (no focus movement, no selection). Reflected as `data-disabled`.<br>**Default:** —                                                                                                                                       |
+| `readonly`          | `input<boolean>`                       | Read-only: dates stay focusable, selection is blocked. Reflected as `data-readonly`.<br>**Default:** —                                                                                                                                               |
+| `firstDayOfWeek`    | `input<number \| null>`                | First column's weekday, **0-6** (`0` = Sunday).<br>**Default:** `null` → the adapter's value (or `provideForCalendarDefaults`)                                                                                                                       |
+| `locale`            | `input<string \| null>`                | BCP 47 locale for the heading, weekday headers, month-picker options, cell `aria-label` names and the digits of day and year labels. The calendar system stays Gregorian.<br>**Default:** `null` → the adapter's `locale()`, then the runtime locale |
+| `dir`               | `input<'ltr' \| 'rtl' \| null>`        | Writing direction.<br>**Default:** `null` resolves the ambient direction; reflected to the host `dir` when set or declared and mirrors horizontal arrows                                                                                             |
 
 ### Data attributes
 
@@ -354,7 +354,7 @@ The recommended path is `[forCalendarMonthSelect]` and `[forCalendarYearSelect]`
       [maxYear]="2100"
     >
       @for (opt of y.years(); track opt.value) {
-      <option [value]="opt.value" [disabled]="opt.disabled">{{ opt.value }}</option>
+      <option [value]="opt.value" [disabled]="opt.disabled">{{ opt.label }}</option>
       }
     </select>
     <button forCalendarNextButton [ariaLabel]="'Next month'">
@@ -385,11 +385,11 @@ The recommended path is `[forCalendarMonthSelect]` and `[forCalendarYearSelect]`
 
 #### `ForCalendarYearSelect` API
 
-| API       | Description                                                                                                                                           |
-| --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `minYear` | `input<number \| null>`: the lowest listed year. Defaults to `currentYear - 100` when `null`.                                                         |
-| `maxYear` | `input<number \| null>`: the highest listed year. Defaults to `currentYear + 10` when `null`.                                                         |
-| `years()` | `Signal<readonly CalendarYearOption[]>`: years from `minYear` to `maxYear` inclusive, each `disabled` when the whole year falls outside `[min, max]`. |
+| API       | Description                                                                                                                                                                                              |
+| --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `minYear` | `input<number \| null>`: the lowest listed year. Defaults to `currentYear - 100` when `null`.                                                                                                            |
+| `maxYear` | `input<number \| null>`: the highest listed year. Defaults to `currentYear + 10` when `null`.                                                                                                            |
+| `years()` | `Signal<readonly CalendarYearOption[]>`: years from `minYear` to `maxYear` inclusive, each with a `label` in the calendar locale's digits and `disabled` when the whole year falls outside `[min, max]`. |
 
 The default window is **anchored to the current year** (not the visible year), so navigating far away never drops the current year off the list. Out-of-`[min, max]` entries have `disabled: true`, matching the `CalendarYearOption` shape. Both directives set the native `disabled` attribute on the `<select>` itself when the calendar is disabled.
 
@@ -493,7 +493,7 @@ The heading's `label()` follows the active view, with the same text as the view 
       @for (row of yg.rows(); track row.key) {
       <tr>
         @for (y of row.years; track y.value) {
-        <td forCalendarYearCell [year]="y.value">{{ y.value }}</td>
+        <td forCalendarYearCell [year]="y.value">{{ y.label }}</td>
         }
       </tr>
       }

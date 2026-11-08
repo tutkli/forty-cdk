@@ -63,6 +63,7 @@ class MockHost implements SegmentEditorHost<Parts> {
   readonly specs = signal<readonly FieldSpec[]>(DATE_TIME_SPECS);
   readonly editableOrder = signal<readonly SegmentType[]>(EDITABLE_ORDER);
   readonly periodNames = signal({ am: 'AM', pm: 'PM' });
+  readonly locale = signal<string | undefined>(undefined);
   readonly #parts = signal<Parts>({});
   readonly committed: Parts[] = [];
   readonly transientFlags: boolean[] = [];

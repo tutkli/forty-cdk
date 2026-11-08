@@ -174,6 +174,28 @@ export function assertDateAdapterContract<D>(
       );
     });
 
+    it('format names the Gregorian month and year under a locale whose default calendar is not Gregorian', () => {
+      const date = adapter.createDate(2026, 11, 15);
+      const reference = new Date(2026, 10, 15);
+      expect(new Intl.DateTimeFormat('th-TH', { year: 'numeric' }).format(reference)).toContain(
+        '2569',
+      );
+      for (const locale of ['th-TH', 'fa-IR', 'ar-SA']) {
+        for (const shape of [{ month: 'long' }, { year: 'numeric' }] as const) {
+          const gregorian = new Intl.DateTimeFormat(locale, {
+            ...shape,
+            calendar: 'gregory',
+          }).format(reference);
+          expect(adapter.format(date, shape, locale), `${locale} ${Object.keys(shape)[0]}`).toBe(
+            gregorian,
+          );
+        }
+      }
+      expect(adapter.format(date, { year: 'numeric', calendar: 'buddhist' }, 'th-TH')).toContain(
+        '2569',
+      );
+    });
+
     it('memoizes Intl.DateTimeFormat by locale and options', () => {
       const date = adapter.createDate(2026, 3, 1);
       const constructed = vi.spyOn(Intl, 'DateTimeFormat');

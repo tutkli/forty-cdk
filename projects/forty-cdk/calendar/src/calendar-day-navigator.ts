@@ -1,11 +1,11 @@
 import { computed } from '@angular/core';
 
-import { Collection, isUnset } from 'forty-cdk/core';
+import { Collection, formatLocaleDigits, isUnset } from 'forty-cdk/core';
 import { type DateAdapter } from 'forty-cdk/date-adapter';
 import { buildMonthMatrix } from './build-month-matrix';
 import type { CalendarWeek, CalendarWeekday, ForCalendarCellHandle } from './calendar-context';
 import { isCalendarActivationKey, resolveCalendarGridMove } from './calendar-keyboard';
-import type { CalendarViewStrategy } from './calendar-sub-grid';
+import { type CalendarViewStrategy, resolveCalendarLocale } from './calendar-sub-grid';
 
 /**
  * The day grid view's state machine (`view="day"`): the 7-column date table.
@@ -47,12 +47,13 @@ export class CalendarDayNavigator<D> implements CalendarViewStrategy {
   /** Week rows of the visible month, including outside-month padding days. */
   readonly weeks = computed<readonly CalendarWeek<D>[]>(() => {
     const adapter = this.#host.adapter;
+    const locale = resolveCalendarLocale(this.#host);
     return this.#matrix().map((row) => ({
       key: this.#dateKey(row[0]!),
       days: row.map((date) => ({
         key: this.#dateKey(date),
         date,
-        label: String(adapter.getDate(date)),
+        label: formatLocaleDigits(adapter.getDate(date), 1, locale),
         dateLabel: this.#host.getDateLabel(date),
       })),
     }));
