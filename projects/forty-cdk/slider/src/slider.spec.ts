@@ -164,11 +164,16 @@ const keyUp = (target: HTMLElement, key: string, init: KeyboardEventInit = {}) =
 // below does not need geometry and stays in Vitest.
 
 @Component({
-  imports: [ForFieldset, ForSlider],
+  imports: [ForFieldset, ...SLIDER_IMPORTS],
   template: `
     <form>
       <div forFieldset [disabled]="fieldsetDisabled()">
-        <div forSlider name="price" [(value)]="value"></div>
+        <div forSlider name="price" [required]="required()" [(value)]="value">
+          <span forSliderTrack>
+            <span forSliderThumb [index]="0" ariaLabel="Minimum"></span>
+            <span forSliderThumb [index]="1" ariaLabel="Maximum"></span>
+          </span>
+        </div>
       </div>
     </form>
   `,
@@ -176,6 +181,7 @@ const keyUp = (target: HTMLElement, key: string, init: KeyboardEventInit = {}) =
 class NativeSubmissionFixture implements NativeSubmissionHost {
   readonly value = signal<readonly number[]>([]);
   readonly fieldsetDisabled = signal(false);
+  readonly required = signal(false);
   commit(): void {
     this.value.set([20, 80]);
   }

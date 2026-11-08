@@ -19,12 +19,14 @@ class Mirror {
   readonly name = input('');
   readonly values = input<readonly string[]>([]);
   readonly disabled = input(false);
+  readonly required = input(false);
 
   constructor() {
     injectHiddenInput({
       name: this.name,
       values: this.values as Signal<readonly string[]>,
       disabled: this.disabled,
+      required: this.required,
     });
   }
 }
@@ -33,7 +35,15 @@ class Mirror {
   imports: [Mirror],
   template: `
     <form id="f">
-      <button mirror [name]="name()" [values]="values()" [disabled]="disabled()">x</button>
+      <button
+        mirror
+        [name]="name()"
+        [values]="values()"
+        [disabled]="disabled()"
+        [required]="required()"
+      >
+        x
+      </button>
     </form>
   `,
 })
@@ -41,6 +51,7 @@ class Host {
   readonly name = signal('');
   readonly values = signal<readonly string[]>([]);
   readonly disabled = signal(false);
+  readonly required = signal(false);
 }
 
 function setup(platformId?: unknown): {
@@ -63,6 +74,10 @@ function setup(platformId?: unknown): {
 
 function hiddenInputs(form: HTMLFormElement): HTMLInputElement[] {
   return Array.from(form.querySelectorAll<HTMLInputElement>('input[type="hidden"]'));
+}
+
+function validationInputs(form: HTMLFormElement): HTMLInputElement[] {
+  return Array.from(form.querySelectorAll<HTMLInputElement>('input[required]'));
 }
 
 function formData(form: HTMLFormElement): Array<[string, string]> {
@@ -194,6 +209,99 @@ describe('injectHiddenInput', () => {
     expect(inputs).toHaveLength(1);
     expect(inputs[0]!.value).toBe('red');
     expect(formData(form)).toEqual([['color', 'red']]);
+  });
+
+  describe('required', () => {
+    it('mounts no validation input while not required', () => {
+      const { form } = setup();
+
+      expect(validationInputs(form)).toHaveLength(0);
+      expect(form.checkValidity()).toBe(true);
+    });
+
+    it('blocks the form while required and empty, whether or not a name is set', () => {
+      const { fixture, host, form } = setup();
+      host.required.set(true);
+      fixture.detectChanges();
+
+      expect(form.checkValidity()).toBe(false);
+
+      host.name.set('color');
+      fixture.detectChanges();
+      expect(form.checkValidity()).toBe(false);
+    });
+
+    it('passes once values is non-empty and submits nothing of its own', () => {
+      const { fixture, host, form } = setup();
+      host.required.set(true);
+      host.values.set(['red']);
+      fixture.detectChanges();
+
+      expect(form.checkValidity()).toBe(true);
+      expect(formData(form)).toEqual([]);
+
+      host.name.set('color');
+      fixture.detectChanges();
+      expect(formData(form)).toEqual([['color', 'red']]);
+    });
+
+    it('mounts one unfocusable, accessibility-hidden validation input', () => {
+      const { fixture, host, form } = setup();
+      host.required.set(true);
+      fixture.detectChanges();
+      fixture.detectChanges();
+
+      const inputs = validationInputs(form);
+      expect(inputs).toHaveLength(1);
+      expect(inputs[0]!.tabIndex).toBe(-1);
+      expect(inputs[0]!.getAttribute('aria-hidden')).toBe('true');
+      expect(inputs[0]!.name).toBe('');
+    });
+
+    it('does not block while disabled', () => {
+      const { fixture, host, form } = setup();
+      host.required.set(true);
+      host.disabled.set(true);
+      fixture.detectChanges();
+
+      expect(form.checkValidity()).toBe(true);
+    });
+
+    it('hands focus given to the validation input to the host', () => {
+      const { fixture, host, form } = setup();
+      host.required.set(true);
+      fixture.detectChanges();
+
+      validationInputs(form)[0]!.focus();
+
+      expect(document.activeElement).toBe(form.querySelector('button'));
+    });
+
+    it('keeps its state across a native form reset', () => {
+      const { fixture, host, form } = setup();
+      host.required.set(true);
+      host.values.set(['red']);
+      fixture.detectChanges();
+
+      form.reset();
+
+      expect(form.checkValidity()).toBe(true);
+    });
+
+    it('removes the validation input once no longer required, and on destroy', () => {
+      const { fixture, host, form } = setup();
+      host.required.set(true);
+      fixture.detectChanges();
+
+      host.required.set(false);
+      fixture.detectChanges();
+      expect(validationInputs(form)).toHaveLength(0);
+
+      host.required.set(true);
+      fixture.detectChanges();
+      fixture.destroy();
+      expect(validationInputs(form)).toHaveLength(0);
+    });
   });
 
   describe('server platform (SSR)', () => {

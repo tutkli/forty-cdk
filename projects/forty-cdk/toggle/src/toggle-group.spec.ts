@@ -98,7 +98,7 @@ const toggleItems = (host: HTMLElement): HTMLElement[] =>
   template: `
     <form>
       <div forFieldset [disabled]="fieldsetDisabled()">
-        <div forToggleGroup name="formats" multiple [(value)]="value">
+        <div forToggleGroup name="formats" [required]="required()" multiple [(value)]="value">
           <button forToggleGroupItem value="bold">Bold</button>
           <button forToggleGroupItem value="italic">Italic</button>
         </div>
@@ -109,6 +109,7 @@ const toggleItems = (host: HTMLElement): HTMLElement[] =>
 class NativeSubmissionFixture implements NativeSubmissionHost {
   readonly value = signal<readonly string[]>([]);
   readonly fieldsetDisabled = signal(false);
+  readonly required = signal(false);
   commit(): void {
     this.value.set(['bold', 'italic']);
   }

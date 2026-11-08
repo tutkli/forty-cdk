@@ -319,6 +319,8 @@ export class ForTimeRangeField<D>
           : [serializeISOTime(this.adapter, range.start, this.granularity())];
       }),
       disabled: this.effectiveDisabled,
+      required: this.required,
+      focus: () => this.focus(),
     });
     injectHiddenInput({
       name: endName,
@@ -329,6 +331,8 @@ export class ForTimeRangeField<D>
           : [serializeISOTime(this.adapter, range.end, this.granularity())];
       }),
       disabled: this.effectiveDisabled,
+      required: this.required,
+      focus: () => this.focus(),
     });
     injectNativeFormResetToInitial(this.value, () => this.reset());
   }

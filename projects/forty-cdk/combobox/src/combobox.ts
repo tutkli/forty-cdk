@@ -566,6 +566,8 @@ export class ForCombobox<T = string>
       values: this.value,
       serialize: (item) => this.itemToFormValue()(item),
       disabled: this.effectiveDisabled,
+      required: this.required,
+      focus: () => this.focus(),
     });
     injectNativeFormResetToInitial(this.value);
     injectNativeFormResetToInitial(this.query);

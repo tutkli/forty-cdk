@@ -138,6 +138,7 @@ class ListboxFormControlHost {
           forListbox
           multiple
           name="cities"
+          [required]="required()"
           [(value)]="value"
           [itemToFormValue]="toId"
           ariaLabel="Cities"
@@ -149,6 +150,7 @@ class ListboxFormControlHost {
 class NativeSubmissionFixture implements NativeSubmissionHost {
   readonly value = signal<readonly { readonly id: string }[]>([]);
   readonly fieldsetDisabled = signal(false);
+  readonly required = signal(false);
   readonly toId = (item: { readonly id: string }): string => item.id;
   commit(): void {
     this.value.set([{ id: 'lis' }, { id: 'opo' }]);

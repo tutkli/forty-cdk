@@ -274,6 +274,8 @@ export class ForSlider
       name: this.name,
       values: stringValues,
       disabled: this.effectiveDisabled,
+      required: this.required,
+      focus: () => this.focus(),
     });
     injectNativeFormResetToInitial(this.value);
     if (this.#isBrowser) {

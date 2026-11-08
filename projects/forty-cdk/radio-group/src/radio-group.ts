@@ -147,6 +147,8 @@ export class ForRadioGroup
         return v === null ? [] : [v];
       }),
       disabled: this.effectiveDisabled,
+      required: this.required,
+      focus: () => this.focus(),
     });
     injectNativeFormResetToInitial(this.value);
   }

@@ -222,7 +222,7 @@ export class DemoBold {
 }
 ```
 
-When `[name]` is set (typically through `[formField]`), the directive mounts an `<input type="hidden" value="on">` sibling while checked so the surrounding `<form>` picks it up during native submission. A native reset of the owning `<form>` returns `checked` to what it held when the toggle first rendered.
+When `[name]` is set (typically through `[formField]`), the directive mounts an `<input type="hidden" value="on">` sibling while checked so the surrounding `<form>` picks it up during native submission. A native reset of the owning `<form>` returns `checked` to what it held when the toggle first rendered. A bound `[required]` blocks native submission while unpressed, as a native required control does: an unnamed, visually hidden `<input required>` fails constraint validation, `form:invalid` matches, and when the browser reports the form, focus moves to the toggle.
 
 For a set of related toggles, `ForToggleGroup` implements `FormValueControl<readonly string[]>` instead: its `value` is `readonly string[]`, and a single-mode group simply carries `[]` or `[selected]`.
 
@@ -265,7 +265,7 @@ export class DemoFormats {
 > The single-`boolean` `ForToggle` above is unaffected: `required(s.bold)` works because `false` is
 > treated as empty.
 
-When `[name]` is set (typically through `[formField]`), the directive mounts one `<input type="hidden">` sibling per selected value so the surrounding `<form>` picks the values up during native submission. A native reset of the owning `<form>` returns `value` to what it held when the group first rendered.
+When `[name]` is set (typically through `[formField]`), the directive mounts one `<input type="hidden">` sibling per selected value so the surrounding `<form>` picks the values up during native submission. A native reset of the owning `<form>` returns `value` to what it held when the group first rendered. A bound `[required]` blocks native submission while no item is pressed, as a native required control does: an unnamed, visually hidden `<input required>` fails constraint validation, `form:invalid` matches, and when the browser reports the form, focus moves to the first enabled item.
 
 Choose between the two form-control shapes by the value you need: `ForToggle` (`FormCheckboxControl`, a single `boolean`) for one independent on/off button, `ForToggleGroup` (`FormValueControl<readonly string[]>`) for a set of related toggles whose selection is a list.
 

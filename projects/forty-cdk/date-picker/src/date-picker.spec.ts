@@ -276,7 +276,13 @@ async function openPicker(r: R): Promise<void> {
   template: `
     <form>
       <div forFieldset [disabled]="fieldsetDisabled()">
-        <div forDatePicker name="dob" [(value)]="value" ariaLabel="Date of birth">
+        <div
+          forDatePicker
+          name="dob"
+          [required]="required()"
+          [(value)]="value"
+          ariaLabel="Date of birth"
+        >
           <button forDatePickerTrigger>Pick</button>
         </div>
       </div>
@@ -286,6 +292,7 @@ async function openPicker(r: R): Promise<void> {
 class DaySubmissionHost implements NativeSubmissionHost {
   readonly value = signal<Date | null>(null);
   readonly fieldsetDisabled = signal(false);
+  readonly required = signal(false);
   commit(): void {
     this.value.set(new Date(2026, 11, 5));
   }
@@ -303,6 +310,7 @@ class DaySubmissionHost implements NativeSubmissionHost {
         <div
           forDatePicker
           name="departure"
+          [required]="required()"
           granularity="minute"
           [(value)]="value"
           ariaLabel="Departure"
@@ -316,6 +324,7 @@ class DaySubmissionHost implements NativeSubmissionHost {
 class MinuteSubmissionHost implements NativeSubmissionHost {
   readonly value = signal<Date | null>(null);
   readonly fieldsetDisabled = signal(false);
+  readonly required = signal(false);
   commit(): void {
     this.value.set(new Date(2026, 11, 5, 14, 30));
   }

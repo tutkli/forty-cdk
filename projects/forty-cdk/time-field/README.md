@@ -175,7 +175,7 @@ Plus the shared `FormUiControl` members from `@angular/forms/signals`: `disabled
 
 A partly typed time, including one whose AM/PM segment is still empty, already reports `value()` as `null`, so writing `null` through `[(value)]` changes nothing and leaves the typed digits on screen. Clear the field with `clear()` instead, which you can reach through the `#field="forTimeField"` template reference.
 
-A native reset of the owning `<form>` returns `value` to what it held when the field first rendered and runs `reset()`, so a partly typed entry goes too and the hidden input submits that value again.
+A native reset of the owning `<form>` returns `value` to what it held when the field first rendered and runs `reset()`, so a partly typed entry goes too and the hidden input submits that value again. A bound `[required]` blocks native submission until a complete time is entered, as a native required control does: an unnamed, visually hidden `<input required>` fails constraint validation, `form:invalid` matches, and when the browser reports the form, focus moves to the first editable segment.
 
 > **Why `minTime` / `maxTime`, not `min` / `max`?** `FormUiControl.min` / `max` are reserved members typed `number | undefined` for numeric validators bound by `[formField]`. A date-time-typed `min` / `max` would break the `FormValueControl` contract, so the time bounds use distinct names. Only the time-of-day component of the bounds is considered.
 
@@ -285,7 +285,7 @@ readonly schedule = form(this.model);
 
 The endpoint groups each accept an `ariaLabel` input for their own group label, falling back to the scope defaults (`'Start time'` / `'End time'`); bind `[ariaLabel]="null"` to drop the name. Plus the shared `FormUiControl` members bound automatically by `[formField]`.
 
-`ForTimeRangeField` exposes the same `clear()` and `reset()` as `ForTimeField`. They drop a half-entered range and an out-of-order one, its `data-range-error` included, which writing `null` through `[(value)]` cannot do: such a range already reports `value()` as `null`. Without them, finishing the end endpoint later would commit a range built from a start the user thought was gone. A native reset of the owning `<form>` returns the range to what it held when the field first rendered and runs `reset()`.
+`ForTimeRangeField` exposes the same `clear()` and `reset()` as `ForTimeField`. They drop a half-entered range and an out-of-order one, its `data-range-error` included, which writing `null` through `[(value)]` cannot do: such a range already reports `value()` as `null`. Without them, finishing the end endpoint later would commit a range built from a start the user thought was gone. A native reset of the owning `<form>` returns the range to what it held when the field first rendered and runs `reset()`. A bound `[required]` blocks native submission until a complete range is entered, the same way a single field does.
 
 > **Why `minTime` / `maxTime`, not `min` / `max`?** Beyond the reason above, `FormUiControl.min` / `max` are additionally typed `NonNullable<TValue>` (the range object itself), which is meaningless as a bound. Only the time-of-day component of the bounds is considered.
 

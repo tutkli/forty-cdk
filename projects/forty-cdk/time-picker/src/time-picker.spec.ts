@@ -213,7 +213,7 @@ class TimePickerFormControlHost {
   template: `
     <form>
       <div forFieldset [disabled]="fieldsetDisabled()">
-        <div forTimePicker name="alarm" [(value)]="value">
+        <div forTimePicker name="alarm" [required]="required()" [(value)]="value">
           <button forTimePickerTrigger>Pick</button>
         </div>
       </div>
@@ -223,6 +223,7 @@ class TimePickerFormControlHost {
 class MinuteSubmissionHost implements NativeSubmissionHost {
   readonly value = signal<Date | null>(null);
   readonly fieldsetDisabled = signal(false);
+  readonly required = signal(false);
   commit(): void {
     this.value.set(new Date(2026, 11, 5, 14, 30, 15));
   }
@@ -237,7 +238,13 @@ class MinuteSubmissionHost implements NativeSubmissionHost {
   template: `
     <form>
       <div forFieldset [disabled]="fieldsetDisabled()">
-        <div forTimePicker name="lap" granularity="second" [(value)]="value">
+        <div
+          forTimePicker
+          name="lap"
+          [required]="required()"
+          granularity="second"
+          [(value)]="value"
+        >
           <button forTimePickerTrigger>Pick</button>
         </div>
       </div>
@@ -247,6 +254,7 @@ class MinuteSubmissionHost implements NativeSubmissionHost {
 class SecondSubmissionHost implements NativeSubmissionHost {
   readonly value = signal<Date | null>(null);
   readonly fieldsetDisabled = signal(false);
+  readonly required = signal(false);
   commit(): void {
     this.value.set(new Date(2026, 11, 5, 14, 30, 15));
   }

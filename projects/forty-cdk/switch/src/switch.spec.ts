@@ -68,7 +68,7 @@ const divSwitchOf = (host: HTMLElement) => host.querySelector<HTMLElement>('[for
   template: `
     <form>
       <div forFieldset [disabled]="fieldsetDisabled()">
-        <button forSwitch name="notify" [(checked)]="value">Notify</button>
+        <button forSwitch name="notify" [required]="required()" [(checked)]="value">Notify</button>
       </div>
     </form>
   `,
@@ -76,6 +76,7 @@ const divSwitchOf = (host: HTMLElement) => host.querySelector<HTMLElement>('[for
 class NativeSubmissionFixture implements NativeSubmissionHost {
   readonly value = signal<boolean>(false);
   readonly fieldsetDisabled = signal(false);
+  readonly required = signal(false);
   commit(): void {
     this.value.set(true);
   }

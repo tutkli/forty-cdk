@@ -75,7 +75,13 @@ const inputOf = (host: HTMLElement) => host.querySelector<HTMLInputElement>('inp
   template: `
     <form>
       <div forFieldset [disabled]="fieldsetDisabled()">
-        <input forNumberInput name="qty" [(value)]="value" aria-label="Quantity" />
+        <input
+          forNumberInput
+          name="qty"
+          [required]="required()"
+          [(value)]="value"
+          aria-label="Quantity"
+        />
       </div>
     </form>
   `,
@@ -83,6 +89,7 @@ const inputOf = (host: HTMLElement) => host.querySelector<HTMLInputElement>('inp
 class NativeSubmissionFixture implements NativeSubmissionHost {
   readonly value = signal<number | null>(null);
   readonly fieldsetDisabled = signal(false);
+  readonly required = signal(false);
   commit(): void {
     this.value.set(1234.5);
   }

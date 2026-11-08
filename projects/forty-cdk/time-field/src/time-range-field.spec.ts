@@ -157,7 +157,13 @@ class TimeRangeFieldFormControlHost {
 }
 
 @Component({
-  imports: [ForFieldset, ForTimeRangeField, ForTimeRangeFieldStart, ForTimeRangeFieldEnd],
+  imports: [
+    ForFieldset,
+    ForTimeRangeField,
+    ForTimeRangeFieldStart,
+    ForTimeRangeFieldEnd,
+    ForTimeRangeFieldSegment,
+  ],
   providers: [...provideNativeDateAdapter()],
   template: `
     <form>
@@ -165,12 +171,25 @@ class TimeRangeFieldFormControlHost {
         <div
           forTimeRangeField
           name="shift"
+          [required]="required()"
           granularity="second"
           [(value)]="value"
           ariaLabel="Shift"
         >
-          <div forTimeRangeFieldStart></div>
-          <div forTimeRangeFieldEnd></div>
+          <div forTimeRangeFieldStart #start="forTimeRangeFieldStart">
+            @for (s of start.segments(); track s.id) {
+              @if (!s.isLiteral) {
+                <span forTimeRangeFieldSegment [segment]="s.type!"></span>
+              }
+            }
+          </div>
+          <div forTimeRangeFieldEnd #end="forTimeRangeFieldEnd">
+            @for (s of end.segments(); track s.id) {
+              @if (!s.isLiteral) {
+                <span forTimeRangeFieldSegment [segment]="s.type!"></span>
+              }
+            }
+          </div>
         </div>
       </div>
     </form>
@@ -179,6 +198,7 @@ class TimeRangeFieldFormControlHost {
 class SecondSubmissionHost implements NativeSubmissionHost {
   readonly value = signal<DateRange<Date> | null>(null);
   readonly fieldsetDisabled = signal(false);
+  readonly required = signal(false);
   commit(): void {
     this.value.set({
       start: new Date(2026, 11, 5, 9, 0, 30),
@@ -191,7 +211,13 @@ class SecondSubmissionHost implements NativeSubmissionHost {
 }
 
 @Component({
-  imports: [ForFieldset, ForTimeRangeField, ForTimeRangeFieldStart, ForTimeRangeFieldEnd],
+  imports: [
+    ForFieldset,
+    ForTimeRangeField,
+    ForTimeRangeFieldStart,
+    ForTimeRangeFieldEnd,
+    ForTimeRangeFieldSegment,
+  ],
   providers: [...provideNativeDateAdapter()],
   template: `
     <form>
@@ -199,12 +225,25 @@ class SecondSubmissionHost implements NativeSubmissionHost {
         <div
           forTimeRangeField
           name="night"
+          [required]="required()"
           [allowOvernight]="true"
           [(value)]="value"
           ariaLabel="Night shift"
         >
-          <div forTimeRangeFieldStart></div>
-          <div forTimeRangeFieldEnd></div>
+          <div forTimeRangeFieldStart #start="forTimeRangeFieldStart">
+            @for (s of start.segments(); track s.id) {
+              @if (!s.isLiteral) {
+                <span forTimeRangeFieldSegment [segment]="s.type!"></span>
+              }
+            }
+          </div>
+          <div forTimeRangeFieldEnd #end="forTimeRangeFieldEnd">
+            @for (s of end.segments(); track s.id) {
+              @if (!s.isLiteral) {
+                <span forTimeRangeFieldSegment [segment]="s.type!"></span>
+              }
+            }
+          </div>
         </div>
       </div>
     </form>
@@ -213,6 +252,7 @@ class SecondSubmissionHost implements NativeSubmissionHost {
 class OvernightSubmissionHost implements NativeSubmissionHost {
   readonly value = signal<DateRange<Date> | null>(null);
   readonly fieldsetDisabled = signal(false);
+  readonly required = signal(false);
   commit(): void {
     this.value.set({ start: new Date(2026, 11, 5, 22, 0), end: new Date(2026, 11, 6, 6, 0) });
   }

@@ -263,7 +263,13 @@ function typeInto(input: HTMLInputElement, text: string): void {
   template: `
     <form>
       <div forFieldset [disabled]="fieldsetDisabled()">
-        <div forCombobox name="fruit" [(value)]="value" [itemToFormValue]="toId">
+        <div
+          forCombobox
+          name="fruit"
+          [required]="required()"
+          [(value)]="value"
+          [itemToFormValue]="toId"
+        >
           <input forComboboxInput aria-label="Fruit" />
         </div>
       </div>
@@ -273,6 +279,7 @@ function typeInto(input: HTMLInputElement, text: string): void {
 class NativeSubmissionFixture implements NativeSubmissionHost {
   readonly value = signal<readonly { readonly id: string }[]>([]);
   readonly fieldsetDisabled = signal(false);
+  readonly required = signal(false);
   readonly toId = (item: { readonly id: string }): string => item.id;
   commit(): void {
     this.value.set([{ id: 'apple' }]);

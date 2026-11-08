@@ -74,6 +74,7 @@ export class ForToggle extends FormUiControlBase implements FormCheckboxControl 
       name: this.name,
       values: computed(() => (this.checked() ? ['on'] : [])),
       disabled: this.effectiveDisabled,
+      required: this.required,
     });
     injectNativeFormResetToInitial(this.checked);
   }

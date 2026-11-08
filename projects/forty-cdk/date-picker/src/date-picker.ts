@@ -268,6 +268,8 @@ export class ForDatePicker<D>
         ];
       }),
       disabled: this.effectiveDisabled,
+      required: this.required,
+      focus: () => this.focus(),
     });
     injectNativeFormResetToInitial(this.value, () => this.reset());
 

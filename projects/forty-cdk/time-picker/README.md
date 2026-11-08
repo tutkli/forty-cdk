@@ -164,7 +164,7 @@ The positioning inputs (`side` through `clipUntilPositioned`) are no-ops when `m
 Inherits all `FormUiControl` inputs (`disabled`, `readonly`, `required`, `invalid`,
 `errors`, `touched`, `name`, `pending`) for `[formField]` auto-wiring.
 
-A native reset of the owning `<form>` returns `value` to what it held when the picker first rendered. In the [field anatomy](#field-anatomy) it also drops a partly typed entry in the projected field.
+A native reset of the owning `<form>` returns `value` to what it held when the picker first rendered. In the [field anatomy](#field-anatomy) it also drops a partly typed entry in the projected field. A bound `[required]` blocks native submission while no time is committed, as a native required control does: an unnamed, visually hidden `<input required>` fails constraint validation, `form:invalid` matches, and when the browser reports the form, focus moves to the trigger, or to the projected field in the field anatomy.
 
 ### Data attributes
 

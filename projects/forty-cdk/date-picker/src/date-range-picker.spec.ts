@@ -156,7 +156,13 @@ class RangeFormControlHost {
   template: `
     <form>
       <div forFieldset [disabled]="fieldsetDisabled()">
-        <div forDateRangePicker name="stay" [(value)]="value" ariaLabel="Stay">
+        <div
+          forDateRangePicker
+          name="stay"
+          [required]="required()"
+          [(value)]="value"
+          ariaLabel="Stay"
+        >
           <button forDatePickerTrigger>Pick</button>
         </div>
       </div>
@@ -166,6 +172,7 @@ class RangeFormControlHost {
 class RangeSubmissionHost implements NativeSubmissionHost {
   readonly value = signal<DateRange<Date> | null>(null);
   readonly fieldsetDisabled = signal(false);
+  readonly required = signal(false);
   commit(): void {
     this.value.set({ start: new Date(2026, 5, 10), end: new Date(2026, 5, 15) });
   }
