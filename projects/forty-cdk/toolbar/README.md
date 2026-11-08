@@ -153,9 +153,9 @@ Root directive. `role="toolbar"`. Owns roving tabindex and arrow-key navigation.
 
 Plain push button. Apply on `<button>` so Enter / Space activate via native semantics.
 
-| Property   | Type             | Description                                                                                                                                                                                                                                   |
-| ---------- | ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `disabled` | `input<boolean>` | Per-item disabled, in addition to the toolbar's `disabled`. When true the button is announced as `aria-disabled` and clicks are suppressed. It stays focusable (no native `disabled`) so assistive tech still announces it.<br>**Default:** — |
+| Property   | Type             | Description                                                                                                                                                                                                                                                                          |
+| ---------- | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `disabled` | `input<boolean>` | Per-item disabled, in addition to the toolbar's `disabled`. When true the button is announced as `aria-disabled` and every click is cancelled before a `(click)` bound on it runs. It stays focusable (no native `disabled`) so assistive tech still announces it.<br>**Default:** — |
 
 | Data attribute     | Values                     |
 | ------------------ | -------------------------- |

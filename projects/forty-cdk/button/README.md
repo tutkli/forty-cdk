@@ -45,7 +45,7 @@ export class ButtonDefaultExample {}
 
 ### Disabled stays focusable
 
-Per the APG, a disabled button must stay reachable so assistive tech can announce it. `forButton` never sets the native `disabled` attribute. Instead, it reflects `aria-disabled='true'` + `data-disabled` and makes activation a no-op. The native disabled button is skipped entirely.
+Per the APG, a disabled button must stay reachable so assistive tech can announce it. `forButton` never sets the native `disabled` attribute. Instead, it reflects `aria-disabled='true'` + `data-disabled` and cancels every click, so neither `(activate)` nor a `(click)` bound on the button runs. The native disabled button is skipped entirely.
 
 ## Disabled
 
@@ -82,10 +82,10 @@ A binding that resolves to `null` removes the attribute, so the button falls bac
 
 ### `ForButton`
 
-| Property   | Type             | Description                                                                                                                                             |
-| ---------- | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `disabled` | `input<boolean>` | Suppresses activation and reflects `aria-disabled` + `data-disabled`. OR'd with a surrounding `[forFieldset]`'s disabled state.<br>**Default:** `false` |
-| `activate` | `output<void>`   | Fires once per user activation (click, Enter, Space). Never fires when disabled.<br>**Default:** —                                                      |
+| Property   | Type             | Description                                                                                                                                                                                                              |
+| ---------- | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `disabled` | `input<boolean>` | Cancels every click, so neither `(activate)` nor a `(click)` bound on the button runs, and reflects `aria-disabled` + `data-disabled`. OR'd with a surrounding `[forFieldset]`'s disabled state.<br>**Default:** `false` |
+| `activate` | `output<void>`   | Fires once per user activation (click, Enter, Space). Never fires when disabled.<br>**Default:** —                                                                                                                       |
 
 The directive reflects boolean `data-*` attributes (present with an empty-string value when true, absent when false). There is no `data-state`, because this primitive has no open/closed or checked/unchecked logical state.
 

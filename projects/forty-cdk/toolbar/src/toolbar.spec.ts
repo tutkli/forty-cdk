@@ -25,7 +25,14 @@ import { ForToolbarSeparator } from './toolbar-separator';
         <button forToolbarButton [disabled]="middleDisabled()">Two</button>
       }
       <span forToolbarSeparator></span>
-      <a forToolbarLink href="/x" [disabled]="linkDisabled()">Three</a>
+      <a
+        forToolbarLink
+        href="/x"
+        [disabled]="linkDisabled()"
+        (click)="linkClicks.update((n) => n + 1)"
+        (auxclick)="linkClicks.update((n) => n + 1)"
+        >Three</a
+      >
     </div>
   `,
 })
@@ -37,6 +44,7 @@ class ToolbarHost {
   readonly middleDisabled = signal(false);
   readonly middleShown = signal(true);
   readonly linkDisabled = signal(false);
+  readonly linkClicks = signal(0);
   readonly ariaLabel = signal<string | null>(null);
 }
 
@@ -497,7 +505,7 @@ describe('ForToolbar', () => {
       expect(link.getAttribute('tabindex')).toBe('-1');
     });
 
-    it('disabled toolbar suppresses link activation and stops later click listeners', async () => {
+    it('disabled toolbar suppresses link activation, its template (click) and later click listeners', async () => {
       const { fixture, query, flush } = renderHost(ToolbarHost);
       fixture.componentInstance.disabled.set(true);
       await flush();
@@ -510,12 +518,13 @@ describe('ForToolbar', () => {
         link.dispatchEvent(event);
         expect(event.defaultPrevented).toBe(true);
         expect(spy).not.toHaveBeenCalled();
+        expect(fixture.componentInstance.linkClicks()).toBe(0);
       } finally {
         link.removeEventListener('click', spy);
       }
     });
 
-    it('per-item disabled link suppresses activation with stopImmediatePropagation', async () => {
+    it('per-item disabled link runs neither its template (click) nor later click listeners', async () => {
       const { fixture, query, flush } = renderHost(ToolbarHost);
       fixture.componentInstance.linkDisabled.set(true);
       await flush();
@@ -528,12 +537,13 @@ describe('ForToolbar', () => {
         link.dispatchEvent(event);
         expect(event.defaultPrevented).toBe(true);
         expect(spy).not.toHaveBeenCalled();
+        expect(fixture.componentInstance.linkClicks()).toBe(0);
       } finally {
         link.removeEventListener('click', spy);
       }
     });
 
-    it('per-item disabled link cancels a middle-click so it cannot open in a new tab', async () => {
+    it('per-item disabled link cancels a middle-click and runs no template (auxclick)', async () => {
       const { fixture, query, flush } = renderHost(ToolbarHost);
       fixture.componentInstance.linkDisabled.set(true);
       await flush();
@@ -546,6 +556,7 @@ describe('ForToolbar', () => {
         link.dispatchEvent(event);
         expect(event.defaultPrevented).toBe(true);
         expect(spy).not.toHaveBeenCalled();
+        expect(fixture.componentInstance.linkClicks()).toBe(0);
       } finally {
         link.removeEventListener('auxclick', spy);
       }

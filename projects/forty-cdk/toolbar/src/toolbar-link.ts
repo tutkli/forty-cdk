@@ -1,6 +1,11 @@
 import { booleanAttribute, computed, Directive, ElementRef, inject, input } from '@angular/core';
 
-import { navigateFromRovingItem, registerHandle, rovingTabStop } from 'forty-cdk/core';
+import {
+  injectDisabledClickGuard,
+  navigateFromRovingItem,
+  registerHandle,
+  rovingTabStop,
+} from 'forty-cdk/core';
 import { injectToolbarContext } from './toolbar-context';
 
 /**
@@ -18,8 +23,6 @@ import { injectToolbarContext } from './toolbar-context';
     '[attr.data-orientation]': 'toolbar.orientation()',
     '(focus)': 'onFocus()',
     '(keydown)': 'onKeyDown($event)',
-    '(click)': 'onClick($event)',
-    '(auxclick)': 'onAuxClick($event)',
   },
 })
 export class ForToolbarLink {
@@ -61,6 +64,7 @@ export class ForToolbarLink {
   );
 
   constructor() {
+    injectDisabledClickGuard({ disabled: this.effectiveDisabled, middleClick: true });
     const handle = {
       host: this.#host.nativeElement,
       disabled: this.effectiveDisabled,
@@ -70,19 +74,6 @@ export class ForToolbarLink {
       (h) => this.toolbar.registerItem(h),
       (h) => this.toolbar.unregisterItem(h),
     );
-  }
-
-  private onClick(event: MouseEvent): void {
-    if (this.effectiveDisabled()) {
-      event.preventDefault();
-      event.stopImmediatePropagation();
-    }
-  }
-
-  private onAuxClick(event: MouseEvent): void {
-    if (event.button === 1) {
-      this.onClick(event);
-    }
   }
 
   private onFocus(): void {

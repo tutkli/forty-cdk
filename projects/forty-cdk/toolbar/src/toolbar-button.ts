@@ -2,6 +2,7 @@ import { booleanAttribute, computed, Directive, ElementRef, inject, input } from
 
 import {
   hostButtonType,
+  injectDisabledClickGuard,
   navigateFromRovingItem,
   registerHandle,
   rovingTabStop,
@@ -26,7 +27,6 @@ import { injectToolbarContext } from './toolbar-context';
     '[attr.data-orientation]': 'toolbar.orientation()',
     '(focus)': 'onFocus()',
     '(keydown)': 'onKeyDown($event)',
-    '(click)': 'onClick($event)',
   },
 })
 export class ForToolbarButton {
@@ -67,6 +67,7 @@ export class ForToolbarButton {
   );
 
   constructor() {
+    injectDisabledClickGuard({ disabled: this.effectiveDisabled });
     const handle = {
       host: this.#host.nativeElement,
       disabled: this.effectiveDisabled,
@@ -76,13 +77,6 @@ export class ForToolbarButton {
       (h) => this.toolbar.registerItem(h),
       (h) => this.toolbar.unregisterItem(h),
     );
-  }
-
-  private onClick(event: MouseEvent): void {
-    if (this.effectiveDisabled()) {
-      event.preventDefault();
-      event.stopImmediatePropagation();
-    }
   }
 
   private onFocus(): void {

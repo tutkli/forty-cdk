@@ -23,6 +23,21 @@ test.describe('Button', () => {
     await expect(el(page, 'native-count')).toHaveText('2');
   });
 
+  test('an enabled button activates and runs its template (click) on a click on the host and on a child', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'button');
+
+    await el(page, 'native').click();
+    await el(page, 'native-label').click();
+    await expect(el(page, 'native-click-count')).toHaveText('2');
+    await expect(el(page, 'native-count')).toHaveText('2');
+
+    await el(page, 'custom').click();
+    await el(page, 'custom-label').click();
+    await expect(el(page, 'custom-count')).toHaveText('2');
+  });
+
   test('custom host is focusable and has role/tabindex', async ({ page }) => {
     await gotoFixture(page, 'button');
 
@@ -36,28 +51,33 @@ test.describe('Button', () => {
     await expectFocused(el(page, 'custom'));
   });
 
-  test('disabled stays focusable, aria-disabled set, no native disabled, click and Enter are no-ops', async ({
+  test('disabled stays focusable, aria-disabled set, no native disabled, click and Enter run neither (activate) nor (click)', async ({
     page,
   }) => {
     await gotoFixture(page, 'button', { disabled: '1' });
 
     await expect(el(page, 'native')).toHaveAttribute('aria-disabled', 'true');
     await expect(el(page, 'native')).not.toHaveAttribute('disabled', /.*/);
+    await el(page, 'native').click({ force: true });
+    await el(page, 'native-label').click({ force: true });
     await el(page, 'native').focus();
     await expectFocused(el(page, 'native'));
-    await el(page, 'native').click({ force: true });
-    await expectStays(page, () => expect(el(page, 'native-count')).toHaveText('0'));
     await page.keyboard.press('Enter');
-    await expectStays(page, () => expect(el(page, 'native-count')).toHaveText('0'));
+    await expectStays(page, async () => {
+      await expect(el(page, 'native-count')).toHaveText('0');
+      await expect(el(page, 'native-click-count')).toHaveText('0');
+    });
 
     await expect(el(page, 'custom')).toHaveAttribute('aria-disabled', 'true');
     await expect(el(page, 'custom')).not.toHaveAttribute('disabled', /.*/);
+    await el(page, 'custom').click({ force: true });
+    await el(page, 'custom-label').click({ force: true });
     await el(page, 'custom').focus();
     await expectFocused(el(page, 'custom'));
-    await el(page, 'custom').click({ force: true });
-    await expectStays(page, () => expect(el(page, 'custom-count')).toHaveText('0'));
     await page.keyboard.press('Enter');
-    await expectStays(page, () => expect(el(page, 'custom-count')).toHaveText('0'));
+    await expectStays(page, async () => {
+      await expect(el(page, 'custom-count')).toHaveText('0');
+    });
   });
 
   test(':focus-visible keyboard-vs-mouse on custom host', async ({ page }) => {
