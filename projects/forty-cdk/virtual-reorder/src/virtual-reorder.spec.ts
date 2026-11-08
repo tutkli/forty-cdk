@@ -21,6 +21,7 @@ import {
   moveItemInArray,
   type ForDragDropEvent,
 } from 'forty-cdk/drag-drop';
+import { LiveAnnouncer } from 'forty-cdk/visually-hidden';
 import { ForVirtualFor, ForVirtualViewport } from 'forty-cdk/virtualization';
 
 import { ForVirtualReorder, type ForVirtualReorderEvent } from './virtual-reorder';
@@ -1215,6 +1216,35 @@ class GroupedHost {
   readonly plainDrop = signal<ForDragDropEvent | null>(null);
 }
 
+@Component({
+  imports: [ForVirtualViewport, ForVirtualFor, ForVirtualReorder, ForDraggable],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `
+    <div
+      forVirtualViewport
+      [virtualCount]="rows().length"
+      [estimateSize]="40"
+      forVirtualReorder
+      style="height: 200px; width: 200px"
+    >
+      <div
+        *forVirtualFor="let row of rows()"
+        forDraggable
+        [dragData]="row.id"
+        [attr.data-testid]="'row-' + row.id"
+        [attr.aria-label]="row.id === 1 ? 'Pinned row' : null"
+        [textValue]="row.id === 2 ? 'Custom row' : null"
+      >
+        <strong>{{ row.label }}</strong
+        ><span>today</span>
+      </div>
+    </div>
+  `,
+})
+class NamedRowsHost {
+  readonly rows = signal<readonly Row[]>(makeRows(1000));
+}
+
 describe('ForVirtualReorder — announcements, outputs and transfers (#2124)', () => {
   afterEach(() => {
     document.querySelectorAll('[aria-live]').forEach((n) => n.remove());
@@ -1297,6 +1327,61 @@ describe('ForVirtualReorder — announcements, outputs and transfers (#2124)', (
 
     expect(assertiveText()).toContain('Row 2, lifted. 3 of 1000.');
     expect(assertiveText()).not.toContain('⠿');
+    dispatchKey(row, 'Escape');
+  });
+
+  it('a keyboard lift names a row by its separated text, its aria-label or its textValue', async () => {
+    const { query, flush: f } = await render(NamedRowsHost);
+    const expected = [
+      'Row 0 today, lifted. 1 of 1000.',
+      'Pinned row, lifted. 2 of 1000.',
+      'Custom row, lifted. 3 of 1000.',
+    ];
+    for (const [id, text] of expected.entries()) {
+      const row = query(`[data-testid="row-${id}"]`)!;
+      row.focus();
+      dispatchKey(row, ' ');
+      await f();
+      expect(assertiveText()).toContain(text);
+      dispatchKey(row, 'Escape');
+      await f();
+    }
+  });
+
+  it('a keyboard step clamped at the first row neither announces nor scrolls', async () => {
+    const { instance, query, flush: f } = await mount();
+    const row = query('[data-testid="row-0"]')!;
+    row.focus();
+    dispatchKey(row, ' ');
+    await f();
+    const announce = vi.spyOn(TestBed.inject(LiveAnnouncer), 'announce');
+    const scroll = vi.spyOn(instance.viewport(), 'scrollToIndex');
+
+    dispatchKey(row, 'ArrowUp');
+    dispatchKey(row, 'Home');
+    dispatchKey(row, 'PageUp');
+
+    expect(announce).not.toHaveBeenCalled();
+    expect(scroll).not.toHaveBeenCalled();
+    dispatchKey(row, 'Escape');
+  });
+
+  it('a keyboard step clamped at the last row neither announces nor scrolls', async () => {
+    const { instance, query, flush: f } = await mount();
+    const row = query('[data-testid="row-0"]')!;
+    row.focus();
+    dispatchKey(row, ' ');
+    dispatchKey(row, 'End');
+    await f();
+    const announce = vi.spyOn(TestBed.inject(LiveAnnouncer), 'announce');
+    const scroll = vi.spyOn(instance.viewport(), 'scrollToIndex');
+
+    dispatchKey(row, 'ArrowDown');
+    dispatchKey(row, 'End');
+    dispatchKey(row, 'PageDown');
+
+    expect(announce).not.toHaveBeenCalled();
+    expect(scroll).not.toHaveBeenCalled();
     dispatchKey(row, 'Escape');
   });
 

@@ -44,7 +44,7 @@ function reachesHelper(body: string, bodies: Map<string, string>): boolean {
 
 function cancelPaths(path: string): string[] {
   return [...methodBodies(LIBRARY_CODE.get(path)!).values()].filter((body) =>
-    /[aA]nnounceCancel\(/.test(body),
+    /[aA]nnounceCancel\(|#announce\.cancel\(/.test(body),
   );
 }
 

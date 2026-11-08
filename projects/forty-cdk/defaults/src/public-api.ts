@@ -69,6 +69,7 @@ export {
 } from './dialog-defaults';
 export {
   FOR_DRAG_DROP_DEFAULTS,
+  type ForDragDropAnnouncementContext,
   type ForDragDropDefaults,
   provideForDragDropDefaults,
 } from './drag-drop-defaults';

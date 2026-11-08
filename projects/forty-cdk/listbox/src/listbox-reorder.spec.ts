@@ -7,6 +7,7 @@ import { ForListbox } from './listbox';
 import { provideForDragDropDefaults, provideForListboxDefaults } from 'forty-cdk/defaults';
 import { ForListboxOption } from './listbox-option';
 import { ForListboxReorder, type ForListboxReorderEvent } from './listbox-reorder';
+import { LiveAnnouncer } from 'forty-cdk/visually-hidden';
 
 @Component({
   imports: [ForListbox, ForListboxOption, ForListboxReorder],
@@ -504,6 +505,63 @@ describe('ForListboxReorder — i18n announcements', () => {
     await f();
 
     expect(liveRegion('assertive')?.textContent).toBe('b, lifted. 2 of 4.');
+  });
+});
+
+@Component({
+  imports: [ForListbox, ForListboxOption, ForListboxReorder],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `
+    <ul forListbox forListboxReorder aria-label="Named tasks">
+      <li forListboxOption value="report" data-testid="opt-report">
+        <strong>Write report</strong><span>Friday</span>
+      </li>
+      <li forListboxOption value="invoice" data-testid="opt-invoice" aria-label="Invoice 42">
+        <svg aria-hidden="true"></svg>
+      </li>
+    </ul>
+  `,
+})
+class NamedOptionsHost {}
+
+describe('ForListboxReorder — announced option names (#2717)', () => {
+  it('names an option by its separated text or by its aria-label', async () => {
+    const { query, flush: f } = renderHost(NamedOptionsHost);
+    await f();
+
+    const list = query('[forListbox]')!;
+    const report = query('[data-testid="opt-report"]')!;
+    report.focus();
+    dispatchKey(report, ' ', { ctrlKey: true });
+    await f();
+    expect(liveRegion('assertive')?.textContent).toBe('Write report Friday, lifted. 1 of 2.');
+    dispatchKey(list, 'Escape', {});
+    await f();
+
+    const invoice = query('[data-testid="opt-invoice"]')!;
+    invoice.focus();
+    dispatchKey(invoice, ' ', { ctrlKey: true });
+    await f();
+    expect(liveRegion('assertive')?.textContent).toBe('Invoice 42, lifted. 2 of 2.');
+    dispatchKey(list, 'Escape', {});
+  });
+
+  it('a step clamped at the first option announces nothing', async () => {
+    const { query, flush: f } = renderHost(NamedOptionsHost);
+    await f();
+
+    const list = query('[forListbox]')!;
+    const report = query('[data-testid="opt-report"]')!;
+    report.focus();
+    dispatchKey(report, ' ', { ctrlKey: true });
+    await f();
+    const announce = vi.spyOn(TestBed.inject(LiveAnnouncer), 'announce');
+
+    dispatchKey(list, 'ArrowUp', {});
+    dispatchKey(list, 'Home', {});
+
+    expect(announce).not.toHaveBeenCalled();
+    dispatchKey(list, 'Escape', {});
   });
 });
 

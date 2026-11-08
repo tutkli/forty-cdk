@@ -14,6 +14,8 @@ export interface ForDraggableHandle {
   readonly data: Signal<unknown>;
   /** Effective disabled (item's own `dragDisabled` OR the list being disabled). */
   readonly disabled: Signal<boolean>;
+  /** The item's `[textValue]`: the name drag announcements use in place of its own. */
+  readonly textValue: Signal<string | null>;
   /**
    * Whether a pointer press on `target` may start a drag of this item: `false` for a press inside
    * a draggable nested in it, or outside its `[forDragHandle]`s when it has any.

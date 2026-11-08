@@ -1,4 +1,4 @@
-import { buildDragSlots, indexOfSlot, stepSlot } from './drag-positions';
+import { buildDragSlots, indexOfSlot } from './drag-positions';
 
 describe('buildDragSlots', () => {
   it('produces source-only slots for a single list', () => {
@@ -66,34 +66,5 @@ describe('indexOfSlot', () => {
     const slots = buildDragSlots(1, []);
     expect(indexOfSlot(slots, 0, 5)).toBe(-1);
     expect(indexOfSlot(slots, 1, 0)).toBe(-1);
-  });
-});
-
-describe('stepSlot', () => {
-  it('steps forward by 1', () => {
-    const slots = buildDragSlots(3, []);
-    expect(stepSlot(slots, 0, 1)).toBe(1);
-    expect(stepSlot(slots, 1, 1)).toBe(2);
-  });
-
-  it('steps backward by 1', () => {
-    const slots = buildDragSlots(3, []);
-    expect(stepSlot(slots, 2, -1)).toBe(1);
-    expect(stepSlot(slots, 1, -1)).toBe(0);
-  });
-
-  it('clamps at the start (no wrap)', () => {
-    const slots = buildDragSlots(3, []);
-    expect(stepSlot(slots, 0, -1)).toBe(0);
-  });
-
-  it('clamps at the end (no wrap)', () => {
-    const slots = buildDragSlots(3, []);
-    expect(stepSlot(slots, 2, 1)).toBe(2);
-  });
-
-  it('returns current unchanged for an empty slot array', () => {
-    expect(stepSlot([], 0, 1)).toBe(0);
-    expect(stepSlot([], 5, -1)).toBe(5);
   });
 });

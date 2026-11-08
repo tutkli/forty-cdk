@@ -25,5 +25,6 @@ export { moveItemInArray, transferArrayItem } from './move-item-in-array';
 export {
   FOR_DRAG_DROP_DEFAULTS,
   provideForDragDropDefaults,
+  type ForDragDropAnnouncementContext,
   type ForDragDropDefaults,
 } from 'forty-cdk/defaults';

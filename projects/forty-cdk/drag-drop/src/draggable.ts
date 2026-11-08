@@ -105,6 +105,12 @@ export class ForDraggable implements ForDraggableContext {
   readonly dragDisabled = input(false, { transform: booleanAttribute });
 
   /**
+   * The name drag announcements call this item by. When unset or empty the item is named by its
+   * `aria-labelledby` / `aria-label`, else by its text with `aria-hidden` content left out.
+   */
+  readonly textValue = input<string | null>(null);
+
+  /**
    * Emitted when a drag (keyboard or pointer) starts from this item, including one a coordinator
    * composing the list owns (`[forVirtualReorder]`, `[forTableRowReorder]`).
    */
@@ -191,6 +197,7 @@ export class ForDraggable implements ForDraggableContext {
       host: this.#host.nativeElement,
       data: this.dragData,
       disabled: this.effectiveDisabled,
+      textValue: this.textValue,
       acceptsPointerStart: (target) => this.#handleGuard.accepts(target),
       emitDragStart: (index) => {
         if (!this.#destroyRef.destroyed) {

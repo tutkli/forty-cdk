@@ -17,6 +17,7 @@ import {
   moveItemInArray,
 } from 'forty-cdk/drag-drop';
 import { ForTableVirtualized } from 'forty-cdk/table-virtualization';
+import { LiveAnnouncer } from 'forty-cdk/visually-hidden';
 
 import { ForTable } from './table';
 import { ForTableCell } from './table-cell';
@@ -1152,6 +1153,52 @@ class ListDragOutputsHost {
   readonly ends: boolean[] = [];
 }
 
+@Component({
+  imports: [
+    ForTable,
+    ForTableVirtualized,
+    ForTableRow,
+    ForTableCell,
+    ForTableRowReorder,
+    ForDraggable,
+  ],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `
+    <div
+      forTable
+      forTableVirtualized
+      mode="grid"
+      ariaLabel="Virtualized rows with structured cells"
+      [rowCount]="rowCount"
+      [estimateRowSize]="rowHeight"
+      #v="forTableVirtualized"
+      style="height: 200px; overflow: auto"
+    >
+      <div role="rowgroup" forTableRowReorder [style.height.px]="v.totalSize()">
+        @for (vrow of v.virtualRows(); track vrow.index) {
+          <div
+            forTableRow
+            [virtualIndex]="vrow.index"
+            forDraggable
+            [dragData]="vrow.index"
+            [attr.data-index]="vrow.index"
+            [attr.aria-label]="vrow.index === 1 ? 'Pinned row' : null"
+          >
+            <div forTableCell name="a" [attr.data-testid]="'cell-' + vrow.index">
+              Row {{ vrow.index }}
+            </div>
+            <div forTableCell name="b">row{{ vrow.index }}&#64;example.com</div>
+          </div>
+        }
+      </div>
+    </div>
+  `,
+})
+class VirtualizedNamedRowsHost {
+  protected readonly rowCount = ROW_COUNT;
+  protected readonly rowHeight = ROW_HEIGHT;
+}
+
 describe('ForTableRowReorder — announcements and drag outputs (#2124)', () => {
   afterEach(() => {
     document.querySelectorAll('[aria-live]').forEach((node) => node.remove());
@@ -1215,6 +1262,42 @@ describe('ForTableRowReorder — announcements and drag outputs (#2124)', () => 
 
     expect(liveRegionText()).toContain(`Row ${from}, lifted. ${from + 1} of ${ROW_COUNT}.`);
     expect(liveRegionText()).not.toContain('⠿');
+    press(lifted, 'Escape');
+  });
+
+  it('a virtualized lift names a row by its cells, separated, or by its aria-label', async () => {
+    const { settle, cell } = await render(VirtualizedNamedRowsHost);
+    const first = cell(0);
+    first.focus();
+    press(first, ' ', { ctrlKey: true });
+    await settle();
+    expect(liveRegionText()).toContain(`Row 0 row0@example.com, lifted. 1 of ${ROW_COUNT}.`);
+    press(first, 'Escape');
+    await settle();
+
+    const pinned = cell(1);
+    pinned.focus();
+    press(pinned, ' ', { ctrlKey: true });
+    await settle();
+    expect(liveRegionText()).toContain(`Pinned row, lifted. 2 of ${ROW_COUNT}.`);
+    press(pinned, 'Escape');
+  });
+
+  it('a virtualized keyboard step clamped at the first row neither announces nor scrolls', async () => {
+    const { settle, cell } = await render(VirtualizedDragOutputsHost);
+    const lifted = cell(0);
+    lifted.focus();
+    press(lifted, ' ', { ctrlKey: true });
+    await settle();
+    const announce = vi.spyOn(TestBed.inject(LiveAnnouncer), 'announce');
+    const scroll = vi.spyOn(ForTableVirtualized.prototype, 'scrollToRow');
+
+    press(lifted, 'ArrowUp');
+    press(lifted, 'Home');
+    press(lifted, 'PageUp');
+
+    expect(announce).not.toHaveBeenCalled();
+    expect(scroll).not.toHaveBeenCalled();
     press(lifted, 'Escape');
   });
 
