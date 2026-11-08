@@ -476,11 +476,11 @@ Real apps usually have richer option models, such as `{ id, name, ... }`, where 
 
 Three inputs configure the object behaviour. Defaults make string mode work unchanged:
 
-| Input               | Default                                                            | Purpose                                                                                                                                                               |
-| ------------------- | ------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `[compareWith]`     | `(a, b) => a === b`                                                | How two items compare. Override for object values so selection locates by id (or any stable key).                                                                     |
-| `[itemToFormValue]` | `(item) => typeof item === 'string' ? item : JSON.stringify(item)` | Serialize an item for the hidden input. Override to emit a per-item id (or any wire format your backend wants).                                                       |
-| `[itemToLabel]`     | `undefined`                                                        | Resolve a selected item's display label without the listbox mounted. Supply it when a pre-set object value must render before the listbox is ever opened (see below). |
+| Input               | Default                                                            | Purpose                                                                                                                                                                                                                                 |
+| ------------------- | ------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `[compareWith]`     | `(a, b) => a === b`                                                | How two items compare. Override for object values so selection locates by id (or any stable key).                                                                                                                                       |
+| `[itemToFormValue]` | `(item) => typeof item === 'string' ? item : JSON.stringify(item)` | Serialize an item for the hidden input. Override to emit a per-item id (or any wire format your backend wants).                                                                                                                         |
+| `[itemToLabel]`     | `undefined`                                                        | Resolve a selected item's display label without the listbox mounted. Supply it when a pre-set object value must render before the listbox is ever opened (see below). Typeahead matches it too, for every option without a `textValue`. |
 
 `[itemToFormValue]` feeds the hidden inputs of a legacy `<form action="…">` flow: set `[name]`, and `[forSelect]` mirrors `[(value)]` into one `<input type="hidden">` per selected value (0 or 1 in single mode, one per value in multi mode). String values land verbatim, and object values default to `JSON.stringify` until `[itemToFormValue]` says otherwise. A native reset of the owning `<form>` returns `value` to what it held when the select first rendered, and the hidden inputs follow.
 
@@ -693,7 +693,7 @@ In the default (non-virtualized) path the full APG range keyboard works while th
 - **ArrowDown**: open (focus selected, else first).
 - **ArrowUp**: open (focus selected, else last).
 - **Home / End**: open (focus first / last enabled option).
-- **Typeahead** _(single mode only)_: printable keys select the matching enabled option immediately without opening, mirroring native `<select>`, which skips disabled options too. The lookup goes through a cached snapshot of options (the live registry is empty while `[forSelectContent]` is unmounted); the cache is populated the first time the listbox opens, so closed-state typeahead is available after the user has interacted with the listbox at least once.
+- **Typeahead** _(single mode only)_: printable keys select the matching enabled option immediately without opening, mirroring native `<select>`, which skips disabled options too. Options match as they do on the open listbox (see below). The lookup goes through a cached snapshot of options (the live registry is empty while `[forSelectContent]` is unmounted); the cache is populated the first time the listbox opens, so closed-state typeahead is available after the user has interacted with the listbox at least once.
 
 ### Listbox (open)
 
@@ -707,7 +707,7 @@ In the default (non-virtualized) path the full APG range keyboard works while th
 - **Ctrl+Shift+Home / Ctrl+Shift+End** _(multi mode, non-virtualized)_: extend the selection from the focused option to the first / last option and move focus to that edge.
 - **Escape**: close without changing selection. Returns focus to the trigger.
 - **Tab / Shift+Tab**: commit the focused option (single mode only; multi-mode keeps the existing selection) and let the browser advance focus to the next / previous focusable, mirroring native `<select>`. The directive does **not** `preventDefault`, so form workflows keep flowing through tab order. A Tab that leaves the listbox from anything that is not an option (your own control inside it, or the listbox itself when every option is disabled) closes it without committing and continues from the trigger: `Tab` moves on to the control after it, `Shift+Tab` lands on the trigger.
-- **Typeahead**: single printable characters move focus to the first option whose text starts with the buffered string. Disabled options are skipped.
+- **Typeahead**: single printable characters move focus to the first option whose text starts with the buffered string. Disabled options are skipped. An option's text is its `[forSelectOption][textValue]` when set, else `[itemToLabel]` of its value when the root has one, else its accessible text. Set `textValue` when the option renders a leading flag, icon or count (`textValue="France"` on `🇫🇷 France`); the label `[forSelectValue]` shows is unaffected.
 
 ## Accessibility
 

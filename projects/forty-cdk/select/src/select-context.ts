@@ -59,6 +59,8 @@ export interface ForSelectOptionHandle<T = unknown> extends CollectionHandle {
    * without peeking at `textContent` from inside a `computed`.
    */
   readonly label: Signal<string>;
+  /** The option's typeahead override, `''` when typeahead falls back to the root's resolution. */
+  readonly textValue: Signal<string>;
   readonly disabled: Signal<boolean>;
   /** Stable host `id` — the activedescendant target in the virtualized path. */
   readonly id: Signal<string>;

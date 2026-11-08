@@ -1019,6 +1019,81 @@ describe('ForTimePicker', () => {
       expect(r.instance.open()).toBe(false);
       expect(focusSpy).toHaveBeenCalledTimes(1);
     });
+
+    describe('typeahead on the closed trigger', () => {
+      it('commits the slot whose text starts with the typed prefix and stays closed', async () => {
+        const r = renderHost(TimePickerHost);
+        r.instance.step.set(60);
+        await flush(r.fixture);
+
+        pressKey(getTrigger(), '1');
+        await flush(r.fixture);
+        expect(r.instance.value()?.getHours()).toBe(1);
+
+        pressKey(getTrigger(), '4');
+        await flush(r.fixture);
+
+        const value = r.instance.value()!;
+        expect([value.getHours(), value.getMinutes()]).toEqual([14, 0]);
+        expect(r.instance.open()).toBe(false);
+      });
+
+      it('keeps the calendar date of the current value', async () => {
+        const r = renderHost(TimePickerHost);
+        r.instance.step.set(60);
+        r.instance.value.set(new Date(2031, 4, 17, 9, 0, 0));
+        await flush(r.fixture);
+
+        pressKey(getTrigger(), '2');
+        pressKey(getTrigger(), '0');
+        await flush(r.fixture);
+
+        const value = r.instance.value()!;
+        expect([value.getFullYear(), value.getMonth(), value.getDate()]).toEqual([2031, 4, 17]);
+        expect(value.getHours()).toBe(20);
+      });
+
+      it('skips slots disabled by minTime', async () => {
+        const r = renderHost(TimePickerHost);
+        r.instance.step.set(60);
+        r.instance.minTime.set(new Date(2000, 0, 1, 9, 0, 0));
+        await flush(r.fixture);
+
+        pressKey(getTrigger(), '0');
+        await flush(r.fixture);
+
+        expect(r.instance.value()?.getHours()).toBe(9);
+      });
+
+      it('cycles through the slots sharing a repeated first character', async () => {
+        const r = renderHost(TimePickerHost);
+        r.instance.step.set(60);
+        await flush(r.fixture);
+
+        pressKey(getTrigger(), '1');
+        await flush(r.fixture);
+        expect(r.instance.value()?.getHours()).toBe(1);
+
+        pressKey(getTrigger(), '1');
+        await flush(r.fixture);
+        expect(r.instance.value()?.getHours()).toBe(10);
+      });
+
+      for (const state of ['readonly', 'disabled'] as const) {
+        it(`ignores a printable key while ${state}`, async () => {
+          const r = renderHost(TimePickerHost);
+          r.instance.step.set(60);
+          r.instance[state].set(true);
+          await flush(r.fixture);
+
+          pressKey(getTrigger(), '1');
+          await flush(r.fixture);
+
+          expect(r.instance.value()).toBeNull();
+          expect(r.instance.open()).toBe(false);
+        });
+      }
+    });
   });
 
   describe('keyboard navigation', () => {

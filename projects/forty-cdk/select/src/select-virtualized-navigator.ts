@@ -12,8 +12,10 @@ export interface SelectPositionEntry<T> {
   readonly id: string;
   /** The option's raw value, matched against the selection by `compareWith`. */
   readonly value: T;
-  /** The option's accessible text, matched by the virtualized typeahead. */
+  /** The option's accessible text, the virtualized typeahead's last fallback. */
   readonly label: string;
+  /** The option's `textValue`, which the virtualized typeahead prefers when set. */
+  readonly textValue: string;
   /** Whether the option is disabled, so navigation skips over it. */
   readonly disabled: boolean;
 }
@@ -46,7 +48,9 @@ export function createSelectVirtualizedNavigator<T>(
     readEntry: (o) => {
       const id = o.id();
       const value = o.value();
-      return isUnset(value) ? null : { id, value, label: o.label(), disabled: o.disabled() };
+      return isUnset(value)
+        ? null
+        : { id, value, label: o.label(), textValue: o.textValue(), disabled: o.disabled() };
     },
     scrollIntoView: (host) => scrollActiveIntoView(host),
   });

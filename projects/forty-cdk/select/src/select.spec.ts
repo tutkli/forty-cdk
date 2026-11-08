@@ -1384,6 +1384,123 @@ describe('ForSelect', () => {
       expect(r.instance.open()).toBe(false);
     });
 
+    describe('typeahead text resolution (issue #2754)', () => {
+      interface Country {
+        readonly code: string;
+        readonly name: string;
+        readonly flag: string;
+      }
+      const COUNTRIES: readonly Country[] = [
+        { code: 'fr', name: 'France', flag: '🇫🇷' },
+        { code: 'de', name: 'Germany', flag: '🇩🇪' },
+      ];
+
+      @Component({
+        imports: HOST_IMPORTS,
+        template: `
+          <div forSelect [(open)]="open" [(value)]="value" [itemToLabel]="toLabel()">
+            <button forSelectTrigger><span forSelectValue placeholder="Country"></span></button>
+            @if (open()) {
+              <div forSelectContent>
+                @for (c of countries; track c.code) {
+                  <button
+                    forSelectOption
+                    [value]="c"
+                    [textValue]="withTextValue() ? c.name : ''"
+                    [attr.data-test-id]="c.code"
+                  >
+                    {{ c.flag }} {{ c.name }}
+                  </button>
+                }
+              </div>
+            }
+          </div>
+        `,
+      })
+      class CountrySelectHost {
+        readonly countries = COUNTRIES;
+        readonly open = signal(false);
+        readonly value = signal<readonly Country[]>([]);
+        readonly withTextValue = signal(false);
+        readonly toLabel = signal<((c: Country) => string) | undefined>(undefined);
+      }
+
+      type Setup = (host: CountrySelectHost) => void;
+      const BY_ITEM_TO_LABEL: Setup = (h) => h.toLabel.set((c: Country) => c.name);
+      const BY_TEXT_VALUE: Setup = (h) => h.withTextValue.set(true);
+
+      async function pressOnOpenListbox(setup: Setup | null, key: string): Promise<string | null> {
+        const r = renderHost(CountrySelectHost);
+        setup?.(r.instance);
+        r.instance.open.set(true);
+        await flush(r.fixture);
+        const france = getOption('fr');
+        france.focus();
+        pressKey(france, key);
+        await flush(r.fixture);
+        return activeTestId();
+      }
+
+      async function pressOnClosedTrigger(
+        setup: Setup | null,
+        key: string,
+      ): Promise<RenderResult<CountrySelectHost>> {
+        const r = renderHost(CountrySelectHost);
+        setup?.(r.instance);
+        r.instance.open.set(true);
+        await flush(r.fixture);
+        r.instance.open.set(false);
+        await flush(r.fixture);
+        pressKey(r.query<HTMLButtonElement>('[forSelectTrigger]')!, key);
+        await flush(r.fixture);
+        return r;
+      }
+
+      for (const [name, setup] of [
+        ['[itemToLabel]', BY_ITEM_TO_LABEL],
+        ['textValue', BY_TEXT_VALUE],
+      ] as const) {
+        it(`open: focuses the option whose ${name} matches`, async () => {
+          expect(await pressOnOpenListbox(setup, 'g')).toBe('de');
+        });
+
+        it(`closed: selects the option whose ${name} matches`, async () => {
+          const r = await pressOnClosedTrigger(setup, 'g');
+          expect(r.instance.value()).toEqual([COUNTRIES[1]]);
+          expect(r.instance.open()).toBe(false);
+        });
+      }
+
+      it('open: matches the rendered text when neither is set', async () => {
+        expect(await pressOnOpenListbox(null, 'g')).toBe('fr');
+      });
+
+      it('closed: matches the rendered text when neither is set', async () => {
+        const r = await pressOnClosedTrigger(null, 'g');
+        expect(r.instance.value()).toEqual([]);
+      });
+
+      const CODES_AND_TEXT_VALUE: Setup = (h) => {
+        h.toLabel.set((c: Country) => c.code);
+        h.withTextValue.set(true);
+      };
+
+      it('open: prefers textValue over [itemToLabel]', async () => {
+        expect(await pressOnOpenListbox(CODES_AND_TEXT_VALUE, 'g')).toBe('de');
+      });
+
+      it('closed: prefers textValue over [itemToLabel]', async () => {
+        const r = await pressOnClosedTrigger(CODES_AND_TEXT_VALUE, 'd');
+        expect(r.instance.value()).toEqual([]);
+      });
+
+      it('leaves the displayed label to the rendered text', async () => {
+        const r = await pressOnClosedTrigger(BY_TEXT_VALUE, 'g');
+        expect(r.instance.value()).toEqual([COUNTRIES[1]]);
+        expect(r.query<HTMLElement>('[forSelectValue]')!.textContent!.trim()).toBe('🇩🇪 Germany');
+      });
+    });
+
     it('closed (multi mode): typeahead is ignored at the trigger', async () => {
       const r = renderHost(SelectHost);
       r.instance.multiple.set(true);
@@ -4182,6 +4299,7 @@ describe('ForSelect', () => {
                     [value]="'item-' + row.index"
                     [posInSet]="row.index"
                     [disabled]="disabledIndexes().includes(row.index)"
+                    [textValue]="row.index === 40 ? 'Zulu' : ''"
                     [attr.data-test-id]="'ta-opt-' + row.index"
                   >
                     {{ labelOf(row.index) }}
@@ -4245,6 +4363,16 @@ describe('ForSelect', () => {
 
         expect(instance.scrolled()).toBe(0);
         expect(content.getAttribute('aria-activedescendant')).toBe(taOptOf(0).getAttribute('id'));
+      });
+
+      it('matches an option by its textValue (issue #2754)', async () => {
+        const { fixture, content } = await scrolledToTheEnd();
+
+        content.dispatchEvent(new KeyboardEvent('keydown', { key: 'z', bubbles: true }));
+        await flush(fixture);
+        await flush(fixture);
+
+        expect(content.getAttribute('aria-activedescendant')).toBe(taOptOf(40).getAttribute('id'));
       });
 
       it('skips a disabled option outside the rendered window', async () => {

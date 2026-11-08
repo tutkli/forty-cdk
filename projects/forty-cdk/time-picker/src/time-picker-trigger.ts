@@ -48,6 +48,9 @@ import {
  * - **ArrowUp** — open + focus selected slot (or last when none selected).
  * - **Home** — open + focus the first enabled slot.
  * - **End** — open + focus the last enabled slot.
+ * - **Typeahead** — printable keys commit the next enabled slot whose text starts with the typed
+ *   prefix without opening the listbox, mirroring `[forSelectTrigger]`. Ignored while disabled or
+ *   read-only.
  */
 @Directive({
   selector: '[forTimePickerTrigger]',
@@ -134,7 +137,9 @@ export class ForTimePickerTrigger<D = unknown> {
       event.preventDefault();
       this.#activate();
       this.ctx().overlay.openOverlay(event.key === 'Home' ? 'first' : 'last');
+      return;
     }
+    this.ctx().handleClosedTypeahead(event);
   }
 
   private onFocusOut(event: FocusEvent): void {

@@ -977,6 +977,65 @@ describe('ForListbox', () => {
       expect(document.activeElement).toBe(optOf(el, 'apple'));
     });
 
+    describe('textValue override (issue #2754)', () => {
+      @Component({
+        imports: [...LISTBOX_IMPORTS],
+        template: `
+          <ul forListbox [(value)]="picked">
+            <li>
+              <button
+                type="button"
+                forListboxOption
+                value="fr"
+                [textValue]="textOf('France')"
+                data-test-id="fr"
+              >
+                🇫🇷 France
+              </button>
+            </li>
+            <li>
+              <button
+                type="button"
+                forListboxOption
+                value="de"
+                [textValue]="textOf('Germany')"
+                data-test-id="de"
+              >
+                🇩🇪 Germany
+              </button>
+            </li>
+          </ul>
+        `,
+      })
+      class FlagListboxHost {
+        readonly picked = signal<readonly string[]>([]);
+        readonly override = signal(true);
+        textOf(name: string): string {
+          return this.override() ? name : '';
+        }
+      }
+
+      async function pressGFromFrance(override: boolean): Promise<Element | null> {
+        const { el, fixture, flush } = renderHost(FlagListboxHost);
+        fixture.componentInstance.override.set(override);
+        await flush();
+        optOf(el, 'fr').focus();
+        pressKey(optOf(el, 'fr'), 'g');
+        await flush();
+        return document.activeElement;
+      }
+
+      it('matches the textValue rather than a leading emoji', async () => {
+        const focused = await pressGFromFrance(true);
+        expect(focused?.getAttribute('data-test-id')).toBe('de');
+      });
+
+      it('falls back to the accessible text when textValue is empty', async () => {
+        const focused = await pressGFromFrance(false);
+        expect(focused?.getAttribute('data-test-id')).toBe('fr');
+      });
+    });
+
     it('ignores Space (reserved for activation)', async () => {
       const { el, fixture, flush } = renderHost(ListboxHost);
       optOf(el, 'apple').focus();
@@ -2768,6 +2827,7 @@ describe('ForListbox', () => {
                 [value]="'item-' + row.index"
                 [posInSet]="row.index"
                 [disabled]="disabledIndexes().includes(row.index)"
+                [textValue]="row.index === 40 ? 'Zulu' : ''"
                 [attr.data-test-id]="'opt-' + row.index"
               >
                 {{ labelOf(row.index) }}
@@ -2825,6 +2885,16 @@ describe('ForListbox', () => {
 
         expect(instance.scrolled()).toBe(0);
         expect(lb.getAttribute('aria-activedescendant')).toBe(voptOf(el, 0).getAttribute('id'));
+      });
+
+      it('matches an option by its textValue (issue #2754)', async () => {
+        const { el, lb, flush: settle } = await scrolledToTheEnd();
+
+        lb.dispatchEvent(new KeyboardEvent('keydown', { key: 'z', bubbles: true }));
+        await settle();
+        await settle();
+
+        expect(lb.getAttribute('aria-activedescendant')).toBe(voptOf(el, 40).getAttribute('id'));
       });
 
       it('skips a disabled option outside the rendered window', async () => {

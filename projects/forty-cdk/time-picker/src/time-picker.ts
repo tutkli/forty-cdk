@@ -38,6 +38,8 @@ import {
   timeSentinel,
   composeWithTime,
   isUnset,
+  injectTypeahead,
+  resolveListTypeahead,
   type Unset,
 } from 'forty-cdk/core';
 import { type TimeCapableDateAdapter } from 'forty-cdk/date-adapter';
@@ -299,6 +301,7 @@ export class ForTimePicker<D>
   readonly autoFocusOnClose = output<VetoableEvent>();
 
   readonly #pointer = createPointerHighlight({ items: () => this.#controller.options() });
+  readonly #closedTypeahead = injectTypeahead();
 
   /** The mode the mounted `[forTimePickerContent]` published, `null` while none is mounted. */
   readonly #contentModal = signal<Signal<boolean> | null>(null);
@@ -543,6 +546,27 @@ export class ForTimePicker<D>
     if (this.closeOnSelect()) {
       this.#controller.closeOverlay('select');
     }
+  }
+
+  /**
+   * Closed-trigger typeahead: commit the first enabled slot after the selected one whose label
+   * starts with the typed prefix, without opening the listbox, as `[forSelect]` does.
+   */
+  private handleClosedTypeahead(event: KeyboardEvent): boolean {
+    if (this.effectiveDisabled() || this.effectiveReadonly()) {
+      return false;
+    }
+    const slots = this.slots();
+    const { handled, match } = resolveListTypeahead(this.#closedTypeahead, event, {
+      items: slots,
+      anchorIndex: slots.findIndex((slot) => slot.selected),
+      getText: (slot) => slotTypeaheadText(slot.label),
+      isDisabled: (slot) => slot.disabled,
+    });
+    if (match) {
+      this.value.set(composeWithTime(this.adapter, this.value() ?? this.#sentinel(), match.value));
+    }
+    return handled;
   }
 
   focusSelectedOption(): boolean {

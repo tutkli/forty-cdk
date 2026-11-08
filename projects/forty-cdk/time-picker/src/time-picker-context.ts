@@ -158,6 +158,11 @@ export interface TimePickerPieceContext {
    */
   touchBoundaries(): readonly (Node | null)[];
   /**
+   * Called by `[forTimePickerTrigger]` with a key pressed on the closed trigger: a printable key
+   * commits the matching slot in place. Returns whether typeahead consumed the key.
+   */
+  handleClosedTypeahead(event: KeyboardEvent): boolean;
+  /**
    * Host element of the slot the pointer is over, `null` when the pointer is
    * over none. Self-heals on read: a host that has left the registered set or
    * become disabled is discounted, so the focused slot reclaims the highlight.

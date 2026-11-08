@@ -12,7 +12,7 @@ export interface ListboxPositionEntry<T> {
   readonly id: string;
   /** The option's raw value, matched against a retained resume position by `compareWith`. */
   readonly value: T;
-  /** The option's accessible text, matched by the virtualized typeahead. */
+  /** The option's `textValue`, else its accessible text, matched by the virtualized typeahead. */
   readonly label: string;
   /** Whether the option is disabled, so navigation skips over it. */
   readonly disabled: boolean;

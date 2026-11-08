@@ -483,7 +483,7 @@ export class ForListbox<T = string>
     const { handled, match } = resolveListTypeahead(this.#typeahead, event, {
       items: options,
       anchorIndex: options.findIndex((o) => o.host === event.target),
-      getText: (o) => accessibleTextContent(o.host),
+      getText: (o) => o.textValue() || accessibleTextContent(o.host),
       isDisabled: (o) => o.disabled(),
     });
     if (match) {

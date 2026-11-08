@@ -71,7 +71,8 @@ export const FOR_SELECT_OPTION = new InjectionToken<ForSelectOption>('FOR_SELECT
  *   the browser advance focus to the next / previous focusable, mirroring
  *   the WAI-ARIA select-only combobox pattern and native `<select>`.
  * - **Escape** — close the listbox.
- * - **Typeahead** — printable keys match by text content.
+ * - **Typeahead** — printable keys match by `textValue`, else the root's `[itemToLabel]`, else
+ *   text content.
  */
 @Directive({
   selector: '[forSelectOption]',
@@ -123,6 +124,15 @@ export class ForSelectOption<T = string> {
    * position snapshot. Leave unset (default `null`) outside it.
    */
   readonly posInSet = input<number | null>(null);
+
+  /**
+   * Override the string typeahead matches this option against, on the open listbox and on the
+   * closed trigger alike. Defaults to `''`, which falls back to the root's `[itemToLabel]` when set,
+   * else to the option's accessible text — an `aria-hidden` subtree is already excluded. Set this
+   * when announced text still shouldn't bleed into the match — e.g. `textValue="France"` for an
+   * option rendered as `🇫🇷 France`. The label `[forSelectValue]` displays is unaffected.
+   */
+  readonly textValue = input<string>('');
 
   readonly id = hostId('for-select-option');
 
@@ -181,6 +191,7 @@ export class ForSelectOption<T = string> {
       host: this.#host.nativeElement,
       value: this.value,
       label: this.#effectiveLabel,
+      textValue: this.textValue,
       disabled: this.effectiveDisabled,
       id: this.id,
       posInSet: this.posInSet,

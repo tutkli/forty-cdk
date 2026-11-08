@@ -356,20 +356,21 @@ With `anatomy="field"` and no projected `[forTimeField]`, opening the listbox or
 
 ## Keyboard
 
-| Key                          | Behavior                                                                                                                                    |
-| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Enter` / `Space` on trigger | Toggle the listbox, focusing the selected slot, else the first                                                                              |
-| `ArrowDown` on trigger       | Open, focusing the selected slot, else the first                                                                                            |
-| `ArrowUp` on trigger         | Open, focusing the selected slot, else the last                                                                                             |
-| `Home` / `End` on trigger    | Open, focusing the first / last enabled slot                                                                                                |
-| `Enter` / `Space`            | Select the focused slot                                                                                                                     |
-| `ArrowDown` / `ArrowUp`      | Move focus between slots                                                                                                                    |
-| `Home`                       | Focus the first enabled slot                                                                                                                |
-| `End`                        | Focus the last enabled slot                                                                                                                 |
-| `PageUp` / `PageDown`        | Focus the first / last enabled slot                                                                                                         |
-| Printable characters         | Focus the next slot whose text starts with the typed prefix, read with or without the hour's leading zero (`6` and `06` both reach `06:30`) |
-| `Tab`                        | Commit the focused slot and advance focus. With `modal` set, Tab cycles inside the listbox and commits nothing                              |
-| `Escape`                     | Close without committing                                                                                                                    |
+| Key                             | Behavior                                                                                                                                           |
+| ------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Enter` / `Space` on trigger    | Toggle the listbox, focusing the selected slot, else the first                                                                                     |
+| `ArrowDown` on trigger          | Open, focusing the selected slot, else the first                                                                                                   |
+| `ArrowUp` on trigger            | Open, focusing the selected slot, else the last                                                                                                    |
+| `Home` / `End` on trigger       | Open, focusing the first / last enabled slot                                                                                                       |
+| Printable characters on trigger | Without opening, commit the next enabled slot whose text starts with the typed prefix, read as in the listbox. Ignored while disabled or read-only |
+| `Enter` / `Space`               | Select the focused slot                                                                                                                            |
+| `ArrowDown` / `ArrowUp`         | Move focus between slots                                                                                                                           |
+| `Home`                          | Focus the first enabled slot                                                                                                                       |
+| `End`                           | Focus the last enabled slot                                                                                                                        |
+| `PageUp` / `PageDown`           | Focus the first / last enabled slot                                                                                                                |
+| Printable characters            | Focus the next slot whose text starts with the typed prefix, read with or without the hour's leading zero (`6` and `06` both reach `06:30`)        |
+| `Tab`                           | Commit the focused slot and advance focus. With `modal` set, Tab cycles inside the listbox and commits nothing                                     |
+| `Escape`                        | Close without committing                                                                                                                           |
 
 A slot disabled while it holds focus, by a `minTime` / `maxTime` that moved or by its own `disabled`, keeps the arrow keys, `Home` / `End`, `PageUp` / `PageDown` and typeahead. `Enter`, `Space` and `Tab` commit nothing from it.
 

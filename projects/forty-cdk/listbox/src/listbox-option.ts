@@ -108,6 +108,14 @@ export class ForListboxOption<T = string> {
    */
   readonly posInSet = input<number | null>(null);
 
+  /**
+   * Override the string typeahead matches this option against. Defaults to `''`, which falls back
+   * to the option's accessible text — an `aria-hidden` subtree is already excluded. Set this when
+   * announced text still shouldn't bleed into the match — e.g. `textValue="France"` for an option
+   * rendered as `🇫🇷 France`.
+   */
+  readonly textValue = input<string>('');
+
   readonly id = hostId('for-listbox-option');
 
   readonly selected = computed(() => {
@@ -160,15 +168,15 @@ export class ForListboxOption<T = string> {
   });
 
   /**
-   * Reactive accessible text exposed on the handle — the trimmed `textContent`
-   * of the host, minus any `aria-hidden` indicator glyph. Mirrors
-   * `ForSelectOption`'s `#effectiveLabel` so the root can fold a per-option
-   * `Signal<string>` into its virtualized position snapshot instead of reading
-   * `textContent` from inside a `computed` of its own. `textContent` is not a
-   * signal, so a text-only change with no value change does not refresh the
-   * snapshot entry.
+   * Reactive typeahead text exposed on the handle — {@link textValue} when set, else the trimmed
+   * `textContent` of the host, minus any `aria-hidden` indicator glyph. The root folds it into its
+   * virtualized position snapshot instead of reading `textContent` from inside a `computed` of its
+   * own. `textContent` is not a signal, so a text-only change with no value change does not
+   * refresh the snapshot entry.
    */
-  readonly #effectiveLabel = computed(() => accessibleTextContent(this.#host.nativeElement).trim());
+  readonly #effectiveLabel = computed(
+    () => this.textValue() || accessibleTextContent(this.#host.nativeElement).trim(),
+  );
 
   constructor() {
     assertInputBound(this.value, 'listbox', '[forListboxOption]', 'value');
@@ -176,6 +184,7 @@ export class ForListboxOption<T = string> {
       host: this.#host.nativeElement,
       value: this.value,
       label: this.#effectiveLabel,
+      textValue: this.textValue,
       disabled: this.effectiveDisabled,
       id: this.id,
       posInSet: this.posInSet,

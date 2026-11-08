@@ -20,12 +20,14 @@ export interface ForListboxOptionHandle<T = unknown> {
   /** The option's value, or {@link Unset} before its binding is written. */
   readonly value: Signal<T | Unset>;
   /**
-   * The option's accessible text, trimmed. The root folds it into the
-   * virtualized position snapshot so typeahead can reach an option the window
-   * has unmounted; the roving path reads the live host instead, so a text-only
-   * change is picked up there on the next keystroke.
+   * The text typeahead matches the option against: its `textValue` when set, else its accessible
+   * text, trimmed. The root folds it into the virtualized position snapshot so typeahead can reach
+   * an option the window has unmounted; the roving path reads the live host instead, so a
+   * text-only change is picked up there on the next keystroke.
    */
   readonly label: Signal<string>;
+  /** The option's `textValue` override, `''` when typeahead falls back to its accessible text. */
+  readonly textValue: Signal<string>;
   readonly disabled: Signal<boolean>;
   readonly id: Signal<string>;
   readonly posInSet: Signal<number | null>;
