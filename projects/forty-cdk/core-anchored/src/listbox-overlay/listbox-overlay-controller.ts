@@ -27,7 +27,10 @@ import {
   OverlayController,
   type OverlayEmitTargets,
 } from '../overlay-controller/overlay-controller';
-import type { OverlayShellTabOutConfig } from '../overlay-controller/overlay-shell';
+import {
+  type OverlayShellTabOutConfig,
+  skipTabDefaultAction,
+} from '../overlay-controller/overlay-shell';
 
 /**
  * Minimal option-handle shape the controller's focus algorithm needs: a host
@@ -466,8 +469,26 @@ export class ListboxOverlayController<
     return this.#controller.emitAutoFocusOnClose();
   }
 
-  /** Focus the trigger, e.g. on a Tab commit before the content unmounts. */
-  focusTrigger(): void {
-    this.#controller.trigger()?.focus();
+  /**
+   * Hands a Tab press that commits and closes the listbox to the trigger: focuses it, so the
+   * browser's Tab default advances from there, and on a forward Tab keeps the content out of that
+   * advance until it has run, so focus never re-enters the closing surface. Call it from the Tab
+   * `keydown` before the close, without preventing the event.
+   */
+  commitTabToTrigger(event: KeyboardEvent): void {
+    const trigger = this.#controller.trigger();
+    if (trigger === null) {
+      return;
+    }
+    trigger.focus();
+    const content = this.content();
+    if (
+      event.shiftKey ||
+      content === null ||
+      resolveActiveElement(trigger.ownerDocument) !== trigger
+    ) {
+      return;
+    }
+    skipTabDefaultAction(content);
   }
 }

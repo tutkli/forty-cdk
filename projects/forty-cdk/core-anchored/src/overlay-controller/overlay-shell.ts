@@ -449,7 +449,7 @@ function handleTabOut(
   if (backward) {
     event.preventDefault();
   } else {
-    skipDuringDefaultAction(host);
+    skipTabDefaultAction(host);
   }
   if (close === null) {
     return false;
@@ -458,7 +458,14 @@ function handleTabOut(
   return true;
 }
 
-function skipDuringDefaultAction(host: HTMLElement): void {
+/**
+ * Keeps a surface out of a forward Tab's default action. Call it after moving focus out of the
+ * surface from that Tab's `keydown`, without preventing the event: the browser then advances from
+ * the element that took focus, and the surface is inert until that advance has run, so a surface
+ * that is still mounted and tabbable is never the element focus advances into. The overlay shell's
+ * Tab-out and `ListboxOverlayController.commitTabToTrigger` are its callers.
+ */
+export function skipTabDefaultAction(host: HTMLElement): void {
   if (host.hasAttribute('inert')) {
     return;
   }

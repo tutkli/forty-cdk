@@ -239,6 +239,8 @@ export interface ListboxRegistrationContext {
 export interface ListboxVirtualization<T = unknown> {
   /** Full source length, or `undefined` while the piece is present but unset. */
   readonly totalCount: Signal<number | undefined>;
+  /** The focus-entry hint the consumer bound, if any. */
+  readonly selectedIndex: Signal<number | undefined>;
   /** The position the root resumes from once its active option unmounts. */
   readonly resume: VirtualizedResume<T, ListboxPositionEntry<T>>;
   /** The navigation engine, constructed on first use. */
@@ -248,8 +250,6 @@ export interface ListboxVirtualization<T = unknown> {
    * support. Returns `true` when `event` was one, after preventing its default.
    */
   rejectRangeSelect(event: KeyboardEvent): boolean;
-  /** Rejects a keyboard move while `selectionFollowsFocus` is set. */
-  assertSelectionFollowsFocusSupported(): void;
 }
 
 /** The root state the virtualized focus model reads and writes. */

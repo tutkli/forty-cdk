@@ -63,6 +63,7 @@ export const FOR_LISTBOX_HOST_DIRECTIVE_OUTPUTS = [
  */
 export const FOR_LISTBOX_VIRTUALIZED_HOST_DIRECTIVE_INPUTS = [
   'dataVersion',
+  'selectedIndex',
   'totalCount',
   'visibleRange',
 ] as const;

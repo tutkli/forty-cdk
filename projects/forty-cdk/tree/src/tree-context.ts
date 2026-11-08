@@ -232,8 +232,6 @@ export interface TreeVirtualization<T = unknown> {
   focusModel(): ActiveDescendantFocusModel<T>;
   /** Rejects a multi-select range shortcut, which the virtualized path does not support. */
   rejectRangeSelect(): void;
-  /** Rejects a keyboard move while `selectionFollowsFocus` is set on a single-select tree. */
-  assertSelectionFollowsFocusSupported(): void;
 }
 
 /** The root state the virtualized focus model reads and writes. */
@@ -242,8 +240,6 @@ export interface TreeVirtualizationHost<T = unknown> {
   readonly items: Signal<readonly ForTreeItemHandle<T>[]>;
   /** The root's typeahead buffer, shared with the roving focus model. */
   readonly typeahead: Typeahead;
-  /** Whether more than one node can be selected, where `selectionFollowsFocus` is inert. */
-  readonly multiSelect: Signal<boolean>;
   /** The id of the rendered row showing the active node, or `null` when none does. */
   getActiveId(): string | null;
   /** Move the active node, retaining its position and value as the resume target. */

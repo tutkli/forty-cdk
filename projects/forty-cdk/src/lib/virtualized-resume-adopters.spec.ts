@@ -1,4 +1,10 @@
-import { ChangeDetectionStrategy, Component, signal, type Type } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  signal,
+  type Type,
+  type WritableSignal,
+} from '@angular/core';
 
 import {
   ForCombobox,
@@ -32,6 +38,7 @@ abstract class WindowedHost {
   readonly picked = signal<readonly string[]>([]);
   readonly range = signal<readonly [number, number]>([0, 5]);
   readonly scrolled = signal<number | null>(null);
+  readonly hint = signal<number | undefined>(undefined);
 
   windowRows(): readonly { readonly index: number }[] {
     const [start, end] = this.range();
@@ -57,6 +64,7 @@ abstract class WindowedHost {
       [(value)]="picked"
       [totalCount]="20"
       [visibleRange]="range()"
+      [selectedIndex]="hint()"
       (scrollToIndex)="onScrollToIndex($event)"
     >
       @for (row of windowRows(); track row.index) {
@@ -105,6 +113,7 @@ class ListboxControllerHost extends WindowedHost {}
       [(value)]="picked"
       [totalCount]="20"
       [visibleRange]="range()"
+      [selectedIndex]="hint()"
       (scrollToIndex)="onScrollToIndex($event)"
     >
       <button forSelectTrigger>Rows</button>
@@ -199,6 +208,10 @@ interface ResumeCase {
   readonly host: Type<WindowedHost>;
   readonly pressesToSecondRow: number;
   readonly typeahead: boolean;
+  /** How focus enters the collection and seeds its active option, `null` when nothing seeds it. */
+  readonly entry: 'focusin' | 'open' | null;
+  /** Whether the piece takes a `[selectedIndex]` hint for a selection that was never rendered. */
+  readonly hint: boolean;
 }
 
 const CASES: readonly ResumeCase[] = [
@@ -209,6 +222,8 @@ const CASES: readonly ResumeCase[] = [
     host: ListboxHost,
     pressesToSecondRow: 2,
     typeahead: true,
+    entry: 'focusin',
+    hint: true,
   },
   {
     name: 'listbox driven by a controller',
@@ -217,6 +232,8 @@ const CASES: readonly ResumeCase[] = [
     host: ListboxControllerHost,
     pressesToSecondRow: 3,
     typeahead: false,
+    entry: null,
+    hint: false,
   },
   {
     name: 'select',
@@ -225,6 +242,8 @@ const CASES: readonly ResumeCase[] = [
     host: SelectHost,
     pressesToSecondRow: 2,
     typeahead: true,
+    entry: 'open',
+    hint: true,
   },
   {
     name: 'tree',
@@ -233,6 +252,8 @@ const CASES: readonly ResumeCase[] = [
     host: TreeHost,
     pressesToSecondRow: 2,
     typeahead: true,
+    entry: 'focusin',
+    hint: false,
   },
   {
     name: 'combobox',
@@ -241,6 +262,8 @@ const CASES: readonly ResumeCase[] = [
     host: ComboboxHost,
     pressesToSecondRow: 3,
     typeahead: false,
+    entry: null,
+    hint: false,
   },
 ];
 
@@ -267,6 +290,25 @@ async function strandSecondRow(
   return host;
 }
 
+async function enter(r: RenderResult<WindowedHost>, testCase: ResumeCase): Promise<HTMLElement> {
+  if (testCase.entry === 'open') {
+    const host = r.instance as WindowedHost & { readonly open: WritableSignal<boolean> };
+    host.open.set(false);
+    await flush(r.fixture);
+    host.open.set(true);
+    await flush(r.fixture);
+  } else {
+    keyTarget().dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
+    await flush(r.fixture);
+  }
+  return keyTarget();
+}
+
+function activeText(host: HTMLElement): string | undefined {
+  const id = host.getAttribute('aria-activedescendant');
+  return id === null ? undefined : document.getElementById(id)?.textContent?.trim();
+}
+
 describe('virtualized resume position adopters (issue #2123)', () => {
   afterEachOverlayCleanup();
 
@@ -291,6 +333,51 @@ describe('virtualized resume position adopters (issue #2123)', () => {
 
         expect(r.instance.scrolled()).toBe(3);
       });
+
+      if (testCase.entry === 'focusin') {
+        it('focus re-entering resumes on the option the user was on after it scrolled out of the window', async () => {
+          const r = renderHost(testCase.host);
+          await strandSecondRow(r, testCase);
+
+          const host = await enter(r, testCase);
+          await flush(r.fixture);
+
+          expect(r.instance.scrolled()).toBe(2);
+          expect(activeText(host)).toBe('Row 2');
+        });
+      }
+
+      if (testCase.entry !== null) {
+        it('focus entry seeds a selection the window rendered before and has since unmounted', async () => {
+          const r = renderHost(testCase.host);
+          r.instance.range.set([10, 15]);
+          await flush(r.fixture);
+          r.instance.picked.set(['row-12']);
+          r.instance.range.set([0, 5]);
+          await flush(r.fixture);
+
+          const host = await enter(r, testCase);
+          await flush(r.fixture);
+
+          expect(r.instance.scrolled()).toBe(12);
+          expect(activeText(host)).toBe('Row 12');
+        });
+      }
+
+      if (testCase.hint) {
+        it('focus entry seeds a selection the window never rendered from the [selectedIndex] hint', async () => {
+          const r = renderHost(testCase.host);
+          r.instance.picked.set(['row-17']);
+          r.instance.hint.set(17);
+          await flush(r.fixture);
+
+          const host = await enter(r, testCase);
+          await flush(r.fixture);
+
+          expect(r.instance.scrolled()).toBe(17);
+          expect(activeText(host)).toBe('Row 17');
+        });
+      }
 
       if (testCase.typeahead) {
         it('typeahead cycles from the option the user was on after it scrolled out of the window', async () => {
@@ -325,6 +412,16 @@ describe('virtualized resume position adopters (issue #2123)', () => {
       expect(code, owner).toMatch(/\.resume\.retain\(/);
       expect(code, owner).toMatch(/\.resume\.clear\(\)/);
     }
+  });
+
+  it('seeds every focus entry on a committed selection through resolveCommittedPosition', () => {
+    const owners = [...new Set(CASES.filter((c) => c.entry !== null).map((c) => c.owner))];
+    const resolving = [...LIBRARY_CODE]
+      .filter(([, code]) => /\bresolveCommittedPosition\(\{/.test(code))
+      .map(([path]) => path)
+      .sort();
+
+    expect(resolving).toEqual(owners.sort());
   });
 
   it('feeds every navigator resume position from a VirtualizedResume', () => {

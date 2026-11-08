@@ -4,7 +4,6 @@ import {
   isRangeSelectShortcut,
   runVirtualizedNavigatorBridge,
   throwUnsupportedVirtualizedRangeSelect,
-  throwUnsupportedVirtualizedSelectionFollowsFocus,
   VirtualizedResume,
 } from 'forty-cdk/core';
 import { injectListboxContext } from './listbox-context';
@@ -59,6 +58,20 @@ export class ForListboxVirtualized {
   readonly visibleRange = input<readonly [number, number] | undefined>(undefined);
 
   /**
+   * Focus-entry hint: the absolute index of the committed option within the full source dataset.
+   * Focusing the listbox seeds the committed option, and this index places it when the option lies
+   * outside the rendered window and has never been rendered. Bind it from the consumer's own
+   * value→index lookup.
+   *
+   * This is a hint, **not** a selection source: `value` / `[(value)]` stay authoritative. It is
+   * singular, so in multiple mode it places the first committed option. Leave unset (default) when
+   * the committed option is always inside the initial window. An off-window committed value with no
+   * `[selectedIndex]` that was never rendered falls back to the first rendered enabled option; an
+   * out-of-range index (or an empty selection) is ignored.
+   */
+  readonly selectedIndex = input<number | undefined>(undefined);
+
+  /**
    * Tells the listbox the source dataset changed **without** a `totalCount`
    * transition — a same-length re-sort or refresh (e.g. sorting a 1000-row
    * list). Bind any value that changes on such a refresh (a version counter,
@@ -72,8 +85,10 @@ export class ForListboxVirtualized {
 
   /**
    * Emitted when keyboard navigation reaches an option outside the rendered
-   * window. The consumer passes this index to `injectVirtualizer`'s
-   * `scrollToIndex` so the correct option mounts.
+   * window, or when focusing the listbox seeds an off-window option: the option
+   * it was on before that option scrolled out, else the committed one. The
+   * consumer passes this index to `injectVirtualizer`'s `scrollToIndex` so the
+   * correct option mounts.
    */
   readonly scrollToIndex = output<number>();
 
@@ -87,10 +102,10 @@ export class ForListboxVirtualized {
 
   readonly #host = this.#ctx.registerVirtualization({
     totalCount: this.totalCount,
+    selectedIndex: this.selectedIndex,
     resume: this.#resume,
     navigator: () => this.#requireNavigator(),
     rejectRangeSelect: (event) => this.#rejectRangeSelect(event),
-    assertSelectionFollowsFocusSupported: () => this.#assertSelectionFollowsFocusSupported(),
   });
 
   constructor() {
@@ -152,15 +167,5 @@ export class ForListboxVirtualized {
       alternative: 'Toggle options individually with Enter, Space, or click',
     });
     return true;
-  }
-
-  #assertSelectionFollowsFocusSupported(): void {
-    if (this.#ctx.selectionFollowsFocus()) {
-      throwUnsupportedVirtualizedSelectionFollowsFocus({
-        primitive: 'listbox',
-        focusModel: 'roving-tabindex',
-        collection: 'listbox',
-      });
-    }
   }
 }

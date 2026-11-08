@@ -317,12 +317,19 @@ const ENTRY_POINTS_WITH_DEFAULTS = new Set(OWNING_ENTRY_POINTS.values());
  */
 const INPUT_KEYS = ['loop', 'selectionFollowsFocus'] as const;
 
-/** Source file → the initializer of its `readonly <key> = input(…)`, in entry points with defaults. */
+/**
+ * Source file → the scope seed of its `<key>` input, in entry points with defaults: the initializer
+ * of a `readonly <key> = input(…)`, or, for an input aliased onto a raw `_<key>Input` field, what
+ * the effective `readonly <key> = computed(…)` falls back to.
+ */
 function inputSeeds(key: string): Map<string, string> {
   const declaration = new RegExp(`readonly ${key} = input(?:<[^>]*>)?\\(\\s*([^,)]*)`);
+  const aliased = new RegExp(
+    `readonly ${key} = computed(?:<[^>]*>)?\\(\\s*\\(\\) => this\\._${key}Input\\(\\) \\?\\? ([^,)]*)`,
+  );
   const seeds = new Map<string, string>();
   for (const [path, code] of LIBRARY_CODE) {
-    const seed = code.match(declaration)?.[1];
+    const seed = (code.match(declaration) ?? code.match(aliased))?.[1];
     if (seed !== undefined && ENTRY_POINTS_WITH_DEFAULTS.has(entryPointOf(path))) {
       seeds.set(path, seed.trim());
     }

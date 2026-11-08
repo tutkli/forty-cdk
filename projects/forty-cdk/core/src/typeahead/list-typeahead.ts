@@ -109,8 +109,8 @@ export function throwUnsupportedVirtualizedRangeSelect(
 }
 
 /**
- * Identity of the primitive throwing
- * {@link throwUnsupportedVirtualizedSelectionFollowsFocus}.
+ * Identity of the primitive asserting
+ * {@link assertVirtualizedSelectionFollowsFocusSupported}.
  */
 export interface UnsupportedVirtualizedSelectionFollowsFocusContext {
   /** Primitive name for the `[forty-cdk/<primitive>]` error prefix (e.g. `'listbox'`). */
@@ -121,11 +121,28 @@ export interface UnsupportedVirtualizedSelectionFollowsFocusContext {
   readonly collection: string;
 }
 
+/** The root state {@link assertVirtualizedSelectionFollowsFocusSupported} decides from. */
+export interface VirtualizedSelectionFollowsFocusState {
+  /**
+   * The `selectionFollowsFocus` value the element bound itself, `undefined` when
+   * it inherits the scope default. A virtualized root ignores the scope default,
+   * so only a binding on the element is a misconfiguration.
+   */
+  readonly bound: boolean | undefined;
+  /** Whether more than one item can be selected, where the option is inert. */
+  readonly multiple: boolean;
+}
+
 /**
  * Throws (in dev mode only) the standard error explaining that
  * `selectionFollowsFocus` is unsupported together with virtualization, because
  * the activedescendant path resolves off-window navigation targets
  * asynchronously and so cannot carry selection with focus.
+ *
+ * It decides when the guard applies, so no root restates it: only when the
+ * element bound `selectionFollowsFocus` to `true` itself, and only in single
+ * mode. A scope default never reaches a virtualized root, and a multi-select
+ * root ignores the option, so neither degrades a move.
  *
  * Call it from **every keyboard move of the virtualized activedescendant**
  * rather than from a config-watching `effect`: the combination degrades a
@@ -141,23 +158,28 @@ export interface UnsupportedVirtualizedSelectionFollowsFocusContext {
  * Shared by Listbox, Select and Tree; the primitive name and the two hint
  * fragments are the only per-primitive differences.
  */
-export function throwUnsupportedVirtualizedSelectionFollowsFocus(
+export function assertVirtualizedSelectionFollowsFocusSupported(
+  state: VirtualizedSelectionFollowsFocusState,
   context: UnsupportedVirtualizedSelectionFollowsFocusContext,
 ): void {
-  if (typeof ngDevMode === 'undefined' || ngDevMode) {
-    throw fortyError({
-      code: 'FORCDK-CORE-009',
-      scope: context.primitive,
-      message:
-        '`selectionFollowsFocus` is not supported together with virtualization (`totalCount` set).',
-      cause:
-        'The virtualized activedescendant path resolves off-window navigation targets ' +
-        'asynchronously, so selection cannot follow focus there.',
-      fix:
-        'Remove one of the two: use `selectionFollowsFocus` only with the non-virtualized ' +
-        `${context.focusModel} ${context.collection}.`,
-    });
+  if (typeof ngDevMode !== 'undefined' && !ngDevMode) {
+    return;
   }
+  if (state.bound !== true || state.multiple) {
+    return;
+  }
+  throw fortyError({
+    code: 'FORCDK-CORE-009',
+    scope: context.primitive,
+    message:
+      '`selectionFollowsFocus` is not supported together with virtualization (`totalCount` set).',
+    cause:
+      'The virtualized activedescendant path resolves off-window navigation targets ' +
+      'asynchronously, so selection cannot follow focus there.',
+    fix:
+      'Remove one of the two: use `selectionFollowsFocus` only with the non-virtualized ' +
+      `${context.focusModel} ${context.collection}.`,
+  });
 }
 
 /** Per-call inputs {@link resolveListTypeahead} needs to run a match. */

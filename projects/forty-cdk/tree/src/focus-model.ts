@@ -390,21 +390,28 @@ export class ActiveDescendantFocusModel<T = unknown> implements FocusModel<T> {
     if (resume === null) {
       return;
     }
-    this.#walk = null;
-    this.#core.seedActive(resume.pos);
+    this.seedActive(resume.pos);
   }
 
-  resumeRendered(): boolean {
+  /**
+   * Re-seed `aria-activedescendant` on the retained node as focus re-enters the
+   * tree, resolved as {@link resumeActive} resolves it and emitting
+   * `(scrollToIndex)` when that node is outside the rendered window. Returns
+   * whether it seeded; a retained node that is now disabled seeds nothing.
+   */
+  resumeOnEntry(): boolean {
     const resume = this.#resolveResume();
-    if (resume === null) {
+    if (resume === null || resume.entry.disabled) {
       return false;
     }
-    const live = this.#deps.items().find((n) => n.itemIndex() === resume.pos);
-    if (!live || live.disabled()) {
-      return false;
-    }
-    this.focusTarget(live);
+    this.seedActive(resume.pos);
     return true;
+  }
+
+  /** @see VirtualizedNavigator.seedActive */
+  seedActive(pos: number): void {
+    this.#walk = null;
+    this.#core.seedActive(pos);
   }
 
   navigate(action: ListNavigationAction): void {

@@ -4,7 +4,6 @@ import {
   isRangeSelectShortcut,
   runVirtualizedNavigatorBridge,
   throwUnsupportedVirtualizedRangeSelect,
-  throwUnsupportedVirtualizedSelectionFollowsFocus,
   VirtualizedResume,
 } from 'forty-cdk/core';
 import { injectSelectContext } from './select-context';
@@ -110,7 +109,6 @@ export class ForSelectVirtualized {
     resume: this.#resume,
     navigator: () => this.#requireNavigator(),
     rejectRangeSelect: (event) => this.#rejectRangeSelect(event),
-    assertSelectionFollowsFocusSupported: () => this.#assertSelectionFollowsFocusSupported(),
   });
 
   constructor() {
@@ -172,15 +170,5 @@ export class ForSelectVirtualized {
       alternative: 'Toggle options individually with Enter, Space, or click',
     });
     return true;
-  }
-
-  #assertSelectionFollowsFocusSupported(): void {
-    if (this.#ctx.selectionFollowsFocus()) {
-      throwUnsupportedVirtualizedSelectionFollowsFocus({
-        primitive: 'select',
-        focusModel: 'DOM-focus',
-        collection: 'listbox',
-      });
-    }
   }
 }

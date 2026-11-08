@@ -64,3 +64,59 @@ describe('focus-taking overlay surfaces route Tab out through the overlay shell'
     }
   });
 });
+
+const UNTABBABLE_SURFACE_TAB_COMMITS: Readonly<Record<string, string>> = {
+  'combobox/src/combobox-input.ts': 'combobox/src/combobox-content.ts',
+};
+
+const TAB_CLOSE = /closeOverlay\('tab'\)/g;
+const SHELL_TAB_CLOSE = /close: \(\) => [\w.#]+\.closeOverlay\('tab'\)/g;
+const ROUTED_TAB_CLOSE =
+  /\.commitTabToTrigger\(event\);\s+this\.#controller\.closeOverlay\('tab'\)/g;
+const TABBABLE_TABINDEX_BINDING = /'\[attr\.tabindex\]': '[^']*"0"/;
+
+const count = (code: string, pattern: RegExp): number => code.match(pattern)?.length ?? 0;
+
+describe('hand-written Tab commits keep the closing surface out of the browser advance', () => {
+  const commits = [...LIBRARY_CODE].filter(
+    ([, code]) => count(code, TAB_CLOSE) > count(code, SHELL_TAB_CLOSE),
+  );
+
+  it('finds the hand-written Tab commits', () => {
+    expect(commits.map(([path]) => path)).toEqual(
+      expect.arrayContaining(['select/src/select.ts', 'time-picker/src/time-picker.ts']),
+    );
+  });
+
+  for (const [path, code] of commits) {
+    const surface = UNTABBABLE_SURFACE_TAB_COMMITS[path];
+
+    if (surface === undefined) {
+      it(`${path} hands every Tab commit to commitTabToTrigger before closing`, () => {
+        expect(count(code, ROUTED_TAB_CLOSE)).toBe(count(code, TAB_CLOSE));
+      });
+    } else {
+      it(`${path} is excluded because ${surface} never binds a tabbable tabindex`, () => {
+        expect(LIBRARY_CODE.get(surface)).not.toMatch(TABBABLE_TABINDEX_BINDING);
+      });
+    }
+  }
+
+  it('marks the content inert from commitTabToTrigger through the shell helper', () => {
+    const controller = LIBRARY_CODE.get(
+      'core-anchored/src/listbox-overlay/listbox-overlay-controller.ts',
+    )!;
+    const body = controller.slice(controller.indexOf('commitTabToTrigger(event: KeyboardEvent)'));
+
+    expect(body).toMatch(
+      /^commitTabToTrigger\(event: KeyboardEvent\): void \{[\s\S]*?skipTabDefaultAction\(content\);/,
+    );
+  });
+
+  it('names only exclusions that are still hand-written Tab commits', () => {
+    const paths = new Set(commits.map(([path]) => path));
+    for (const path of Object.keys(UNTABBABLE_SURFACE_TAB_COMMITS)) {
+      expect(paths).toContain(path);
+    }
+  });
+});

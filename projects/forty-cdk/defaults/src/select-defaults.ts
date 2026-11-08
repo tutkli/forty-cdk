@@ -45,7 +45,8 @@ export interface ForSelectDefaults extends AnchoredPositioningSeedDefaults {
   /**
    * Single-mode only: when `true`, a keyboard focus move (arrow navigation or a
    * typeahead match) also selects the focused option while the listbox is open.
-   * APG calls this optional and recommends caution.
+   * APG calls this optional and recommends caution. A virtualized select
+   * (`[forSelectVirtualized]` with `totalCount` set) does not inherit it.
    */
   selectionFollowsFocus: boolean;
 }

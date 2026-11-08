@@ -12,6 +12,7 @@ import {
 } from '@angular/core';
 
 import {
+  assertVirtualizedSelectionFollowsFocusSupported,
   Collection,
   createPointerHighlight,
   createVetoableNativeEvent,
@@ -21,6 +22,7 @@ import {
   isUnset,
   selectionMembership,
   type ListNavigationAction,
+  resolveCommittedPosition,
   resolveListNavigation,
   resolveTreeExpandCollapse,
   type WritingDirection,
@@ -221,19 +223,29 @@ export class ForTree<T = string> implements ForTreeContext<T>, ForTreeContainerC
    * Single-mode only: when true, every keyboard focus move (arrow navigation,
    * entering a child, leaving to the parent, a typeahead match) also selects
    * the focused node. Ignored under `multiple` or `selectionMode="checkbox"`,
-   * where a move never changes the value. The default is read from
-   * `provideForTreeDefaults` for the surrounding scope.
+   * where a move never changes the value. When unset (default `undefined`), falls back to
+   * `ForTreeDefaults.selectionFollowsFocus` from the surrounding `provideForTreeDefaults` scope
+   * (`false` unless configured).
    *
    * Not supported together with virtualization (`[forTreeVirtualized]` with
    * `totalCount` set): the virtualized `aria-activedescendant` focus model resolves off-window
    * navigation targets asynchronously, so selection cannot follow focus there
-   * without deriving the committed value from a render side effect.
-   * Keyboard-navigating a virtualized single-select tree with it set throws in
-   * dev mode, from the move the combination degrades.
+   * without deriving the committed value from a render side effect. A virtualized tree does not
+   * inherit the scope default, and keyboard-navigating a virtualized single-select tree that binds
+   * it to `true` throws in dev mode, from the move the combination degrades.
+   *
+   * The input is aliased to `selectionFollowsFocus`; read the effective value through the public
+   * `selectionFollowsFocus` computed below.
    */
-  readonly selectionFollowsFocus = input(this.#defaults.selectionFollowsFocus, {
-    transform: booleanAttribute,
+  readonly _selectionFollowsFocusInput = input(undefined, {
+    alias: 'selectionFollowsFocus',
+    transform: (v: unknown): boolean | undefined => (v == null ? undefined : booleanAttribute(v)),
   });
+
+  /** Effective `selectionFollowsFocus`: the input when set, else the scope default. */
+  readonly selectionFollowsFocus = computed<boolean>(
+    () => this._selectionFollowsFocusInput() ?? this.#defaults.selectionFollowsFocus,
+  );
 
   /**
    * Read-only single-select convenience view of {@link value}. Returns the
@@ -414,7 +426,6 @@ export class ForTree<T = string> implements ForTreeContext<T>, ForTreeContainerC
     return {
       items: this.#items.items,
       typeahead: this.#typeahead,
-      multiSelect: this.multiSelect,
       getActiveId: () => this.#activeId(),
       setActiveId: (id) => this.#setActiveId(id),
       suppressPointer: () => this.#pointer.suppress(),
@@ -630,10 +641,28 @@ export class ForTree<T = string> implements ForTreeContext<T>, ForTreeContainerC
     this.handleTypeahead(event);
   }
 
+  /**
+   * Seeds the active node when focus enters the virtualized tree with none active: the node the user
+   * was on before it left the window, else the committed selection, else the first rendered enabled
+   * node. The first two may be off-window, in which case `(scrollToIndex)` brings them in.
+   */
   private onHostFocusIn(): void {
     if (!this.#virtualized() || this.disabled()) return;
     if (this.#activeId() !== null) return;
-    if (this.#virtualModel().focusModel().resumeRendered()) return;
+    const virtualization = this.#virtualModel();
+    const model = virtualization.focusModel();
+    if (model.resumeOnEntry()) return;
+    const committed = resolveCommittedPosition({
+      values: this.value(),
+      snapshotByPos: model.snapshotByPos(),
+      compareWith: this.compareWith(),
+      selectedIndex: undefined,
+      totalCount: virtualization.totalCount(),
+    });
+    if (committed !== null) {
+      model.seedActive(committed);
+      return;
+    }
     const items = this.#items.items();
     if (items.length === 0) return;
     const ordered = [...items].sort((a, b) => (a.itemIndex() ?? 0) - (b.itemIndex() ?? 0));
@@ -729,7 +758,10 @@ export class ForTree<T = string> implements ForTreeContext<T>, ForTreeContainerC
    */
   #assertSelectionFollowsFocusSupported(): void {
     if (this.#virtualized()) {
-      this.#virtualModel().assertSelectionFollowsFocusSupported();
+      assertVirtualizedSelectionFollowsFocusSupported(
+        { bound: this._selectionFollowsFocusInput(), multiple: this.multiSelect() },
+        { primitive: 'tree', focusModel: 'roving-tabindex', collection: 'tree' },
+      );
     }
   }
 

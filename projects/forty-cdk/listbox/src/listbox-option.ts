@@ -197,6 +197,7 @@ export class ForListboxOption<T = string> {
       focusAfterPress(this.#host.nativeElement);
     }
     if (this.#group.readonly()) {
+      this.#group.notifyOptionClick(this.id());
       return;
     }
     this.#group.activate(this.value());
