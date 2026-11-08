@@ -27,6 +27,7 @@ import {
   injectHiddenInput,
   injectNativeFormResetToInitial,
   serializeISODate,
+  timeGraftBaseDay,
 } from 'forty-cdk/core';
 import { type DateAdapter } from 'forty-cdk/date-adapter';
 import { assertCalendarAdapter, DatePickerBase } from './date-picker-base';
@@ -325,8 +326,9 @@ export class ForDatePicker<D>
     // (ForTimeField or ForTimePicker) is bound one-way to the picker's value. A
     // `null` commit (an incomplete time while a segment is cleared) is ignored
     // so the committed day survives, and a non-null commit grafts only its
-    // time-of-day onto the picker's current day (or today when unset) — so the
-    // time field's internal 2000-01-01 sentinel can never cross into the value.
+    // time-of-day onto the picker's current day (or, when unset, today clamped to
+    // the bounds' days) — so the time field's internal 2000-01-01 sentinel can
+    // never cross into the value.
     effect((onCleanup) => {
       const timeSource = this.timeSource();
       if (!timeSource) {
@@ -341,7 +343,7 @@ export class ForDatePicker<D>
           return;
         }
         assertTimeSourceAdapter(timeSource.adapter, this.adapter as DateAdapter<unknown>);
-        const day = this.value() ?? this.adapter.today();
+        const day = timeGraftBaseDay(this.adapter, this.value(), this.minDate(), this.maxDate());
         const composed = clampToBounds(
           this.adapter,
           composeWithTime(this.#time(), day, next),
@@ -402,15 +404,16 @@ export class ForDatePicker<D>
   }
 
   /**
-   * In the field anatomy, discards a partly typed entry in the projected
-   * `[forDateField]` and redisplays the value. Implements
-   * `FormUiControl.reset`, so a Signal Forms reset clears the field even when
-   * the value was already `null`. No-op in the trigger anatomy.
+   * Discards a partly typed entry in the projected `[forDateField]` (field
+   * anatomy) and in a projected `[forTimeField]` or `[forTimePicker]` (date-time
+   * picker), and redisplays the value. Implements `FormUiControl.reset`, so a
+   * Signal Forms reset clears them even when the value was already `null`.
    */
   override reset(): void {
     if (this.adoptsField()) {
       this.#fieldSlot.value()?.reset();
     }
+    this.timeSource()?.reset();
   }
 
   protected override fieldLabelledElement(): HTMLElement | null {

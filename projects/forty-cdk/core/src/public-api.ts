@@ -133,6 +133,7 @@ export {
   secondsOfDay,
   serializeISODate,
   serializeISOTime,
+  timeGraftBaseDay,
   timeSentinel,
 } from './datetime/serialize';
 export { TimeFieldEngine } from './datetime/time-field-engine';
