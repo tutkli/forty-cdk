@@ -28,8 +28,10 @@ import {
 } from 'forty-cdk/core';
 import {
   AnchoredOverlayPositioningBase,
+  type AnchoredPositioningSeedDefaults,
   type FloatingFallbackAxisSideDirection,
   type MenuActivationModality,
+  resolveMenubarAxis,
 } from 'forty-cdk/core-anchored';
 import { injectMenubarContext } from './menubar-context';
 import { FOR_MENUBAR_DEFAULTS } from 'forty-cdk/defaults';
@@ -104,7 +106,7 @@ export class ForMenubarTrigger extends AnchoredOverlayPositioningBase {
   private readonly menubar = injectMenubarContext('ForMenubarTrigger');
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
   readonly #idGen = inject(IdGenerator);
-  protected readonly positioningDefaults = inject(FOR_MENUBAR_DEFAULTS);
+  readonly #defaults = inject(FOR_MENUBAR_DEFAULTS);
   #pointerActivation = false;
 
   /**
@@ -141,11 +143,28 @@ export class ForMenubarTrigger extends AnchoredOverlayPositioningBase {
    * than a per-trigger one.
    */
   readonly fallbackAxisSideDirection = input<FloatingFallbackAxisSideDirection>(
-    this.positioningDefaults.fallbackAxisSideDirection,
+    this.#defaults.fallbackAxisSideDirection,
   );
 
   /** Manual `aria-label` on `[forMenuContent]` when the trigger isn't a meaningful name. */
   readonly ariaLabel = input<string | null>(null);
+
+  /**
+   * The scope's `side` when it sets one, else the side the bar's layout opens
+   * a menu on.
+   */
+  readonly #positioningDefaults = computed<AnchoredPositioningSeedDefaults>(() => ({
+    side:
+      this.#defaults.side ??
+      resolveMenubarAxis(this.menubar.orientation(), this.menubar.dir()).side,
+    align: this.#defaults.align,
+    sideOffset: this.#defaults.sideOffset,
+    collisionPadding: this.#defaults.collisionPadding,
+  }));
+
+  protected get positioningDefaults(): AnchoredPositioningSeedDefaults {
+    return this.#positioningDefaults();
+  }
 
   readonly triggerId = hostId('for-menubar-trigger');
   readonly #ownContentId = signal(this.#idGen.next('for-menubar-content'));
@@ -235,8 +254,7 @@ export class ForMenubarTrigger extends AnchoredOverlayPositioningBase {
       handleDisabledRovingItemKey(event, this.#keyOptions());
       return;
     }
-    const orientation = this.menubar.orientation();
-    const dir = this.menubar.dir();
+    const axis = resolveMenubarAxis(this.menubar.orientation(), this.menubar.dir());
 
     if (event.key === ' ' && this.menubar.handleTriggerTypeahead(event)) {
       return;
@@ -246,23 +264,16 @@ export class ForMenubarTrigger extends AnchoredOverlayPositioningBase {
       this.#open('first');
       return;
     }
-    if (orientation === 'horizontal') {
-      if (event.key === 'ArrowDown') {
-        event.preventDefault();
-        this.#open('first');
-        return;
-      }
-      if (event.key === 'ArrowUp') {
-        event.preventDefault();
-        this.#open('last');
-        return;
-      }
-    } else if (
-      event.key === (dir === 'rtl' ? 'ArrowLeft' : 'ArrowRight') &&
-      !isHistoryChord(event)
-    ) {
+    const historyChord =
+      isHistoryChord(event) && (event.key === 'ArrowLeft' || event.key === 'ArrowRight');
+    if (event.key === axis.openFirstKey && !historyChord) {
       event.preventDefault();
       this.#open('first');
+      return;
+    }
+    if (event.key === axis.openLastKey) {
+      event.preventDefault();
+      this.#open('last');
       return;
     }
 

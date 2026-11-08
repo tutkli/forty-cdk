@@ -19,16 +19,18 @@ import {
   MENU_OPEN_CHAIN,
   type MenuSiblingNavigator,
   OverlayController,
+  resolveMenubarAxis,
 } from 'forty-cdk/core-anchored';
 import type { ForMenubarTriggerHandle } from './menubar-context';
 
 /**
  * Per-scope positioning seeds (`provideForMenubarDefaults`) the multiplexed
  * context falls back to while no trigger is active, keeping them identical to
- * the values `[forMenubarTrigger]` seeds its own inputs from.
+ * the values `[forMenubarTrigger]` seeds its own inputs from. A `null` side
+ * defers to the side the bar's layout opens a menu on.
  */
 export interface MenubarPositioningSeeds {
-  readonly side: FloatingSide;
+  readonly side: FloatingSide | null;
   readonly align: FloatingAlign;
   readonly sideOffset: number;
   readonly collisionPadding: number;
@@ -120,7 +122,12 @@ export class MenubarMenuContext implements ForMenuContext {
   readonly dismissible: Signal<boolean>;
   readonly returnFocus = signal(true).asReadonly();
   readonly dir: ForMenuContext['dir'];
-  readonly side = computed(() => this.#host.activeTrigger()?.side() ?? this.#positioning.side);
+  readonly side = computed<FloatingSide>(
+    () =>
+      this.#host.activeTrigger()?.side() ??
+      this.#positioning.side ??
+      resolveMenubarAxis(this.#host.orientation(), this.#host.dir()).side,
+  );
   readonly align = computed(() => this.#host.activeTrigger()?.align() ?? this.#positioning.align);
   readonly sideOffset = computed(
     () => this.#host.activeTrigger()?.sideOffset() ?? this.#positioning.sideOffset,

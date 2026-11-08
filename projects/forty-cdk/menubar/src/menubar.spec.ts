@@ -1662,6 +1662,43 @@ describe('ForMenubar', () => {
       await flush(r.fixture);
       expect(r.instance.open()).toBe('file');
     });
+
+    it('ArrowLeft on a menu item closes the menu back to its trigger (LTR)', async () => {
+      const r = await renderVertical();
+      const file = r.queryAll<HTMLButtonElement>('[forMenubarTrigger]')[0]!;
+      pressKey(file, 'ArrowRight');
+      await flush(r.fixture);
+      const item = document.getElementById('file-new')!;
+      expect(document.activeElement).toBe(item);
+      pressKey(item, 'ArrowLeft');
+      await flush(r.fixture);
+      expect(r.instance.open()).toBeNull();
+      expect(file.getAttribute('tabindex')).toBe('0');
+    });
+
+    it('ArrowRight on a menu item closes the menu back to its trigger (RTL)', async () => {
+      const r = await renderVertical('rtl');
+      const file = r.queryAll<HTMLButtonElement>('[forMenubarTrigger]')[0]!;
+      pressKey(file, 'ArrowLeft');
+      await flush(r.fixture);
+      const item = document.getElementById('file-new')!;
+      pressKey(item, 'ArrowRight');
+      await flush(r.fixture);
+      expect(r.instance.open()).toBeNull();
+      expect(file.getAttribute('tabindex')).toBe('0');
+    });
+
+    it('ArrowRight on a menu item leaves the menu open (LTR)', async () => {
+      const r = await renderVertical();
+      const file = r.queryAll<HTMLButtonElement>('[forMenubarTrigger]')[0]!;
+      pressKey(file, 'ArrowRight');
+      await flush(r.fixture);
+      const item = document.getElementById('file-new')!;
+      pressKey(item, 'ArrowRight');
+      await flush(r.fixture);
+      expect(r.instance.open()).toBe('file');
+      expect(document.activeElement).toBe(item);
+    });
   });
 
   describe('Escape', () => {

@@ -24,6 +24,12 @@ import type { Point } from '../pointer-grace/pointer-grace';
  */
 export interface MenuSiblingNavigator {
   /**
+   * Axis the bar lays its triggers out on. It decides what the horizontal
+   * arrows do inside a menu opened from the bar: switch sibling menus on a
+   * horizontal bar, return to the bar on a vertical one.
+   */
+  readonly orientation: Signal<'horizontal' | 'vertical'>;
+  /**
    * Move focus/open to the previous or next sibling menu, returning whether the
    * bar actually moved. `false` means there was nowhere to go — the bar is
    * disabled, it has no registered triggers, or no enabled sibling exists in

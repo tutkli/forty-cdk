@@ -1,7 +1,6 @@
 import { InjectionToken, type Provider } from '@angular/core';
 
 import type {
-  AnchoredPositioningSeedDefaults,
   FloatingAlign,
   FloatingFallbackAxisSideDirection,
   FloatingSide,
@@ -15,12 +14,15 @@ import { provideDefaults } from './defaults';
  * application root or in any component's `providers` array; partial
  * overrides merge with the parent scope.
  */
-export interface ForMenubarDefaults extends AnchoredPositioningSeedDefaults {
+export interface ForMenubarDefaults {
   /**
    * Side a menubar trigger's menu is anchored to, for triggers that don't
-   * override `side` locally. Library fallback `'bottom'`.
+   * override `side` locally. `null` (the library fallback) follows the bar's
+   * layout: `'bottom'` on a horizontal bar, and on a vertical one the side
+   * away from the bar (`'right'` in LTR, `'left'` in RTL). A value set here
+   * pins every bar in the scope to that side, whatever its layout.
    */
-  side: FloatingSide;
+  side: FloatingSide | null;
   /**
    * Alignment along the chosen `side`, for triggers that don't override
    * `align` locally. Library fallback `'start'`.
@@ -57,7 +59,7 @@ export interface ForMenubarDefaults extends AnchoredPositioningSeedDefaults {
  * defaults contract spec; not re-exported from the primitive's public entry.
  */
 export const FOR_MENUBAR_FALLBACK_DEFAULTS: ForMenubarDefaults = {
-  side: 'bottom',
+  side: null,
   align: 'start',
   sideOffset: 4,
   collisionPadding: 8,
