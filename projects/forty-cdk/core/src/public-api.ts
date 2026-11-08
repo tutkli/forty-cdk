@@ -324,6 +324,10 @@ export {
   type SwipeEventDetail,
 } from './swipe-dismiss/swipe-dismiss';
 export {
+  type DisabledClickGuardConfig,
+  injectDisabledClickGuard,
+} from './synthetic-activation/disabled-click-guard';
+export {
   injectSyntheticActivation,
   type SyntheticActivation,
   type SyntheticActivationConfig,

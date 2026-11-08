@@ -14,21 +14,24 @@ import { queryFlag } from './_query-flag';
       forButton
       [disabled]="disabled"
       (activate)="bump('native')"
+      (click)="nativeClicks.update((n) => n + 1)"
     >
-      Native
+      <span data-testid="native-label">Native</span>
     </button>
     <div data-testid="custom" forButton [disabled]="disabled" (activate)="bump('custom')">
-      Custom
+      <span data-testid="custom-label">Custom</span>
     </div>
     <input data-testid="after" placeholder="after" />
     <output data-testid="native-count">{{ nativeCount() }}</output>
     <output data-testid="custom-count">{{ customCount() }}</output>
+    <output data-testid="native-click-count">{{ nativeClicks() }}</output>
   `,
 })
 export class ButtonFixture {
   protected readonly disabled = queryFlag('disabled');
   protected readonly nativeCount = signal(0);
   protected readonly customCount = signal(0);
+  protected readonly nativeClicks = signal(0);
   protected bump(which: 'native' | 'custom'): void {
     if (which === 'native') this.nativeCount.update((n) => n + 1);
     else this.customCount.update((n) => n + 1);

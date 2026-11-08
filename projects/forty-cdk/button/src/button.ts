@@ -8,7 +8,11 @@ import {
   output,
   signal,
 } from '@angular/core';
-import { FOR_FIELDSET_CONTEXT, injectSyntheticActivation } from 'forty-cdk/core';
+import {
+  FOR_FIELDSET_CONTEXT,
+  injectDisabledClickGuard,
+  injectSyntheticActivation,
+} from 'forty-cdk/core';
 
 import { injectFocusVisible } from './focus-visible';
 import { injectHovered } from './hovered';
@@ -33,7 +37,8 @@ import { injectPressed } from './pressed';
  *
  * Disabled stays focusable: per the APG a disabled button must remain reachable by assistive
  * technology, so the native `disabled` attribute is never set. Instead `aria-disabled="true"` and
- * `data-disabled=""` are reflected and the activation handler becomes a no-op. `disabled` composes
+ * `data-disabled=""` are reflected and every click is cancelled before it reaches a listener, so
+ * neither `(activate)` nor a `(click)` bound on the button runs. `disabled` composes
  * with a surrounding `[forFieldset]`: a disabled group disables the button too (`aria-disabled` +
  * `data-disabled`, activation suppressed), which is what makes a non-native host (`<div forButton>`)
  * behave like a native button inside a native `<fieldset disabled>`.
@@ -65,7 +70,7 @@ import { injectPressed } from './pressed';
     '[attr.data-pressed]': "pressed() ? '' : null",
     '[attr.data-hovered]': "hovered() ? '' : null",
     '[attr.data-focus-visible]': "focusVisible() ? '' : null",
-    '(click)': 'onClick($event)',
+    '(click)': 'onClick()',
     '(keydown)': 'onKeydown($event)',
     '(keyup)': 'onKeyup($event)',
     '(focusin)': 'onFocusIn()',
@@ -77,7 +82,8 @@ export class ForButton {
   readonly #fieldset = inject(FOR_FIELDSET_CONTEXT, { optional: true });
 
   /**
-   * When `true`, activation (click, Enter, Space) is suppressed and the element
+   * When `true`, activation (click, Enter, Space) is suppressed, a `(click)` bound on the
+   * element does not run, and the element
    * reflects `aria-disabled="true"` + `data-disabled=""`. The element remains
    * focusable so assistive technology can announce it. Read
    * {@link effectiveDisabled} for the value that actually gates behavior — it
@@ -114,18 +120,16 @@ export class ForButton {
   private readonly resolvedTabindex = this.#activation.tabindex;
 
   constructor() {
+    injectDisabledClickGuard({ disabled: this.effectiveDisabled });
     if (this.#activation.nativeButton && !this.#host.hasAttribute('type')) {
       this.#host.setAttribute('type', 'button');
     }
   }
 
-  private onClick(event: MouseEvent): void {
-    if (this.effectiveDisabled()) {
-      event.preventDefault();
-      event.stopImmediatePropagation();
-      return;
+  private onClick(): void {
+    if (!this.effectiveDisabled()) {
+      this.activate.emit();
     }
-    this.activate.emit();
   }
 
   private onKeydown(event: KeyboardEvent): void {
