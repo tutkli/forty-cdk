@@ -11,6 +11,7 @@ import {
   type AnchoredPositioningOverride,
   type FloatingFallbackAxisSideDirection,
   createMenuOverlay,
+  type MenuOverlay,
   MENU_OPENERS,
   MenuOverlayHost,
   FOR_MENU_CONTEXT,
@@ -168,7 +169,8 @@ export class ForContextMenu
    */
   readonly autoFocusOnClose = output<VetoableEvent>();
 
-  protected readonly _overlay = createMenuOverlay('for-context-menu', {
+  protected readonly _overlay: MenuOverlay = createMenuOverlay('for-context-menu', {
+    context: this,
     open: this.open,
     disabled: this.disabled,
     dismissible: this.dismissible,

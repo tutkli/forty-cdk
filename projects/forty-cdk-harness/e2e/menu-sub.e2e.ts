@@ -26,18 +26,33 @@ test.describe('Submenu pointer hover — DropdownMenu', () => {
     await expect(el(page, 'dd-sub-trigger')).toHaveAttribute('aria-expanded', 'true');
   });
 
-  test('hovering the sub-trigger does not move focus into the submenu', async ({ page }) => {
+  test('hovering the sub-trigger focuses it without moving focus into the submenu', async ({
+    page,
+  }) => {
     await gotoFixture(page, 'menu-sub');
     await openDropdown(page);
-    // Opening the dropdown focuses the first item.
     await expectFocused(el(page, 'dd-item-1'));
 
     await el(page, 'dd-sub-trigger').hover();
     await expect(el(page, 'dd-sub-menu')).toBeVisible();
 
-    // Hover-open must leave focus where it was — only keyboard moves it in.
     await expect(el(page, 'dd-sub-item-1')).not.toBeFocused();
-    await expectFocused(el(page, 'dd-item-1'));
+    await expectFocused(el(page, 'dd-sub-trigger'));
+  });
+
+  test('Enter after hovering an item and then the sub-trigger enters the submenu', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'menu-sub');
+    await openDropdown(page);
+    await el(page, 'dd-item-1').hover();
+    await el(page, 'dd-sub-trigger').hover();
+    await expect(el(page, 'dd-sub-menu')).toBeVisible();
+
+    await page.keyboard.press('Enter');
+
+    await expectFocused(el(page, 'dd-sub-item-1'));
+    await expect(el(page, 'dd-menu')).toBeVisible();
   });
 
   test('clicking the sub-trigger after the hover-open keeps the submenu open and enters it', async ({

@@ -15,7 +15,7 @@ import {
   type VetoableNativeEvent,
 } from 'forty-cdk/core';
 import type { OverlayTransitionOptions } from '../overlay-controller/overlay-controller';
-import type { ForMenuCloseReason } from './menu-context';
+import type { ForMenuCloseReason, ForMenuContext } from './menu-context';
 import type { MenuItemHandle } from './menu-item-list';
 import type { MenuOpenerHandle } from './menu-opener-registry';
 import { createMenuOverlay, type MenuOverlay, type MenuOverlayHooks } from './menu-overlay';
@@ -135,6 +135,7 @@ function build(idPrefix = 'test'): BuiltOverlay {
     const openers = signal<readonly MenuOpenerHandle[]>([]);
 
     const hooks = {
+      context: {} as ForMenuContext,
       open: open as MenuOverlayHooks['open'] & ReturnType<typeof signal<boolean>>,
       disabled,
       dismissible,

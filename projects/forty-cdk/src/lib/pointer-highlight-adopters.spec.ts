@@ -276,6 +276,7 @@ const MENU_ITEMS = [
   'menu/src/menu-item.ts',
   'menu/src/menu-checkbox-item.ts',
   'menu/src/menu-radio-item.ts',
+  'menu/src/menu-sub-trigger.ts',
 ];
 
 interface Exclusion {
@@ -328,14 +329,6 @@ const EXCLUSIONS: Readonly<Record<string, Exclusion>> = {
       },
     ]),
   ),
-  'menu/src/menu-sub-trigger.ts': {
-    reason:
-      'the menu item interaction highlights it on hover without focus, and the parent menu clears it on the next highlight',
-    holds: () =>
-      source('menu/src/menu-sub-trigger.ts').includes('createMenuItemInteraction(') &&
-      source('menu/src/menu-sub-trigger.ts').includes('focusOnHover: false') &&
-      source('menu/src/menu-item-interaction.ts').includes('ctx.clearItemHighlights()'),
-  },
 };
 
 function source(file: string): string {

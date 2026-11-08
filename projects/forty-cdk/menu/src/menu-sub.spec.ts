@@ -2,7 +2,13 @@ import { Component, provideZonelessChangeDetection, signal } from '@angular/core
 import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 
-import { afterEachOverlayCleanup, flush, flushPositioning, renderHost } from '../../src/test-utils';
+import {
+  afterEachOverlayCleanup,
+  flush,
+  flushPositioning,
+  type RenderResult,
+  renderHost,
+} from '../../src/test-utils';
 import {
   assertDataStateContract,
   assertDismissibleLayerContract,
@@ -732,7 +738,119 @@ describe('ForMenuSub', () => {
       await flush(r.fixture);
 
       expect(r.instance.open()).toBe(false);
+      expect(r.instance.subOpen()).toBe(false);
       expect(document.querySelector('#parent-content')).toBeNull();
+
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      expect(document.querySelector('#parent-content')).not.toBeNull();
+      expect(document.querySelector('#sub-content')).toBeNull();
+    });
+
+    describe('closing an ancestor writes the open submenu closed', () => {
+      async function mountWithSubmenuOpen(): Promise<RenderResult<SubMenuHost>> {
+        const r = renderHost(SubMenuHost);
+        r.instance.open.set(true);
+        await flush(r.fixture);
+        r.instance.subOpen.set(true);
+        await flush(r.fixture);
+        document.querySelector<HTMLElement>('#cut')!.focus();
+        await flush(r.fixture);
+        return r;
+      }
+
+      it('Tab on a parent item closes the submenu with the menu', async () => {
+        const r = await mountWithSubmenuOpen();
+
+        pressKey(document.querySelector<HTMLElement>('#cut')!, 'Tab');
+        await flush(r.fixture);
+
+        expect(r.instance.open()).toBe(false);
+        expect(r.instance.subOpen()).toBe(false);
+      });
+
+      it('activating a parent item closes the submenu with the menu', async () => {
+        const r = await mountWithSubmenuOpen();
+
+        document.querySelector<HTMLButtonElement>('#cut')!.click();
+        await flush(r.fixture);
+
+        expect(r.instance.lastSelected()).toBe('cut');
+        expect(r.instance.open()).toBe(false);
+        expect(r.instance.subOpen()).toBe(false);
+      });
+
+      it('a consumer write of false to the root closes the submenu, which does not remount with it', async () => {
+        const r = await mountWithSubmenuOpen();
+
+        r.instance.open.set(false);
+        await flush(r.fixture);
+
+        expect(r.instance.subOpen()).toBe(false);
+
+        r.instance.open.set(true);
+        await flush(r.fixture);
+
+        expect(document.querySelector('#sub-content')).toBeNull();
+      });
+
+      it('closing a submenu closes the submenu open beneath it, deepest first', async () => {
+        @Component({
+          imports: IMPORTS,
+          template: `
+            <div forDropdownMenu [(open)]="open">
+              <button forDropdownMenuTrigger>Options</button>
+              @if (open()) {
+                <div forMenuContent>
+                  <div forMenuSub [open]="subOpen()" (openChange)="record('sub', $event)">
+                    <button forMenuSubTrigger>More</button>
+                    @if (subOpen()) {
+                      <div forMenuSubContent>
+                        <div forMenuSub [open]="deepOpen()" (openChange)="record('deep', $event)">
+                          <button forMenuSubTrigger>Deeper</button>
+                          @if (deepOpen()) {
+                            <div id="deep-content" forMenuSubContent>
+                              <button forMenuItem>Deep</button>
+                            </div>
+                          }
+                        </div>
+                      </div>
+                    }
+                  </div>
+                </div>
+              }
+            </div>
+          `,
+        })
+        class NestedChainHost {
+          readonly open = signal(true);
+          readonly subOpen = signal(true);
+          readonly deepOpen = signal(true);
+          readonly closes: string[] = [];
+          record(level: 'sub' | 'deep', open: boolean): void {
+            if (level === 'sub') {
+              this.subOpen.set(open);
+            } else {
+              this.deepOpen.set(open);
+            }
+            if (!open) {
+              this.closes.push(level);
+            }
+          }
+        }
+
+        const r = renderHost(NestedChainHost);
+        await flush(r.fixture);
+        expect(document.querySelector('#deep-content')).not.toBeNull();
+
+        r.instance.open.set(false);
+        await flush(r.fixture);
+
+        expect(r.instance.closes).toEqual(['deep', 'sub']);
+        expect(r.instance.subOpen()).toBe(false);
+        expect(r.instance.deepOpen()).toBe(false);
+      });
     });
 
     it('a nested submenu inherits the root trigger exemption through every level', async () => {
@@ -839,7 +957,7 @@ describe('ForMenuSub', () => {
   });
 
   describe('hover-follows-pointer (#662)', () => {
-    it('pointermove over the SubTrigger moves the highlight onto it without moving focus', async () => {
+    it('pointermove over the SubTrigger moves the highlight and focus onto it', async () => {
       const { instance, flush } = renderHost(SubMenuHost);
       instance.open.set(true);
       await flush();
@@ -856,7 +974,42 @@ describe('ForMenuSub', () => {
 
       expect(more.getAttribute('data-highlighted')).toBe('');
       expect(cut.hasAttribute('data-highlighted')).toBe(false);
-      expect(document.activeElement?.id).toBe('cut');
+      expect(document.activeElement?.id).toBe('more');
+    });
+
+    it('Enter after hovering a sibling and then the SubTrigger opens the submenu instead of activating the sibling', async () => {
+      const { instance, flush } = renderHost(SubMenuHost);
+      instance.open.set(true);
+      await flush();
+
+      document.querySelector<HTMLElement>('#cut')!.dispatchEvent(pointerEvent('pointermove'));
+      await flush();
+      document.querySelector<HTMLElement>('#more')!.dispatchEvent(pointerEvent('pointermove'));
+      await flush();
+
+      const active = document.activeElement as HTMLElement;
+      pressKey(active, 'Enter');
+      active.click();
+      await flush();
+
+      expect(instance.lastSelected()).toBeNull();
+      expect(instance.subOpen()).toBe(true);
+    });
+
+    it('ArrowDown after hovering a sibling and then the SubTrigger moves from the SubTrigger', async () => {
+      const { instance, flush } = renderHost(SubMenuHost);
+      instance.open.set(true);
+      await flush();
+
+      document.querySelector<HTMLElement>('#cut')!.dispatchEvent(pointerEvent('pointermove'));
+      await flush();
+      document.querySelector<HTMLElement>('#more')!.dispatchEvent(pointerEvent('pointermove'));
+      await flush();
+
+      pressKey(document.activeElement as HTMLElement, 'ArrowDown');
+      await flush();
+
+      expect(document.activeElement?.id).toBe('paste');
     });
 
     it('a keyboard move after hovering the SubTrigger leaves a single highlighted item', async () => {

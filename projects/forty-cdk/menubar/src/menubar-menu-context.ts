@@ -1,4 +1,4 @@
-import { computed, type OutputEmitterRef, type Signal, signal } from '@angular/core';
+import { computed, inject, type OutputEmitterRef, type Signal, signal } from '@angular/core';
 import type { ReferenceElement } from '@floating-ui/dom';
 
 import {
@@ -16,6 +16,7 @@ import {
   type FloatingFallbackAxisSideDirection,
   type FloatingSide,
   type ForMenuItemHandle,
+  MENU_OPEN_CHAIN,
   type MenuSiblingNavigator,
   OverlayController,
 } from 'forty-cdk/core-anchored';
@@ -37,7 +38,7 @@ export interface MenubarPositioningSeeds {
 /**
  * The slice of `[forMenubar]` the multiplexed `ForMenuContext` reads. Passed to
  * {@link MenubarMenuContext} so the context implementation stays a plain class
- * (testable, no `inject()`) while still reading the bar's reactive state.
+ * that reads the bar's reactive state without injecting the bar.
  */
 export interface MenubarMenuHost extends MenuSiblingNavigator {
   readonly value: Signal<string | null>;
@@ -88,7 +89,8 @@ export interface MenubarMenuHost extends MenuSiblingNavigator {
  * `activeTrigger`-derived multiplexing on top of them. Both of the controller's element sides are
  * supplied here rather than minted: every id the bar exposes lives on one of its triggers, so the
  * shared machine mints none. Construct it from `[forMenubar]`'s own injection context regardless —
- * the shared machine reads the bar's `DestroyRef` for the auto-focus vetoes.
+ * the shared machine reads the bar's `DestroyRef` for the auto-focus vetoes, and the context reads
+ * the application's open-submenu chain.
  *
  * Ids and the accessible name are the exception: they derive from `lastTrigger`, because the
  * surface outlives the trigger's active window. `activeTrigger()` is already `null` while the
@@ -110,6 +112,7 @@ export class MenubarMenuContext implements ForMenuContext {
   readonly #itemList = createMenuItemList<ForMenuItemHandle>(() => this.#host.loop());
   readonly #contentEl = signal<HTMLElement | null>(null);
   readonly #controller: OverlayController<'first' | 'last', ForMenuCloseReason>;
+  readonly #openChain = inject(MENU_OPEN_CHAIN);
   #suppressOpenFocus = false;
 
   readonly open = computed(() => this.#host.value() !== null);
@@ -212,6 +215,7 @@ export class MenubarMenuContext implements ForMenuContext {
       emit: host,
       escapeReason: 'escape',
       programmaticReason: 'programmatic',
+      onClose: () => this.closeOpenSubmenus(),
     });
     this.initialFocus = this.#controller.initialFocus;
     this.lastCloseReason = this.#controller.lastCloseReason;
@@ -248,6 +252,16 @@ export class MenubarMenuContext implements ForMenuContext {
   ): void {
     this.#controller.open(initialFocus, { highlight: modality === 'keyboard' });
     this.#suppressOpenFocus = suppressOpenFocus;
+  }
+
+  /**
+   * Closes the submenus open below the bar's open menu, deepest first. Runs on
+   * every close of that menu, and the bar calls it before it switches the open
+   * menu to another trigger, which unmounts the outgoing menu without closing
+   * this context.
+   */
+  closeOpenSubmenus(): void {
+    this.#openChain.closeOpenChildChain(this);
   }
 
   registerContent(el: HTMLElement): void {

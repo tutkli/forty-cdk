@@ -7,6 +7,7 @@ import {
   inject,
   input,
   model,
+  type OnDestroy,
   output,
   PLATFORM_ID,
 } from '@angular/core';
@@ -27,7 +28,10 @@ import {
   attachPointerGrace,
   buildSubmenuGracePolygon,
   createMenuOverlay,
+  type MenuOverlay,
+  MENU_OPEN_CHAIN,
   MENU_OPENERS,
+  type MenuOpenChild,
   type FloatingFallbackAxisSideDirection,
   FOR_MENU_CONTEXT,
   type ForMenuCloseReason,
@@ -37,8 +41,6 @@ import {
   resolveGraceSide,
 } from 'forty-cdk/core-anchored';
 import { FOR_MENU_DEFAULTS } from 'forty-cdk/defaults';
-
-const openSubmenus = new WeakMap<ForMenuContext, ForMenuSub>();
 
 /**
  * Root for a nested submenu inside a parent `[forDropdownMenu]` /
@@ -54,7 +56,13 @@ const openSubmenus = new WeakMap<ForMenuContext, ForMenuSub>();
  * the menus themselves.
  *
  * A menu holds one open submenu at a time: opening one by any path closes
- * the open sibling first, with reason `'programmatic'`.
+ * the open sibling first, with reason `'programmatic'`. While the pointer
+ * travels toward an open submenu through its pointer-grace corridor, hovering a
+ * sibling sub-trigger on the way does not open that sibling.
+ *
+ * A menu that closes, by any path, first closes the submenus open below it,
+ * deepest first: each one's `open` is written `false` and its `(openChange)`
+ * emits, so a bound `[(open)]` never outlives its parent.
  *
  * Closing this submenu propagates `closeMenu` upward for every reason
  * except `'escape'`, `'hover'` and `'programmatic'` — Escape inside a submenu
@@ -89,7 +97,7 @@ const openSubmenus = new WeakMap<ForMenuContext, ForMenuSub>();
   },
   providers: [{ provide: FOR_MENU_CONTEXT, useExisting: ForMenuSub }],
 })
-export class ForMenuSub extends MenuOverlayHost implements ForMenuContext {
+export class ForMenuSub extends MenuOverlayHost implements ForMenuContext, OnDestroy {
   readonly #defaults = inject(FOR_MENU_DEFAULTS);
   readonly #isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
 
@@ -224,7 +232,8 @@ export class ForMenuSub extends MenuOverlayHost implements ForMenuContext {
    */
   readonly autoFocusOnClose = output<VetoableEvent>();
 
-  protected readonly _overlay = createMenuOverlay('for-menu-sub', {
+  protected readonly _overlay: MenuOverlay = createMenuOverlay('for-menu-sub', {
+    context: this,
     open: this.open,
     disabled: this.disabled,
     dismissible: this.dismissible,
@@ -254,6 +263,26 @@ export class ForMenuSub extends MenuOverlayHost implements ForMenuContext {
   });
 
   readonly anchor = computed<ReferenceElement | null>(() => this._overlay.trigger());
+
+  readonly #openChain = inject(MENU_OPEN_CHAIN);
+
+  /** This submenu as its parent's open-child slot holds it. */
+  readonly #openChild: MenuOpenChild = {
+    context: this,
+    closeWithParent: () => {
+      this.#openChain.closeOpenChildChain(this);
+      this._overlay.closeMenu('programmatic', { suppressFocusMoves: true });
+    },
+    closeForSibling: () => {
+      if (this.open()) {
+        this.#closeWithoutStrandingFocus('programmatic');
+      }
+    },
+    pointerGraceArmed: () => this.#detachGrace !== null,
+  };
+
+  /** Set while a hover-open waits for an open sibling's pointer-grace corridor to end. */
+  #awaitingSiblingGrace = false;
 
   // --- Pointer-driven (hover) open/close state. Additive to click/keyboard. ---
   readonly #openAction = createDebouncedAction(() => this.#openByPointer());
@@ -304,8 +333,20 @@ export class ForMenuSub extends MenuOverlayHost implements ForMenuContext {
     inject(DestroyRef).onDestroy(() => this.#teardownPointer());
   }
 
+  /**
+   * Closes the submenu when it is destroyed while open, which happens when the
+   * menu holding it unmounts without closing first: its `open` is written
+   * `false` and `(openChange)` emits before its listeners are released.
+   */
+  ngOnDestroy(): void {
+    if (this.open()) {
+      this.#openChild.closeWithParent();
+    }
+  }
+
   override registerContent(el: HTMLElement): void {
     this._overlay.registerContent(el);
+    this.#claimOpenSlot();
     this.#attachContentPointer(el);
   }
   override unregisterContent(el: HTMLElement): void {
@@ -334,6 +375,14 @@ export class ForMenuSub extends MenuOverlayHost implements ForMenuContext {
     this.#keepChainOpen();
     this.cancelPendingClose();
     if (this.open() || this.#openAction.isPending()) {
+      return;
+    }
+    const sibling = this.#openChain.openChild(this.parentMenu);
+    if (sibling && sibling !== this.#openChild && sibling.pointerGraceArmed()) {
+      this.#awaitingSiblingGrace = true;
+      this.#openChain.deferUntilGraceEnds(this.parentMenu, () =>
+        this.#resumeOpenAfterSiblingGrace(),
+      );
       return;
     }
     this.#openAction.schedule(this.#defaults.subMenuOpenDelay);
@@ -367,6 +416,14 @@ export class ForMenuSub extends MenuOverlayHost implements ForMenuContext {
     this.#disarmPointerGrace();
   }
 
+  #resumeOpenAfterSiblingGrace(): void {
+    if (!this.#awaitingSiblingGrace) {
+      return;
+    }
+    this.#awaitingSiblingGrace = false;
+    this.scheduleOpenByPointer();
+  }
+
   #openByPointer(): void {
     // Hover-open never steals focus — it stays on whatever the user was on.
     this._overlay.openMenu('first', 'pointer', { suppressFocusMoves: true });
@@ -386,26 +443,25 @@ export class ForMenuSub extends MenuOverlayHost implements ForMenuContext {
   }
 
   #chainHoldsFocus(): boolean {
-    const content = this.content();
-    if (content && composedContains(content, resolveActiveElement(content.ownerDocument))) {
-      return true;
+    for (
+      let level: MenuOpenChild | null = this.#openChild;
+      level;
+      level = this.#openChain.openChild(level.context)
+    ) {
+      const content = level.context.content();
+      if (content && composedContains(content, resolveActiveElement(content.ownerDocument))) {
+        return true;
+      }
     }
-    const child = openSubmenus.get(this);
-    return child ? child.#chainHoldsFocus() : false;
+    return false;
   }
 
   #claimOpenSlot(): void {
-    const sibling = openSubmenus.get(this.parentMenu);
-    openSubmenus.set(this.parentMenu, this);
-    if (sibling && sibling !== this && sibling.open()) {
-      sibling.#closeWithoutStrandingFocus('programmatic');
-    }
+    this.#openChain.claim(this.parentMenu, this.#openChild);
   }
 
   #releaseOpenSlot(): void {
-    if (openSubmenus.get(this.parentMenu) === this) {
-      openSubmenus.delete(this.parentMenu);
-    }
+    this.#openChain.release(this.parentMenu, this.#openChild);
   }
 
   #armPointerGrace(cursor: Point): void {
@@ -422,6 +478,7 @@ export class ForMenuSub extends MenuOverlayHost implements ForMenuContext {
     this.#detachGrace = attachPointerGrace(content.ownerDocument, polygon, () => {
       this.#disarmPointerGrace();
       this.scheduleCloseByPointer();
+      this.#openChain.graceEnded(this.parentMenu);
     });
     this.#graceTimer = setTimeout(
       () => {
@@ -429,6 +486,7 @@ export class ForMenuSub extends MenuOverlayHost implements ForMenuContext {
         this.#detachGrace?.();
         this.#detachGrace = null;
         this.scheduleCloseByPointer();
+        this.#openChain.graceEnded(this.parentMenu);
       },
       Math.max(0, this.#defaults.subMenuPointerGraceDuration),
     );
@@ -472,6 +530,7 @@ export class ForMenuSub extends MenuOverlayHost implements ForMenuContext {
 
   #clearOpenTimer(): void {
     this.#openAction.cancel();
+    this.#awaitingSiblingGrace = false;
   }
 
   #attachContentPointer(el: HTMLElement): void {

@@ -1,4 +1,4 @@
-import type { ModelSignal, Signal } from '@angular/core';
+import { inject, type ModelSignal, type Signal } from '@angular/core';
 import type { ReferenceElement } from '@floating-ui/dom';
 
 import { type ListNavigationAction, type VetoableNativeEvent } from 'forty-cdk/core';
@@ -12,8 +12,9 @@ import {
   type MenuOpenerPositioning,
   MenuOpenerRegistry,
 } from './menu-opener-registry';
-import type { ForMenuCloseReason } from './menu-context';
+import type { ForMenuCloseReason, ForMenuContext } from './menu-context';
 import { createMenuItemList, type MenuItemHandle, type MenuItemList } from './menu-item-list';
+import { MENU_OPEN_CHAIN } from './menu-open-chain';
 
 /**
  * How a menu open was activated. `'keyboard'` (the default) highlights the
@@ -31,6 +32,12 @@ export type MenuActivationModality = 'pointer' | 'keyboard';
  * decisions, navigation, and veto plumbing live in one place.
  */
 export interface MenuOverlayHooks extends OverlayEmitTargets {
+  /**
+   * The menu context the overlay backs. Every close of it first closes the
+   * submenus open below it, through the {@link MENU_OPEN_CHAIN} slot keyed by
+   * this context.
+   */
+  readonly context: ForMenuContext;
   readonly open: ModelSignal<boolean>;
   readonly disabled: Signal<boolean>;
   readonly dismissible: Signal<boolean>;
@@ -57,7 +64,8 @@ export interface MenuOverlayHooks extends OverlayEmitTargets {
    * it to cancel in-flight hover scheduling, set its focus-suppression flags
    * from `options.suppressFocusMoves`, and propagate the close upward through
    * the menu chain for every reason except `'escape'` / `'hover'` /
-   * `'programmatic'`. Top-level roots pass neither hook.
+   * `'programmatic'`. Top-level roots pass neither hook. It runs after the
+   * submenus open below the menu have been closed.
    */
   readonly onClose?: (reason: ForMenuCloseReason, options: OverlayTransitionOptions) => void;
 }
@@ -169,6 +177,7 @@ export class MenuOverlay<H extends MenuItemHandle = MenuItemHandle> {
   readonly openerPositioning: Signal<MenuOpenerPositioning | null>;
 
   constructor(idPrefix: string, hooks: MenuOverlayHooks) {
+    const openChain = inject(MENU_OPEN_CHAIN);
     this.#itemList = createMenuItemList<H>(() => hooks.loop());
     let openers!: MenuOpenerRegistry;
     this.#controller = new OverlayController<'first' | 'last', ForMenuCloseReason>({
@@ -186,7 +195,10 @@ export class MenuOverlay<H extends MenuItemHandle = MenuItemHandle> {
       escapeReason: 'escape',
       programmaticReason: 'programmatic',
       onOpen: hooks.onOpen,
-      onClose: hooks.onClose,
+      onClose: (reason, options) => {
+        openChain.closeOpenChildChain(hooks.context);
+        hooks.onClose?.(reason, options);
+      },
     });
     this.#openers = openers;
     this.triggerId = this.#controller.triggerId;

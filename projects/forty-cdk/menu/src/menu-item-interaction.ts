@@ -18,7 +18,7 @@ import { handleMenuTabOut } from './menu-tab-out';
  * `data-highlighted` state machine, registration with the parent menu, and the
  * ArrowLeft/Right → Arrow/Home/End → Tab keyboard prefix. Consolidating them
  * here keeps the three item directives from drifting apart. `[forMenuSubTrigger]`
- * shares the highlight state machine and registration, and keeps its own keys.
+ * shares the highlight state machine, the hover focus and registration, and keeps its own keys.
  */
 export interface MenuItemInteraction {
   /**
@@ -52,15 +52,13 @@ export interface MenuItemInteraction {
  * @param config.ctx The parent menu context the item registers with and navigates.
  * @param config.effectiveDisabled The item's resolved disabled state (own input OR the menu's).
  * @param config.textValue Typeahead-match override; empty or absent falls back to the host's text content.
- * @param config.focusOnHover Whether hovering the item also moves DOM focus to it. Defaults to `true`.
  */
 export function createMenuItemInteraction(config: {
   ctx: ForMenuContext;
   effectiveDisabled: Signal<boolean>;
   textValue?: Signal<string>;
-  focusOnHover?: boolean;
 }): MenuItemInteraction {
-  const { ctx, effectiveDisabled, textValue, focusOnHover = true } = config;
+  const { ctx, effectiveDisabled, textValue } = config;
   const host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
 
   const highlighted = signal(false);
@@ -90,7 +88,7 @@ export function createMenuItemInteraction(config: {
     if (!highlighted()) {
       ctx.clearItemHighlights();
     }
-    if (focusOnHover && host.ownerDocument.activeElement !== host) {
+    if (host.ownerDocument.activeElement !== host) {
       host.focus({ preventScroll: true });
     }
     highlighted.set(true);
