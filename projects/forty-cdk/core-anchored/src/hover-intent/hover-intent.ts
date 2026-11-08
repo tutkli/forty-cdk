@@ -1,5 +1,7 @@
 import { effect, type Signal, untracked, type WritableSignal } from '@angular/core';
 
+import { isImeComposing } from 'forty-cdk/core';
+
 /**
  * Per-injector-scope coordinator the hover-intent scheduler consults to decide
  * whether the open delay should be skipped, and to open the skip-delay window
@@ -29,6 +31,8 @@ export interface HoverIntentOptions {
   closeDelay: () => number;
   /** Skip-delay coordinator shared by peers in the same scope. */
   coordinator: HoverIntentCoordinator;
+  /** Document whose Escape cancels a pending open. */
+  document: Document;
 }
 
 /**
@@ -42,7 +46,11 @@ export interface HoverIntentScheduler {
   scheduleOpen(immediate?: boolean): void;
   /** Schedule the close after the resolved close delay; `immediate` bypasses the delay. */
   scheduleClose(immediate: boolean): void;
-  /** Cancel any pending open / close timer without changing state. */
+  /**
+   * Cancel any pending open / close timer without changing state. An Escape
+   * pressed anywhere in the document while an open is pending does the same,
+   * unless it belongs to an IME composition.
+   */
   cancelPending(): void;
   /** Whether an open or close timer is pending. */
   isPending(): boolean;
@@ -63,12 +71,32 @@ export interface HoverIntentScheduler {
  */
 export function createHoverIntent(options: HoverIntentOptions): HoverIntentScheduler {
   let pendingTimer: ReturnType<typeof setTimeout> | null = null;
+  let disarmEscape: (() => void) | null = null;
+
+  function releaseEscape(): void {
+    if (disarmEscape) {
+      disarmEscape();
+      disarmEscape = null;
+    }
+  }
 
   function cancelPending(): void {
+    releaseEscape();
     if (pendingTimer !== null) {
       clearTimeout(pendingTimer);
       pendingTimer = null;
     }
+  }
+
+  function armEscape(): void {
+    const doc = options.document;
+    const onKeyDown = (event: KeyboardEvent): void => {
+      if (event.key === 'Escape' && !isImeComposing(event)) {
+        cancelPending();
+      }
+    };
+    doc.addEventListener('keydown', onKeyDown, true);
+    disarmEscape = () => doc.removeEventListener('keydown', onKeyDown, true);
   }
 
   function close(): void {
@@ -92,11 +120,13 @@ export function createHoverIntent(options: HoverIntentOptions): HoverIntentSched
     }
     pendingTimer = setTimeout(() => {
       pendingTimer = null;
+      releaseEscape();
       if (options.isDisabled()) {
         return;
       }
       options.open.set(true);
     }, delay);
+    armEscape();
   }
 
   function scheduleClose(immediate: boolean): void {

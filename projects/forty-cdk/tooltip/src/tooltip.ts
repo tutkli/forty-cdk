@@ -2,6 +2,7 @@ import {
   booleanAttribute,
   computed,
   DestroyRef,
+  DOCUMENT,
   Directive,
   inject,
   input,
@@ -159,6 +160,7 @@ export class ForTooltip extends AnchoredOverlayPositioningBase implements ForToo
    * common case for a hover-opened tooltip). Routed through the content's
    * document-level dismissible layer. Call `preventDefault()` on the emitted
    * veto to keep the tooltip open. The native `KeyboardEvent` is on `.event`.
+   * An Escape pressed while an open is still pending cancels that open without emitting.
    */
   readonly escapeKeyDown = output<VetoableNativeEvent<KeyboardEvent>>();
 
@@ -194,6 +196,8 @@ export class ForTooltip extends AnchoredOverlayPositioningBase implements ForToo
   readonly #hoverIntent: HoverIntentScheduler;
 
   readonly #surface: HoverSurfaceState;
+  /** The registered content and whether a surface opened from inside it is still open. */
+  #nested: { readonly content: HTMLElement; readonly hasNested: () => boolean } | null = null;
   readonly #scrollDismiss: ScrollDismissRegistration;
 
   constructor() {
@@ -217,12 +221,14 @@ export class ForTooltip extends AnchoredOverlayPositioningBase implements ForToo
       openDelay: () => this.openDelay() ?? this.positioningDefaults.openDelay,
       closeDelay: () => this.closeDelay() ?? this.positioningDefaults.closeDelay,
       coordinator: this.#coordinator,
+      document: inject(DOCUMENT),
     });
 
     this.#surface = createHoverSurfaceState({
       trigger: this.trigger,
       content: this.#contentEl,
       side: () => this.side(),
+      nested: () => this.#nested?.hasNested() ?? false,
       close: () => this.#hoverIntent.scheduleClose(false),
     });
 
@@ -242,6 +248,18 @@ export class ForTooltip extends AnchoredOverlayPositioningBase implements ForToo
     this.#triggerSlot.activate(host);
   }
 
+  private releaseTrigger(host: HTMLElement): void {
+    this.#surface.releaseTrigger(host);
+  }
+
+  private registerNestedSurfaces(content: HTMLElement, hasNested: () => boolean): void {
+    this.#nested = { content, hasNested };
+  }
+
+  private nestedSurfaceClosed(): void {
+    this.#surface.nestedSurfaceClosed();
+  }
+
   /** Registers the content host element so the hoverable-content grace polygon can measure it. */
   registerContent(el: HTMLElement): void {
     this.#contentEl.set(el);
@@ -251,6 +269,9 @@ export class ForTooltip extends AnchoredOverlayPositioningBase implements ForToo
     if (this.#contentEl() === el) {
       this.#contentEl.set(null);
       this.#surface.resetContent();
+    }
+    if (this.#nested?.content === el) {
+      this.#nested = null;
     }
   }
 

@@ -30,6 +30,82 @@ describe('createHoverIntent', () => {
     vi.useRealTimers();
   });
 
+  describe('Escape during a pending open', () => {
+    function pendingOpen(): { open: WritableSignal<boolean>; isPending: () => boolean } {
+      vi.useFakeTimers();
+      const open = signal(false);
+      const scheduler = createHoverIntent({
+        open,
+        isDisabled: () => false,
+        openDelay: () => 700,
+        closeDelay: () => 300,
+        coordinator: createStubCoordinator(),
+        document,
+      });
+      scheduler.scheduleOpen();
+      return { open, isPending: scheduler.isPending };
+    }
+
+    it('cancels the open when Escape is pressed anywhere in the document', () => {
+      const { open, isPending } = pendingOpen();
+
+      document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+      vi.advanceTimersByTime(700);
+
+      expect(isPending()).toBe(false);
+      expect(open()).toBe(false);
+    });
+
+    it('keeps the open pending when the Escape belongs to an IME composition', () => {
+      const { open } = pendingOpen();
+
+      document.body.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, isComposing: true }),
+      );
+      vi.advanceTimersByTime(700);
+
+      expect(open()).toBe(true);
+    });
+
+    it('ignores keys other than Escape', () => {
+      const { open } = pendingOpen();
+
+      document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+      vi.advanceTimersByTime(700);
+
+      expect(open()).toBe(true);
+    });
+
+    it('stops listening once the open has run', () => {
+      const removed = vi.spyOn(document, 'removeEventListener');
+      const { open } = pendingOpen();
+
+      vi.advanceTimersByTime(700);
+
+      expect(open()).toBe(true);
+      expect(removed).toHaveBeenCalledWith('keydown', expect.any(Function), true);
+    });
+
+    it('does not cancel a pending close', () => {
+      vi.useFakeTimers();
+      const open = signal(true);
+      const scheduler = createHoverIntent({
+        open,
+        isDisabled: () => false,
+        openDelay: () => 700,
+        closeDelay: () => 300,
+        coordinator: createStubCoordinator(),
+        document,
+      });
+      scheduler.scheduleClose(false);
+
+      document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+      vi.advanceTimersByTime(300);
+
+      expect(open()).toBe(false);
+    });
+  });
+
   describe('scheduleOpen', () => {
     it('opens after the resolved open delay', () => {
       vi.useFakeTimers();
@@ -40,6 +116,7 @@ describe('createHoverIntent', () => {
         openDelay: () => 700,
         closeDelay: () => 300,
         coordinator: createStubCoordinator(),
+        document,
       });
 
       scheduler.scheduleOpen();
@@ -59,6 +136,7 @@ describe('createHoverIntent', () => {
         openDelay: () => 700,
         closeDelay: () => 300,
         coordinator: createStubCoordinator(true),
+        document,
       });
 
       scheduler.scheduleOpen();
@@ -74,6 +152,7 @@ describe('createHoverIntent', () => {
         openDelay: () => 0,
         closeDelay: () => 300,
         coordinator: createStubCoordinator(),
+        document,
       });
 
       scheduler.scheduleOpen();
@@ -89,6 +168,7 @@ describe('createHoverIntent', () => {
         openDelay: () => 0,
         closeDelay: () => 300,
         coordinator: createStubCoordinator(),
+        document,
       });
 
       scheduler.scheduleOpen();
@@ -106,6 +186,7 @@ describe('createHoverIntent', () => {
         openDelay: () => 700,
         closeDelay: () => 300,
         coordinator,
+        document,
       });
 
       scheduler.scheduleOpen();
@@ -124,6 +205,7 @@ describe('createHoverIntent', () => {
         openDelay: () => 700,
         closeDelay: () => 300,
         coordinator: createStubCoordinator(),
+        document,
       });
 
       scheduler.scheduleOpen();
@@ -142,6 +224,7 @@ describe('createHoverIntent', () => {
         openDelay: () => 700,
         closeDelay: () => 300,
         coordinator: createStubCoordinator(),
+        document,
       });
 
       scheduler.scheduleOpen();
@@ -161,6 +244,7 @@ describe('createHoverIntent', () => {
         openDelay: () => -100,
         closeDelay: () => 300,
         coordinator: createStubCoordinator(),
+        document,
       });
 
       scheduler.scheduleOpen();
@@ -176,6 +260,7 @@ describe('createHoverIntent', () => {
         openDelay: () => 700,
         closeDelay: () => 300,
         coordinator: createStubCoordinator(),
+        document,
       });
 
       scheduler.scheduleOpen(true);
@@ -192,6 +277,7 @@ describe('createHoverIntent', () => {
         openDelay: () => 700,
         closeDelay: () => 300,
         coordinator: createStubCoordinator(),
+        document,
       });
 
       scheduler.scheduleOpen();
@@ -211,6 +297,7 @@ describe('createHoverIntent', () => {
         openDelay: () => 700,
         closeDelay: () => 300,
         coordinator: createStubCoordinator(),
+        document,
       });
 
       scheduler.scheduleOpen(true);
@@ -229,6 +316,7 @@ describe('createHoverIntent', () => {
         openDelay: () => 700,
         closeDelay: () => 300,
         coordinator,
+        document,
       });
 
       scheduler.scheduleClose(false);
@@ -250,6 +338,7 @@ describe('createHoverIntent', () => {
         openDelay: () => 700,
         closeDelay: () => 5_000,
         coordinator,
+        document,
       });
 
       scheduler.scheduleClose(true);
@@ -267,6 +356,7 @@ describe('createHoverIntent', () => {
         openDelay: () => 700,
         closeDelay: () => 0,
         coordinator,
+        document,
       });
 
       scheduler.scheduleClose(false);
@@ -284,6 +374,7 @@ describe('createHoverIntent', () => {
         openDelay: () => 700,
         closeDelay: () => 300,
         coordinator,
+        document,
       });
 
       scheduler.scheduleClose(false);
@@ -302,6 +393,7 @@ describe('createHoverIntent', () => {
         openDelay: () => 700,
         closeDelay: () => -100,
         coordinator,
+        document,
       });
 
       scheduler.scheduleClose(false);
@@ -320,6 +412,7 @@ describe('createHoverIntent', () => {
         openDelay: () => 700,
         closeDelay: () => 300,
         coordinator: createStubCoordinator(),
+        document,
       });
 
       scheduler.scheduleOpen();
@@ -338,6 +431,7 @@ describe('createHoverIntent', () => {
         openDelay: () => 700,
         closeDelay: () => 300,
         coordinator,
+        document,
       });
 
       scheduler.scheduleClose(false);
@@ -356,6 +450,7 @@ describe('createHoverIntent', () => {
         openDelay: () => 700,
         closeDelay: () => 300,
         coordinator: createStubCoordinator(),
+        document,
       });
 
       expect(() => scheduler.cancelPending()).not.toThrow();

@@ -94,6 +94,15 @@ export interface HoverCardPieceContext {
   closeOnTabOut(): void;
   /** Make the trigger on `host` the active one. A trigger calls it as it is hovered or focused. */
   activateTrigger(host: HTMLElement): void;
+  /** The trigger on `host` unmounted: the root keeps no reference to it. */
+  releaseTrigger(host: HTMLElement): void;
+  /**
+   * Reports, for the content on `content`, whether a surface opened from inside
+   * it is still open. Such a surface keeps the card open like hover and focus do.
+   */
+  registerNestedSurfaces(content: HTMLElement, hasNested: () => boolean): void;
+  /** A surface opened from inside the content closed: closes once nothing else keeps it alive. */
+  nestedSurfaceClosed(): void;
 }
 
 /**

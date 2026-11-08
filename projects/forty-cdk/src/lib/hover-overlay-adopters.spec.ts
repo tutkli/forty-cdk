@@ -1,7 +1,8 @@
 import { Component, signal, type Type, type WritableSignal } from '@angular/core';
 
 import { ForHoverCard, ForHoverCardContent, ForHoverCardTrigger } from 'forty-cdk/hover-card';
-import { installObserverPolyfills } from 'forty-cdk/testing';
+import { ForPopover, ForPopoverContent, ForPopoverTrigger } from 'forty-cdk/popover';
+import { installObserverPolyfills, pressKey } from 'forty-cdk/testing';
 import { ForTooltip, ForTooltipContent, ForTooltipTrigger } from 'forty-cdk/tooltip';
 
 import { afterEachOverlayCleanup, renderHost } from '../test-utils';
@@ -47,6 +48,98 @@ class TooltipHost implements OpenHost {
 class HoverCardHost implements OpenHost {
   readonly open = signal(false);
 }
+
+interface SurfaceHost extends OpenHost {
+  readonly openDelay: WritableSignal<number>;
+  readonly closeDelay: WritableSignal<number>;
+  readonly nestedOpen: WritableSignal<boolean>;
+}
+
+interface SurfaceCase {
+  readonly name: string;
+  readonly host: Type<SurfaceHost>;
+  readonly trigger: string;
+  readonly content: string;
+}
+
+@Component({
+  imports: [
+    ForTooltip,
+    ForTooltipTrigger,
+    ForTooltipContent,
+    ForPopover,
+    ForPopoverTrigger,
+    ForPopoverContent,
+  ],
+  template: `
+    <div forTooltip [(open)]="open" [openDelay]="openDelay()" [closeDelay]="closeDelay()">
+      <button type="button" forTooltipTrigger>Trigger</button>
+      @if (open()) {
+        <div forTooltipContent>
+          <div forPopover [(open)]="nestedOpen" [returnFocus]="false">
+            <button type="button" forPopoverTrigger>More</button>
+            @if (nestedOpen()) {
+              <div forPopoverContent>Nested</div>
+            }
+          </div>
+        </div>
+      }
+    </div>
+  `,
+})
+class TooltipSurfaceHost implements SurfaceHost {
+  readonly open = signal(false);
+  readonly openDelay = signal(0);
+  readonly closeDelay = signal(0);
+  readonly nestedOpen = signal(false);
+}
+
+@Component({
+  imports: [
+    ForHoverCard,
+    ForHoverCardTrigger,
+    ForHoverCardContent,
+    ForPopover,
+    ForPopoverTrigger,
+    ForPopoverContent,
+  ],
+  template: `
+    <span forHoverCard [(open)]="open" [openDelay]="openDelay()" [closeDelay]="closeDelay()">
+      <a forHoverCardTrigger href="/x">Trigger</a>
+      @if (open()) {
+        <div forHoverCardContent>
+          <div forPopover [(open)]="nestedOpen" [returnFocus]="false">
+            <button type="button" forPopoverTrigger>More</button>
+            @if (nestedOpen()) {
+              <div forPopoverContent>Nested</div>
+            }
+          </div>
+        </div>
+      }
+    </span>
+  `,
+})
+class HoverCardSurfaceHost implements SurfaceHost {
+  readonly open = signal(false);
+  readonly openDelay = signal(0);
+  readonly closeDelay = signal(0);
+  readonly nestedOpen = signal(false);
+}
+
+const SURFACE_CASES: readonly SurfaceCase[] = [
+  {
+    name: '[forTooltip]',
+    host: TooltipSurfaceHost,
+    trigger: '[forTooltipTrigger]',
+    content: '[forTooltipContent]',
+  },
+  {
+    name: '[forHoverCard]',
+    host: HoverCardSurfaceHost,
+    trigger: '[forHoverCardTrigger]',
+    content: '[forHoverCardContent]',
+  },
+];
 
 const ROWS = Array.from({ length: 50 }, (_, index) => index);
 
@@ -183,5 +276,121 @@ describe('hover-intent roots keep their keep-alive state in createHoverSurfaceSt
     it(`${path} declares no hover, focus or grace state of its own`, () => {
       expect(code.match(OWN_KEEP_ALIVE_STATE)).toBeNull();
     });
+  }
+});
+
+describe('hover-intent roots keep their surface state in step with the page', () => {
+  let restoreObservers: () => void;
+  beforeAll(() => {
+    restoreObservers = installObserverPolyfills();
+  });
+  afterAll(() => restoreObservers());
+
+  afterEachOverlayCleanup();
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  for (const { name, host, trigger, content } of SURFACE_CASES) {
+    it(`${name} stays closed after an Escape pressed while its open is pending`, async () => {
+      vi.useFakeTimers();
+      const { instance, flush } = renderHost(host);
+      instance.openDelay.set(700);
+      await flush();
+
+      document.querySelector<HTMLElement>(trigger)!.dispatchEvent(new PointerEvent('pointerenter'));
+      await flush();
+      pressKey(document.body, 'Escape');
+      vi.advanceTimersByTime(800);
+      await flush();
+
+      expect(instance.open()).toBe(false);
+    });
+
+    it(`${name} still opens after an Escape that belongs to an IME composition`, async () => {
+      vi.useFakeTimers();
+      const { instance, flush } = renderHost(host);
+      instance.openDelay.set(700);
+      await flush();
+
+      document.querySelector<HTMLElement>(trigger)!.dispatchEvent(new PointerEvent('pointerenter'));
+      await flush();
+      pressKey(document.body, 'Escape', { isComposing: true });
+      vi.advanceTimersByTime(800);
+      await flush();
+
+      expect(instance.open()).toBe(true);
+    });
+
+    it(`${name} stays open past its close delay while a surface opened from its content is open`, async () => {
+      vi.useFakeTimers();
+      const { instance, flush } = renderHost(host);
+      instance.closeDelay.set(300);
+      await flush();
+      const triggerEl = document.querySelector<HTMLElement>(trigger)!;
+      triggerEl.dispatchEvent(new PointerEvent('pointerenter'));
+      await flush();
+      const contentEl = document.querySelector<HTMLElement>(content)!;
+      contentEl.dispatchEvent(new PointerEvent('pointerenter'));
+      triggerEl.dispatchEvent(new PointerEvent('pointerleave'));
+      await flush();
+
+      instance.nestedOpen.set(true);
+      await flush();
+      contentEl.dispatchEvent(new PointerEvent('pointerleave'));
+      await flush();
+      vi.advanceTimersByTime(400);
+      await flush();
+      expect(instance.open()).toBe(true);
+
+      instance.nestedOpen.set(false);
+      await flush();
+      vi.advanceTimersByTime(400);
+      await flush();
+      expect(instance.open()).toBe(false);
+    });
+  }
+});
+
+function entryDir(path: string): string {
+  return path.slice(0, path.lastIndexOf('/') + 1);
+}
+
+function piecesOf(rootPath: string, marker: RegExp): Array<readonly [string, string]> {
+  const dir = entryDir(rootPath);
+  return [...LIBRARY_CODE].filter(
+    ([path, code]) => path !== rootPath && path.startsWith(dir) && marker.test(code),
+  );
+}
+
+describe('hover-intent pieces route through the shared surface state', () => {
+  const roots = hoverIntentRoots();
+
+  for (const [path] of roots) {
+    const contents = piecesOf(path, /[^A-Za-z]injectOverlayShell\(/);
+    const triggers = piecesOf(path, /[^A-Za-z]inject\([A-Z_]*TRIGGERS\)/);
+
+    it(`${path} has a content piece and a trigger piece`, () => {
+      expect(contents.length).toBeGreaterThanOrEqual(1);
+      expect(triggers.length).toBeGreaterThanOrEqual(1);
+    });
+
+    for (const [contentPath, code] of contents) {
+      it(`${contentPath} reports the surfaces opened from inside it to its root`, () => {
+        expect(code).toMatch(
+          /onNestedLayerRemoved:\s*\(\)\s*=>\s*this\.ctx\.nestedSurfaceClosed\(\)/,
+        );
+        expect(code).toMatch(
+          /this\.ctx\.registerNestedSurfaces\(\s*\w+,\s*shell\.hasNestedLayer\s*\)/,
+        );
+      });
+    }
+
+    for (const [triggerPath, code] of triggers) {
+      it(`${triggerPath} releases itself from its root when it unmounts`, () => {
+        expect(code).toMatch(/\.releaseTrigger\(handle\.host\)/);
+      });
+    }
   }
 });

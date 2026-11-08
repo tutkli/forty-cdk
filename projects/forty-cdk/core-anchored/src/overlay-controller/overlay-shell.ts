@@ -100,6 +100,24 @@ export interface OverlayShellDismissConfig {
    * closed on, instead of leaving that press to the topmost overlay alone. Read on every press.
    */
   readonly cascadeOutsidePress?: () => boolean;
+  /**
+   * Called after a surface opened from inside this one closes, that is an
+   * overlay whose anchor lies inside this surface or inside an overlay opened
+   * from it.
+   */
+  readonly onNestedLayerRemoved?: () => void;
+}
+
+/**
+ * Handle returned by {@link injectOverlayShell}.
+ */
+export interface OverlayShell {
+  /**
+   * Whether a surface opened from inside this one is still open above it: an
+   * overlay anchored inside this surface, or inside an overlay opened from it.
+   * Always `false` for a shell without `dismiss` wiring.
+   */
+  hasNestedLayer(): boolean;
 }
 
 /**
@@ -215,7 +233,7 @@ export interface OverlayShellConfig {
  * Must be called from an injection context. The host's `ElementRef` is forwarded to the dismissible
  * layer and the positioner.
  */
-export function injectOverlayShell(config: OverlayShellConfig): void {
+export function injectOverlayShell(config: OverlayShellConfig): OverlayShell {
   const host = inject<ElementRef<HTMLElement>>(ElementRef);
   const el = host.nativeElement;
   const inertStack = inject(InertSiblingsStack);
@@ -301,6 +319,12 @@ export function injectOverlayShell(config: OverlayShellConfig): void {
       if (dismissCfg.cascadeOutsidePress) {
         options.cascadeOutsidePress = dismissCfg.cascadeOutsidePress;
       }
+      if (dismissCfg.onNestedLayerRemoved) {
+        options.onNestedLayerRemoved = dismissCfg.onNestedLayerRemoved;
+      }
+      if (anchor !== null) {
+        options.anchor = anchor;
+      }
       // Escape: forwarded verbatim. The consumer owns the emit + close
       // decision (combobox routes it through its input directive instead and
       // omits this channel; hover-card schedules a timed close).
@@ -382,6 +406,8 @@ export function injectOverlayShell(config: OverlayShellConfig): void {
       rfCfg.target()?.focus();
     });
   }
+
+  return { hasNestedLayer: () => layer?.hasNestedLayer() ?? false };
 }
 
 /**

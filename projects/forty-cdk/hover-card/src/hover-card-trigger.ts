@@ -3,6 +3,7 @@ import { createPressFocus, isNonTouchPointer, registerHandle } from 'forty-cdk/c
 
 import {
   type ForHoverCardContext,
+  type HoverCardContext,
   HOVER_CARD_TRIGGERS,
   injectHoverCardTriggerContext,
 } from './hover-card-context';
@@ -78,12 +79,19 @@ export class ForHoverCardTrigger {
 
   readonly #pressFocus = createPressFocus();
 
+  /** The root this trigger last entered, which releases it when the trigger unmounts. */
+  #enteredRoot: HoverCardContext | null = null;
+
   constructor() {
     const triggers = inject(HOVER_CARD_TRIGGERS);
     registerHandle(
       { host: this.#host.nativeElement, root: this.#resolved.root },
       (handle) => triggers.add(handle),
-      (handle) => triggers.remove(handle),
+      (handle) => {
+        triggers.remove(handle);
+        this.#enteredRoot?.releaseTrigger(handle.host);
+        this.#enteredRoot = null;
+      },
     );
   }
 
@@ -102,8 +110,7 @@ export class ForHoverCardTrigger {
     if (!isNonTouchPointer(event) || !this.canOpen()) {
       return;
     }
-    this.ctx().activateTrigger(this.#host.nativeElement);
-    this.ctx().pointerEnterTrigger();
+    this.#enter().pointerEnterTrigger();
   }
 
   private onPointerDown(): void {
@@ -123,12 +130,21 @@ export class ForHoverCardTrigger {
     if (this.#pressFocus.consume() || !this.canOpen()) {
       return;
     }
-    this.ctx().activateTrigger(this.#host.nativeElement);
-    this.ctx().focusTrigger();
+    this.#enter().focusTrigger();
   }
 
   private onBlur(): void {
     this.#pressFocus.reset();
     this.ctx().blurTrigger();
+  }
+
+  #enter(): HoverCardContext {
+    const ctx = this.ctx();
+    if (this.#enteredRoot !== ctx) {
+      this.#enteredRoot?.releaseTrigger(this.#host.nativeElement);
+      this.#enteredRoot = ctx;
+    }
+    ctx.activateTrigger(this.#host.nativeElement);
+    return ctx;
   }
 }

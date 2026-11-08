@@ -238,6 +238,7 @@ For an **instant, unconditional** open or close that ignores the delays and both
 - **Enter** / **Space** on a `<button>` trigger → activates it and closes the tooltip immediately, like a pointer press.
 - **Tab** away → closes after `closeDelay`.
 - **Escape** while open → closes immediately, regardless of `closeDelay`.
+- **Escape** while an open is pending (the trigger is hovered but `openDelay` has not elapsed) → cancels it, so the tooltip does not appear. An Escape that ends an IME composition does not.
 
 ## Accessibility
 

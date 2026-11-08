@@ -17,6 +17,10 @@ import { injectHoverCardContext } from './hover-card-context';
  * holds focus, and focus leaving the content closes it once nothing else keeps
  * it alive.
  *
+ * An overlay opened from inside the card (a dropdown menu, a popover, a
+ * tooltip whose trigger sits in it) keeps the card open for as long as it is
+ * open, although it is portaled outside the card.
+ *
  * Mount / unmount via `@if (card.open())` on the consumer side so
  * `animate.enter` / `animate.leave` work natively.
  *
@@ -72,16 +76,18 @@ export class ForHoverCardContent {
       open: this.ctx.open,
     });
 
-    injectOverlayShell({
+    const shell = injectOverlayShell({
       positioner: toFloatingPositioner(this.ctx, this.ctx.trigger),
       dismiss: {
         emitEscapeKeyDown: (event) => this.ctx.emitEscapeKeyDown(event),
+        onNestedLayerRemoved: () => this.ctx.nestedSurfaceClosed(),
       },
       tabOut: {
         target: () => this.ctx.trigger(),
         close: () => this.ctx.closeOnTabOut(),
       },
     });
+    this.ctx.registerNestedSurfaces(el, shell.hasNestedLayer);
   }
 
   private onPointerEnter(): void {

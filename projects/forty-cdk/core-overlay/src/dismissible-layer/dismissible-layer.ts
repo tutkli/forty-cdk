@@ -68,6 +68,19 @@ export interface DismissibleLayerActivateOptions {
   nesting?: DismissibleLayerNesting;
 
   /**
+   * The element the surface was opened from. A layer whose anchor lies inside
+   * another layer, or inside a layer stacked above that one, counts as nested
+   * in it (see {@link DismissibleLayer.hasNestedLayer}).
+   */
+  anchor?: Element;
+
+  /**
+   * Fired when a layer nested in this one is removed from the stack, after the
+   * removal.
+   */
+  onNestedLayerRemoved?: () => void;
+
+  /**
    * Fired when the user presses `Escape` while this is the topmost layer, or while every layer
    * stacked above it declined the key. Return `false` to decline it too: the key is then offered
    * to the layer below, unless this layer is
@@ -247,11 +260,19 @@ export class DismissibleLayerStack {
   /** @internal */
   remove(layer: DismissibleLayer): void {
     const idx = this.#stack.indexOf(layer);
-    if (idx >= 0) {
-      this.#stack.splice(idx, 1);
-      if (this.#stack.length === 0) {
-        this.#removeListeners();
-      }
+    if (idx < 0) {
+      return;
+    }
+    const anchor = layer.anchor;
+    const hosts = anchor
+      ? this.#stack.slice(0, idx).filter((below) => this.containsFromLayer(below, anchor))
+      : [];
+    this.#stack.splice(idx, 1);
+    if (this.#stack.length === 0) {
+      this.#removeListeners();
+    }
+    for (const host of hosts) {
+      host.nestedLayerRemoved();
     }
   }
 
@@ -269,6 +290,24 @@ export class DismissibleLayerStack {
     for (let i = idx; i < this.#stack.length; i++) {
       const above = this.#stack[i];
       if (above && above.contains(target)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
+   * @internal Whether a layer stacked above `layer` was opened from inside it:
+   * its anchor is inside `layer` or inside another layer stacked above it.
+   */
+  hasNestedLayer(layer: DismissibleLayer): boolean {
+    const idx = this.#stack.indexOf(layer);
+    if (idx < 0) {
+      return false;
+    }
+    for (let i = idx + 1; i < this.#stack.length; i++) {
+      const anchor = this.#stack[i]?.anchor;
+      if (anchor && this.containsFromLayer(layer, anchor)) {
         return true;
       }
     }
@@ -420,6 +459,31 @@ export class DismissibleLayer {
    */
   get nesting(): DismissibleLayerNesting | undefined {
     return this.#options.nesting;
+  }
+
+  /**
+   * @internal The anchor declared at `activate`. Read by
+   * {@link DismissibleLayerStack} to tell which layers are nested in which.
+   */
+  get anchor(): Element | undefined {
+    return this.#options.anchor;
+  }
+
+  /**
+   * Whether this layer is active and a layer opened from inside it is still
+   * stacked above it: one whose anchor lies inside this layer, or inside a
+   * layer stacked above this one.
+   */
+  hasNestedLayer(): boolean {
+    return this.#active && this.#stack.hasNestedLayer(this);
+  }
+
+  /**
+   * @internal Called by {@link DismissibleLayerStack} after a layer nested in
+   * this one was removed.
+   */
+  nestedLayerRemoved(): void {
+    this.#options.onNestedLayerRemoved?.();
   }
 
   /**
