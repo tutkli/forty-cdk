@@ -30,10 +30,16 @@ Apply `[forVirtualReorder]` on the same element as `[forVirtualViewport]` and ma
   style="height: 400px"
 >
   <div *forVirtualFor="let row of rows()" role="listitem" forDraggable [dragData]="row.id">
+    <span forDragHandle aria-hidden="true">⠿</span>
     {{ row.label }}
   </div>
 </div>
 ```
+
+Each row carries a `[forDragHandle]`. A row with no handle takes every touch move that starts on
+it, and every touch on a virtualized list starts on a row, so a list of handle-less rows cannot be
+scrolled by touch and `(endReached)` never fires for a touch user. With a handle, the rest of the
+row pans the list and the handle starts the drag.
 
 <!-- snippet: fragment -->
 

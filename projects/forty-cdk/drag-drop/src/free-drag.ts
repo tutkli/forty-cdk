@@ -112,7 +112,6 @@ function composeTranslate(base: readonly string[], offset: Point): string {
     '[attr.data-dragging]': "dragging() ? '' : null",
     '[attr.data-disabled]': "disabled() ? '' : null",
     '[style.touch-action]': 'touchAction()',
-    '(dragstart)': 'onNativeDragStart($event)',
   },
 })
 export class ForFreeDrag implements ForDraggableContext {
@@ -217,14 +216,6 @@ export class ForFreeDrag implements ForDraggableContext {
 
   private unregisterNestedDraggable(el: HTMLElement): void {
     this.#handleGuard.unregisterNested(el);
-  }
-
-  private onNativeDragStart(event: Event): void {
-    if (this.dragging()) {
-      event.preventDefault();
-      return;
-    }
-    this.#handleGuard.suppressNativeDrag(event);
   }
 
   readonly #resolvedRoot = computed<HTMLElement>(() => {

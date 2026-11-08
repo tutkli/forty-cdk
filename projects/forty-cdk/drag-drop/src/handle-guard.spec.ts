@@ -128,39 +128,4 @@ describe('createPointerHandleGuard', () => {
       expect(guard.canStart(pointerEvent({ target: inside }))).toBe(true);
     });
   });
-
-  describe('suppressNativeDrag', () => {
-    function dragStart(target: Node): Event {
-      const event = new Event('dragstart', { cancelable: true });
-      Object.defineProperty(event, 'target', { value: target });
-      return event;
-    }
-
-    it('cancels a dragstart the guard would accept and leaves the others alone', () => {
-      const disabled = signal(false);
-      const guard = withInjector(() => createPointerHandleGuard(disabled));
-      const handle = document.createElement('div');
-      const inHandle = document.createElement('img');
-      handle.appendChild(inHandle);
-      const outside = document.createElement('img');
-
-      const accepted = dragStart(outside);
-      guard.suppressNativeDrag(accepted);
-      expect(accepted.defaultPrevented).toBe(true);
-
-      guard.register(handle);
-      const offHandle = dragStart(outside);
-      guard.suppressNativeDrag(offHandle);
-      expect(offHandle.defaultPrevented).toBe(false);
-
-      const onHandle = dragStart(inHandle);
-      guard.suppressNativeDrag(onHandle);
-      expect(onHandle.defaultPrevented).toBe(true);
-
-      disabled.set(true);
-      const whileDisabled = dragStart(inHandle);
-      guard.suppressNativeDrag(whileDisabled);
-      expect(whileDisabled.defaultPrevented).toBe(false);
-    });
-  });
 });

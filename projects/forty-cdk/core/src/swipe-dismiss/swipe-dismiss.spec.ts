@@ -1,3 +1,5 @@
+import { NO_DRAG_AXES } from '../drag-session/drag-touch-action';
+import { dragStartFromPress } from '../../../src/test-utils/native-drag';
 import {
   attachSwipeDismiss,
   FLICK_STALE_VELOCITY_MS,
@@ -574,20 +576,38 @@ describe('flickVelocity', () => {
 
 describe('swipeTouchAction', () => {
   it('leaves the vertical pan to the browser for a horizontal swipe', () => {
-    expect(swipeTouchAction(['right'])).toBe('pan-y');
-    expect(swipeTouchAction(['left', 'right'])).toBe('pan-y');
+    expect(swipeTouchAction(['right'], NO_DRAG_AXES)).toBe('pan-y');
+    expect(swipeTouchAction(['left', 'right'], NO_DRAG_AXES)).toBe('pan-y');
   });
 
   it('leaves the horizontal pan to the browser for a vertical swipe', () => {
-    expect(swipeTouchAction(['down'])).toBe('pan-x');
-    expect(swipeTouchAction(['up', 'down'])).toBe('pan-x');
+    expect(swipeTouchAction(['down'], NO_DRAG_AXES)).toBe('pan-x');
+    expect(swipeTouchAction(['up', 'down'], NO_DRAG_AXES)).toBe('pan-x');
   });
 
   it('keeps every pan once both axes swipe', () => {
-    expect(swipeTouchAction(['right', 'down'])).toBe('none');
+    expect(swipeTouchAction(['right', 'down'], NO_DRAG_AXES)).toBe('none');
   });
 
   it('sets nothing with no direction', () => {
-    expect(swipeTouchAction([])).toBeNull();
+    expect(swipeTouchAction([], NO_DRAG_AXES)).toBeNull();
+  });
+
+  it('leaves the axis the surface scrolls on by itself to the browser', () => {
+    expect(swipeTouchAction(['down'], { x: false, y: true })).toBeNull();
+    expect(swipeTouchAction(['right'], { x: true, y: false })).toBeNull();
+    expect(swipeTouchAction(['right', 'down'], { x: false, y: true })).toBe('pan-y');
+    expect(swipeTouchAction(['down'], { x: true, y: false })).toBe('pan-x');
+  });
+});
+
+describe('attachSwipeDismiss — native drag', () => {
+  it('cancels the native dragstart a press on the element raises', () => {
+    const { el, cleanup } = setup();
+    try {
+      expect(dragStartFromPress(el).defaultPrevented).toBe(true);
+    } finally {
+      cleanup();
+    }
   });
 });

@@ -622,10 +622,10 @@ Add `[forTreeNodeDrag]` on the same element as `[forTree]` to enable pointer and
 
 ### Pieces
 
-| Class                   | Selector                  | Description                                                                                          |
-| ----------------------- | ------------------------- | ---------------------------------------------------------------------------------------------------- |
-| `ForTreeNodeDrag`       | `[forTreeNodeDrag]`       | Root coordinator. Apply on the same element as `[forTree]`.                                          |
-| `ForTreeNodeDragHandle` | `[forTreeNodeDragHandle]` | Optional grab-area constraint inside an item. When present, pointer drags start only from within it. |
+| Class                   | Selector                  | Description                                                                                                                                                                                                                                                                                        |
+| ----------------------- | ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ForTreeNodeDrag`       | `[forTreeNodeDrag]`       | Root coordinator. Apply on the same element as `[forTree]`.                                                                                                                                                                                                                                        |
+| `ForTreeNodeDragHandle` | `[forTreeNodeDragHandle]` | Optional grab-area constraint inside an item. When present, pointer drags start only from within it. Carries `touch-action: none` while its node can be dragged, so a touch drag on it is not taken by the page's scrolling, and none while `[forTreeNodeDrag]`, the tree or the node is disabled. |
 
 ### Inputs / outputs
 

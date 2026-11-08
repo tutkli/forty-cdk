@@ -1,13 +1,16 @@
-import { DestroyRef, Directive, ElementRef, inject } from '@angular/core';
+import { computed, DestroyRef, Directive, ElementRef, inject } from '@angular/core';
 
-import { orphanContextError } from 'forty-cdk/core';
+import { dragHandleTouchAction, orphanContextError } from 'forty-cdk/core';
 
+import { FOR_TREE_ITEM_CONTEXT } from './tree-context';
 import { FOR_TREE_NODE_DRAG_CONTEXT } from './tree-node-drag';
 
 /**
  * Optional drag handle for a tree node. When placed inside a tree item, it constrains the pointer
  * grab area — only pointer events originating from within this element start a drag for that item.
  * Has no effect on the keyboard drag path (the lift key on the focused item always works).
+ * Sets `touch-action: none` while its node can be dragged, so a touch drag on the handle is not
+ * taken by the page's scrolling.
  *
  * @example
  * ```html
@@ -20,10 +23,20 @@ import { FOR_TREE_NODE_DRAG_CONTEXT } from './tree-node-drag';
 @Directive({
   selector: '[forTreeNodeDragHandle]',
   exportAs: 'forTreeNodeDragHandle',
+  host: {
+    '[style.touch-action]': 'touchAction()',
+  },
 })
 export class ForTreeNodeDragHandle {
+  readonly #ctx = inject(FOR_TREE_NODE_DRAG_CONTEXT, { optional: true });
+  readonly #item = inject(FOR_TREE_ITEM_CONTEXT, { optional: true });
+
+  private readonly touchAction = computed(() =>
+    dragHandleTouchAction(!this.#ctx?.disabled() && !this.#item?.effectiveDisabled()),
+  );
+
   constructor() {
-    const ctx = inject(FOR_TREE_NODE_DRAG_CONTEXT, { optional: true });
+    const ctx = this.#ctx;
     if (!ctx) {
       throw orphanContextError({
         code: 'FORCDK-TREE-004',

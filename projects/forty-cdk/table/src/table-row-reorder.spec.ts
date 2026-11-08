@@ -8,7 +8,7 @@ import {
 } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
-import { flush } from '../../src/test-utils';
+import { dragStartFromPress, flush } from '../../src/test-utils';
 import { provideForDragDropDefaults } from 'forty-cdk/defaults';
 import {
   ForDraggable,
@@ -2190,5 +2190,13 @@ describe('ForTableRowReorder — a keyboard lift keeps unmapped keys from the gr
     } finally {
       lifted.removeEventListener('keydown', record);
     }
+  });
+});
+
+describe('ForTableRowReorder — native drag', () => {
+  it('cancels the native dragstart a press on a row cell raises', async () => {
+    const { cell } = await mount();
+
+    expect(dragStartFromPress(cell(2)).defaultPrevented).toBe(true);
   });
 });

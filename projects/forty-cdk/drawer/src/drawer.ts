@@ -503,6 +503,10 @@ export class ForDrawer extends ModalSurfaceBase<ForDrawerCloseReason> implements
     this.#handleSlot.unregister(el);
   }
 
+  private handleTouchAction(): 'none' | null {
+    return this.#drag.handleTouchAction();
+  }
+
   private registerInitialFocus(el: HTMLElement): void {
     this.#initialFocusSlot.register(el);
   }

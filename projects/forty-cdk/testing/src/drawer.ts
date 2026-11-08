@@ -18,6 +18,7 @@ type DrawerTestingContext = ForDrawerContext & {
   unregisterInitialFocus(el: HTMLElement): void;
   registerHandle(el: HTMLElement): void;
   unregisterHandle(el: HTMLElement): void;
+  handleTouchAction(): 'none' | null;
   registerBackdrop(el: HTMLElement): void;
   unregisterBackdrop(el: HTMLElement): void;
   isTopmostPointerLayer(): boolean;
@@ -140,6 +141,7 @@ function createContext(
     unregisterDescription: descriptions.unregister,
     registerHandle: () => {},
     unregisterHandle: () => {},
+    handleTouchAction: () => null,
     registerBackdrop: () => {},
     unregisterBackdrop: () => {},
     registerInitialFocus: () => {},

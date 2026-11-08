@@ -15,6 +15,7 @@ export {
 export { assertA11yLabelledBy } from './a11y';
 export { mountOverlay, type MountOverlayResult } from './overlay';
 export { afterEachOverlayCleanup } from './overlay-cleanup';
+export { dragStartFromPress } from './native-drag';
 export { pointerDownOn, focusInOn } from './outside-events';
 export { withScrollIntoViewStub } from './scroll-into-view';
 export { TestStackedLayer } from './stacked-layer';

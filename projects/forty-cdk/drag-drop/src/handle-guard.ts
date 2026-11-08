@@ -1,6 +1,13 @@
 import { computed, inject, type Signal, signal } from '@angular/core';
 
-import { registerHandle } from 'forty-cdk/core';
+import {
+  BOTH_DRAG_AXES,
+  dragHandleTouchAction,
+  dragSurfaceTouchAction,
+  type DragTouchAction,
+  NO_DRAG_AXES,
+  registerHandle,
+} from 'forty-cdk/core';
 import { asDraggableContext, FOR_DRAGGABLE_CONTEXT } from './drag-drop-context';
 
 /**
@@ -8,13 +15,13 @@ import { asDraggableContext, FOR_DRAGGABLE_CONTEXT } from './drag-drop-context';
  * `ForFreeDrag`: tracks `[forDragHandle]` elements and the draggables nested
  * inside the host, decides whether a `pointerdown` may begin a drag (left mouse
  * button only; never from inside a nested draggable; if any handle is registered
- * the press must originate inside one), suppresses the browser's native drag
- * for the presses it accepts, and derives the `touch-action` styles that stop
- * native scrolling on the surfaces a drag can start from.
+ * the press must originate inside one), and derives the `touch-action` styles
+ * that stop native scrolling on the surfaces a drag can start from. The
+ * browser's native drag is cancelled by the pointer session itself.
  */
 export interface PointerHandleGuard {
   /** `'none'` while the host should suppress native touch scrolling, else `null`. */
-  readonly touchAction: Signal<'none' | null>;
+  readonly touchAction: Signal<DragTouchAction>;
   /** `'none'` while a registered handle should suppress native touch scrolling, else `null`. */
   readonly handleTouchAction: Signal<'none' | null>;
   /** Register a `[forDragHandle]` element. */
@@ -34,8 +41,6 @@ export interface PointerHandleGuard {
   accepts(target: EventTarget | null): boolean;
   /** Whether a `pointerdown` event is allowed to start a drag. */
   canStart(event: PointerEvent): boolean;
-  /** Cancel a `dragstart` raised from a press this guard would accept. */
-  suppressNativeDrag(event: Event): void;
 }
 
 /**
@@ -64,10 +69,15 @@ export function createPointerHandleGuard(disabled: Signal<boolean>): PointerHand
   };
 
   return {
-    touchAction: computed<'none' | null>(() =>
-      !disabled() && handles().length === 0 ? 'none' : null,
+    touchAction: computed(() =>
+      dragSurfaceTouchAction({
+        armable: !disabled(),
+        handles: handles().length > 0,
+        axes: BOTH_DRAG_AXES,
+        hostScrolls: NO_DRAG_AXES,
+      }),
     ),
-    handleTouchAction: computed<'none' | null>(() => (disabled() ? null : 'none')),
+    handleTouchAction: computed(() => dragHandleTouchAction(!disabled())),
     register(el: HTMLElement): void {
       handles.update((list) => [...list, el]);
     },
@@ -87,11 +97,6 @@ export function createPointerHandleGuard(disabled: Signal<boolean>): PointerHand
         return false;
       }
       return accepts(event.target);
-    },
-    suppressNativeDrag(event: Event): void {
-      if (accepts(event.target)) {
-        event.preventDefault();
-      }
     },
   };
 }

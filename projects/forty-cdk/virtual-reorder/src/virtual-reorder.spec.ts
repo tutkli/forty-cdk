@@ -10,7 +10,7 @@ import {
 } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
-import { flush } from '../../src/test-utils';
+import { dragStartFromPress, flush } from '../../src/test-utils';
 import {
   FOR_DRAGGABLE_CONTEXT,
   ForDraggable,
@@ -1908,5 +1908,13 @@ describe('ForVirtualReorder — a keyboard lift keeps unmapped keys from the row
     expect(viewport.hasAttribute('data-dragging')).toBe(false);
     expect(instance.events()).toBe(0);
     expect(document.activeElement).toBe(row);
+  });
+});
+
+describe('ForVirtualReorder — native drag', () => {
+  it('cancels the native dragstart a press on a row raises', async () => {
+    const { query } = await mount();
+
+    expect(dragStartFromPress(query('[data-testid="row-2"]')!).defaultPrevented).toBe(true);
   });
 });

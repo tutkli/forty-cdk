@@ -51,6 +51,11 @@ import { isImeComposing } from '../keyboard-navigation/ime-composition';
  * listener removes itself after the first click, with a `suppressClickTimeoutMs` fallback if none
  * follows.
  *
+ * **Native drag.** While a press accepted through `canStart` is tracked, a capture-phase `dragstart`
+ * listener on the host cancels the browser's own HTML5 drag. An image, a link or selected text
+ * starts one at about 4px, before most arm thresholds, and the `pointercancel` that follows it
+ * would abort the session. A press a nested control opted out of (below) is left alone.
+ *
  * **Nested-control opt-out.** When the originating `pointerdown` was `defaultPrevented` by a
  * descendant owning the same gesture, the session stands down on the first move instead of arming.
  * The check is deferred to `pointermove` because the descendant's `preventDefault()` runs in the
@@ -324,8 +329,15 @@ export function createPointerDragSession(opts: PointerDragSessionOptions): Point
     }
   };
 
+  const nativeDrag = (event: Event): void => {
+    if (start !== null && !(downEvent?.defaultPrevented && !selfPrevented)) {
+      event.preventDefault();
+    }
+  };
+
   const hostListener = new AbortController();
   host.addEventListener('pointerdown', down, { capture: true, signal: hostListener.signal });
+  host.addEventListener('dragstart', nativeDrag, { capture: true, signal: hostListener.signal });
 
   return {
     destroy(): void {

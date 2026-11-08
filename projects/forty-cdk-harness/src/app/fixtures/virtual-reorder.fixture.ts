@@ -1,7 +1,9 @@
 import { ChangeDetectionStrategy, Component, computed, signal } from '@angular/core';
-import { ForDraggable, moveItemInArray } from 'forty-cdk/drag-drop';
+import { ForDraggable, ForDragHandle, moveItemInArray } from 'forty-cdk/drag-drop';
 import { ForVirtualReorder, type ForVirtualReorderEvent } from 'forty-cdk/virtual-reorder';
 import { ForVirtualFor, ForVirtualViewport } from 'forty-cdk/virtualization';
+
+import { queryFlag } from './_query-flag';
 
 const ROW_COUNT = 10_000;
 const ROW_HEIGHT = 44;
@@ -18,7 +20,7 @@ function buildRows(): readonly Row[] {
 @Component({
   selector: 'app-virtual-reorder-fixture',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ForVirtualViewport, ForVirtualFor, ForVirtualReorder, ForDraggable],
+  imports: [ForVirtualViewport, ForVirtualFor, ForVirtualReorder, ForDraggable, ForDragHandle],
   styles: [
     `
       :host {
@@ -38,6 +40,11 @@ function buildRows(): readonly Row[] {
       }
       [forDraggable][data-dragging] {
         background: #e0e7ff;
+      }
+      [forDragHandle] {
+        display: inline-block;
+        width: 24px;
+        cursor: grab;
       }
     `,
   ],
@@ -63,6 +70,9 @@ function buildRows(): readonly Row[] {
         [dragData]="i"
         [attr.data-testid]="'row-' + i"
       >
+        @if (handles) {
+          <span forDragHandle aria-hidden="true" [attr.data-testid]="'handle-' + i">⠿</span>
+        }
         {{ row.name }}
       </div>
     </div>
@@ -71,6 +81,7 @@ function buildRows(): readonly Row[] {
 export class VirtualReorderFixture {
   protected readonly ROW_COUNT = ROW_COUNT;
   protected readonly ROW_HEIGHT = ROW_HEIGHT;
+  protected readonly handles = queryFlag('handles');
 
   protected readonly data = signal<readonly Row[]>(buildRows());
 

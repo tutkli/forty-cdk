@@ -43,6 +43,11 @@
 
 import { resolveEventTarget } from '../composed-tree/composed-tree';
 import { createPointerDragSession, type PointerDragSession } from '../drag-session/pointer-session';
+import {
+  type DragAxes,
+  dragSurfaceTouchAction,
+  type DragTouchAction,
+} from '../drag-session/drag-touch-action';
 
 /** A single swipe direction, named after the pointer-travel direction. */
 export type SwipeDirection = 'left' | 'right' | 'up' | 'down';
@@ -184,21 +189,25 @@ export function flickVelocity(rawVelocity: number, stale: boolean): number {
  * the axis no direction uses (`pan-y` for `left` / `right`, `pan-x` for `up` /
  * `down`, `none` once both axes swipe), so a finger moving along a swipe axis
  * reaches the pointer handlers instead of being claimed as a pan, which would
- * end the gesture with `pointercancel`. `null` when there is no direction, so
- * an idle surface leaves the browser's default in place.
+ * end the gesture with `pointercancel`. An axis the surface itself scrolls on
+ * (`hostScrolls`, as `injectHostScrollAxes` measures it) stays with the browser
+ * too, so a scrollable surface keeps its own touch scrolling. `null` when
+ * there is no direction, so an idle surface leaves the browser's default in
+ * place.
  */
 export function swipeTouchAction(
   directions: readonly SwipeDirection[],
-): 'pan-x' | 'pan-y' | 'none' | null {
-  if (directions.length === 0) {
-    return null;
-  }
-  const horizontal = directions.some((d) => d === 'left' || d === 'right');
-  const vertical = directions.some((d) => d === 'up' || d === 'down');
-  if (horizontal && vertical) {
-    return 'none';
-  }
-  return horizontal ? 'pan-y' : 'pan-x';
+  hostScrolls: DragAxes,
+): DragTouchAction {
+  return dragSurfaceTouchAction({
+    armable: directions.length > 0,
+    handles: false,
+    axes: {
+      x: directions.some((d) => d === 'left' || d === 'right'),
+      y: directions.some((d) => d === 'up' || d === 'down'),
+    },
+    hostScrolls,
+  });
 }
 
 /**
