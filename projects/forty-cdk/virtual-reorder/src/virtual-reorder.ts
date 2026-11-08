@@ -18,6 +18,8 @@ import {
   type ForDraggableHandle,
 } from 'forty-cdk/drag-drop';
 import {
+  arbitrateLiftPress,
+  consumeUnmappedLiftedKey,
   createKeyboardDragMediator,
   createPointerDragSession,
   dragAnnouncementLabel,
@@ -25,10 +27,10 @@ import {
   focusWhenMounted,
   type FocusWhenMountedRef,
   fortyError,
-  isImeComposing,
   layoutPlaceholderInSlot,
   LiveAnnouncer,
   type PointerDragSession,
+  resolveLiftedDragControl,
   resolvePressedDragItem,
   resolveWindowedReorder,
 } from 'forty-cdk/core';
@@ -246,45 +248,40 @@ export class ForVirtualReorder {
   }
 
   #onLiftedKeydown(event: KeyboardEvent): void {
-    const key = event.key;
-    if (key === ' ' || key === 'Enter') {
-      event.preventDefault();
-      event.stopPropagation();
+    const control = resolveLiftedDragControl(event);
+    const target = control === null ? this.#liftedTarget(event.key) : null;
+    if (control === null && target === null) {
+      consumeUnmappedLiftedKey(event);
+      return;
+    }
+    event.preventDefault();
+    event.stopPropagation();
+    if (control === 'commit') {
       this.#kbCommit();
-    } else if (key === 'Escape' && !isImeComposing(event)) {
-      event.preventDefault();
-      event.stopPropagation();
+    } else if (control === 'cancel') {
       this.#kbCancel();
-    } else if (key === 'ArrowDown') {
-      this.#setTarget(this.#kbTarget + 1);
-      event.preventDefault();
-      event.stopPropagation();
+    } else if (target !== null) {
+      this.#setTarget(target);
       this.#kbApplyTarget();
-    } else if (key === 'ArrowUp') {
-      this.#setTarget(this.#kbTarget - 1);
-      event.preventDefault();
-      event.stopPropagation();
-      this.#kbApplyTarget();
-    } else if (key === 'Home') {
-      this.#setTarget(0);
-      event.preventDefault();
-      event.stopPropagation();
-      this.#kbApplyTarget();
-    } else if (key === 'End') {
-      this.#setTarget(this.count() - 1);
-      event.preventDefault();
-      event.stopPropagation();
-      this.#kbApplyTarget();
-    } else if (key === 'PageDown') {
-      this.#setTarget(this.#kbTarget + this.#page());
-      event.preventDefault();
-      event.stopPropagation();
-      this.#kbApplyTarget();
-    } else if (key === 'PageUp') {
-      this.#setTarget(this.#kbTarget - this.#page());
-      event.preventDefault();
-      event.stopPropagation();
-      this.#kbApplyTarget();
+    }
+  }
+
+  #liftedTarget(key: string): number | null {
+    switch (key) {
+      case 'ArrowDown':
+        return this.#kbTarget + 1;
+      case 'ArrowUp':
+        return this.#kbTarget - 1;
+      case 'Home':
+        return 0;
+      case 'End':
+        return this.count() - 1;
+      case 'PageDown':
+        return this.#kbTarget + this.#page();
+      case 'PageUp':
+        return this.#kbTarget - this.#page();
+      default:
+        return null;
     }
   }
 
@@ -439,10 +436,12 @@ export class ForVirtualReorder {
 
   #trackPointerPress(event: PointerEvent): boolean {
     const items = this.#list.items();
-    const pressed = findPressedDragItem(items, event.target);
-    if (pressed !== null && this.#mode === 'keyboard' && pressed.host !== this.#kbLiftedHost) {
-      this.#kbCancel(false);
-    }
+    arbitrateLiftPress({
+      keyboardLifted: this.#mode === 'keyboard',
+      liftedHost: this.#kbLiftedHost,
+      pressedHost: findPressedDragItem(items, event.target)?.host ?? null,
+      cancelKeyboardLift: () => this.#kbCancel(false),
+    });
     if (this.#list.effectiveDisabled() || (event.pointerType === 'mouse' && event.button !== 0)) {
       return false;
     }

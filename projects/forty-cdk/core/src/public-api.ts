@@ -169,6 +169,12 @@ export { focusWhenMounted, type FocusWhenMountedRef } from './drag-session/focus
 export { isDragLiftKey, resolveLiftedDragControl } from './drag-session/keyboard-drag-keys';
 export { createKeyboardDragMediator } from './drag-session/keyboard-drag-mediator';
 export {
+  arbitrateLiftPress,
+  consumeUnmappedLiftedKey,
+  isLiftedPassthroughKey,
+  type LiftPress,
+} from './drag-session/lift-arbitration';
+export {
   createPointerDragSession,
   DRAG_DEAD_ZONE_PX,
   type PointerDragSession,

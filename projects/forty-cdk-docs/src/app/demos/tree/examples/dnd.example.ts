@@ -138,6 +138,10 @@ interface TreeNodeData {
       bottom: -1px;
     }
 
+    .tree-item[data-drop-invalid] > .tree-label::after {
+      background: var(--ex-danger, #b3261e);
+    }
+
     .tree-toggle {
       flex: none;
       display: inline-flex;
@@ -217,6 +221,8 @@ const INITIAL_ROOTS: readonly TreeNodeData[] = [
   { id: 'inbox', name: 'Inbox.txt' },
 ];
 
+const FOLDER_IDS: ReadonlySet<string> = new Set(['work', 'designs', 'personal']);
+
 @Component({
   selector: 'app-tree-dnd-example',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -294,7 +300,7 @@ export class TreeDndExample {
   protected readonly expanded = signal<readonly string[]>(['work', 'designs', 'personal']);
 
   protected readonly canDrop = (event: ForTreeDragDropEvent): boolean =>
-    event.newParent !== event.node;
+    event.newParent === null || FOLDER_IDS.has(event.newParent);
 
   protected onDrop(event: ForTreeDragDropEvent): void {
     this.roots.update((roots) =>

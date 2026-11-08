@@ -20,6 +20,8 @@ import {
   type ForDropListRovingDelegate,
 } from 'forty-cdk/drag-drop';
 import {
+  arbitrateLiftPress,
+  consumeUnmappedLiftedKey,
   createKeyboardDragMediator,
   createPointerDragSession,
   dragAnnouncementLabel,
@@ -280,6 +282,7 @@ export class ForTableRowReorder {
       return;
     }
     if (!LIFTED_NAV_KEYS.has(event.key) || isHistoryChord(event)) {
+      consumeUnmappedLiftedKey(event);
       return;
     }
     event.preventDefault();
@@ -541,9 +544,12 @@ export class ForTableRowReorder {
 
   #trackPointerPress(event: PointerEvent): boolean {
     const row = findPressedDragItem(this.#registration.rows(), event.target);
-    if (row !== null && this.#mode === 'keyboard' && row.host !== this.#kbLiftedHost) {
-      this.#cancelActive(false);
-    }
+    arbitrateLiftPress({
+      keyboardLifted: this.#mode === 'keyboard',
+      liftedHost: this.#kbLiftedHost,
+      pressedHost: row?.host ?? null,
+      cancelKeyboardLift: () => this.#cancelActive(false),
+    });
     if (this.#list.effectiveDisabled() || (event.pointerType === 'mouse' && event.button !== 0)) {
       return false;
     }

@@ -52,7 +52,3 @@ export function resolveTreeDragLiftedAction(
   }
   return null;
 }
-
-export function isLiftedPassthroughKey(event: KeyboardEvent): boolean {
-  return event.ctrlKey || event.metaKey || event.altKey || /^F\d{1,2}$/.test(event.key);
-}
