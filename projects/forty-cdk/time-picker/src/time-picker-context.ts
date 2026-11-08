@@ -138,7 +138,7 @@ export interface ForTimePickerContext<D = unknown> {
   isSelected(value: D | Unset): boolean;
   activate(value: D | Unset): void;
   focusSelectedOption(): boolean;
-  commitOnTab(value: D | Unset): void;
+  commitOnTab(value: D | Unset, event: KeyboardEvent): void;
   markTouched(): void;
 }
 

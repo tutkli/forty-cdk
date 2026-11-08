@@ -1,9 +1,9 @@
 import { Typeahead } from './typeahead';
 import {
+  assertVirtualizedSelectionFollowsFocusSupported,
   isRangeSelectShortcut,
   resolveListTypeahead,
   throwUnsupportedVirtualizedRangeSelect,
-  throwUnsupportedVirtualizedSelectionFollowsFocus,
 } from './list-typeahead';
 
 function key(init: KeyboardEventInit): KeyboardEvent {
@@ -113,29 +113,47 @@ describe('throwUnsupportedVirtualizedRangeSelect', () => {
   });
 });
 
-describe('throwUnsupportedVirtualizedSelectionFollowsFocus', () => {
+describe('assertVirtualizedSelectionFollowsFocusSupported', () => {
+  const single = { bound: true, multiple: false };
+
   it('throws in dev mode with the primitive prefix and the per-collection hint', () => {
     expect(() =>
-      throwUnsupportedVirtualizedSelectionFollowsFocus({
+      assertVirtualizedSelectionFollowsFocusSupported(single, {
         primitive: 'listbox',
         focusModel: 'roving-tabindex',
         collection: 'listbox',
       }),
     ).toThrow(/^\[forty-cdk\/listbox\] FORCDK-CORE-009: `selectionFollowsFocus` is not supported/);
     expect(() =>
-      throwUnsupportedVirtualizedSelectionFollowsFocus({
+      assertVirtualizedSelectionFollowsFocusSupported(single, {
         primitive: 'select',
         focusModel: 'DOM-focus',
         collection: 'listbox',
       }),
     ).toThrow(/non-virtualized DOM-focus listbox\.$/);
     expect(() =>
-      throwUnsupportedVirtualizedSelectionFollowsFocus({
+      assertVirtualizedSelectionFollowsFocusSupported(single, {
         primitive: 'tree',
         focusModel: 'roving-tabindex',
         collection: 'tree',
       }),
     ).toThrow(/^\[forty-cdk\/tree\][\s\S]*non-virtualized roving-tabindex tree\.$/);
+  });
+
+  it('applies only to a single-select root that bound the option to true itself', () => {
+    const context = { primitive: 'listbox', focusModel: 'roving-tabindex', collection: 'listbox' };
+
+    for (const state of [
+      { bound: undefined, multiple: false },
+      { bound: false, multiple: false },
+      { bound: true, multiple: true },
+      { bound: undefined, multiple: true },
+    ]) {
+      expect(
+        () => assertVirtualizedSelectionFollowsFocusSupported(state, context),
+        JSON.stringify(state),
+      ).not.toThrow();
+    }
   });
 });
 

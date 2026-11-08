@@ -202,6 +202,7 @@ export class ForSelectOption<T = string> {
       focusAfterPress(this.#host.nativeElement);
     }
     if (this.#ctx.readonly()) {
+      this.#ctx.notifyOptionClick(this.id());
       return;
     }
     this.#ctx.activate(this.value());
@@ -241,7 +242,7 @@ export class ForSelectOption<T = string> {
       // the browser advance focus to the next / previous focusable. Do NOT
       // preventDefault — the browser's Tab default uses the focus we just
       // moved to the trigger as the starting point.
-      this.#ctx.commitOnTab(this.value());
+      this.#ctx.commitOnTab(this.value(), event);
       return;
     }
 

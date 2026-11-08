@@ -587,14 +587,14 @@ export class ForTimePicker<D>
     }
   }
 
-  commitOnTab(value: D | Unset): void {
+  commitOnTab(value: D | Unset, event: KeyboardEvent): void {
     if (this.effectiveDisabled() || isUnset(value)) {
       return;
     }
     if (!this.effectiveReadonly()) {
       this.value.set(composeWithTime(this.adapter, this.value() ?? this.#sentinel(), value));
     }
-    this.#controller.focusTrigger();
+    this.#controller.commitTabToTrigger(event);
     this.#controller.closeOverlay('tab');
   }
 

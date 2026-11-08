@@ -3,7 +3,6 @@ import { Directive, effect, input, numberAttribute, output } from '@angular/core
 import {
   runVirtualizedNavigatorBridge,
   throwUnsupportedVirtualizedRangeSelect,
-  throwUnsupportedVirtualizedSelectionFollowsFocus,
   VirtualizedResume,
 } from 'forty-cdk/core';
 import { ActiveDescendantFocusModel, type TreePositionEntry } from './focus-model';
@@ -83,7 +82,6 @@ export class ForTreeVirtualized {
     resume: this.#resume,
     focusModel: () => this.#requireFocusModel(),
     rejectRangeSelect: () => this.#rejectRangeSelect(),
-    assertSelectionFollowsFocusSupported: () => this.#assertSelectionFollowsFocusSupported(),
   });
 
   constructor() {
@@ -147,15 +145,5 @@ export class ForTreeVirtualized {
       shortcuts: 'Shift+Arrow, Shift+Space, Ctrl/Cmd+A',
       alternative: 'Use `selectionMode="checkbox"` for multi-select over large virtualized trees',
     });
-  }
-
-  #assertSelectionFollowsFocusSupported(): void {
-    if (this.#ctx.selectionFollowsFocus() && !this.#host.multiSelect()) {
-      throwUnsupportedVirtualizedSelectionFollowsFocus({
-        primitive: 'tree',
-        focusModel: 'roving-tabindex',
-        collection: 'tree',
-      });
-    }
   }
 }

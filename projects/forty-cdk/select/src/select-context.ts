@@ -340,10 +340,11 @@ export interface SelectPieceContext<T = unknown> {
    * Commit the focused option's value (single mode) and close the listbox
    * with reason `'tab'`. Moves focus to the trigger synchronously so the
    * browser's Tab default action advances focus from there to the next
-   * (or previous) focusable in tab order. Multi-mode skips the value-set
-   * — selection toggles already happened via Space / Enter / click.
+   * (or previous) focusable in tab order, never into the closing listbox.
+   * Multi-mode skips the value-set — selection toggles already happened via
+   * Space / Enter / click.
    */
-  commitOnTab(value: T | Unset): void;
+  commitOnTab(value: T | Unset, event: KeyboardEvent): void;
 
   /**
    * Full source length when virtualizing, `undefined` in the default
@@ -438,8 +439,6 @@ export interface SelectVirtualization<T = unknown> {
    * support. Returns `true` when `event` was one, after preventing its default.
    */
   rejectRangeSelect(event: KeyboardEvent): boolean;
-  /** Rejects a keyboard move while `selectionFollowsFocus` is set. */
-  assertSelectionFollowsFocusSupported(): void;
 }
 
 /** The root state the virtualized focus model reads and writes. */

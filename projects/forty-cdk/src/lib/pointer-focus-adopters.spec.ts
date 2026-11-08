@@ -27,6 +27,7 @@ import {
   ForListboxGroup,
   ForListboxGroupLabel,
   ForListboxOption,
+  ForListboxVirtualized,
 } from 'forty-cdk/listbox';
 import {
   ForMenuCheckboxItem,
@@ -38,7 +39,13 @@ import {
   ForMenuSubTrigger,
 } from 'forty-cdk/menu';
 import { ForMenubar, ForMenubarTrigger } from 'forty-cdk/menubar';
-import { ForSelect, ForSelectContent, ForSelectOption, ForSelectTrigger } from 'forty-cdk/select';
+import {
+  ForSelect,
+  ForSelectContent,
+  ForSelectOption,
+  ForSelectTrigger,
+  ForSelectVirtualized,
+} from 'forty-cdk/select';
 import { provideNativeDateAdapter } from 'forty-cdk/shared';
 import { pointerEvent, pressWithMouse } from 'forty-cdk/testing';
 import {
@@ -360,6 +367,57 @@ class ListboxSingleOptionHost {}
 class ListboxMultiOptionHost {}
 
 @Component({
+  imports: [ForListbox, ForListboxOption, ForListboxVirtualized],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `
+    <button type="button" data-arm>Before</button>
+    <div
+      forListbox
+      forListboxVirtualized
+      readonly
+      aria-label="Fruit"
+      [totalCount]="2"
+      [visibleRange]="[0, 2]"
+      data-focus
+    >
+      <button type="button" forListboxOption value="apple" [posInSet]="0">Apple</button>
+      <button type="button" forListboxOption value="cherry" [posInSet]="1" data-press>
+        Cherry
+      </button>
+    </div>
+  `,
+})
+class ListboxReadonlyVirtualizedOptionHost {}
+
+@Component({
+  imports: [ForSelect, ForSelectTrigger, ForSelectContent, ForSelectOption, ForSelectVirtualized],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `
+    <button type="button" data-arm>Before</button>
+    <div
+      forSelect
+      forSelectVirtualized
+      readonly
+      [dismissible]="false"
+      [(open)]="open"
+      [totalCount]="2"
+      [visibleRange]="[0, 2]"
+    >
+      <button forSelectTrigger>Fruit</button>
+      @if (open()) {
+        <div forSelectContent data-focus>
+          <button forSelectOption value="apple" [posInSet]="0">Apple</button>
+          <button forSelectOption value="cherry" [posInSet]="1" data-press>Cherry</button>
+        </div>
+      }
+    </div>
+  `,
+})
+class SelectReadonlyVirtualizedOptionHost {
+  readonly open = signal(true);
+}
+
+@Component({
   imports: [ForSelect, ForSelectTrigger, ForSelectContent, ForSelectOption],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -563,12 +621,25 @@ interface PressCase {
 interface UnfocusedPressCase extends PressCase {
   readonly label: string;
   readonly closeAfterPress?: true;
+  readonly readonlyActiveDescendant?: true;
 }
 
 const UNFOCUSED_PRESS_SWEEP: readonly UnfocusedPressCase[] = [
   { file: 'listbox/src/listbox-option.ts', host: ListboxSingleOptionHost, label: 'single' },
   { file: 'listbox/src/listbox-option.ts', host: ListboxMultiOptionHost, label: 'multiple' },
   { file: 'select/src/select-option.ts', host: SelectMultiOptionHost, label: 'multiple' },
+  {
+    file: 'listbox/src/listbox-option.ts',
+    host: ListboxReadonlyVirtualizedOptionHost,
+    label: 'readonly virtualized',
+    readonlyActiveDescendant: true,
+  },
+  {
+    file: 'select/src/select-option.ts',
+    host: SelectReadonlyVirtualizedOptionHost,
+    label: 'readonly virtualized',
+    readonlyActiveDescendant: true,
+  },
   { file: 'combobox/src/combobox-action.ts', host: ComboboxActionHost, label: 'open popup' },
   {
     file: 'dialog/src/dialog-trigger.ts',
@@ -751,7 +822,10 @@ describe('press focus on a button host (meta-guard)', () => {
       const target = required('[data-press]');
       pressWithoutFocus(target);
       await flush(fixture);
-      if (target.getAttribute('role') === 'option') {
+      if (entry.readonlyActiveDescendant) {
+        expect(target.getAttribute('aria-selected')).not.toBe('true');
+        expect(required('[data-focus]').getAttribute('aria-activedescendant')).toBe(target.id);
+      } else if (target.getAttribute('role') === 'option') {
         expect(target.getAttribute('aria-selected')).toBe('true');
       }
       if (entry.closeAfterPress) {

@@ -164,7 +164,7 @@ export class ForTimePickerOption<D = unknown> {
       if (this.#ctx.mountedModal()) {
         return;
       }
-      this.#ctx.commitOnTab(this.value());
+      this.#ctx.commitOnTab(this.value(), event);
       return;
     }
 

@@ -5464,7 +5464,7 @@ describe('ForSelect unwritten option value (issue #1601)', () => {
     r.instance.compareWith.mockClear();
 
     select.activate(unsetInput<string>());
-    ctx.commitOnTab(unsetInput<string>());
+    ctx.commitOnTab(unsetInput<string>(), new KeyboardEvent('keydown', { key: 'Tab' }));
     await flush(r.fixture);
 
     expect(r.instance.value()).toEqual(['apple']);

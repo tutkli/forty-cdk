@@ -13,6 +13,7 @@ import type { FormValueControl } from '@angular/forms/signals';
 
 import {
   accessibleTextContent,
+  assertVirtualizedSelectionFollowsFocusSupported,
   Collection,
   createPointerHighlight,
   firstEnabledHost,
@@ -20,6 +21,7 @@ import {
   injectHiddenInput,
   injectNativeFormResetToInitial,
   type ListNavigationAction,
+  resolveCommittedPosition,
   resolveListNavigation,
   resolveListTypeahead,
   type WritingDirection,
@@ -208,20 +210,29 @@ export class ForListbox<T = string>
   /**
    * Single-mode only: when true, a keyboard focus move (arrow navigation or a
    * typeahead match) also selects the focused option. APG calls this optional and recommends caution — leave off unless your
-   * UX truly benefits from selection following focus. Default `false`.
-   * The default is read from `provideForListboxDefaults` for the surrounding
-   * scope.
+   * UX truly benefits from selection following focus. When unset (default `undefined`), falls
+   * back to `ForListboxDefaults.selectionFollowsFocus` from the surrounding
+   * `provideForListboxDefaults` scope (`false` unless configured).
    *
    * Not supported together with virtualization (`[forListboxVirtualized]` with
    * `totalCount` set): the virtualized `aria-activedescendant` path resolves
    * off-window navigation targets asynchronously, so selection cannot follow focus there without
-   * deriving the committed value from a render side effect. Keyboard-navigating
-   * a virtualized listbox with it set throws in dev mode, from the move the
-   * combination degrades.
+   * deriving the committed value from a render side effect. A virtualized listbox does not
+   * inherit the scope default, and keyboard-navigating a virtualized single-select listbox that
+   * binds it to `true` throws in dev mode, from the move the combination degrades.
+   *
+   * The input is aliased to `selectionFollowsFocus`; read the effective value through the public
+   * `selectionFollowsFocus` computed below.
    */
-  readonly selectionFollowsFocus = input(this.#defaults.selectionFollowsFocus, {
-    transform: booleanAttribute,
+  readonly _selectionFollowsFocusInput = input(undefined, {
+    alias: 'selectionFollowsFocus',
+    transform: (v: unknown): boolean | undefined => (v == null ? undefined : booleanAttribute(v)),
   });
+
+  /** Effective `selectionFollowsFocus`: the input when set, else the scope default. */
+  readonly selectionFollowsFocus = computed<boolean>(
+    () => this._selectionFollowsFocusInput() ?? this.#defaults.selectionFollowsFocus,
+  );
 
   readonly roving = new RovingTabindex(() => this.#options.items(), { fallback: 'nearest' });
   readonly #typeahead = injectTypeahead();
@@ -670,7 +681,10 @@ export class ForListbox<T = string>
    */
   #assertSelectionFollowsFocusSupported(): void {
     if (this.#virtualized()) {
-      this.#virtualModel().assertSelectionFollowsFocusSupported();
+      assertVirtualizedSelectionFollowsFocusSupported(
+        { bound: this._selectionFollowsFocusInput(), multiple: this.multiple() },
+        { primitive: 'listbox', focusModel: 'roving-tabindex', collection: 'listbox' },
+      );
     }
   }
 
@@ -718,11 +732,34 @@ export class ForListbox<T = string>
     return handled;
   }
 
+  /**
+   * Seeds the active option when focus enters the virtualized listbox with none active: the option
+   * the user was on before it scrolled out of the window, else the committed selection, else the
+   * first rendered enabled option. The first two go through `seedActive`, so an off-window target
+   * emits `(scrollToIndex)` and settles once it mounts.
+   */
   private onHostFocusIn(): void {
     if (!this.#virtualized() || this.effectiveDisabled()) {
       return;
     }
     if (this.#activeId() !== null) {
+      return;
+    }
+    const virtualization = this.#virtualModel();
+    const navigator = virtualization.navigator();
+    const resumed = virtualization.resume.resolve();
+    const seed =
+      resumed !== null && !resumed.entry.disabled
+        ? resumed.pos
+        : resolveCommittedPosition({
+            values: this.value(),
+            snapshotByPos: navigator.snapshotByPos(),
+            compareWith: this.compareWith(),
+            selectedIndex: virtualization.selectedIndex(),
+            totalCount: this.totalCount(),
+          });
+    if (seed !== null) {
+      navigator.seedActive(seed);
       return;
     }
     const items = this.#options.items();

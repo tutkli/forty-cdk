@@ -14,11 +14,13 @@ import {
 import type { FormValueControl } from '@angular/forms/signals';
 
 import {
+  assertVirtualizedSelectionFollowsFocusSupported,
   createPointerHighlight,
   injectHiddenInput,
   injectNativeFormResetToInitial,
   LabelCache,
   lookupByValue,
+  resolveCommittedPosition,
   resolveListNavigation,
   type WritingDirection,
   RangeSelectionEngine,
@@ -51,7 +53,6 @@ import {
   type SelectVirtualizationHost,
 } from './select-context';
 import { FOR_SELECT_DEFAULTS } from 'forty-cdk/defaults';
-import type { SelectVirtualizedNavigator } from './select-virtualized-navigator';
 
 /**
  * Headless implementation of the [WAI-ARIA select-only combobox pattern](https://www.w3.org/WAI/ARIA/apg/patterns/combobox/examples/combobox-select-only/).
@@ -234,20 +235,29 @@ export class ForSelect<T = string>
    * Single-mode only. When true, a keyboard focus move (arrow navigation or a
    * typeahead match) also selects the focused option while the listbox is
    * open. APG calls this optional and recommends caution — leave off unless
-   * your UX truly benefits. Default `false`.
-   * The default is read from `provideForSelectDefaults` for the surrounding
-   * scope.
+   * your UX truly benefits. When unset (default `undefined`), falls back to
+   * `ForSelectDefaults.selectionFollowsFocus` from the surrounding
+   * `provideForSelectDefaults` scope (`false` unless configured).
    *
    * Not supported together with virtualization (`[forSelectVirtualized]` with
    * `totalCount` set): the virtualized `aria-activedescendant` path resolves off-window navigation
    * targets asynchronously, so selection cannot follow focus there without
-   * deriving the committed value from a render side effect. Keyboard-navigating
-   * a virtualized listbox with it set throws in dev mode, from the move the
-   * combination degrades.
+   * deriving the committed value from a render side effect. A virtualized select does not inherit
+   * the scope default, and keyboard-navigating a virtualized single-select listbox that binds it to
+   * `true` throws in dev mode, from the move the combination degrades.
+   *
+   * The input is aliased to `selectionFollowsFocus`; read the effective value through the public
+   * `selectionFollowsFocus` computed below.
    */
-  readonly selectionFollowsFocus = input(this.#defaults.selectionFollowsFocus, {
-    transform: booleanAttribute,
+  readonly _selectionFollowsFocusInput = input(undefined, {
+    alias: 'selectionFollowsFocus',
+    transform: (v: unknown): boolean | undefined => (v == null ? undefined : booleanAttribute(v)),
   });
+
+  /** Effective `selectionFollowsFocus`: the input when set, else the scope default. */
+  readonly selectionFollowsFocus = computed<boolean>(
+    () => this._selectionFollowsFocusInput() ?? this.#defaults.selectionFollowsFocus,
+  );
 
   /** Placeholder shown by `[forSelectValue]` when no option is selected. */
   readonly placeholder = input<string>('');
@@ -690,7 +700,7 @@ export class ForSelect<T = string>
     host.scrollIntoView?.({ block: 'nearest' });
   }
 
-  private commitOnTab(value: T | Unset): void {
+  private commitOnTab(value: T | Unset, event: KeyboardEvent): void {
     if (this.effectiveDisabled() || isUnset(value)) {
       return;
     }
@@ -702,7 +712,7 @@ export class ForSelect<T = string>
     // content's `DestroyRef` reads `lastCloseReason() === 'tab'` and skips
     // its own re-focus — otherwise it would steal focus back from wherever
     // the browser advanced it.
-    this.#controller.focusTrigger();
+    this.#controller.commitTabToTrigger(event);
     this.#controller.closeOverlay('tab');
   }
 
@@ -720,14 +730,15 @@ export class ForSelect<T = string>
       navigator.navigate(target);
       return;
     }
-    const committed = this.#committedIndex(navigator);
+    const committed = resolveCommittedPosition({
+      values: this.value(),
+      snapshotByPos: navigator.snapshotByPos(),
+      compareWith: this.compareWith(),
+      selectedIndex: this.#virtualModel().selectedIndex(),
+      totalCount: this.totalCount(),
+    });
     if (committed !== null) {
       navigator.seedActive(committed);
-      return;
-    }
-    const hinted = this.#hintedSelectedIndex();
-    if (hinted !== null) {
-      navigator.seedActive(hinted);
       return;
     }
     navigator.navigate('first');
@@ -744,7 +755,7 @@ export class ForSelect<T = string>
       if (this.mountedModal()) {
         return;
       }
-      this.#commitActiveDescendantOnTab();
+      this.#commitActiveDescendantOnTab(event);
       return;
     }
     if (event.key === ' ' && this.#typeaheadVirtualized(event)) {
@@ -778,7 +789,10 @@ export class ForSelect<T = string>
    */
   #assertSelectionFollowsFocusSupported(): void {
     if (this.#virtualized()) {
-      this.#virtualModel().assertSelectionFollowsFocusSupported();
+      assertVirtualizedSelectionFollowsFocusSupported(
+        { bound: this._selectionFollowsFocusInput(), multiple: this.multiple() },
+        { primitive: 'select', focusModel: 'DOM-focus', collection: 'listbox' },
+      );
     }
   }
 
@@ -788,37 +802,6 @@ export class ForSelect<T = string>
     }
     this.#setActiveId(optionId);
     this.#controller.content()?.focus();
-  }
-
-  #committedIndex(navigator: SelectVirtualizedNavigator<T>): number | null {
-    const values = this.value();
-    if (values.length === 0) {
-      return null;
-    }
-    const byValue = lookupByValue(
-      [...navigator.snapshotByPos()].filter(([, entry]) => !entry.disabled),
-      ([, entry]) => entry.value,
-      this.compareWith(),
-    );
-    for (const v of values) {
-      const hit = byValue(v);
-      if (hit) {
-        return hit[0];
-      }
-    }
-    return null;
-  }
-
-  #hintedSelectedIndex(): number | null {
-    if (this.value().length === 0) {
-      return null;
-    }
-    const idx = this.#virtualModel().selectedIndex();
-    const total = this.totalCount();
-    if (idx === undefined || total === undefined || idx < 0 || idx >= total) {
-      return null;
-    }
-    return idx;
   }
 
   #activeTarget(): { readonly value: T | Unset; readonly resumePos: number | null } | null {
@@ -844,13 +827,13 @@ export class ForSelect<T = string>
     this.activate(target.value);
   }
 
-  #commitActiveDescendantOnTab(): void {
+  #commitActiveDescendantOnTab(event: KeyboardEvent): void {
     const target = this.#activeTarget();
     if (target !== null) {
-      this.commitOnTab(target.value);
+      this.commitOnTab(target.value, event);
       return;
     }
-    this.#controller.focusTrigger();
+    this.#controller.commitTabToTrigger(event);
     this.#controller.closeOverlay('tab');
   }
 

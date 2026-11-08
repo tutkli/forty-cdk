@@ -13,7 +13,8 @@ export interface ForListboxDefaults {
    * Single-mode only: when `true`, a keyboard focus move (arrow navigation
    * or a typeahead match) also selects the focused option. APG calls this optional and recommends caution —
    * leave `false` unless the UX truly benefits from selection following
-   * focus.
+   * focus. A virtualized listbox (`[forListboxVirtualized]` with `totalCount`
+   * set) does not inherit it.
    */
   selectionFollowsFocus: boolean;
   /**

@@ -355,10 +355,10 @@ export {
   injectTextDirection,
 } from './text-direction/text-direction';
 export {
+  assertVirtualizedSelectionFollowsFocusSupported,
   isRangeSelectShortcut,
   resolveListTypeahead,
   throwUnsupportedVirtualizedRangeSelect,
-  throwUnsupportedVirtualizedSelectionFollowsFocus,
 } from './typeahead/list-typeahead';
 export { findTypeaheadMatch, foldTypeaheadText } from './typeahead/match-options';
 export { injectTypeahead, type Typeahead } from './typeahead/typeahead';
@@ -379,6 +379,10 @@ export {
   type VetoableEvent,
   type VetoableNativeEvent,
 } from './vetoable-event/vetoable-event';
+export {
+  type CommittedPositionQuery,
+  resolveCommittedPosition,
+} from './virtualized-navigator/virtualized-committed-position';
 export {
   VirtualizedNavigator,
   type VirtualizedNavigatorDeps,
