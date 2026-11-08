@@ -234,7 +234,7 @@ Plus the shared `FormUiControl` inputs from the base (`disabled`, `readonly`, `r
 
 When `name` is set, a hidden `<input name="…">` is mounted right after the `[forDatePicker]` element and mirrors the committed value as an ISO date (`YYYY-MM-DD`), or as an ISO date-time (`YYYY-MM-DDTHH:mm`, plus `:ss` at `granularity="second"`) at a granularity finer than `'day'`. It is removed while the value is `null` and disabled with the picker. The trigger itself carries no `name` attribute.
 
-A native reset of the owning `<form>` returns `value` to what it held when the picker first rendered. In the [field anatomy](#field-anatomy) it also drops a partly typed entry in the projected field.
+A native reset of the owning `<form>` returns `value` to what it held when the picker first rendered. It also drops a partly typed entry in the projected field in the [field anatomy](#field-anatomy), and a partly typed time in the projected time field or time picker of a [date-time picker](#date-time-picker), in either anatomy. A Signal Forms `form().reset()` drops the same entries.
 
 ### Data attributes
 
@@ -343,7 +343,7 @@ Set `granularity` to `'hour'`, `'minute'`, or `'second'` to turn the picker into
 
 Bind the calendar **and** the time field **one-way** to `picker.value()` (not `[(value)]`). The picker is the single source of truth: when one-way bound to a timed value the calendar preserves the time-of-day on its own selection, and the picker re-grafts the previously entered time as a defensive fallback for the case where the calendar value was null or midnight (reading its own value, which the one-way children never clobber); a time-field edit emits a full date-time the picker mirrors in. A date-time picker never closes on a calendar selection, so the user can go on to set the time.
 
-Like the calendar, the projected time field or time picker takes the picker's `readonly` and `disabled` without a binding, so a read-only or disabled picker's time source accepts no edit and shows only the committed time. A typed time the picker clamps into `[minDate, maxDate]` behaves as in a standalone time field: while focus stays in the field its segments keep what was entered, and they show the clamped value once focus leaves.
+Like the calendar, the projected time field or time picker takes the picker's `readonly` and `disabled` without a binding, so a read-only or disabled picker's time source accepts no edit and shows only the committed time. A typed time the picker clamps into `[minDate, maxDate]` behaves as in a standalone time field: while focus stays in the field its segments keep what was entered, and they show the clamped value once focus leaves. A time set before any day is picked lands on today, or on the nearest bound's day when today is outside `[minDate, maxDate]`, the day the calendar focuses.
 
 The content is a field boundary. Inside a [`[forField]`](../field/README.md#how-the-control-connects) the time field does not register with the field, which keeps reflecting the picker (its label target, `invalid` state and errors) while the panel is open.
 

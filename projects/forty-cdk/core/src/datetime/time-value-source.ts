@@ -20,6 +20,12 @@ export interface TimeValueSource<D> {
    * segments ignores it.
    */
   adoptCommit(value: D): void;
+  /**
+   * Discards a partly typed time the source holds and redisplays its value.
+   * The picker forwards its own `FormUiControl.reset` here, so a Signal Forms
+   * reset reaches a draft the picker's value cannot represent.
+   */
+  reset(): void;
 }
 
 /**

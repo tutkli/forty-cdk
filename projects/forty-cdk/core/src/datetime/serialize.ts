@@ -1,5 +1,5 @@
 import type { DateAdapter, TimeCapableDateAdapter } from 'forty-cdk/date-adapter';
-import { assertTimeCapable } from './date-adapter';
+import { assertTimeCapable, compareDateOf } from './date-adapter';
 
 /**
  * The granularity at which a date control serializes its value: a bare calendar
@@ -43,6 +43,31 @@ export function clampToBounds<D>(
     return max;
   }
   return date;
+}
+
+/**
+ * The day a date-time picker grafts a committed time onto: its current `value`,
+ * or, before any day is picked, today clamped day-granularly into `[min, max]` —
+ * the day the projected calendar focuses when the value is empty. The caller
+ * still clamps the composed instant, so a time outside the bounds on the
+ * boundary day is clamped to the bound.
+ *
+ * @typeParam D The adapter's immutable date representation.
+ * @param adapter The active date adapter.
+ * @param value The picker's current value, or `null` when no day is picked.
+ * @param min The lower bound (inclusive), or `null` for unbounded.
+ * @param max The upper bound (inclusive), or `null` for unbounded.
+ */
+export function timeGraftBaseDay<D>(
+  adapter: DateAdapter<D>,
+  value: D | null,
+  min: D | null,
+  max: D | null,
+): D {
+  return (
+    value ??
+    clampToBounds(adapter, adapter.today(), min, max, (a, b) => compareDateOf(adapter, a, b))
+  );
 }
 
 /**

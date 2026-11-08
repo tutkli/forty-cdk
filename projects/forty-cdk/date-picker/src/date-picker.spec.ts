@@ -1585,6 +1585,50 @@ describe('ForDatePicker', () => {
       expect(adapter.getMinutes(value!)).toBe(30);
     });
 
+    it('grafts a time entered before any day onto the minDate day when today is before it', async () => {
+      const r = renderHost(DateTimeHost);
+      r.instance.minDate.set(new Date(2026, 5, 20));
+      await open(r);
+
+      pressKey(timeSeg('hour'), '1');
+      pressKey(timeSeg('hour'), '4');
+      pressKey(timeSeg('minute'), '3');
+      pressKey(timeSeg('minute'), '0');
+      await flush(r.fixture);
+
+      expect(r.instance.value()!.getTime()).toBe(new Date(2026, 5, 20, 14, 30).getTime());
+      expect(timeSeg('hour').getAttribute('aria-valuenow')).toBe('14');
+      expect(timeSeg('minute').getAttribute('aria-valuenow')).toBe('30');
+    });
+
+    it('grafts a time entered before any day onto the maxDate day when today is after it', async () => {
+      const r = renderHost(DateTimeHost);
+      r.instance.maxDate.set(new Date(2026, 5, 10, 23, 59));
+      await open(r);
+
+      pressKey(timeSeg('hour'), '1');
+      pressKey(timeSeg('hour'), '4');
+      pressKey(timeSeg('minute'), '3');
+      pressKey(timeSeg('minute'), '0');
+      await flush(r.fixture);
+
+      expect(r.instance.value()!.getTime()).toBe(new Date(2026, 5, 10, 14, 30).getTime());
+    });
+
+    it('still clamps the time of a commit made before any day on the bound day', async () => {
+      const r = renderHost(DateTimeHost);
+      r.instance.minDate.set(new Date(2026, 5, 20, 9, 0));
+      await open(r);
+
+      pressKey(timeSeg('hour'), '0');
+      pressKey(timeSeg('hour'), '8');
+      pressKey(timeSeg('minute'), '3');
+      pressKey(timeSeg('minute'), '0');
+      await flush(r.fixture);
+
+      expect(r.instance.value()!.getTime()).toBe(new Date(2026, 5, 20, 9, 0).getTime());
+    });
+
     it('does not rewrite the picker value while typing a multi-digit hour (item 2, #16)', async () => {
       const r = renderHost(DateTimeHost);
       r.instance.maxDate.set(new Date(2026, 5, 15, 23, 59));
@@ -1758,6 +1802,8 @@ describe('ForDatePicker', () => {
           [(open)]="open"
           granularity="minute"
           [hourCycle]="24"
+          [minDate]="minDate()"
+          [maxDate]="maxDate()"
           [disabled]="disabled()"
           [readonly]="readonly()"
           #picker="forDatePicker"
@@ -1814,6 +1860,8 @@ describe('ForDatePicker', () => {
     class DateTimePickerHost {
       readonly value = signal<Date | null>(null);
       readonly open = signal(false);
+      readonly minDate = signal<Date | null>(null);
+      readonly maxDate = signal<Date | null>(null);
       readonly disabled = signal(false);
       readonly readonly = signal(false);
     }
@@ -1878,6 +1926,36 @@ describe('ForDatePicker', () => {
       const value = r.instance.value();
       expect(adapter.getHours(value!)).toBe(9);
       expect(adapter.getDate(value!)).toBe(15);
+    });
+
+    async function activateSlotBeforeAnyDay(
+      r: RenderResult<DateTimePickerHost>,
+      slot: string,
+    ): Promise<void> {
+      r.instance.open.set(true);
+      await flush(r.fixture);
+      tpEl('tp-trigger').click();
+      await flush(r.fixture);
+      tpEl(`tp-slot-${slot}`).click();
+      await flush(r.fixture);
+    }
+
+    it('grafts a slot activated before any day onto the minDate day when today is before it', async () => {
+      const r = renderHost(DateTimePickerHost);
+      r.instance.minDate.set(new Date(2026, 5, 20));
+
+      await activateSlotBeforeAnyDay(r, 'slot-50400');
+
+      expect(r.instance.value()!.getTime()).toBe(new Date(2026, 5, 20, 14, 0).getTime());
+    });
+
+    it('grafts a slot activated before any day onto the maxDate day when today is after it', async () => {
+      const r = renderHost(DateTimePickerHost);
+      r.instance.maxDate.set(new Date(2026, 5, 10, 23, 59));
+
+      await activateSlotBeforeAnyDay(r, 'slot-50400');
+
+      expect(r.instance.value()!.getTime()).toBe(new Date(2026, 5, 10, 14, 0).getTime());
     });
   });
 
@@ -2592,6 +2670,144 @@ describe('ForDatePicker', () => {
 
       expect(r.instance.model().dob?.getTime()).toBe(new Date(2026, 5, 12).getTime());
       expect(r.instance.open()).toBe(false);
+    });
+  });
+
+  describe('Signal Forms reset of a date-time picker in the trigger anatomy', () => {
+    @Component({
+      imports: [
+        ForDatePicker,
+        ForDatePickerTrigger,
+        ForDatePickerContent,
+        ForTimeField,
+        ForTimeFieldSegment,
+        ForTimeFieldLiteral,
+        FormField,
+      ],
+      providers: [...provideNativeDateAdapter()],
+      template: `
+        <div
+          forDatePicker
+          [formField]="booking.when"
+          [(open)]="open"
+          granularity="minute"
+          [hourCycle]="24"
+          #picker="forDatePicker"
+        >
+          <button forDatePickerTrigger>Pick</button>
+          @if (open()) {
+            <div forDatePickerContent>
+              <div
+                forTimeField
+                [value]="picker.value()"
+                [hourCycle]="24"
+                [locale]="'en-US'"
+                #tf="forTimeField"
+              >
+                @for (seg of tf.segments(); track seg.id) {
+                  @if (seg.isLiteral) {
+                    <span forTimeFieldLiteral>{{ seg.text }}</span>
+                  } @else {
+                    <span
+                      forTimeFieldSegment
+                      [segment]="seg.type!"
+                      [attr.data-testid]="'reset-' + seg.type"
+                      >{{ seg.text }}</span
+                    >
+                  }
+                }
+              </div>
+            </div>
+          }
+        </div>
+      `,
+    })
+    class TimeFieldResetHost {
+      readonly open = signal(true);
+      readonly model = signal<{ when: Date | null }>({ when: null });
+      readonly booking = form(this.model);
+    }
+
+    @Component({
+      imports: [
+        ForDatePicker,
+        ForDatePickerTrigger,
+        ForDatePickerContent,
+        ForTimePicker,
+        ForTimePickerTrigger,
+        ForTimeField,
+        ForTimeFieldSegment,
+        ForTimeFieldLiteral,
+        FormField,
+      ],
+      providers: [...provideNativeDateAdapter()],
+      template: `
+        <div
+          forDatePicker
+          [formField]="booking.when"
+          [(open)]="open"
+          granularity="minute"
+          [hourCycle]="24"
+          #picker="forDatePicker"
+        >
+          <button forDatePickerTrigger>Pick</button>
+          @if (open()) {
+            <div forDatePickerContent>
+              <div forTimePicker anatomy="field" [value]="picker.value()" [hourCycle]="24">
+                <div forTimeField [locale]="'en-US'" #tf="forTimeField">
+                  @for (seg of tf.segments(); track seg.id) {
+                    @if (seg.isLiteral) {
+                      <span forTimeFieldLiteral>{{ seg.text }}</span>
+                    } @else {
+                      <span
+                        forTimeFieldSegment
+                        [segment]="seg.type!"
+                        [attr.data-testid]="'reset-' + seg.type"
+                        >{{ seg.text }}</span
+                      >
+                    }
+                  }
+                </div>
+                <button forTimePickerTrigger></button>
+              </div>
+            </div>
+          }
+        </div>
+      `,
+    })
+    class TimePickerResetHost {
+      readonly open = signal(true);
+      readonly model = signal<{ when: Date | null }>({ when: null });
+      readonly booking = form(this.model);
+    }
+
+    const resetSeg = (type: string) =>
+      document.querySelector<HTMLElement>(`[data-testid="reset-${type}"]`)!;
+
+    async function expectResetDropsPartialTime(
+      r: RenderResult<TimeFieldResetHost | TimePickerResetHost>,
+    ): Promise<void> {
+      await flush(r.fixture);
+      pressKey(resetSeg('hour'), '1');
+      pressKey(resetSeg('hour'), '0');
+      await flush(r.fixture);
+      expect(r.instance.model().when).toBeNull();
+      expect(resetSeg('hour').textContent?.trim()).toBe('10');
+
+      r.instance.booking().reset();
+      await flush(r.fixture);
+
+      expect(r.instance.booking.when().dirty()).toBe(false);
+      expect(resetSeg('hour').textContent?.trim()).toBe('hh');
+      expect(resetSeg('minute').textContent?.trim()).toBe('mm');
+    }
+
+    it('drops a partly typed time in a projected ForTimeField', async () => {
+      await expectResetDropsPartialTime(renderHost(TimeFieldResetHost));
+    });
+
+    it('drops a partly typed time in the field a projected ForTimePicker adopts', async () => {
+      await expectResetDropsPartialTime(renderHost(TimePickerResetHost));
     });
   });
 
