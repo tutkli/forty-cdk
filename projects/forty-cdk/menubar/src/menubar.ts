@@ -364,7 +364,7 @@ export class ForMenubar implements ForMenubarContext {
       this.menuCtx.focusInitialEnabledItem(initialFocus);
       return;
     }
-    this.value.set(value);
+    this.#writeOpenValue(value);
   }
 
   closeOpen(): void {
@@ -455,6 +455,17 @@ export class ForMenubar implements ForMenubarContext {
     }
     this.menuCtx.prepareOpen('first', modality, { suppressOpenFocus: true });
     handle.host.focus();
+    this.#writeOpenValue(value);
+  }
+
+  /**
+   * Opens `value`'s menu. When another menu is open, its open submenus close
+   * first, since switching unmounts that menu without closing the bar's context.
+   */
+  #writeOpenValue(value: string): void {
+    if (this.value() !== null) {
+      this.menuCtx.closeOpenSubmenus();
+    }
     this.value.set(value);
   }
 }

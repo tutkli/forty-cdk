@@ -12,6 +12,7 @@ import {
   type AnchoredPositioningOverride,
   type FloatingFallbackAxisSideDirection,
   createMenuOverlay,
+  type MenuOverlay,
   MENU_OPENERS,
   MenuOverlayHost,
   FOR_MENU_CONTEXT,
@@ -162,7 +163,8 @@ export class ForDropdownMenu extends MenuOverlayHost implements ForMenuContext {
    */
   readonly autoFocusOnClose = output<VetoableEvent>();
 
-  protected readonly _overlay = createMenuOverlay('for-dropdown-menu', {
+  protected readonly _overlay: MenuOverlay = createMenuOverlay('for-dropdown-menu', {
+    context: this,
     open: this.open,
     disabled: this.disabled,
     dismissible: this.dismissible,

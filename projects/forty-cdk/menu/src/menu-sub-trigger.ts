@@ -55,10 +55,13 @@ import { handleMenuTabOut } from './menu-tab-out';
  * `[data-state="open"]` style every row of a menu.
  *
  * Pointer (mouse):
- * - **pointermove** — move the parent menu's highlight onto the sub-trigger
- *   without taking focus: hover-open never moves focus.
+ * - **pointermove** — move the parent menu's highlight and focus onto the
+ *   sub-trigger, like any other item, so Enter, Space, the arrows and typeahead
+ *   act on the row that shows as highlighted.
  * - **pointerenter** — open the submenu after the configured `subMenuOpenDelay`
- *   ({@link provideForMenuDefaults}), without moving focus into it.
+ *   ({@link provideForMenuDefaults}), without moving focus into it. While the
+ *   pointer is crossing this row inside an open sibling submenu's pointer-grace
+ *   corridor, the open waits until that corridor ends.
  * - **pointerleave** — close after `subMenuCloseDelay`, unless the pointer
  *   travels toward the open submenu through the pointer-grace "safe triangle".
  *
@@ -114,7 +117,6 @@ export class ForMenuSubTrigger {
   private readonly interaction = createMenuItemInteraction({
     ctx: this.#parentMenu(),
     effectiveDisabled: this.effectiveDisabled,
-    focusOnHover: false,
   });
 
   /**

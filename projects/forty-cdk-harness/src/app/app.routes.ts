@@ -88,6 +88,11 @@ export const routes: Routes = [
     loadComponent: () => import('./fixtures/menu-sub.fixture').then((m) => m.MenuSubFixture),
   },
   {
+    path: 'menu-sub-corridor',
+    loadComponent: () =>
+      import('./fixtures/menu-sub-corridor.fixture').then((m) => m.MenuSubCorridorFixture),
+  },
+  {
     path: 'menu-shared-openers',
     loadComponent: () =>
       import('./fixtures/menu-shared-openers.fixture').then((m) => m.MenuSharedOpenersFixture),

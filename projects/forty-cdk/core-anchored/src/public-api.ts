@@ -67,6 +67,7 @@ export {
   type MenuSiblingNavigator,
 } from './menu-overlay/menu-context';
 export { createMenuItemList, type MenuItemHandle } from './menu-overlay/menu-item-list';
+export { MENU_OPEN_CHAIN, MenuOpenChain, type MenuOpenChild } from './menu-overlay/menu-open-chain';
 export {
   asMenuOpenerRegistration,
   createMenuOpenerHandle,
