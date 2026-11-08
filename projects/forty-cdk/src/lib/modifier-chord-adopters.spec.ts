@@ -915,6 +915,8 @@ const INLINE_HISTORY_CHORD = /\b(\w+)\.altKey\s*\|\|\s*\1\.metaKey\b/;
 const NOT_A_HANDLER: Readonly<Record<string, string>> = {
   'slider/src/slider.ts': 'maps an arrow the thumb already accepted to a direction',
   'slider/src/slider-context.ts': 'declares the arrow key type',
+  'core-anchored/src/menu-overlay/menubar-axis.ts':
+    'maps a menubar layout to the arrow keys its callers already accepted',
   'combobox/src/combobox-input.ts':
     'never prevents a horizontal arrow, so the caret moves natively',
 };

@@ -25,6 +25,7 @@ import {
   MENU_OPENERS,
   type MenuActivationModality,
 } from 'forty-cdk/core-anchored';
+import { inMenuArrow } from './menu-horizontal-arrow';
 import { createMenuItemInteraction } from './menu-item-interaction';
 import { handleMenuTabOut } from './menu-tab-out';
 
@@ -204,15 +205,17 @@ export class ForMenuSubTrigger {
       parent.closeMenu('escape');
       return;
     }
-    // Close-parent key when the *parent* is the top menu of a menubar:
-    // switch to the previous / next sibling menu (LTR-ArrowLeft → prev,
-    // RTL-ArrowRight → prev). Open-key on the sub-trigger keeps its own
-    // meaning (open this submenu) — only the close-direction propagates
-    // up to the menubar.
     if (event.key === closeParentKey && !historyChord && parent.menubar) {
-      event.preventDefault();
-      parent.menubar.switchToSibling('prev');
-      return;
+      const barAction = inMenuArrow(parent.menubar, parent, closeParentKey);
+      if (barAction !== null) {
+        event.preventDefault();
+        if (barAction === 'close') {
+          parent.closeMenu('escape');
+        } else {
+          parent.menubar.switchToSibling(barAction);
+        }
+        return;
+      }
     }
 
     const action = resolveListNavigation(event, { orientation: 'vertical' });

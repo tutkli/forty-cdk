@@ -1,4 +1,4 @@
-import { el, expect, expectFocused, gotoFixture, rovingFirst, test } from './_helpers';
+import { el, expect, expectFocused, expectStays, gotoFixture, rovingFirst, test } from './_helpers';
 
 test.describe('Menubar', () => {
   test('Tab into the menubar lands on the first enabled trigger', async ({ page }) => {
@@ -335,6 +335,47 @@ test.describe('Menubar', () => {
       await page.keyboard.press('ArrowLeft');
       await expect(el(page, 'menu-file')).toHaveCount(0);
       await expectFocused(el(page, 'trigger-file'));
+    });
+
+    test('opens each menu beside the bar, clear of the triggers below', async ({ page }) => {
+      await gotoFixture(page, 'menubar', { orientation: 'vertical' });
+      await el(page, 'trigger-file').click();
+
+      const menu = el(page, 'menu-file');
+      await expect(menu).toHaveAttribute('data-side', 'right');
+      const trigger = await el(page, 'trigger-file').boundingBox();
+      const surface = await menu.boundingBox();
+      expect(surface!.x).toBeGreaterThanOrEqual(trigger!.x + trigger!.width);
+    });
+
+    test('ArrowLeft inside the open menu closes it and returns focus to its trigger', async ({
+      page,
+    }) => {
+      await gotoFixture(page, 'menubar', { orientation: 'vertical' });
+      await el(page, 'trigger-file').focus();
+      await page.keyboard.press('ArrowRight');
+      await expectFocused(el(page, 'item-file-1'));
+
+      await page.keyboard.press('ArrowLeft');
+
+      await expect(el(page, 'menu-file')).toHaveCount(0);
+      await expect(el(page, 'menu-view')).toHaveCount(0);
+      await expectFocused(el(page, 'trigger-file'));
+    });
+
+    test('ArrowRight inside the open menu leaves it open on the same item', async ({ page }) => {
+      await gotoFixture(page, 'menubar', { orientation: 'vertical' });
+      await el(page, 'trigger-file').focus();
+      await page.keyboard.press('ArrowRight');
+      await expectFocused(el(page, 'item-file-1'));
+
+      await page.keyboard.press('ArrowRight');
+
+      await expectStays(page, async () => {
+        await expect(el(page, 'menu-file')).toBeVisible();
+        await expect(el(page, 'menu-edit')).toHaveCount(0);
+        await expectFocused(el(page, 'item-file-1'));
+      });
     });
   });
 });

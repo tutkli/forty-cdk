@@ -16,6 +16,7 @@ import {
   type MenubarMenuHost,
 } from '../../../menubar/src/menubar-menu-context';
 import { ANCHORED_POSITIONING_DEFAULTS } from '../floating/anchored-positioning-inputs';
+import { resolveMenubarAxis } from './menubar-axis';
 
 @Component({
   imports: [ForDropdownMenu, ForContextMenu, ForMenu, ForMenuSub],
@@ -163,6 +164,7 @@ describe('menubar menu context positioning fallback drift guard', () => {
       disabled: signal(false),
       dismissible: signal(true),
       dir: signal('ltr'),
+      orientation: signal('horizontal'),
       loop: signal(true),
       activeTrigger: signal(null),
       triggers: signal([]),
@@ -193,7 +195,7 @@ describe('menubar menu context positioning fallback drift guard', () => {
   it('seeds the placement and collision fallback from the menubar defaults provider', () => {
     const ctx = createContext();
 
-    expect(ctx.side()).toBe(FOR_MENUBAR_FALLBACK_DEFAULTS.side);
+    expect(ctx.side()).toBe(resolveMenubarAxis('horizontal', 'ltr').side);
     expect(ctx.align()).toBe(FOR_MENUBAR_FALLBACK_DEFAULTS.align);
     expect(ctx.sideOffset()).toBe(FOR_MENUBAR_FALLBACK_DEFAULTS.sideOffset);
     expect(ctx.collisionPadding()).toBe(FOR_MENUBAR_FALLBACK_DEFAULTS.collisionPadding);

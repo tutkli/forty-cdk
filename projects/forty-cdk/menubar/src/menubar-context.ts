@@ -72,7 +72,6 @@ export interface ForMenubarContext extends MenuSiblingNavigator {
    * binding — a direct write would bypass the bar's open / close coordination.
    */
   readonly value: Signal<string | null>;
-  readonly orientation: Signal<'horizontal' | 'vertical'>;
   readonly dir: Signal<WritingDirection>;
   readonly loop: Signal<boolean>;
   readonly disabled: Signal<boolean>;
