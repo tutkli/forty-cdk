@@ -4,6 +4,14 @@ import type { LocalizableText } from 'forty-cdk/core';
 
 import { provideDefaults } from './defaults';
 
+/** The list a positional drag announcement describes. */
+export interface ForDragDropAnnouncementContext {
+  /** The list's accessible name from its `aria-labelledby` / `aria-label`, or `''` when it has none. */
+  readonly list: string;
+  /** Whether the list is not the one the item was lifted from. */
+  readonly transfer: boolean;
+}
+
 /**
  * Defaults inherited by descendant drag-drop lists and reorder coordinators in
  * the surrounding injector scope. Configure with `provideForDragDropDefaults` either at the application
@@ -11,14 +19,16 @@ import { provideDefaults } from './defaults';
  * the parent scope.
  *
  * The three positional announcement builders share one contract: `label` is the
- * dragged item's accessible text, `index` is the 1-based position being
+ * dragged item's name (its `[textValue]`, else its `aria-labelledby` /
+ * `aria-label`, else its text), `index` is the 1-based position being
  * announced, and `total` is the number of **valid drop positions** in the list
  * the announcement describes — never a bare item count. For a reorder inside
  * one list that is its item count (the item is re-inserted among the existing
  * ones); for a transfer into a connected list it is one more than the target's
  * item count, because the append gap past the last item is also a valid
  * position. `index` therefore never exceeds `total`, and an empty transfer
- * target announces `1 of 1` rather than `1 of 0`.
+ * target announces `1 of 1` rather than `1 of 0`. `context` names that list
+ * and says whether it is a transfer target.
  */
 export interface ForDragDropDefaults {
   /**
@@ -30,18 +40,33 @@ export interface ForDragDropDefaults {
    * Announcement when an item is lifted. `index` / `total` describe the source
    * list, per the positional contract above.
    */
-  announceLift: (label: string, index: number, total: number) => string;
+  announceLift: (
+    label: string,
+    index: number,
+    total: number,
+    context: ForDragDropAnnouncementContext,
+  ) => string;
   /**
    * Announcement when the drop target position changes. `index` / `total`
    * describe the target list (the list under the resolved drop position, which
    * may be a connected list), per the positional contract above.
    */
-  announceMove: (label: string, index: number, total: number) => string;
+  announceMove: (
+    label: string,
+    index: number,
+    total: number,
+    context: ForDragDropAnnouncementContext,
+  ) => string;
   /**
    * Announcement on a committed drop. `index` / `total` describe the destination
    * list, per the positional contract above.
    */
-  announceDrop: (label: string, index: number, total: number) => string;
+  announceDrop: (
+    label: string,
+    index: number,
+    total: number,
+    context: ForDragDropAnnouncementContext,
+  ) => string;
   /** Announcement when a drag is cancelled. */
   announceCancel: (label: string) => string;
   /** Distance in px from a scroll edge that arms auto-scroll during a pointer drag. */
@@ -67,8 +92,14 @@ export interface ForDragDropDefaults {
 export const FOR_DRAG_DROP_FALLBACK_DEFAULTS: ForDragDropDefaults = {
   itemRoleDescription: 'sortable',
   announceLift: (label, index, total) => `${label}, lifted. ${index} of ${total}.`,
-  announceMove: (label, index, total) => `${label}, moved to position ${index} of ${total}.`,
-  announceDrop: (label, index, total) => `${label}, dropped at position ${index} of ${total}.`,
+  announceMove: (label, index, total, context) =>
+    context.transfer
+      ? `${label}, moved to ${context.list || 'another list'}, position ${index} of ${total}.`
+      : `${label}, moved to position ${index} of ${total}.`,
+  announceDrop: (label, index, total, context) =>
+    context.transfer
+      ? `${label}, dropped in ${context.list || 'another list'}, position ${index} of ${total}.`
+      : `${label}, dropped at position ${index} of ${total}.`,
   announceCancel: (label) => `${label}, movement cancelled.`,
   autoScrollEdgeSize: 50,
   autoScrollMaxSpeed: 16,

@@ -169,7 +169,7 @@ unchecks the item's own and no cloned media plays or frame reloads.
 | Idle   | Arrow keys  | Move roving focus between items                                |
 | Idle   | Home / End  | Jump to first / last item                                      |
 | Idle   | Space/Enter | **Lift** the focused item                                      |
-| Lifted | Arrow keys  | Step the logical drop position                                 |
+| Lifted | Arrow keys  | Step the logical drop position, across connected lists         |
 | Lifted | Home / End  | Jump the lifted item to the first / last position              |
 | Lifted | Space/Enter | **Drop** (commits, emits `(dragDrop)`, focus follows the item) |
 | Lifted | Escape      | **Cancel** (no event, focus stays on item)                     |
@@ -181,6 +181,14 @@ before it or else the one after, so focus never falls to `<body>`. A drop keeps 
 Arrow direction follows the list's `orientation` and respects RTL via `dir`. In
 `orientation="mixed"` every arrow key steps the lifted item linearly in DOM order.
 
+With connected lists (`[forDropListGroup]` or `[connectedTo]`), the lifted item steps through one
+sequence of positions: every position of the list it was lifted from, then every position of each
+connected list, including the append position past its last item. Connected lists come in
+`[connectedTo]` order, then in the order the group's lists registered. Home and End jump to the two
+ends of that sequence, and a step past either end does nothing and announces nothing. The
+announcement names the list a position belongs to whenever it is not the source list, so a
+transfer never sounds like a reorder.
+
 `[dragDisabled]` and a disabled `[forDropList]` stop a lift from starting, nothing else. A
 `[dragDisabled]` item still takes the idle arrow and Home / End keys (only a disabled list stops
 those), and an item that was already lifted when it or its list became disabled keeps every lifted
@@ -189,6 +197,24 @@ key, so Escape always ends the gesture.
 ## Accessibility
 
 Keyboard lifting, stepping, dropping, and cancellation are announced via ARIA live regions. Override the default messages at any injector scope via `provideForDragDropDefaults` (see [Scoped defaults](#scoped-defaults)). Free-drag is pointer-only. There is no WAI-ARIA pattern for "reposition an element", so `[forFreeDrag]` owns no role or ARIA state; the consumer is responsible for keeping the moved element fully usable at its default position.
+
+### Item names
+
+Every lift, move, drop and cancel announcement names the item the way a screen reader would: by
+the text its `aria-labelledby` references, else by its `aria-label`, else by its text with any
+`aria-hidden` content (such as a `[forDragHandle]` glyph) left out and a space between adjacent
+elements. Set `[textValue]` on `[forDraggable]` to name an item in announcements by a string of
+your own; an empty or `null` value falls back to the item's own name. The same name is used by
+`[forVirtualReorder]` and `[forTableRowReorder]`.
+
+```html
+<li forDraggable [dragData]="task" [textValue]="task.title">
+  <strong>{{ task.title }}</strong><span>{{ task.due }}</span>
+</li>
+```
+
+A list is named in an announcement by its `aria-labelledby` or `aria-label`, never by its items, so
+label each list of a transfer.
 
 ### Role description
 
@@ -703,20 +729,20 @@ onDrop(event: ForDragDropEvent): void {
 
 `provideForDragDropDefaults` configures drag-drop defaults for an injector subtree, either at the application root or in any component's `providers` array. They apply to `[forDropList]` and `[forDraggable]`, and to the reorder coordinators `[forListboxReorder]`, `[forTreeNodeDrag]`, `[forTableRowReorder]` and `[forVirtualReorder]`. Partial overrides inherit unspecified keys from the parent scope (or the library fallbacks at the root).
 
-| Key                   | Library fallback                                     | Meaning                                                                                                                                                    |
-| --------------------- | ---------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `itemRoleDescription` | `'sortable'`                                         | `aria-roledescription` of each item that can be lifted. An empty string drops the attribute. See [Role description](#role-description).                    |
-| `announceLift`        | `'<label>, lifted. <index> of <total>.'`             | Announcement when an item is lifted. `index` / `total` describe the source list.                                                                           |
-| `announceMove`        | `'<label>, moved to position <index> of <total>.'`   | Announcement when the drop position changes. `index` / `total` describe the list under that position, which may be a connected list.                       |
-| `announceDrop`        | `'<label>, dropped at position <index> of <total>.'` | Announcement on a committed drop. `index` / `total` describe the destination list.                                                                         |
-| `announceCancel`      | `'<label>, movement cancelled.'`                     | Announcement when a drag is cancelled.                                                                                                                     |
-| `autoScrollEdgeSize`  | `50`                                                 | Distance in px from a scroll edge that arms auto-scroll during a pointer drag. See [Auto-scroll](#auto-scroll).                                            |
-| `autoScrollMaxSpeed`  | `16`                                                 | Maximum scroll distance in px per animation frame while auto-scrolling.                                                                                    |
-| `liftKey`             | `Shift+Enter`, `Ctrl+Space` or `Cmd+Space`           | Whether a keydown on a focused item lifts it into a keyboard reorder in `[forListboxReorder]`, `[forTreeNodeDrag]` and `[forTableRowReorder]` (grid mode). |
+| Key                   | Library fallback                                     | Meaning                                                                                                                                                                                                               |
+| --------------------- | ---------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `itemRoleDescription` | `'sortable'`                                         | `aria-roledescription` of each item that can be lifted. An empty string drops the attribute. See [Role description](#role-description).                                                                               |
+| `announceLift`        | `'<label>, lifted. <index> of <total>.'`             | Announcement when an item is lifted. `index` / `total` describe the source list.                                                                                                                                      |
+| `announceMove`        | `'<label>, moved to position <index> of <total>.'`   | Announcement when the drop position changes. `index` / `total` describe the list under that position, which may be a connected list: then the fallback is `'<label>, moved to <list>, position <index> of <total>.'`. |
+| `announceDrop`        | `'<label>, dropped at position <index> of <total>.'` | Announcement on a committed drop. `index` / `total` describe the destination list. Into a connected list the fallback is `'<label>, dropped in <list>, position <index> of <total>.'`.                                |
+| `announceCancel`      | `'<label>, movement cancelled.'`                     | Announcement when a drag is cancelled.                                                                                                                                                                                |
+| `autoScrollEdgeSize`  | `50`                                                 | Distance in px from a scroll edge that arms auto-scroll during a pointer drag. See [Auto-scroll](#auto-scroll).                                                                                                       |
+| `autoScrollMaxSpeed`  | `16`                                                 | Maximum scroll distance in px per animation frame while auto-scrolling.                                                                                                                                               |
+| `liftKey`             | `Shift+Enter`, `Ctrl+Space` or `Cmd+Space`           | Whether a keydown on a focused item lifts it into a keyboard reorder in `[forListboxReorder]`, `[forTreeNodeDrag]` and `[forTableRowReorder]` (grid mode).                                                            |
 
 `itemRoleDescription` is spoken by a screen reader, so translate it here. It accepts a string or a function returning one; a function can read a language signal, so the text follows a language the app sets or switches after bootstrap, as [Localizing default text](../shared/README.md#localizing-default-text) shows.
 
-The four announcers are builder functions whose return value is spoken through an ARIA live region; return the sentence in your language. `announceLift`, `announceMove` and `announceDrop` receive `(label, index, total)`, and `announceCancel` receives `(label)`. `label` is the dragged item's accessible text and `index` is the 1-based position being announced. `total` is the number of valid drop positions in the list the announcement describes, never a bare item count: the item count for a reorder inside one list, and one more than the target's item count for a transfer into a connected list, because the append gap past the last item is also a valid position. `index` therefore never exceeds `total`, and an empty transfer target announces `1 of 1`.
+The four announcers are builder functions whose return value is spoken through an ARIA live region; return the sentence in your language. `announceLift`, `announceMove` and `announceDrop` receive `(label, index, total, context)`, and `announceCancel` receives `(label)`. `label` is the dragged item's name (see [Item names](#item-names)) and `index` is the 1-based position being announced. `total` is the number of valid drop positions in the list the announcement describes, never a bare item count: the item count for a reorder inside one list, and one more than the target's item count for a transfer into a connected list, because the append gap past the last item is also a valid position. `index` therefore never exceeds `total`, and an empty transfer target announces `1 of 1`. `context` is a `ForDragDropAnnouncementContext`: `list` is the accessible name of that list (`''` when it has no `aria-labelledby` or `aria-label`) and `transfer` is `true` when it is not the list the item was lifted from. The fallbacks name the list only on a transfer, and say "another list" when it has no name. A builder that ignores `context` can leave the parameter out.
 
 `liftKey` receives the `KeyboardEvent` and returns `true` when that key should lift the item. Shift+Enter is reserved by no operating system, while macOS and most IMEs claim Ctrl+Space / Cmd+Space before the page sees them. A keydown that belongs to an IME composition never lifts, whatever `liftKey` returns.
 
@@ -729,7 +755,10 @@ export const appConfig: ApplicationConfig = {
     provideForDragDropDefaults({
       itemRoleDescription: 'reordenable',
       announceLift: (label, index, total) => `${label}, levantado. ${index} de ${total}.`,
-      announceMove: (label, index, total) => `${label}, movido a la posición ${index} de ${total}.`,
+      announceMove: (label, index, total, { list, transfer }) =>
+        transfer
+          ? `${label}, movido a ${list || 'otra lista'}, posición ${index} de ${total}.`
+          : `${label}, movido a la posición ${index} de ${total}.`,
       announceDrop: (label, index, total) =>
         `${label}, soltado en la posición ${index} de ${total}.`,
       announceCancel: (label) => `${label}, movimiento cancelado.`,

@@ -156,6 +156,16 @@ export {
 } from './drag-session/drag-geometry';
 export { dragAnnouncementLabel } from './drag-session/drag-announcement-label';
 export {
+  clampDragIndex,
+  type DragAnnouncedItem,
+  type DragAnnouncedPosition,
+  type DragAnnouncementContext,
+  type DragAnnouncementText,
+  DragAnnouncer,
+  type PositionalDragAnnouncement,
+  stepDragTarget,
+} from './drag-session/drag-announcer';
+export {
   BOTH_DRAG_AXES,
   type DragAxes,
   dragHandleTouchAction,

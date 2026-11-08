@@ -24,7 +24,9 @@ import {
   consumeUnmappedLiftedKey,
   createKeyboardDragMediator,
   createPointerDragSession,
-  dragAnnouncementLabel,
+  type DragAnnouncedItem,
+  type DragAnnouncedPosition,
+  DragAnnouncer,
   findPressedDragItem,
   focusWhenMounted,
   type FocusWhenMountedRef,
@@ -35,6 +37,7 @@ import {
   resolveLiftedDragControl,
   resolvePressedDragItem,
   resolveWindowedReorder,
+  stepDragTarget,
   isHistoryChord,
 } from 'forty-cdk/core';
 import { isInteractiveDescendant } from './interactive-descendant';
@@ -168,8 +171,13 @@ export class ForTableRowReorder {
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
   readonly #document = inject(DOCUMENT);
   readonly #isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
-  readonly #announcer = inject(LiveAnnouncer);
   readonly #dragDefaults = inject(FOR_DRAG_DROP_DEFAULTS);
+  readonly #announce = new DragAnnouncer(inject(LiveAnnouncer), () => ({
+    lift: this.#dragDefaults.announceLift,
+    move: this.#dragDefaults.announceMove,
+    drop: this.#dragDefaults.announceDrop,
+    cancel: this.#dragDefaults.announceCancel,
+  }));
   readonly #injector = inject(Injector);
 
   #mode: ReorderMode = 'idle';
@@ -330,29 +338,10 @@ export class ForTableRowReorder {
 
   #moveActive(key: string): void {
     if (this.#kbPath === 'virtual') {
-      switch (key) {
-        case 'ArrowDown':
-          this.#setTarget(this.#kbTarget + 1);
-          break;
-        case 'ArrowUp':
-          this.#setTarget(this.#kbTarget - 1);
-          break;
-        case 'Home':
-          this.#setTarget(0);
-          break;
-        case 'End':
-          this.#setTarget(this.count() - 1);
-          break;
-        case 'PageDown':
-          this.#setTarget(this.#kbTarget + this.#page());
-          break;
-        case 'PageUp':
-          this.#setTarget(this.#kbTarget - this.#page());
-          break;
-        default:
-          return;
+      const requested = this.#requestedTarget(key);
+      if (requested !== null) {
+        this.#stepTarget(requested);
       }
-      this.#kbApplyTarget();
       return;
     }
     if (this.#kbPath === 'list') {
@@ -420,19 +409,12 @@ export class ForTableRowReorder {
     this.#kbTarget = vi;
     this.#registration.setReorderingRow(vi);
     this.#list.beginCoordinatorLift(host, vi);
-    const total = this.count();
-    this.#announcer.announce(
-      this.#dragDefaults.announceLift(this.#label(), vi + 1, total),
-      'assertive',
-    );
+    this.#announce.lift(this.#item(), this.#position(vi));
   }
 
   #kbApplyTarget(): void {
     this.#registration.virtualRowNavigation()?.scrollToRow(this.#kbTarget);
-    this.#announcer.announce(
-      this.#dragDefaults.announceMove(this.#label(), this.#kbTarget + 1, this.count()),
-      'polite',
-    );
+    this.#announce.move(this.#item(), this.#position(this.#kbTarget));
   }
 
   #kbCommit(): void {
@@ -440,10 +422,7 @@ export class ForTableRowReorder {
     const to = this.#kbTarget;
     const column = lifted === null ? -1 : this.#columnOf(lifted, this.#kbFocusEl);
     this.rowReorder.emit({ from: this.#kbFrom, to });
-    this.#announcer.announce(
-      this.#dragDefaults.announceDrop(this.#label(), to + 1, this.count()),
-      'assertive',
-    );
+    this.#announce.drop(this.#item(), this.#position(to));
     this.#kbTeardown(true);
     if (lifted !== null) {
       this.#followRow(lifted, to, column, () => this.#registration.setReorderingRow(to));
@@ -491,7 +470,7 @@ export class ForTableRowReorder {
     const lifted = this.#kbLiftedHost;
     const from = this.#kbFrom;
     const column = lifted === null ? -1 : this.#columnOf(lifted, this.#kbFocusEl);
-    this.#announcer.announce(this.#dragDefaults.announceCancel(this.#label()), 'assertive');
+    this.#announce.cancel(this.#item());
     this.#kbTeardown(false);
     if (restoreFocus && lifted !== null) {
       this.#followRow(lifted, from, column, () => {
@@ -534,12 +513,47 @@ export class ForTableRowReorder {
     return Math.max(1, this.#list.items().length);
   }
 
-  #label(): string {
-    return this.#kbLiftedHost === null ? '' : dragAnnouncementLabel(this.#kbLiftedHost);
+  #item(): DragAnnouncedItem {
+    const host = this.#kbLiftedHost;
+    return {
+      host,
+      textValue: this.#list
+        .items()
+        .find((h) => h.host === host)
+        ?.textValue(),
+    };
   }
 
-  #setTarget(value: number): void {
-    this.#kbTarget = Math.max(0, Math.min(this.count() - 1, value));
+  #position(index: number): DragAnnouncedPosition {
+    return { index, total: this.count(), list: this.#host, source: this.#host };
+  }
+
+  #requestedTarget(key: string): number | null {
+    switch (key) {
+      case 'ArrowDown':
+        return this.#kbTarget + 1;
+      case 'ArrowUp':
+        return this.#kbTarget - 1;
+      case 'Home':
+        return 0;
+      case 'End':
+        return this.count() - 1;
+      case 'PageDown':
+        return this.#kbTarget + this.#page();
+      case 'PageUp':
+        return this.#kbTarget - this.#page();
+      default:
+        return null;
+    }
+  }
+
+  #stepTarget(requested: number): void {
+    const next = stepDragTarget(this.#kbTarget, requested, this.count());
+    if (next === null) {
+      return;
+    }
+    this.#kbTarget = next;
+    this.#kbApplyTarget();
   }
 
   #trackPointerPress(event: PointerEvent): boolean {

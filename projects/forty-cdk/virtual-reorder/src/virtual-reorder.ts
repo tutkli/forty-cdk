@@ -22,7 +22,9 @@ import {
   consumeUnmappedLiftedKey,
   createKeyboardDragMediator,
   createPointerDragSession,
-  dragAnnouncementLabel,
+  type DragAnnouncedItem,
+  type DragAnnouncedPosition,
+  DragAnnouncer,
   findPressedDragItem,
   focusWhenMounted,
   type FocusWhenMountedRef,
@@ -33,6 +35,7 @@ import {
   resolveLiftedDragControl,
   resolvePressedDragItem,
   resolveWindowedReorder,
+  stepDragTarget,
 } from 'forty-cdk/core';
 import { ForVirtualViewport } from 'forty-cdk/virtualization';
 
@@ -158,8 +161,13 @@ export class ForVirtualReorder {
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
   readonly #document = inject(DOCUMENT);
   readonly #isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
-  readonly #announcer = inject(LiveAnnouncer);
   readonly #dragDefaults = inject(FOR_DRAG_DROP_DEFAULTS);
+  readonly #announce = new DragAnnouncer(inject(LiveAnnouncer), () => ({
+    lift: this.#dragDefaults.announceLift,
+    move: this.#dragDefaults.announceMove,
+    drop: this.#dragDefaults.announceDrop,
+    cancel: this.#dragDefaults.announceCancel,
+  }));
   readonly #injector = inject(Injector);
 
   #mode: ReorderMode = 'idle';
@@ -262,8 +270,7 @@ export class ForVirtualReorder {
     } else if (control === 'cancel') {
       this.#kbCancel();
     } else if (target !== null) {
-      this.#setTarget(target);
-      this.#kbApplyTarget();
+      this.#stepTarget(target);
     }
   }
 
@@ -356,28 +363,19 @@ export class ForVirtualReorder {
     this.#kbTarget = vi;
     this.#viewport.setReorderingIndex(vi);
     this.#list.beginCoordinatorLift(host, vi);
-    this.#announcer.announce(
-      this.#dragDefaults.announceLift(this.#label(), vi + 1, this.count()),
-      'assertive',
-    );
+    this.#announce.lift(this.#item(), this.#position(vi));
   }
 
   #kbApplyTarget(): void {
     this.#viewport.scrollToIndex(this.#kbTarget);
-    this.#announcer.announce(
-      this.#dragDefaults.announceMove(this.#label(), this.#kbTarget + 1, this.count()),
-      'polite',
-    );
+    this.#announce.move(this.#item(), this.#position(this.#kbTarget));
   }
 
   #kbCommit(): void {
     const lifted = this.#kbLiftedHost;
     const to = this.#kbTarget;
     this.itemReorder.emit({ from: this.#kbFrom, to });
-    this.#announcer.announce(
-      this.#dragDefaults.announceDrop(this.#label(), to + 1, this.count()),
-      'assertive',
-    );
+    this.#announce.drop(this.#item(), this.#position(to));
     this.#kbTeardown(true);
     if (lifted !== null) {
       this.#followFocus(lifted, {
@@ -391,7 +389,7 @@ export class ForVirtualReorder {
   #kbCancel(restoreFocus = true): void {
     const lifted = this.#kbLiftedHost;
     const from = this.#kbFrom;
-    this.#announcer.announce(this.#dragDefaults.announceCancel(this.#label()), 'assertive');
+    this.#announce.cancel(this.#item());
     this.#kbTeardown(false);
     if (restoreFocus && lifted !== null) {
       this.#followFocus(lifted, {
@@ -427,12 +425,28 @@ export class ForVirtualReorder {
     return Math.max(1, this.#list.items().length);
   }
 
-  #label(): string {
-    return this.#kbLiftedHost === null ? '' : dragAnnouncementLabel(this.#kbLiftedHost);
+  #item(): DragAnnouncedItem {
+    const host = this.#kbLiftedHost;
+    return {
+      host,
+      textValue: this.#list
+        .items()
+        .find((h) => h.host === host)
+        ?.textValue(),
+    };
   }
 
-  #setTarget(value: number): void {
-    this.#kbTarget = Math.max(0, Math.min(this.count() - 1, value));
+  #position(index: number): DragAnnouncedPosition {
+    return { index, total: this.count(), list: this.#host, source: this.#host };
+  }
+
+  #stepTarget(requested: number): void {
+    const next = stepDragTarget(this.#kbTarget, requested, this.count());
+    if (next === null) {
+      return;
+    }
+    this.#kbTarget = next;
+    this.#kbApplyTarget();
   }
 
   #trackPointerPress(event: PointerEvent): boolean {

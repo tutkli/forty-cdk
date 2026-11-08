@@ -1266,7 +1266,7 @@ describe('ForDropList + ForDraggable', () => {
       vi.runAllTimers();
       fixture.detectChanges();
       const region = document.querySelector('[aria-live="polite"]') as HTMLElement | null;
-      expect(region?.textContent).toContain('moved to position 2 of 2');
+      expect(region?.textContent).toContain('moved to another list, position 2 of 2');
       expect(region?.textContent).not.toContain('of 1');
     });
 
@@ -1283,7 +1283,7 @@ describe('ForDropList + ForDraggable', () => {
       vi.runAllTimers();
       fixture.detectChanges();
       const region = document.querySelector('[aria-live="assertive"]') as HTMLElement | null;
-      expect(region?.textContent).toContain('dropped at position 2 of 2');
+      expect(region?.textContent).toContain('dropped in another list, position 2 of 2');
     });
 
     it('announces position 1 of 1 when the transfer target is empty', () => {
@@ -1297,7 +1297,7 @@ describe('ForDropList + ForDraggable', () => {
       vi.runAllTimers();
       fixture.detectChanges();
       const region = document.querySelector('[aria-live="polite"]') as HTMLElement | null;
-      expect(region?.textContent).toContain('moved to position 1 of 1');
+      expect(region?.textContent).toContain('moved to another list, position 1 of 1');
       expect(region?.textContent).not.toContain('of 0');
     });
 
@@ -1447,6 +1447,195 @@ describe('ForDropList + ForDraggable', () => {
       vi.runAllTimers();
       fixture.detectChanges();
       expect(liveText('assertive')).toBe('Alpha, lifted. 1 of 3.');
+    });
+
+    @Component({
+      imports: [...GROUP_IMPORTS],
+      template: `
+        <div forDropListGroup>
+          <ul forDropList aria-label="To do">
+            @for (row of todo(); track row.id) {
+              <li forDraggable [dragData]="row" [attr.data-test-id]="'todo-' + row.id">
+                {{ row.label }}
+              </li>
+            }
+          </ul>
+          <span id="done-heading">Done</span>
+          <ul forDropList aria-labelledby="done-heading">
+            @for (row of done(); track row.id) {
+              <li forDraggable [dragData]="row" [attr.data-test-id]="'done-' + row.id">
+                {{ row.label }}
+              </li>
+            }
+          </ul>
+        </div>
+      `,
+    })
+    class NamedGroupHost {
+      readonly todo: WritableSignal<Row[]> = signal([
+        { id: 1, label: 'Write report' },
+        { id: 2, label: 'Walk dog' },
+        { id: 3, label: 'Buy milk' },
+      ]);
+      readonly done: WritableSignal<Row[]> = signal([
+        { id: 4, label: 'Pay rent' },
+        { id: 5, label: 'Call mum' },
+      ]);
+    }
+
+    it('names the target list on a cross-list keyboard move', () => {
+      vi.useFakeTimers();
+      const { el, fixture } = renderHost(NamedGroupHost);
+      const milk = itemEl(el, 'todo-3');
+      milk.focus();
+      pressKey(milk, ' ');
+      pressKey(milk, 'ArrowDown');
+      vi.runAllTimers();
+      fixture.detectChanges();
+      expect(liveText('polite')).toBe('Buy milk, moved to Done, position 1 of 3.');
+    });
+
+    it('names the target list on a cross-list keyboard drop', () => {
+      vi.useFakeTimers();
+      const { el, fixture } = renderHost(NamedGroupHost);
+      const milk = itemEl(el, 'todo-3');
+      milk.focus();
+      pressKey(milk, ' ');
+      pressKey(milk, 'ArrowDown');
+      pressKey(milk, ' ');
+      vi.runAllTimers();
+      fixture.detectChanges();
+      expect(liveText('assertive')).toBe('Buy milk, dropped in Done, position 1 of 3.');
+    });
+
+    it('leaves the list name out of an in-list move', () => {
+      vi.useFakeTimers();
+      const { el, fixture } = renderHost(NamedGroupHost);
+      const report = itemEl(el, 'todo-1');
+      report.focus();
+      pressKey(report, ' ');
+      pressKey(report, 'ArrowDown');
+      vi.runAllTimers();
+      fixture.detectChanges();
+      expect(liveText('polite')).toBe('Write report, moved to position 2 of 3.');
+    });
+
+    @Component({
+      imports: [...DND_IMPORTS],
+      template: `
+        <ul forDropList>
+          <li forDraggable [dragData]="1" data-test-id="card">
+            <strong>Write report</strong><span>Friday</span>
+          </li>
+          <li forDraggable [dragData]="2" data-test-id="icon" aria-label="Invoice 42">
+            <svg aria-hidden="true"></svg>
+          </li>
+          <li
+            forDraggable
+            [dragData]="3"
+            data-test-id="labelled"
+            aria-labelledby="ext-name ext-other"
+          >
+            <span>ignored body</span>
+          </li>
+        </ul>
+        <span id="ext-name">Quarterly</span><span id="ext-other">plan</span>
+      `,
+    })
+    class NamedItemsHost {}
+
+    it('separates the text of adjacent element children in the item name', () => {
+      vi.useFakeTimers();
+      const { el, fixture } = renderHost(NamedItemsHost);
+      const card = itemEl(el, 'card');
+      card.focus();
+      pressKey(card, ' ');
+      vi.runAllTimers();
+      fixture.detectChanges();
+      expect(liveText('assertive')).toBe('Write report Friday, lifted. 1 of 3.');
+    });
+
+    it('names an icon-only item by its aria-label', () => {
+      vi.useFakeTimers();
+      const { el, fixture } = renderHost(NamedItemsHost);
+      const icon = itemEl(el, 'icon');
+      icon.focus();
+      pressKey(icon, ' ');
+      vi.runAllTimers();
+      fixture.detectChanges();
+      expect(liveText('assertive')).toBe('Invoice 42, lifted. 2 of 3.');
+    });
+
+    it('names an item by the text its aria-labelledby references', () => {
+      vi.useFakeTimers();
+      const { el, fixture } = renderHost(NamedItemsHost);
+      const labelled = itemEl(el, 'labelled');
+      labelled.focus();
+      pressKey(labelled, ' ');
+      vi.runAllTimers();
+      fixture.detectChanges();
+      expect(liveText('assertive')).toBe('Quarterly plan, lifted. 3 of 3.');
+    });
+
+    @Component({
+      imports: [...DND_IMPORTS],
+      template: `
+        <ul forDropList>
+          <li
+            forDraggable
+            [dragData]="1"
+            data-test-id="override"
+            aria-label="ignored"
+            [textValue]="name()"
+          >
+            <span>ignored body</span>
+          </li>
+        </ul>
+      `,
+    })
+    class TextValueHost {
+      readonly name = signal<string | null>('Monthly invoice');
+    }
+
+    it('names an item by its textValue in every announcement', () => {
+      vi.useFakeTimers();
+      const { el, fixture } = renderHost(TextValueHost);
+      const item = itemEl(el, 'override');
+      item.focus();
+      pressKey(item, ' ');
+      vi.runAllTimers();
+      fixture.detectChanges();
+      expect(liveText('assertive')).toBe('Monthly invoice, lifted. 1 of 1.');
+      pressKey(item, 'Escape');
+      vi.runAllTimers();
+      fixture.detectChanges();
+      expect(liveText('assertive')).toBe('Monthly invoice, movement cancelled.');
+    });
+
+    it('falls back to the aria-label once textValue is cleared', () => {
+      vi.useFakeTimers();
+      const { el, fixture, instance } = renderHost(TextValueHost);
+      instance.name.set(null);
+      fixture.detectChanges();
+      const item = itemEl(el, 'override');
+      item.focus();
+      pressKey(item, ' ');
+      vi.runAllTimers();
+      fixture.detectChanges();
+      expect(liveText('assertive')).toBe('ignored, lifted. 1 of 1.');
+    });
+
+    it('says the item moved to another list when the transfer target has no name', () => {
+      vi.useFakeTimers();
+      const { el, fixture } = renderHost(TwoListConnectedHost);
+      const first = itemEl(el, 'a-1');
+      first.focus();
+      pressKey(first, ' ');
+      pressKey(first, 'ArrowDown');
+      pressKey(first, 'ArrowDown');
+      vi.runAllTimers();
+      fixture.detectChanges();
+      expect(liveText('polite')).toBe('Alpha, moved to another list, position 1 of 2.');
     });
   });
 
@@ -2845,7 +3034,7 @@ describe('ForDropList + ForDraggable', () => {
       fixture.detectChanges();
 
       const region = document.querySelector('[aria-live="polite"]') as HTMLElement | null;
-      expect(region?.textContent).toContain('moved to position 5 of 5');
+      expect(region?.textContent).toContain('moved to another list, position 5 of 5');
       expect(region?.textContent).not.toContain('of 4');
     });
 

@@ -16,7 +16,9 @@ import {
 import {
   arbitrateLiftPress,
   consumeUnmappedLiftedKey,
-  dragAnnouncementLabel,
+  clampDragIndex,
+  type DragAnnouncedPosition,
+  DragAnnouncer,
   resolveDropTarget,
   isDragLiftKey,
   resolveLiftedDragControl,
@@ -29,6 +31,7 @@ import {
   LiveAnnouncer,
   type WritingDirection,
   isHistoryChord,
+  stepDragTarget,
 } from 'forty-cdk/core';
 import {
   injectListboxContext,
@@ -134,9 +137,14 @@ export class ForListboxReorder {
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
   readonly #document = inject(DOCUMENT);
   readonly #isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
-  readonly #announcer = inject(LiveAnnouncer);
   readonly #destroyRef = inject(DestroyRef);
   readonly #defaults = inject(FOR_LISTBOX_DEFAULTS);
+  readonly #announce = new DragAnnouncer(inject(LiveAnnouncer), () => ({
+    lift: this.#defaults.reorderAnnounceLift,
+    move: this.#defaults.reorderAnnounceMove,
+    drop: this.#defaults.reorderAnnounceDrop,
+    cancel: this.#defaults.reorderAnnounceCancel,
+  }));
   readonly #dragDefaults = inject(FOR_DRAG_DROP_DEFAULTS);
   readonly #injector = inject(Injector);
   #pendingFocus: FocusWhenMountedRef | null = null;
@@ -165,7 +173,6 @@ export class ForListboxReorder {
   #liftedHost: HTMLElement | null = null;
   #fromIndex = 0;
   #targetIndex = 0;
-  #label = '';
   #previewController: PreviewController | null = null;
   #pointerSession: PointerDragSession | null = null;
 
@@ -361,7 +368,6 @@ export class ForListboxReorder {
     this.#liftedHost = host;
     this.#fromIndex = index;
     this.#targetIndex = index;
-    this.#label = dragAnnouncementLabel(host);
     host.setAttribute('data-dragging', '');
     this._dragging.set(true);
 
@@ -376,23 +382,21 @@ export class ForListboxReorder {
       });
     }
 
-    this.#announcer.announce(
-      this.#defaults.reorderAnnounceLift(this.#label, index + 1, this.#ctx.options().length),
-      'assertive',
-    );
+    this.#announce.lift({ host }, this.#position(index, this.#ctx.options().length));
   }
 
   #setTarget(to: number, politeness: 'polite' | 'assertive'): void {
     const total = this.#ctx.options().length;
-    const clamped = Math.max(0, Math.min(total - 1, to));
-    if (clamped === this.#targetIndex) {
+    const next = stepDragTarget(this.#targetIndex, to, total);
+    if (next === null) {
       return;
     }
-    this.#targetIndex = clamped;
-    this.#announcer.announce(
-      this.#defaults.reorderAnnounceMove(this.#label, clamped + 1, total),
-      politeness,
-    );
+    this.#targetIndex = next;
+    this.#announce.move({ host: this.#liftedHost }, this.#position(next, total), politeness);
+  }
+
+  #position(index: number, total: number): DragAnnouncedPosition {
+    return { index, total, list: this.#host, source: this.#host };
   }
 
   #commit(): void {
@@ -400,16 +404,16 @@ export class ForListboxReorder {
       return;
     }
     const total = this.#ctx.options().length;
-    const to = Math.max(0, Math.min(total - 1, this.#targetIndex));
+    const to = clampDragIndex(this.#targetIndex, total);
     const from = this.#fromIndex;
-    const label = this.#label;
-    const lifted = this.#mode === 'keyboard' ? this.#liftedHost : null;
+    const host = this.#liftedHost;
+    const lifted = this.#mode === 'keyboard' ? host : null;
     this.#clearSession();
     if (lifted !== null) {
       this.#followDroppedOption(lifted, to);
     }
     this.optionReorder.emit({ from, to });
-    this.#announcer.announce(this.#defaults.reorderAnnounceDrop(label, to + 1, total), 'assertive');
+    this.#announce.drop({ host }, this.#position(to, total));
   }
 
   #followDroppedOption(from: HTMLElement, to: number): void {
@@ -428,9 +432,9 @@ export class ForListboxReorder {
     if (this.#mode === 'idle') {
       return;
     }
-    const label = this.#label;
+    const host = this.#liftedHost;
     this.#clearSession();
-    this.#announcer.announce(this.#defaults.reorderAnnounceCancel(label), 'assertive');
+    this.#announce.cancel({ host });
   }
 
   #clearSession(): void {
@@ -439,7 +443,6 @@ export class ForListboxReorder {
     this.#liftedHost = null;
     this.#fromIndex = 0;
     this.#targetIndex = 0;
-    this.#label = '';
     this.#previewController?.destroy();
     this.#previewController = null;
     this._dragging.set(false);

@@ -41,11 +41,3 @@ export function indexOfSlot(
 ): number {
   return slots.findIndex((s) => s.containerIndex === containerIndex && s.index === index);
 }
-
-/** Steps `current` by `delta` (±1), clamped to `[0, slots.length - 1]` (no wrap). */
-export function stepSlot(slots: readonly DragSlot[], current: number, delta: 1 | -1): number {
-  if (slots.length === 0) {
-    return current;
-  }
-  return Math.max(0, Math.min(slots.length - 1, current + delta));
-}

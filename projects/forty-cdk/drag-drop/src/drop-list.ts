@@ -16,8 +16,11 @@ import {
 import { isPlatformBrowser } from '@angular/common';
 
 import {
+  clampDragIndex,
   Collection,
-  dragAnnouncementLabel,
+  type DragAnnouncedItem,
+  type DragAnnouncedPosition,
+  DragAnnouncer,
   firstEnabledHost,
   focusWhenMounted,
   type FocusWhenMountedRef,
@@ -38,10 +41,11 @@ import {
   PreviewController,
   resolveBoundaryElement,
   injectRovingFocusRestore,
+  stepDragTarget,
 } from 'forty-cdk/core';
 import { createAutoScroller, type AutoScroller } from './auto-scroll';
 import { clipRegion, findClippingAncestors, type ClippingAncestor } from './clip-region';
-import { buildDragSlots, indexOfSlot, stepSlot } from './drag-positions';
+import { buildDragSlots, indexOfSlot } from './drag-positions';
 import {
   FOR_DROP_LIST_CONTEXT,
   FOR_DROP_LIST_COORDINATOR,
@@ -111,7 +115,12 @@ function shiftRect(rect: DragRect, dx: number, dy: number): DragRect {
 export class ForDropList implements ForDropListContext {
   readonly #hostRef = inject<ElementRef<HTMLElement>>(ElementRef);
   readonly #defaults = inject(FOR_DRAG_DROP_DEFAULTS);
-  readonly #announcer = inject(LiveAnnouncer);
+  readonly #announce = new DragAnnouncer(inject(LiveAnnouncer), () => ({
+    lift: this.#defaults.announceLift,
+    move: this.#defaults.announceMove,
+    drop: this.#defaults.announceDrop,
+    cancel: this.#defaults.announceCancel,
+  }));
   readonly #group = inject(FOR_DROP_LIST_GROUP, { optional: true });
   readonly #document = inject(DOCUMENT);
   readonly #isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
@@ -438,14 +447,7 @@ export class ForDropList implements ForDropListContext {
     this.#flatIndex.set(flatIndex < 0 ? 0 : flatIndex);
     this.#dragOver.set(from);
     const position = this.#coordinator?.resolveReorder(from, from).from ?? from;
-    this.#announcer.announce(
-      this.#defaults.announceLift(
-        dragAnnouncementLabel(el),
-        position + 1,
-        this.#positionCount(this),
-      ),
-      'assertive',
-    );
+    this.#announce.lift(this.#announcedItem(el), this.#announcedPosition(this, position));
     handle.emitDragStart(position);
     return from;
   }
@@ -550,11 +552,10 @@ export class ForDropList implements ForDropListContext {
     this.#flatIndex.set(flat);
     if (changed) {
       this.#sorter?.onTargetChange(targetCtx, target.index);
-      const label = dragAnnouncementLabel(lifted);
       const position = this.#reportedTarget(targetCtx, lifted, target.index);
-      this.#announcer.announce(
-        this.#defaults.announceMove(label, position + 1, this.#positionCount(targetCtx)),
-        'polite',
+      this.#announce.move(
+        this.#announcedItem(lifted),
+        this.#announcedPosition(targetCtx, position),
       );
     }
   }
@@ -611,6 +612,14 @@ export class ForDropList implements ForDropListContext {
       clip,
       ...axis,
     };
+  }
+
+  #announcedItem(host: HTMLElement): DragAnnouncedItem {
+    return { host, textValue: this.#handleFor(host)?.textValue() };
+  }
+
+  #announcedPosition(ctx: ForDropListContext, index: number): DragAnnouncedPosition {
+    return { index, total: this.#positionCount(ctx), list: ctx.host, source: this.host };
   }
 
   #positionCount(ctx: ForDropListContext): number {
@@ -676,15 +685,12 @@ export class ForDropList implements ForDropListContext {
       return;
     }
     const current = this.#flatIndex();
-    let next: number;
-    if (action === 'first') {
-      next = 0;
-    } else if (action === 'last') {
-      next = slots.length - 1;
-    } else {
-      next = stepSlot(slots, current, action === 'next' ? 1 : -1);
-    }
-    if (next === current) {
+    const next = stepDragTarget(
+      current,
+      this.#requestedSlot(action, current, slots.length),
+      slots.length,
+    );
+    if (next === null) {
       return;
     }
     const prevSlot = slots[current];
@@ -704,12 +710,24 @@ export class ForDropList implements ForDropListContext {
     }
     this.#flatIndex.set(next);
     if (nextTarget) {
-      const label = dragAnnouncementLabel(liftedHost);
       const position = this.#reportedTarget(nextTarget, liftedHost, nextSlot.index);
-      this.#announcer.announce(
-        this.#defaults.announceMove(label, position + 1, this.#positionCount(nextTarget)),
-        'polite',
+      this.#announce.move(
+        this.#announcedItem(liftedHost),
+        this.#announcedPosition(nextTarget, position),
       );
+    }
+  }
+
+  #requestedSlot(action: ListNavigationAction, current: number, count: number): number {
+    switch (action) {
+      case 'first':
+        return 0;
+      case 'last':
+        return count - 1;
+      case 'next':
+        return current + 1;
+      default:
+        return current - 1;
     }
   }
 
@@ -737,7 +755,7 @@ export class ForDropList implements ForDropListContext {
     const container: ForDropListContext =
       slot.containerIndex === 0 ? this : (connected[slot.containerIndex - 1] ?? this);
     const item = handle ? handle.data() : undefined;
-    const label = dragAnnouncementLabel(liftedHost);
+    const announced = this.#announcedItem(liftedHost);
     const position = this.#reportedTarget(container, liftedHost, currentIndex);
 
     const moved = !(previousIndex === currentIndex && container === (this as ForDropListContext));
@@ -765,10 +783,7 @@ export class ForDropList implements ForDropListContext {
       previousIndex,
       currentIndex,
     });
-    this.#announcer.announce(
-      this.#defaults.announceDrop(label, position + 1, this.#positionCount(container)),
-      'assertive',
-    );
+    this.#announce.drop(announced, this.#announcedPosition(container, position));
 
     if (animator) {
       this.#handedOffPreview = preview;
@@ -808,7 +823,7 @@ export class ForDropList implements ForDropListContext {
         if (items.length === 0) {
           return null;
         }
-        return items[Math.max(0, Math.min(index, items.length - 1))]?.host ?? null;
+        return items[clampDragIndex(index, items.length)]?.host ?? null;
       },
       release: () => {
         this.#dropFocus = null;
@@ -822,8 +837,7 @@ export class ForDropList implements ForDropListContext {
       return;
     }
     const handle = this.#handleFor(liftedHost);
-    const label = dragAnnouncementLabel(liftedHost);
-    this.#announcer.announce(this.#defaults.announceCancel(label), 'assertive');
+    this.#announce.cancel(this.#announcedItem(liftedHost));
     this.#teardown(this.#effectiveConnected());
     handle?.emitDragEnd(false);
   }
