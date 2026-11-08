@@ -42,9 +42,8 @@ export interface TableSortDescriptor {
  * along WAI-ARIA lines: `Space` lifts the column for reordering while `Enter` toggles the
  * sort, so a single key press never both sorts and starts a drag-lift. A column pinned with
  * `[dragDisabled]` has no lift for `Space` to collide with, so it sorts on both keys like a
- * sort-only header. The draggable is
- * detected by DOM marker (the `forDraggable` / `forFreeDrag` attribute), not by a
- * drag-drop value-import.
+ * sort-only header. The draggable is detected however it is applied (in the template,
+ * through `hostDirectives` or through a subclass), with no drag-drop value-import.
  *
  * While `sortable`, the directive reflects the `data-sortable` marker (a CSS styling
  * hook, absent when `sortable` is `false`). In `grid` / `treegrid` mode the header cell
