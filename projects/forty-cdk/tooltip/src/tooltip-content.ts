@@ -56,11 +56,13 @@ export class ForTooltipContent {
       condition: 'tip.open()',
       open: this.ctx.open,
     });
-    injectOverlayShell({
+    const shell = injectOverlayShell({
       positioner: toFloatingPositioner(this.ctx, this.ctx.trigger),
       dismiss: {
         emitEscapeKeyDown: (event) => this.ctx.emitEscapeKeyDown(event),
+        onNestedLayerRemoved: () => this.ctx.nestedSurfaceClosed(),
       },
     });
+    this.ctx.registerNestedSurfaces(el, shell.hasNestedLayer);
   }
 }

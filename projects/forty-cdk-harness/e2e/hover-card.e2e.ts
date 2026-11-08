@@ -223,4 +223,47 @@ test.describe('HoverCard', () => {
       await expect(el(page, 'card')).toBeVisible();
     });
   });
+  test.describe('surfaces opened from inside the card', () => {
+    const DEFAULT_OPEN_DELAY_MS = 700;
+    const DEFAULT_CLOSE_DELAY_MS = 300;
+
+    test('a dropdown menu opened from the card keeps the card open while the pointer rests on the menu', async ({
+      page,
+    }) => {
+      await gotoFixture(page, 'hover-card');
+      await el(page, 'nested-trigger').hover();
+      await expect(el(page, 'nested-card')).toBeVisible();
+
+      await el(page, 'nested-menu-trigger').click();
+      await expect(el(page, 'nested-menu')).toBeVisible();
+      await el(page, 'nested-menu-item').hover();
+      await page.waitForTimeout(DEFAULT_CLOSE_DELAY_MS + 100);
+
+      await expect(el(page, 'nested-card')).toBeVisible();
+      await expect(el(page, 'nested-menu')).toBeVisible();
+    });
+
+    test('closing the menu with the pointer outside the card closes the card', async ({ page }) => {
+      await gotoFixture(page, 'hover-card');
+      await el(page, 'nested-trigger').hover();
+      await expect(el(page, 'nested-card')).toBeVisible();
+      await el(page, 'nested-menu-trigger').click();
+      await expect(el(page, 'nested-menu')).toBeVisible();
+      await el(page, 'nested-menu-item').hover();
+
+      await el(page, 'nested-elsewhere').click();
+
+      await expect(el(page, 'nested-menu')).toHaveCount(0);
+      await expect(el(page, 'nested-card')).toHaveCount(0);
+    });
+
+    test('Escape pressed while a focus open is pending keeps the card closed', async ({ page }) => {
+      await gotoFixture(page, 'hover-card');
+      await el(page, 'nested-trigger').focus();
+      await page.keyboard.press('Escape');
+
+      await page.waitForTimeout(DEFAULT_OPEN_DELAY_MS + 200);
+      await expect(el(page, 'nested-card')).toHaveCount(0);
+    });
+  });
 });

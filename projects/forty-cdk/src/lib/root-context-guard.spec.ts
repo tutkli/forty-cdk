@@ -528,7 +528,7 @@ const GUARDED: readonly GuardedRoot[] = [
   {
     entryPoint: 'tooltip',
     source: 'tooltip/src/tooltip-context.ts',
-    calls: 1,
+    calls: 2,
     token: 'FOR_TOOLTIP_CONTEXT',
     root: '[forTooltip]',
     piece: 'ForTooltipTrigger',

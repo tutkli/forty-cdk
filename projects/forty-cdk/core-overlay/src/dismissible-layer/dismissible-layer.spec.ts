@@ -1101,6 +1101,98 @@ describe('DismissibleLayer', () => {
     });
   });
 
+  describe('nested layers', () => {
+    let nestedHost: HTMLElement;
+    let deepHost: HTMLElement;
+    const layers: DismissibleLayer[] = [];
+
+    beforeEach(() => {
+      nestedHost = document.createElement('div');
+      nestedHost.innerHTML = `<button id="nested-btn">nested action</button>`;
+      deepHost = document.createElement('div');
+      document.body.append(nestedHost, deepHost);
+    });
+
+    afterEach(() => {
+      for (const opened of layers.splice(0)) {
+        opened.deactivate();
+      }
+      nestedHost.remove();
+      deepHost.remove();
+    });
+
+    function open(el: HTMLElement, anchor?: Element, onNestedLayerRemoved?: () => void) {
+      const opened = makeLayer(el);
+      opened.activate({
+        channels: [],
+        ...(anchor ? { anchor } : {}),
+        ...(onNestedLayerRemoved ? { onNestedLayerRemoved } : {}),
+      });
+      layers.push(opened);
+      return opened;
+    }
+
+    it('counts a layer anchored inside another as nested in it', () => {
+      const parent = open(host);
+      open(nestedHost, host.querySelector('#inside')!);
+
+      expect(parent.hasNestedLayer()).toBe(true);
+    });
+
+    it('counts a layer anchored inside a layer nested in another as nested in that one too', () => {
+      const parent = open(host);
+      open(nestedHost, host.querySelector('#inside')!);
+      open(deepHost, nestedHost.querySelector('#nested-btn')!);
+
+      expect(parent.hasNestedLayer()).toBe(true);
+    });
+
+    it('does not count a layer stacked above but anchored elsewhere', () => {
+      const parent = open(host);
+      open(nestedHost, outside.querySelector('#out')!);
+
+      expect(parent.hasNestedLayer()).toBe(false);
+    });
+
+    it('does not count a layer stacked above with no anchor', () => {
+      const parent = open(host);
+      open(nestedHost);
+
+      expect(parent.hasNestedLayer()).toBe(false);
+    });
+
+    it('reports no nested layer once the layer itself is inactive', () => {
+      const parent = open(host);
+      open(nestedHost, host.querySelector('#inside')!);
+
+      parent.deactivate();
+
+      expect(parent.hasNestedLayer()).toBe(false);
+    });
+
+    it('notifies the layer a nested layer was removed from, after the removal', () => {
+      const seen: boolean[] = [];
+      const parent: DismissibleLayer = open(host, undefined, () =>
+        seen.push(parent.hasNestedLayer()),
+      );
+      const child = open(nestedHost, host.querySelector('#inside')!);
+
+      child.deactivate();
+
+      expect(seen).toEqual([false]);
+    });
+
+    it('does not notify a layer when an unrelated layer above it is removed', () => {
+      const calls: string[] = [];
+      open(host, undefined, () => calls.push('parent'));
+      const unrelated = open(nestedHost, outside.querySelector('#out')!);
+
+      unrelated.deactivate();
+
+      expect(calls).toEqual([]);
+    });
+  });
+
   describe('outside-press cascade (#2060)', () => {
     let aboveHost: HTMLElement;
     let topHost: HTMLElement;

@@ -1,10 +1,20 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
+import { ForDropdownMenu, ForDropdownMenuTrigger } from 'forty-cdk/dropdown-menu';
 import { ForHoverCard, ForHoverCardContent, ForHoverCardTrigger } from 'forty-cdk/hover-card';
+import { ForMenuContent, ForMenuItem } from 'forty-cdk/menu';
 
 @Component({
   selector: 'app-hover-card-fixture',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ForHoverCard, ForHoverCardTrigger, ForHoverCardContent],
+  imports: [
+    ForHoverCard,
+    ForHoverCardTrigger,
+    ForHoverCardContent,
+    ForDropdownMenu,
+    ForDropdownMenuTrigger,
+    ForMenuContent,
+    ForMenuItem,
+  ],
   template: `
     <input id="before" placeholder="before-trigger" />
     <span forHoverCard #card="forHoverCard" [(open)]="open" [openDelay]="0" [closeDelay]="0">
@@ -19,6 +29,25 @@ import { ForHoverCard, ForHoverCardContent, ForHoverCardTrigger } from 'forty-cd
 
     <button data-testid="imp-show" type="button" (click)="card.show()">show</button>
     <button data-testid="imp-hide" type="button" (click)="card.hide()">hide</button>
+
+    <span forHoverCard [(open)]="nestedOpen" side="bottom">
+      <a data-testid="nested-trigger" forHoverCardTrigger href="#nested">Nested</a>
+      @if (nestedOpen()) {
+        <div forHoverCardContent data-testid="nested-card" style="padding:24px;">
+          <div forDropdownMenu #nestedMenu="forDropdownMenu" side="right" align="start">
+            <button data-testid="nested-menu-trigger" forDropdownMenuTrigger type="button">
+              More
+            </button>
+            @if (nestedMenu.open()) {
+              <div forMenuContent data-testid="nested-menu" style="padding:8px;">
+                <button forMenuItem data-testid="nested-menu-item" type="button">Share</button>
+              </div>
+            }
+          </div>
+        </div>
+      }
+    </span>
+    <div data-testid="nested-elsewhere" style="height:40px;margin-top:160px;">Elsewhere</div>
 
     <div
       data-testid="scroll-list"
@@ -55,5 +84,6 @@ import { ForHoverCard, ForHoverCardContent, ForHoverCardTrigger } from 'forty-cd
 export class HoverCardFixture {
   protected readonly open = signal(false);
   protected readonly farOpen = signal(false);
+  protected readonly nestedOpen = signal(false);
   protected readonly rows = Array.from({ length: 20 }, (_, i) => i);
 }

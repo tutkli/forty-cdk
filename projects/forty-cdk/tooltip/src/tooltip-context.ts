@@ -92,6 +92,15 @@ export interface ForTooltipContext extends AnchoredPositioningContext {
 export interface TooltipPieceContext {
   /** Make the trigger on `host` the active one. A trigger calls it as it is hovered or focused. */
   activateTrigger(host: HTMLElement): void;
+  /** The trigger on `host` unmounted: the root keeps no reference to it. */
+  releaseTrigger(host: HTMLElement): void;
+  /**
+   * Reports, for the content on `content`, whether a surface opened from inside
+   * it is still open. Such a surface keeps the tooltip open like hover and focus do.
+   */
+  registerNestedSurfaces(content: HTMLElement, hasNested: () => boolean): void;
+  /** A surface opened from inside the content closed: closes once nothing else keeps it alive. */
+  nestedSurfaceClosed(): void;
 }
 
 export interface TooltipContext extends ForTooltipContext, TooltipPieceContext {}
@@ -99,11 +108,11 @@ export interface TooltipContext extends ForTooltipContext, TooltipPieceContext {
 /**
  * DI token for the tooltip's coordination surface, provided by `[forTooltip]`.
  *
- * Publicly typed as the read surface {@link ForTooltipContext}. `[forTooltipTrigger]` reads the
- * same token at an internal type, so a wrapper re-providing it must alias it to the root:
- * `{ provide: FOR_TOOLTIP_CONTEXT, useExisting: MyTooltip }`, where `MyTooltip` extends
- * `ForTooltip`. A value that merely satisfies the declared type resolves too, and is rejected in dev
- * mode by the trigger.
+ * Publicly typed as the read surface {@link ForTooltipContext}. `[forTooltipTrigger]` and
+ * `[forTooltipContent]` read the same token at an internal type, so a wrapper re-providing it must
+ * alias it to the root: `{ provide: FOR_TOOLTIP_CONTEXT, useExisting: MyTooltip }`, where
+ * `MyTooltip` extends `ForTooltip`. A value that merely satisfies the declared type resolves too,
+ * and is rejected in dev mode by the trigger and the content.
  */
 export const FOR_TOOLTIP_CONTEXT = new InjectionToken<ForTooltipContext>('FOR_TOOLTIP_CONTEXT');
 
@@ -111,7 +120,7 @@ export const TOOLTIP_TRIGGERS = new InjectionToken<
   RootedRegistry<ForTooltipContext, RootedTriggerHandle<ForTooltipContext>>
 >('TOOLTIP_TRIGGERS', { providedIn: 'root', factory: () => new RootedRegistry() });
 
-export function injectTooltipContext(piece: string): ForTooltipContext {
+export function injectTooltipContext(piece: string): TooltipContext {
   const ctx = inject(FOR_TOOLTIP_CONTEXT, { optional: true });
   if (!ctx) {
     throw orphanContextError({
@@ -121,7 +130,15 @@ export function injectTooltipContext(piece: string): ForTooltipContext {
       token: 'FOR_TOOLTIP_CONTEXT',
     });
   }
-  return ctx;
+  const widened = ctx as TooltipContext;
+  assertRootContext({
+    entryPoint: 'tooltip',
+    token: 'FOR_TOOLTIP_CONTEXT',
+    root: '[forTooltip]',
+    piece,
+    probe: () => widened.activateTrigger,
+  });
+  return widened;
 }
 
 /**

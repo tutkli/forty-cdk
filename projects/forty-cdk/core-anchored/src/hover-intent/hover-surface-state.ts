@@ -21,6 +21,11 @@ export interface HoverSurfaceOptions {
   readonly content: () => HTMLElement | null;
   /** Side the grace polygon assumes when no trigger is registered to measure. */
   readonly side: () => FloatingSide;
+  /**
+   * Whether a surface opened from inside the content is still open above it,
+   * which keeps the surface alive like hover and focus do.
+   */
+  readonly nested: () => boolean;
   /** Closes the surface once no keep-alive source is active. */
   readonly close: () => void;
 }
@@ -52,7 +57,21 @@ export interface HoverSurfaceState {
   blurContent(): void;
   /** The content unmounted: clears its hover and focus and disarms the grace. */
   resetContent(): void;
-  /** Closes unless the trigger or the content is hovered or focused. */
+  /**
+   * The trigger on `el` unmounted: forgets its hover and focus, so the state
+   * keeps no reference to the element.
+   */
+  releaseTrigger(el: HTMLElement): void;
+  /**
+   * A surface opened from inside the content closed: once the current task
+   * settles (a return of focus into the content included), closes when nothing
+   * else keeps the surface alive.
+   */
+  nestedSurfaceClosed(): void;
+  /**
+   * Closes unless the trigger or the content is hovered or focused, or a
+   * surface opened from inside the content is still open.
+   */
   closeIfInactive(): void;
   /**
    * Arms a pointer-grace polygon from `cursor` toward the content, so the
@@ -70,8 +89,9 @@ export interface HoverSurfaceState {
  * overlay is hovered or focused, and the pointer-grace bridge between them.
  * An element removed under the pointer never reports `pointerleave` or `blur`,
  * so the trigger's hover and focus count only while the element they were
- * observed on is still the registered trigger, and `resetContent` clears the
- * content side when its element unmounts.
+ * observed on is still the registered trigger, `releaseTrigger` forgets that
+ * element when it unmounts, and `resetContent` clears the content side when
+ * its element unmounts.
  *
  * Internal core tier — exported from `forty-cdk/core-anchored` for the
  * library's own entry points, with no semver guarantee.
@@ -95,7 +115,13 @@ export function createHoverSurfaceState(options: HoverSurfaceOptions): HoverSurf
   }
 
   function closeIfInactive(): void {
-    if (triggerHovered() || triggerFocused() || contentHovered || contentFocused) {
+    if (
+      triggerHovered() ||
+      triggerFocused() ||
+      contentHovered ||
+      contentFocused ||
+      options.nested()
+    ) {
       return;
     }
     options.close();
@@ -159,6 +185,17 @@ export function createHoverSurfaceState(options: HoverSurfaceOptions): HoverSurf
       contentHovered = false;
       contentFocused = false;
       disarmGrace();
+    },
+    releaseTrigger: (el) => {
+      if (hoveredTrigger === el) {
+        hoveredTrigger = null;
+      }
+      if (focusedTrigger === el) {
+        focusedTrigger = null;
+      }
+    },
+    nestedSurfaceClosed: () => {
+      queueMicrotask(closeIfInactive);
     },
     closeIfInactive,
     armGrace,

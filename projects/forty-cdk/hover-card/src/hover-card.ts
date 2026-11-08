@@ -1,6 +1,7 @@
 import {
   booleanAttribute,
   DestroyRef,
+  DOCUMENT,
   Directive,
   inject,
   input,
@@ -112,6 +113,7 @@ export class ForHoverCard extends AnchoredOverlayPositioningBase implements ForH
    * hover). Routed through the content's document-level dismissible layer.
    * Call `preventDefault()` on the emitted veto to suppress the automatic
    * close. The native `KeyboardEvent` is on `.event`.
+   * An Escape pressed while an open is still pending cancels that open without emitting.
    */
   readonly escapeKeyDown = output<VetoableNativeEvent<KeyboardEvent>>();
 
@@ -141,6 +143,8 @@ export class ForHoverCard extends AnchoredOverlayPositioningBase implements ForH
   readonly #hoverIntent: HoverIntentScheduler;
 
   readonly #surface: HoverSurfaceState;
+  /** The registered content and whether a surface opened from inside it is still open. */
+  #nested: { readonly content: HTMLElement; readonly hasNested: () => boolean } | null = null;
   #returningFocus = false;
   readonly #scrollDismiss: ScrollDismissRegistration;
 
@@ -165,12 +169,14 @@ export class ForHoverCard extends AnchoredOverlayPositioningBase implements ForH
       openDelay: () => this.openDelay() ?? this.positioningDefaults.openDelay,
       closeDelay: () => this.closeDelay() ?? this.positioningDefaults.closeDelay,
       coordinator: this.#coordinator,
+      document: inject(DOCUMENT),
     });
 
     this.#surface = createHoverSurfaceState({
       trigger: this.trigger,
       content: this.#contentEl,
       side: () => this.side(),
+      nested: () => this.#nested?.hasNested() ?? false,
       close: () => this.#hoverIntent.scheduleClose(false),
     });
 
@@ -204,6 +210,9 @@ export class ForHoverCard extends AnchoredOverlayPositioningBase implements ForH
     if (this.#contentEl() === el) {
       this.#contentEl.set(null);
       this.#surface.resetContent();
+    }
+    if (this.#nested?.content === el) {
+      this.#nested = null;
     }
   }
 
@@ -256,6 +265,18 @@ export class ForHoverCard extends AnchoredOverlayPositioningBase implements ForH
 
   private activateTrigger(host: HTMLElement): void {
     this.#triggerSlot.activate(host);
+  }
+
+  private releaseTrigger(host: HTMLElement): void {
+    this.#surface.releaseTrigger(host);
+  }
+
+  private registerNestedSurfaces(content: HTMLElement, hasNested: () => boolean): void {
+    this.#nested = { content, hasNested };
+  }
+
+  private nestedSurfaceClosed(): void {
+    this.#surface.nestedSurfaceClosed();
   }
 
   private closeOnTabOut(): void {

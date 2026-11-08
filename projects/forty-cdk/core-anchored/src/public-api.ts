@@ -101,6 +101,7 @@ export {
 } from './overlay-controller/overlay-controller';
 export {
   injectOverlayShell,
+  type OverlayShell,
   type OverlayShellConfig,
   type OverlayShellPositioner,
 } from './overlay-controller/overlay-shell';

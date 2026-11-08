@@ -9,6 +9,7 @@ import {
 
 import {
   type ForTooltipContext,
+  type TooltipContext,
   injectTooltipTriggerContext,
   TOOLTIP_TRIGGERS,
 } from './tooltip-context';
@@ -95,13 +96,20 @@ export class ForTooltipTrigger {
 
   readonly #pressFocus = createPressFocus();
 
+  /** The root this trigger last entered, which releases it when the trigger unmounts. */
+  #enteredRoot: TooltipContext | null = null;
+
   constructor() {
     const host = this.#host.nativeElement;
     const triggers = inject(TOOLTIP_TRIGGERS);
     registerHandle(
       { host, id: this.id, root: this.#resolved.root },
       (handle) => triggers.add(handle),
-      (handle) => triggers.remove(handle),
+      (handle) => {
+        triggers.remove(handle);
+        this.#enteredRoot?.releaseTrigger(handle.host);
+        this.#enteredRoot = null;
+      },
     );
   }
 
@@ -120,8 +128,7 @@ export class ForTooltipTrigger {
     if (!isNonTouchPointer(event) || !this.canOpen()) {
       return;
     }
-    this.ctx().activateTrigger(this.#host.nativeElement);
-    this.ctx().pointerEnterTrigger();
+    this.#enter().pointerEnterTrigger();
   }
 
   private onPointerDown(): void {
@@ -146,12 +153,21 @@ export class ForTooltipTrigger {
     if (this.#pressFocus.consume() || !this.canOpen()) {
       return;
     }
-    this.ctx().activateTrigger(this.#host.nativeElement);
-    this.ctx().focusTrigger();
+    this.#enter().focusTrigger();
   }
 
   private onBlur(): void {
     this.#pressFocus.reset();
     this.ctx().blurTrigger();
+  }
+
+  #enter(): TooltipContext {
+    const ctx = this.ctx();
+    if (this.#enteredRoot !== ctx) {
+      this.#enteredRoot?.releaseTrigger(this.#host.nativeElement);
+      this.#enteredRoot = ctx;
+    }
+    ctx.activateTrigger(this.#host.nativeElement);
+    return ctx;
   }
 }
