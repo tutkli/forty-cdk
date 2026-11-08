@@ -115,9 +115,19 @@ export class ForMenuSubTrigger {
   readonly disabled = input(false, { transform: booleanAttribute });
   readonly effectiveDisabled = computed(() => this.disabled() || this.submenu.disabled());
 
+  /**
+   * Override the string the parent menu's typeahead matches this trigger against. Defaults to
+   * `''`, which falls back to the trigger's accessible text — an `aria-hidden` subtree is already
+   * excluded. Set this when announced text still shouldn't bleed into the match — e.g.
+   * `<button forMenuSubTrigger textValue="Export">…</button>` for a trigger rendered as
+   * `⌘E Export`.
+   */
+  readonly textValue = input<string>('');
+
   private readonly interaction = createMenuItemInteraction({
     ctx: this.#parentMenu(),
     effectiveDisabled: this.effectiveDisabled,
+    textValue: this.textValue,
   });
 
   /**

@@ -593,6 +593,50 @@ describe('ForMenuSub', () => {
     });
   });
 
+  describe('typeahead text override (issue #2754)', () => {
+    @Component({
+      imports: IMPORTS,
+      template: `
+        <div forDropdownMenu [(open)]="open">
+          <button forDropdownMenuTrigger>Options</button>
+          @if (open()) {
+            <div forMenuContent>
+              <button id="cut" forMenuItem>Cut</button>
+              <div forMenuSub>
+                <button id="export" forMenuSubTrigger [textValue]="textValue()">
+                  <kbd>⌘E</kbd> Export
+                </button>
+              </div>
+            </div>
+          }
+        </div>
+      `,
+    })
+    class ShortcutSubTriggerHost {
+      readonly open = signal(true);
+      readonly textValue = signal('');
+    }
+
+    async function pressEFromCut(textValue: string): Promise<Element | null> {
+      const r = renderHost(ShortcutSubTriggerHost);
+      r.instance.textValue.set(textValue);
+      await flush(r.fixture);
+      const cut = document.querySelector<HTMLButtonElement>('#cut')!;
+      cut.focus();
+      pressKey(cut, 'e');
+      await flush(r.fixture);
+      return document.activeElement;
+    }
+
+    it('matches its textValue rather than a leading shortcut hint', async () => {
+      expect(await pressEFromCut('Export')).toBe(document.querySelector('#export'));
+    });
+
+    it('falls back to its accessible text when textValue is empty', async () => {
+      expect(await pressEFromCut('')).toBe(document.querySelector('#cut'));
+    });
+  });
+
   describe('same-render-pass mount (#1450)', () => {
     it('keeps the whole chain open when the first focus lands inside the submenu', async () => {
       const r = renderHost(SubMenuHost);

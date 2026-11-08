@@ -15,6 +15,8 @@ export interface LabelCacheHandle<T> {
   readonly value: Signal<T | Unset>;
   /** The option's resolved display label. */
   readonly label: Signal<string>;
+  /** The option's typeahead override, `''` when unset. Absent on a handle that never carries one. */
+  readonly textValue?: Signal<string>;
   /** Whether the option is disabled. */
   readonly disabled: Signal<boolean>;
 }
@@ -29,6 +31,8 @@ export interface LabelCacheEntry<T> {
   readonly id: string;
   readonly value: T;
   readonly label: string;
+  /** The handle's typeahead override when it carries one, so a closed-state matcher can prefer it. */
+  readonly textValue?: string;
   readonly disabled: boolean;
 }
 
@@ -175,7 +179,13 @@ function readWindow<T>(
     if (isUnset(value)) {
       continue;
     }
-    byKey.set(toFormValue(value), { id, value, label: item.label(), disabled: item.disabled() });
+    byKey.set(toFormValue(value), {
+      id,
+      value,
+      label: item.label(),
+      textValue: item.textValue?.(),
+      disabled: item.disabled(),
+    });
   }
   return byKey;
 }

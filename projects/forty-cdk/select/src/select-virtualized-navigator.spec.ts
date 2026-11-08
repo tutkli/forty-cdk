@@ -15,6 +15,7 @@ function makeHandle(
     id: signal(id),
     value,
     label: signal(id),
+    textValue: signal(''),
     disabled: signal(false),
     posInSet: signal<number | null>(pos),
   };

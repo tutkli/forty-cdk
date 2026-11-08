@@ -14,6 +14,7 @@ import {
 import type { FormValueControl } from '@angular/forms/signals';
 
 import {
+  accessibleTextContent,
   assertVirtualizedSelectionFollowsFocusSupported,
   createPointerHighlight,
   injectHiddenInput,
@@ -79,6 +80,9 @@ import { FOR_SELECT_DEFAULTS } from 'forty-cdk/defaults';
  *   option immediately without opening the listbox.
  * - **Open listbox**: printable keys move focus to the first matching option
  *   (selection still requires Enter / Space / click).
+ *
+ * Both match an option's `textValue` when set, else `[itemToLabel]` of its value, else its
+ * rendered text.
  */
 @Directive({
   selector: '[forSelect]',
@@ -138,6 +142,9 @@ export class ForSelect<T = string>
    * labels resolve from the rendered option `textContent`, which is only
    * available once the content mounts; the serialized form value is shown as
    * a last-resort fallback in the meantime: `[itemToLabel]="(c) => c.name"`.
+   *
+   * Typeahead matches this label too, on the open listbox and on the closed trigger, for every
+   * option that sets no `textValue` of its own.
    *
    * Defaults to `undefined` (string mode renders the value verbatim, so no
    * label function is needed).
@@ -359,6 +366,11 @@ export class ForSelect<T = string>
       }
     },
     onNavigateFocus: (target) => this.#afterKeyboardFocus(target),
+    typeaheadText: (o) => {
+      const value = o.value();
+      const fallback = () => accessibleTextContent(o.host);
+      return isUnset(value) ? fallback() : this.#typeaheadText(o.textValue(), value, fallback);
+    },
     onUnregisterOption: (handle) => {
       if (this.#virtualized() && this.#activeId() === handle.id()) {
         if (this.open()) {
@@ -604,6 +616,18 @@ export class ForSelect<T = string>
     }
   }
 
+  /**
+   * The text typeahead matches an option against, on every path: its `textValue`, else
+   * `[itemToLabel]` of its value, else `fallback` (its accessible text).
+   */
+  #typeaheadText(textValue: string, value: T, fallback: () => string): string {
+    if (textValue) {
+      return textValue;
+    }
+    const itemToLabel = this.itemToLabel();
+    return itemToLabel ? itemToLabel(value) : fallback();
+  }
+
   private handleClosedTypeahead(event: KeyboardEvent): boolean {
     // Only single-mode replicates native <select>'s "type-to-select" behavior.
     // Multi-select is ambiguous (which one wins?) — caller falls back to opening.
@@ -624,7 +648,7 @@ export class ForSelect<T = string>
         repeated: this.#closedTypeahead.isRepeatedChar(),
         anchorIndex,
       },
-      (o) => o.label,
+      (o) => this.#typeaheadText(o.textValue ?? '', o.value, () => o.label),
       (o) => o.disabled,
     );
     if (match) {
@@ -845,10 +869,8 @@ export class ForSelect<T = string>
    */
   #typeaheadVirtualized(event: KeyboardEvent): boolean {
     const navigator = this.#virtualModel().navigator();
-    const { handled, pos } = navigator.resolveTypeahead(
-      this.#typeahead,
-      event,
-      (entry) => entry.label,
+    const { handled, pos } = navigator.resolveTypeahead(this.#typeahead, event, (entry) =>
+      this.#typeaheadText(entry.textValue, entry.value, () => entry.label),
     );
     if (pos !== null) {
       this.#assertSelectionFollowsFocusSupported();

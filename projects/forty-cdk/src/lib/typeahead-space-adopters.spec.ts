@@ -165,8 +165,9 @@ class VirtualSelectHost implements SpaceHost {
 class TimePickerHost implements SpaceHost {
   readonly open = signal(false);
   readonly value = signal<Date | null>(null);
+  readonly closedAtArm = signal(false);
   activated(): boolean {
-    return this.value() !== null || !this.open();
+    return this.closedAtArm() ? this.open() : this.value() !== null || !this.open();
   }
 }
 
@@ -338,6 +339,18 @@ const CASES: readonly SpaceCase[] = [
       await focusFirst(r);
     },
     target: focused,
+  },
+  {
+    name: 'time-picker, closed trigger',
+    owner: 'time-picker/src/time-picker.ts',
+    host: TimePickerHost,
+    letter: '0',
+    arm: async (r) => {
+      (r.instance as TimePickerHost).closedAtArm.set(true);
+      await r.flush();
+      document.querySelector<HTMLElement>('[forTimePickerTrigger]')!.focus();
+    },
+    target: () => document.querySelector<HTMLElement>('[forTimePickerTrigger]')!,
   },
   {
     name: 'tree, roving item',
