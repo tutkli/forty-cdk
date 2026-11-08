@@ -1,7 +1,7 @@
 import { Component, provideZonelessChangeDetection, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
-import { flush, renderHost } from '../../src/test-utils';
+import { dragStartFromPress, flush, renderHost } from '../../src/test-utils';
 import { ForDragHandle } from './drag-handle';
 import { ForDraggable } from './draggable';
 import { ForDropList } from './drop-list';
@@ -445,25 +445,19 @@ describe('ForFreeDrag — native drag, handles and nested draggables', () => {
     readonly itemStarts: number[] = [];
   }
 
-  function dragStartOn(target: HTMLElement): Event {
-    const event = new Event('dragstart', { bubbles: true, cancelable: true });
-    target.dispatchEvent(event);
-    return event;
-  }
-
   afterEach(() => {
     document.querySelectorAll('[aria-live]').forEach((n) => n.remove());
   });
 
-  it('cancels a native dragstart from its content while it can be dragged', async () => {
+  it('cancels a native dragstart from a press on its content while it can be dragged', async () => {
     const { fixture, instance, query } = renderHost(NativeHost);
     await flush(fixture);
     const thumb = query('[data-testid="thumb"]')!;
-    expect(dragStartOn(thumb).defaultPrevented).toBe(true);
+    expect(dragStartFromPress(thumb).defaultPrevented).toBe(true);
 
     instance.disabled.set(true);
     await flush(fixture);
-    expect(dragStartOn(thumb).defaultPrevented).toBe(false);
+    expect(dragStartFromPress(thumb).defaultPrevented).toBe(false);
   });
 
   it('the host touch-action follows a handle mounted and removed after the first render', async () => {

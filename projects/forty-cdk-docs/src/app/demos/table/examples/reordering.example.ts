@@ -1,5 +1,10 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
-import { ForDragPlaceholder, ForDraggable, moveItemInArray } from 'forty-cdk/drag-drop';
+import {
+  ForDragHandle,
+  ForDragPlaceholder,
+  ForDraggable,
+  moveItemInArray,
+} from 'forty-cdk/drag-drop';
 import {
   ForTable,
   ForTableCell,
@@ -57,6 +62,7 @@ function personField(person: Person, column: PersonColumn): string {
     ForTableColumnReorder,
     ForTableRowReorder,
     ForDraggable,
+    ForDragHandle,
     ForDragPlaceholder,
   ],
   template: `
@@ -77,9 +83,9 @@ function personField(person: Person, column: PersonColumn): string {
                 [name]="column"
                 forDraggable
                 [dragData]="column"
-                class="tbl-cell tbl-grab"
+                class="tbl-cell"
               >
-                <span class="tbl-grip" aria-hidden="true">⠿</span>
+                <span forDragHandle class="tbl-grip" aria-hidden="true">⠿</span>
                 {{ labels[column] }}
                 <ng-template forDragPlaceholder>
                   <div class="tbl-ph tbl-ph--col"></div>
@@ -100,10 +106,13 @@ function personField(person: Person, column: PersonColumn): string {
               [value]="person.id"
               forDraggable
               [dragData]="person.id"
-              class="tbl-row tbl-grab"
+              class="tbl-row"
             >
               @for (column of columns(); track column) {
                 <div forTableCell [name]="column" class="tbl-cell">
+                  @if ($first) {
+                    <span forDragHandle class="tbl-grip" aria-hidden="true">⠿</span>
+                  }
                   {{ field(person, column) }}
                 </div>
               }
@@ -167,15 +176,8 @@ function personField(person: Person, column: PersonColumn): string {
       border-bottom: 0;
     }
 
-    .tbl-grab {
-      cursor: grab;
-    }
-
-    .tbl-grab:active {
-      cursor: grabbing;
-    }
-
     .tbl-grip {
+      cursor: grab;
       color: var(--ex-muted, #585d66);
       font-size: 0.85rem;
       line-height: 1;

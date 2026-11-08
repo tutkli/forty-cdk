@@ -5,6 +5,7 @@ import { TestBed } from '@angular/core/testing';
 import { pressKey } from 'forty-cdk/testing';
 
 import { renderHost } from '../../src/test-utils/render';
+import { dragStartFromPress } from '../../src/test-utils/native-drag';
 import {
   assertFormControlContract,
   assertNativeSubmissionContract,
@@ -1592,5 +1593,15 @@ describe('ForSliderThumb with no index binding', () => {
 
     expect(r.instance.picked()).toEqual([50]);
     expect(thumb(r.el, 0).getAttribute('aria-valuenow')).toBe('0');
+  });
+});
+
+describe('ForSlider — native drag', () => {
+  it('cancels the native dragstart a press on a thumb raises', async () => {
+    const { query, flush } = renderHost(SliderHost);
+    await flush();
+
+    const thumb = query<HTMLElement>('[data-test-id="thumb-0"]')!;
+    expect(dragStartFromPress(thumb).defaultPrevented).toBe(true);
   });
 });

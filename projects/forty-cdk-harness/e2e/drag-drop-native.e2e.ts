@@ -63,3 +63,46 @@ test.describe('drag-drop over natively draggable content', () => {
     expect(after.y).toBeCloseTo(before.y, 0);
   });
 });
+
+function labelsIn(page: Page, testid: string): Promise<string[]> {
+  return el(page, testid)
+    .locator('a')
+    .allTextContents()
+    .then((labels) => labels.map((label) => label.trim()));
+}
+
+test.describe('tree and listbox reorder over natively draggable content', () => {
+  for (const [what, prefix] of [
+    ['an image', 'node-thumb'],
+    ['a link', 'node-link'],
+  ] as const) {
+    test(`a press on ${what} inside a [forTreeNodeDrag] node starts a pointer drag, not a native drag`, async ({
+      page,
+    }) => {
+      await gotoFixture(page, 'drag-drop-native');
+
+      await pressAndCreep(page, el(page, `${prefix}-1`), 0, 64);
+      await expect(el(page, 'tree')).toHaveAttribute('data-dragging', '');
+      await page.mouse.up();
+
+      await expect.poll(() => labelsIn(page, 'tree')).not.toEqual(['Alpha', 'Beta', 'Gamma']);
+    });
+  }
+
+  for (const [what, prefix] of [
+    ['an image', 'option-thumb'],
+    ['a link', 'option-link'],
+  ] as const) {
+    test(`a press on ${what} inside a [forListboxReorder] option starts a pointer drag, not a native drag`, async ({
+      page,
+    }) => {
+      await gotoFixture(page, 'drag-drop-native');
+
+      await pressAndCreep(page, el(page, `${prefix}-1`), 0, 64);
+      await expect(el(page, 'listbox')).toHaveAttribute('data-dragging', '');
+      await page.mouse.up();
+
+      await expect.poll(() => labelsIn(page, 'listbox')).toEqual(['Beta', 'Alpha', 'Gamma']);
+    });
+  }
+});

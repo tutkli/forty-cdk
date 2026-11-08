@@ -115,8 +115,9 @@ export interface ForDrawerContext {
 }
 
 /**
- * The registration protocol `[forDrawerInitialFocus]` and `[forDrawerHandle]` drive. Never
- * exported from `public-api.ts`; `ForDrawer` declares every member TS-`private`.
+ * The registration protocol `[forDrawerInitialFocus]` and `[forDrawerHandle]` drive, plus the
+ * handle's `touch-action`. Never exported from `public-api.ts`; `ForDrawer` declares every member
+ * TS-`private`.
  */
 export interface DrawerRegistrationContext {
   /** Registers the element the drawer focuses on mount. */
@@ -131,6 +132,8 @@ export interface DrawerRegistrationContext {
   registerHandle(el: HTMLElement): void;
   /** Removes a registered handle, leaving any newer registration in place. */
   unregisterHandle(el: HTMLElement): void;
+  /** The `touch-action` the handle binds: `'none'` while the swipe gesture is armed, else `null`. */
+  handleTouchAction(): 'none' | null;
 }
 
 /**

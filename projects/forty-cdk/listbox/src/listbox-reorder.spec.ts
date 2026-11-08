@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
-import { renderHost, type RenderResult } from '../../src/test-utils';
+import { dragStartFromPress, renderHost, type RenderResult } from '../../src/test-utils';
 import { moveItemInArray } from 'forty-cdk/drag-drop';
 import { ForListbox } from './listbox';
 import { provideForDragDropDefaults, provideForListboxDefaults } from 'forty-cdk/defaults';
@@ -675,4 +675,36 @@ describe('ForListboxReorder — a keyboard lift owns the list until it ends (#27
     expect(chord.defaultPrevented).toBe(false);
     expect(fKey.defaultPrevented).toBe(false);
   });
+});
+
+@Component({
+  host: { 'data-fixture': 'native-drag' },
+  imports: [ForListbox, ForListboxOption, ForListboxReorder],
+  template: `
+    <div forListbox forListboxReorder aria-label="Tags">
+      <div forListboxOption value="alpha">
+        <img alt="" data-testid="alpha-thumb" />
+        <a href="#alpha" data-testid="alpha-link">Alpha</a>
+      </div>
+      <div forListboxOption value="bravo">Bravo</div>
+    </div>
+  `,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+class NativeDragHost {}
+
+describe('ForListboxReorder — native drag', () => {
+  afterEach(() => {
+    document.querySelectorAll('[aria-live]').forEach((n) => n.remove());
+  });
+
+  for (const testid of ['alpha-thumb', 'alpha-link']) {
+    it(`cancels the native dragstart a press on ${testid} raises`, async () => {
+      const { query, flush: f } = renderHost(NativeDragHost);
+      await f();
+      const target = query<HTMLElement>(`[data-testid="${testid}"]`)!;
+
+      expect(dragStartFromPress(target).defaultPrevented).toBe(true);
+    });
+  }
 });

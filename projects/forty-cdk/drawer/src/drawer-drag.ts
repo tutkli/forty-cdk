@@ -15,9 +15,12 @@ import { CssVarNamespacer } from '@angular/platform-browser';
 import {
   attachSwipeDismiss,
   composedContains,
+  dragHandleTouchAction,
+  type DragTouchAction,
   FLICK_STALE_VELOCITY_MS,
   FLICK_VELOCITY_PX_PER_MS,
   flickVelocity,
+  injectHostScrollAxes,
   injectPrefersReducedMotion,
   isScrollableAtEdge,
   swipeTouchAction,
@@ -142,11 +145,14 @@ export interface DrawerDragHandle {
   /** Live swipe displacement in CSS px along the y axis; published as `--for-drawer-swipe-movement-y`. */
   readonly swipeMovementY: Signal<number>;
   /**
-   * `touch-action` for the surface: frees the axis the swipe does not use
-   * while the whole surface arms the gesture, `null` under `handleOnly` (the
-   * handle carries its own) or while the gesture is disarmed.
+   * `touch-action` for the surface: frees the axis the swipe does not use, and
+   * the axis the surface scrolls on by itself, while the whole surface arms the
+   * gesture; `null` under `handleOnly` (the handle carries its own) or while the
+   * gesture is disarmed.
    */
-  readonly touchAction: Signal<'pan-x' | 'pan-y' | 'none' | null>;
+  readonly touchAction: Signal<DragTouchAction>;
+  /** `touch-action` for `[forDrawerHandle]`: `'none'` while the gesture is armed, else `null`. */
+  readonly handleTouchAction: Signal<'none' | null>;
   /**
    * Run the mount-time snap-point validation + first live-dimension
    * measurement and seed the `activeSnapPoint` default. In dev mode, throws (with a
@@ -208,11 +214,13 @@ export function injectDrawerDrag(config: DrawerDragConfig): DrawerDragHandle {
   const gestureEnabled = computed(
     () => (canDismiss() || hasSnapPoints()) && !prefersReducedMotion(),
   );
+  const hostScrolls = injectHostScrollAxes(host.nativeElement);
   const touchAction = computed(() =>
     gestureEnabled() && !config.handleOnly()
-      ? swipeTouchAction(dragDirections(side(), hasSnapPoints()))
+      ? swipeTouchAction(dragDirections(side(), hasSnapPoints()), hostScrolls())
       : null,
   );
+  const handleTouchAction = computed(() => dragHandleTouchAction(gestureEnabled()));
 
   const dragOffset = linkedSignal({ source: gestureEnabled, computation: () => 0 }); // px translated along the dismissal axis (positive = toward the edge)
   const dragging = linkedSignal({ source: gestureEnabled, computation: () => false });
@@ -337,7 +345,7 @@ export function injectDrawerDrag(config: DrawerDragConfig): DrawerDragHandle {
     if (config.handleOnly() && (!handle || !composedContains(handle, detail.target))) {
       return false;
     }
-    return !isScrollableAtEdge(detail.target, detail.direction, host.nativeElement);
+    return !isScrollableAtEdge(detail.target, detail.direction, host.nativeElement, true);
   }
 
   function onSwipeStart(detail: SwipeEventDetail): void {
@@ -625,6 +633,7 @@ export function injectDrawerDrag(config: DrawerDragConfig): DrawerDragHandle {
     swipeMovementX,
     swipeMovementY,
     touchAction,
+    handleTouchAction,
     validateOnMount,
     arm: () => swipeReady.set(true),
   };

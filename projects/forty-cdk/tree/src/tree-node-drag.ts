@@ -77,6 +77,8 @@ export interface ForTreeDropIndicator<T = string> {
 
 /** The coordination contract the handle uses to register with the coordinator. */
 export interface ForTreeNodeDragContext {
+  /** Whether `[forTreeNodeDrag]` itself is disabled. */
+  readonly disabled: Signal<boolean>;
   /** Register a drag handle element for the item that contains it. */
   registerHandle(el: HTMLElement): void;
   /** Unregister a previously registered handle element. */

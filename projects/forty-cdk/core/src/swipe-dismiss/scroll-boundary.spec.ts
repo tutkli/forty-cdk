@@ -67,6 +67,26 @@ describe('isScrollableAtEdge', () => {
     });
   });
 
+  describe('boundary', () => {
+    it('stops before the boundary by default, even when the boundary has room', () => {
+      const el = mount(scroller('y', { scrollTop: 100, scrollHeight: 734, clientHeight: 300 }));
+      expect(isScrollableAtEdge(el.firstElementChild, 'up', el)).toBe(false);
+    });
+
+    it('checks the boundary itself with includeBoundary', () => {
+      const el = mount(scroller('y', { scrollTop: 100, scrollHeight: 734, clientHeight: 300 }));
+      expect(isScrollableAtEdge(el.firstElementChild, 'up', el, true)).toBe(true);
+    });
+
+    it('never walks past the boundary with includeBoundary', () => {
+      const outer = mount(scroller('y', { scrollTop: 100, scrollHeight: 734, clientHeight: 300 }));
+      const inner = document.createElement('div');
+      inner.appendChild(document.createElement('span'));
+      outer.replaceChildren(inner);
+      expect(isScrollableAtEdge(inner.firstElementChild, 'up', inner, true)).toBe(false);
+    });
+  });
+
   describe('horizontal, left to right', () => {
     it('defers a rightward swipe while there is content to the left', () => {
       const el = mount(scroller('x', { scrollLeft: 50, scrollWidth: 300, clientWidth: 100 }));

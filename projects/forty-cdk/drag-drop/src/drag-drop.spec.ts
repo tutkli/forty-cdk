@@ -11,7 +11,7 @@ import { TestBed, type ComponentFixture } from '@angular/core/testing';
 
 import { withReducedMotion, pressKey } from 'forty-cdk/testing';
 
-import { flush, nextMacrotask, renderHost } from '../../src/test-utils';
+import { dragStartFromPress, flush, nextMacrotask, renderHost } from '../../src/test-utils';
 import { assertRovingTabindexContract } from '../../src/test-utils/contract';
 import { provideForDragDropDefaults } from 'forty-cdk/defaults';
 import { ForDragHandle } from './drag-handle';
@@ -4097,7 +4097,7 @@ describe('ForDraggable — nested draggables', () => {
     await flush(fixture);
   });
 
-  it('a native dragstart inside an inner item is cancelled by that item alone', async () => {
+  it('a native dragstart from a press on an inner item is cancelled by that item alone', async () => {
     const { el, fixture } = renderHost(NestedHost);
     await flush(fixture);
     const column = itemEl(el, 'todo');
@@ -4107,11 +4107,13 @@ describe('ForDraggable — nested draggables', () => {
     };
     column.addEventListener('dragstart', record, { capture: true });
     try {
+      itemEl(el, 'c1').dispatchEvent(pointerAt('pointerdown', 10, 10));
       const event = new Event('dragstart', { bubbles: true, cancelable: true });
       itemEl(el, 'c1').dispatchEvent(event);
       expect(event.defaultPrevented).toBe(true);
       expect(seenByColumn).toEqual([false]);
     } finally {
+      document.dispatchEvent(pointerAt('pointerup', 10, 10));
       column.removeEventListener('dragstart', record, { capture: true });
     }
   });
@@ -4138,42 +4140,36 @@ describe('ForDraggable — native drag and touch-action', () => {
     readonly itemDisabled = signal(false);
   }
 
-  function dragStartOn(target: HTMLElement): Event {
-    const event = new Event('dragstart', { bubbles: true, cancelable: true });
-    target.dispatchEvent(event);
-    return event;
-  }
-
   function byTestId(el: HTMLElement, id: string): HTMLElement {
     return el.querySelector<HTMLElement>(`[data-testid="${id}"]`)!;
   }
 
-  it('cancels a native dragstart from the content of an item that can be dragged', async () => {
+  it('cancels a native dragstart from a press on the content of an item that can be dragged', async () => {
     const { el, fixture } = renderHost(NativeDragHost);
     await flush(fixture);
 
-    expect(dragStartOn(byTestId(el, 'thumb')).defaultPrevented).toBe(true);
+    expect(dragStartFromPress(byTestId(el, 'thumb')).defaultPrevented).toBe(true);
   });
 
-  it('leaves a native dragstart alone while the item or its list is disabled', async () => {
+  it('leaves a native dragstart from a press alone while the item or its list is disabled', async () => {
     const { el, fixture, instance } = renderHost(NativeDragHost);
     instance.itemDisabled.set(true);
     await flush(fixture);
-    expect(dragStartOn(byTestId(el, 'thumb')).defaultPrevented).toBe(false);
+    expect(dragStartFromPress(byTestId(el, 'thumb')).defaultPrevented).toBe(false);
 
     instance.itemDisabled.set(false);
     instance.listDisabled.set(true);
     await flush(fixture);
-    expect(dragStartOn(byTestId(el, 'thumb')).defaultPrevented).toBe(false);
+    expect(dragStartFromPress(byTestId(el, 'thumb')).defaultPrevented).toBe(false);
   });
 
-  it('with a handle, cancels a native dragstart only from inside the handle', async () => {
+  it('with a handle, cancels a native dragstart only from a press inside the handle', async () => {
     const { el, fixture, instance } = renderHost(NativeDragHost);
     instance.showHandle.set(true);
     await flush(fixture);
 
-    expect(dragStartOn(byTestId(el, 'thumb')).defaultPrevented).toBe(false);
-    expect(dragStartOn(byTestId(el, 'handle')).defaultPrevented).toBe(true);
+    expect(dragStartFromPress(byTestId(el, 'thumb')).defaultPrevented).toBe(false);
+    expect(dragStartFromPress(byTestId(el, 'handle')).defaultPrevented).toBe(true);
   });
 
   it('the host touch-action follows a handle mounted and removed after the first render', async () => {

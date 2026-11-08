@@ -3,7 +3,7 @@ import { TestBed } from '@angular/core/testing';
 
 import { pointerEvent, pressKey } from 'forty-cdk/testing';
 
-import { renderHost } from '../../src/test-utils';
+import { dragStartFromPress, renderHost } from '../../src/test-utils';
 import { ForPaneResizer } from './pane-resizer';
 
 @Component({
@@ -816,5 +816,14 @@ describe('ForPaneResizer', () => {
       fixture.detectChanges();
       expect(el.getAttribute('aria-valuenow')).toBe('72');
     });
+  });
+});
+
+describe('ForPaneResizer — native drag', () => {
+  it('cancels the native dragstart a press on the divider raises', async () => {
+    const { query, flush } = renderHost(PaneResizerHost);
+    await flush();
+
+    expect(dragStartFromPress(query<HTMLElement>('[forPaneResizer]')!).defaultPrevented).toBe(true);
   });
 });

@@ -63,7 +63,6 @@ const POINTER_ARM_THRESHOLD_PX = 5;
     '[attr.data-highlighted]': "highlighted() ? '' : null",
     '[style.touch-action]': 'touchAction()',
     '[style.display]': "placeholderActive() ? 'none' : null",
-    '(dragstart)': 'onNativeDragStart($event)',
     '(keydown)': 'onKeyDown($event)',
     '(focus)': 'onFocus()',
     '(blur)': 'onBlur()',
@@ -315,14 +314,6 @@ export class ForDraggable implements ForDraggableContext {
     this.placeholderActive.set(false);
     this.#placeholderView?.destroy();
     this.#placeholderView = null;
-  }
-
-  private onNativeDragStart(event: Event): void {
-    if (this.#pointerDragging) {
-      event.preventDefault();
-      return;
-    }
-    this.#handleGuard.suppressNativeDrag(event);
   }
 
   private onFocus(): void {

@@ -3,7 +3,8 @@ import type { SwipeDirection } from './swipe-dismiss';
 
 const EDGE_TOLERANCE_PX = 1;
 
-function scrolls(overflow: string): boolean {
+/** Whether a computed `overflow-x` / `overflow-y` value makes its element a scroll container. */
+export function overflowScrolls(overflow: string): boolean {
   return overflow === 'auto' || overflow === 'scroll' || overflow === 'overlay';
 }
 
@@ -13,7 +14,8 @@ function scrolls(overflow: string): boolean {
  * should be left to scroll the inner content rather than starting a swipe
  * on the outer drawer. Stops walking at `boundary` (typically the drawer
  * root) so unrelated ancestors above it don't affect the decision; the walk
- * crosses open shadow boundaries.
+ * crosses open shadow boundaries. With `includeBoundary` set, the boundary
+ * itself is checked too, for a surface that is its own scroll container.
  *
  * Direction semantics match {@link SwipeDirection}: `'down'` means a
  * pointer-travel-down gesture (which on a scrollable scrolls the content
@@ -29,11 +31,19 @@ export function isScrollableAtEdge(
   target: Element | null,
   direction: SwipeDirection,
   boundary?: Element | null,
+  includeBoundary = false,
 ): boolean {
   let cur: Element | null = target;
-  while (cur && cur !== boundary) {
+  while (cur) {
+    const atBoundary = cur === boundary;
+    if (atBoundary && !includeBoundary) {
+      return false;
+    }
     if (cur instanceof HTMLElement && hasRoomAgainst(cur, direction)) {
       return true;
+    }
+    if (atBoundary) {
+      return false;
     }
     cur = composedParentElement(cur);
   }
@@ -43,14 +53,14 @@ export function isScrollableAtEdge(
 function hasRoomAgainst(el: HTMLElement, direction: SwipeDirection): boolean {
   const style = el.ownerDocument.defaultView?.getComputedStyle(el);
   if (direction === 'up' || direction === 'down') {
-    if (!scrolls(style?.overflowY ?? '') || el.scrollHeight <= el.clientHeight) {
+    if (!overflowScrolls(style?.overflowY ?? '') || el.scrollHeight <= el.clientHeight) {
       return false;
     }
     const room =
       direction === 'down' ? el.scrollTop : el.scrollHeight - el.clientHeight - el.scrollTop;
     return room > EDGE_TOLERANCE_PX;
   }
-  if (!scrolls(style?.overflowX ?? '') || el.scrollWidth <= el.clientWidth) {
+  if (!overflowScrolls(style?.overflowX ?? '') || el.scrollWidth <= el.clientWidth) {
     return false;
   }
   const max = el.scrollWidth - el.clientWidth;

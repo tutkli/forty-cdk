@@ -2560,7 +2560,8 @@ interface ReflowProbe {
  * discrimination, so the specs drive it explicitly rather than assuming it. One
  * `deliver()` is one tick, which is why the install pass takes a single call: a
  * browser coalesces the initial observation with the resize the mutation caused
- * into the same delivery.
+ * into the same delivery. Only the viewport's reflow watch is recorded: each toast also observes
+ * its own host to learn whether it scrolls, and that observer is not the subject here.
  */
 function installResizeObserverStub(): ReflowProbe {
   const observed: Element[] = [];
@@ -2574,6 +2575,9 @@ function installResizeObserverStub(): ReflowProbe {
     }
 
     observe(target: Element): void {
+      if (target.localName !== 'for-toast-viewport') {
+        return;
+      }
       observed.push(target);
       live.push(this.#notify);
     }

@@ -22,6 +22,7 @@ import {
   LiveAnnouncer,
   hostDescribedBy,
   hostLabelledBy,
+  injectHostScrollAxes,
   injectPauseController,
   isImeComposing,
   type PauseController,
@@ -222,9 +223,11 @@ export class ForToast implements ForToastContext {
     return raw;
   });
 
-  /** `touch-action` for the host: free the axis no swipe direction uses. */
+  readonly #hostScrolls = injectHostScrollAxes(this.#host.nativeElement);
+
+  /** `touch-action` for the host: free the axis no swipe direction uses, and any axis it scrolls on. */
   private readonly touchAction = computed(() =>
-    swipeTouchAction(this.#normalizedSwipeDirections()),
+    swipeTouchAction(this.#normalizedSwipeDirections(), this.#hostScrolls()),
   );
 
   readonly #labels = signal<readonly ForToastTextHandle[]>([]);

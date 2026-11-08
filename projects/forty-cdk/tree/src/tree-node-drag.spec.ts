@@ -8,7 +8,7 @@ import {
 } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
-import { flush, renderHost } from '../../src/test-utils';
+import { dragStartFromPress, flush, renderHost } from '../../src/test-utils';
 import { ForTree } from './tree';
 import { provideForDragDropDefaults, provideForTreeDefaults } from 'forty-cdk/defaults';
 import { ForTreeGroup } from './tree-group';
@@ -1996,4 +1996,80 @@ describe('ForTreeNodeDrag — live feedback describes the drop [canDrop] allows 
     await f();
     expect(liveRegion('polite')?.textContent).not.toBe('Cannot drop Music here.');
   });
+});
+
+@Component({
+  host: { 'data-fixture': 'handle-touch-action' },
+  imports: [ForTree, ForTreeNodeDrag, ForTreeItem, ForTreeItemLabel, ForTreeNodeDragHandle],
+  template: `
+    <ul forTree forTreeNodeDrag [disabled]="disabled()" aria-label="Files">
+      <li forTreeItem value="docs" [disabled]="nodeDisabled()">
+        <span forTreeNodeDragHandle data-testid="docs-handle" aria-hidden="true">⠿</span>
+        <span forTreeItemLabel>Docs</span>
+      </li>
+    </ul>
+  `,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+class HandleTouchActionHost {
+  readonly disabled = signal(false);
+  readonly nodeDisabled = signal(false);
+}
+
+describe('ForTreeNodeDragHandle — touch-action', () => {
+  it('carries touch-action: none while its node can be dragged, like [forDragHandle]', async () => {
+    const { query, flush: f } = renderHost(HandleTouchActionHost);
+    await f();
+
+    expect(query<HTMLElement>('[data-testid="docs-handle"]')!.style.touchAction).toBe('none');
+  });
+
+  it('drops touch-action: none while the tree and [forTreeNodeDrag] are disabled', async () => {
+    const { instance, query, flush: f } = renderHost(HandleTouchActionHost);
+    instance.disabled.set(true);
+    await f();
+
+    expect(query<HTMLElement>('[data-testid="docs-handle"]')!.style.touchAction).toBe('');
+
+    instance.disabled.set(false);
+    await f();
+    expect(query<HTMLElement>('[data-testid="docs-handle"]')!.style.touchAction).toBe('none');
+  });
+
+  it('drops touch-action: none while its node is disabled', async () => {
+    const { instance, query, flush: f } = renderHost(HandleTouchActionHost);
+    instance.nodeDisabled.set(true);
+    await f();
+
+    expect(query<HTMLElement>('[data-testid="docs-handle"]')!.style.touchAction).toBe('');
+  });
+});
+
+@Component({
+  host: { 'data-fixture': 'native-drag' },
+  imports: [ForTree, ForTreeNodeDrag, ForTreeItem, ForTreeItemLabel],
+  template: `
+    <ul forTree forTreeNodeDrag aria-label="Files">
+      <li forTreeItem value="docs">
+        <span forTreeItemLabel>
+          <img alt="" data-testid="docs-icon" />
+          <a href="#docs" data-testid="docs-link">Docs</a>
+        </span>
+      </li>
+    </ul>
+  `,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+class NativeDragHost {}
+
+describe('ForTreeNodeDrag — native drag', () => {
+  for (const testid of ['docs-icon', 'docs-link']) {
+    it(`cancels the native dragstart a press on ${testid} raises`, async () => {
+      const { query, flush: f } = renderHost(NativeDragHost);
+      await f();
+      const target = query<HTMLElement>(`[data-testid="${testid}"]`)!;
+
+      expect(dragStartFromPress(target).defaultPrevented).toBe(true);
+    });
+  }
 });

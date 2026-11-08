@@ -10,7 +10,7 @@ import {
 import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 
-import { renderHost } from '../../src/test-utils';
+import { dragStartFromPress, renderHost } from '../../src/test-utils';
 import { assertRovingRemovalContract } from '../../src/test-utils/contract';
 import {
   FOR_DRAGGABLE_CONTEXT,
@@ -6447,5 +6447,21 @@ describe.each([
     expect(h.getAttribute('aria-sort')).toBe('ascending');
     expect(instance.lastSort).toEqual({ column: 'name', direction: 'ascending' });
     expect(h.hasAttribute('data-dragging')).toBe(false);
+  });
+});
+
+describe('ForTableColumnResizer — native drag', () => {
+  let restoreObservers: () => void;
+  beforeAll(() => {
+    restoreObservers = installObserverPolyfills();
+  });
+  afterAll(() => restoreObservers());
+
+  it('cancels the native dragstart a press on the resizer raises', async () => {
+    const { el, flush } = renderHost(ResizerTabindexHost);
+    await flush();
+
+    const resizer = el.querySelector<HTMLElement>('[data-testid="resizer"]')!;
+    expect(dragStartFromPress(resizer).defaultPrevented).toBe(true);
   });
 });

@@ -958,4 +958,84 @@ describe('createPointerDragSession', () => {
     expect(rec.lifts).toBe(0);
     expect(rec.commits).toBe(0);
   });
+  describe('native drag', () => {
+    function dragStartFrom(target: Element): Event {
+      const event = new Event('dragstart', { bubbles: true, cancelable: true });
+      target.dispatchEvent(event);
+      return event;
+    }
+
+    function withImage(host: HTMLElement): HTMLImageElement {
+      const img = document.createElement('img');
+      host.appendChild(img);
+      return img;
+    }
+
+    it('cancels a dragstart raised while an accepted press is tracked', () => {
+      const { host, session } = setup();
+      track(host, session);
+      const img = withImage(host);
+
+      img.dispatchEvent(pointer('pointerdown', 100, 100));
+
+      expect(dragStartFrom(img).defaultPrevented).toBe(true);
+    });
+
+    it('cancels a dragstart raised once the drag has armed', () => {
+      const { host, session } = setup();
+      track(host, session);
+      const img = withImage(host);
+
+      img.dispatchEvent(pointer('pointerdown', 100, 100));
+      document.dispatchEvent(pointer('pointermove', 120, 100));
+
+      expect(dragStartFrom(img).defaultPrevented).toBe(true);
+    });
+
+    it('leaves a dragstart alone when no press is tracked', () => {
+      const { host, session } = setup();
+      track(host, session);
+      const img = withImage(host);
+
+      expect(dragStartFrom(img).defaultPrevented).toBe(false);
+
+      img.dispatchEvent(pointer('pointerdown', 100, 100));
+      document.dispatchEvent(pointer('pointerup', 100, 100));
+
+      expect(dragStartFrom(img).defaultPrevented).toBe(false);
+    });
+
+    it('leaves a dragstart alone for a press canStart rejected', () => {
+      const { host, session } = setup({ canStart: () => false });
+      track(host, session);
+      const img = withImage(host);
+
+      img.dispatchEvent(pointer('pointerdown', 100, 100));
+
+      expect(dragStartFrom(img).defaultPrevented).toBe(false);
+    });
+
+    it('leaves a dragstart alone for a press a nested control opted out of', () => {
+      const { host, session } = setup();
+      track(host, session);
+      const img = withImage(host);
+      const preventer = (event: Event): void => event.preventDefault();
+      img.addEventListener('pointerdown', preventer);
+      teardown.push(() => img.removeEventListener('pointerdown', preventer));
+
+      img.dispatchEvent(pointer('pointerdown', 100, 100));
+
+      expect(dragStartFrom(img).defaultPrevented).toBe(false);
+    });
+
+    it('stops cancelling once destroyed', () => {
+      const { host, session } = setup();
+      const img = withImage(host);
+      img.dispatchEvent(pointer('pointerdown', 100, 100));
+      session.destroy();
+
+      expect(dragStartFrom(img).defaultPrevented).toBe(false);
+      host.remove();
+    });
+  });
 });

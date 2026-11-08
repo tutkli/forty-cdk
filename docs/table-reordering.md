@@ -126,7 +126,10 @@ connects to no other `[forDropList]`, because `rowReorder` describes a move with
       [style.transform]="'translateY(' + vrow.start + 'px)'"
       style="position: absolute; left: 0; right: 0;"
     >
-      <div forTableCell name="name">{{ people()[vrow.index]!.name }}</div>
+      <div forTableCell name="name">
+        <span forDragHandle aria-hidden="true">⠿</span>
+        {{ people()[vrow.index]!.name }}
+      </div>
     </div>
     }
   </div>

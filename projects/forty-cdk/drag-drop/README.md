@@ -292,13 +292,20 @@ scrolling, and the item around it leaves touch scrolling alone. Both follow the 
 mounted or removed after the first render moves the `touch-action: none` between the handle and
 the item, and a disabled item or list drops it from both.
 
+An item with no handle carries `touch-action: none` itself, so it takes every touch move that
+starts on it. A scroller made only of handle-less items, such as a virtualized list or an
+`overflow: auto` kanban column, therefore cannot be scrolled by touch. Give those items a
+`[forDragHandle]`: the rest of each item then pans the scroller, and the handle starts the drag.
+
 ### Native drag
 
 Images, links and selected text are draggable by the browser itself, and its own drag starts
 before a pointer drag arms. A `[forDraggable]` or `[forFreeDrag]` therefore cancels the native
 `dragstart` of every press it would turn into a pointer drag, so pressing a thumbnail inside an
 item reorders the item instead of dragging a copy of the image. Content outside the item's
-handles, and every press while the item or its list is disabled, keeps its native drag.
+handles, and every press while the item or its list is disabled, keeps its native drag. The
+same holds for every pointer reorder in the library: `[forTreeNodeDrag]`, `[forListboxReorder]`,
+table row reorder and `[forVirtualReorder]`.
 
 ### Nested controls
 

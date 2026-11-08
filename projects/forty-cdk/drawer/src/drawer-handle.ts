@@ -10,14 +10,15 @@ import { injectDrawerContext } from './drawer-context';
  * `aria-hidden="true"` because the handle is a decorative styling target —
  * keyboard users dismiss via Escape / a `[forDrawerClose]` button.
  *
- * Sets `touch-action: none` and `user-select: none` on the host so a drag
- * starting on the handle arms the swipe instead of being stolen by the
- * browser: `touch-action` stops a touch drag from scrolling the page (as
- * `[forDragHandle]` and the slider thumb do), and `user-select` stops a mouse
- * drag from starting a native text selection — a stray selection anchors on
- * the document, outlives the drawer's unmount, and hijacks every later gesture
- * until reload. These are behavioral, not visual: the consumer remains
- * responsible for sizing, positioning, and color.
+ * Sets `touch-action: none` (while the swipe gesture is armed) and
+ * `user-select: none` on the host so a drag starting on the handle arms the
+ * swipe instead of being stolen by the browser: `touch-action` stops a touch
+ * drag from scrolling the page (as `[forDragHandle]` and the slider thumb
+ * do), and `user-select` stops a mouse drag from starting a native text
+ * selection — a stray selection anchors on the document, outlives the drawer's
+ * unmount, and hijacks every later gesture until reload. These are
+ * behavioral, not visual: the consumer remains responsible for sizing,
+ * positioning, and color.
  *
  * Apply on the visual handle element. One handle per drawer; a second one still
  * mounted once the render settles warns in dev mode, and swapping two handles
@@ -29,18 +30,19 @@ import { injectDrawerContext } from './drawer-context';
   host: {
     'aria-hidden': 'true',
     'data-for-drawer-handle': '',
-    '[style.touch-action]': "'none'",
+    '[style.touch-action]': 'ctx.handleTouchAction()',
     '[style.user-select]': "'none'",
     '[style.-webkit-user-select]': "'none'",
   },
 })
 export class ForDrawerHandle {
+  private readonly ctx = injectDrawerContext('ForDrawerHandle');
+
   constructor() {
-    const ctx = injectDrawerContext('ForDrawerHandle');
     registerHandle(
       inject<ElementRef<HTMLElement>>(ElementRef).nativeElement,
-      (el) => ctx.registerHandle(el),
-      (el) => ctx.unregisterHandle(el),
+      (el) => this.ctx.registerHandle(el),
+      (el) => this.ctx.unregisterHandle(el),
     );
   }
 }

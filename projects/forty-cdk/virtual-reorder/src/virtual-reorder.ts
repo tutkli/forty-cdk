@@ -135,6 +135,7 @@ function injectViewport(): ForVirtualViewport {
  *   style="height: 400px"
  * >
  *   <div *forVirtualFor="let row of rows()" role="listitem" forDraggable [dragData]="row.id">
+ *     <span forDragHandle aria-hidden="true">⠿</span>
  *     {{ row.label }}
  *   </div>
  * </div>
