@@ -171,6 +171,8 @@ export class ForDateRangePicker<D>
             ];
       }),
       disabled: this.effectiveDisabled,
+      required: this.required,
+      focus: () => this.focus(),
     });
     injectHiddenInput({
       name: endName,
@@ -185,6 +187,8 @@ export class ForDateRangePicker<D>
             ];
       }),
       disabled: this.effectiveDisabled,
+      required: this.required,
+      focus: () => this.focus(),
     });
     injectNativeFormResetToInitial(this.value);
 

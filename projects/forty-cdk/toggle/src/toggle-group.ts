@@ -176,6 +176,8 @@ export class ForToggleGroup
       name: this.name,
       values: this.value,
       disabled: this.effectiveDisabled,
+      required: this.required,
+      focus: () => this.focus(),
     });
     injectNativeFormResetToInitial(this.value);
   }

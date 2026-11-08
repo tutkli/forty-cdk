@@ -239,7 +239,13 @@ function activeTestId(): string | null {
   template: `
     <form>
       <div forFieldset [disabled]="fieldsetDisabled()">
-        <div forSelect name="fruit" [(value)]="value" [itemToFormValue]="toId">
+        <div
+          forSelect
+          name="fruit"
+          [required]="required()"
+          [(value)]="value"
+          [itemToFormValue]="toId"
+        >
           <button forSelectTrigger>Fruit</button>
         </div>
       </div>
@@ -249,6 +255,7 @@ function activeTestId(): string | null {
 class NativeSubmissionFixture implements NativeSubmissionHost {
   readonly value = signal<readonly { readonly id: string }[]>([]);
   readonly fieldsetDisabled = signal(false);
+  readonly required = signal(false);
   readonly toId = (item: { readonly id: string }): string => item.id;
   commit(): void {
     this.value.set([{ id: 'apple' }]);

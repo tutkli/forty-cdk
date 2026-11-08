@@ -118,7 +118,7 @@ const radioItems = (host: HTMLElement): HTMLElement[] =>
   template: `
     <form>
       <div forFieldset [disabled]="fieldsetDisabled()">
-        <div forRadioGroup name="color" [(value)]="value">
+        <div forRadioGroup name="color" [required]="required()" [(value)]="value">
           <button forRadio value="red">Red</button>
           <button forRadio value="green">Green</button>
         </div>
@@ -129,6 +129,7 @@ const radioItems = (host: HTMLElement): HTMLElement[] =>
 class NativeSubmissionFixture implements NativeSubmissionHost {
   readonly value = signal<string | null>(null);
   readonly fieldsetDisabled = signal(false);
+  readonly required = signal(false);
   commit(): void {
     this.value.set('green');
   }

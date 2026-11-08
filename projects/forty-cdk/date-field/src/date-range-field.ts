@@ -279,6 +279,8 @@ export class ForDateRangeField<D>
             ];
       }),
       disabled: this.effectiveDisabled,
+      required: this.required,
+      focus: () => this.focus(),
     });
     injectHiddenInput({
       name: endName,
@@ -293,6 +295,8 @@ export class ForDateRangeField<D>
             ];
       }),
       disabled: this.effectiveDisabled,
+      required: this.required,
+      focus: () => this.focus(),
     });
     injectNativeFormResetToInitial(this.value, () => this.reset());
   }

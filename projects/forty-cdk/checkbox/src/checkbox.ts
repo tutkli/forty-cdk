@@ -127,6 +127,7 @@ export class ForCheckbox extends FormUiControlBase implements FormCheckboxContro
       // to form submission; `indeterminate` is purely a presentational flag.
       values: computed(() => (this.checked() ? ['on'] : [])),
       disabled: this.effectiveDisabled,
+      required: this.required,
     });
     injectNativeFormResetToInitial(this.checked);
     injectNativeFormResetToInitial(this.indeterminate);

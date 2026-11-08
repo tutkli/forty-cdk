@@ -150,14 +150,38 @@ class DateRangeFieldFormControlHost {
 }
 
 @Component({
-  imports: [ForFieldset, ForDateRangeField, ForDateRangeFieldStart, ForDateRangeFieldEnd],
+  imports: [
+    ForFieldset,
+    ForDateRangeField,
+    ForDateRangeFieldStart,
+    ForDateRangeFieldEnd,
+    ForDateRangeFieldSegment,
+  ],
   providers: [...provideNativeDateAdapter()],
   template: `
     <form>
       <div forFieldset [disabled]="fieldsetDisabled()">
-        <div forDateRangeField name="stay" [(value)]="value" ariaLabel="Stay">
-          <div forDateRangeFieldStart></div>
-          <div forDateRangeFieldEnd></div>
+        <div
+          forDateRangeField
+          name="stay"
+          [required]="required()"
+          [(value)]="value"
+          ariaLabel="Stay"
+        >
+          <div forDateRangeFieldStart #start="forDateRangeFieldStart">
+            @for (s of start.segments(); track s.id) {
+              @if (!s.isLiteral) {
+                <span forDateRangeFieldSegment [segment]="s.type!"></span>
+              }
+            }
+          </div>
+          <div forDateRangeFieldEnd #end="forDateRangeFieldEnd">
+            @for (s of end.segments(); track s.id) {
+              @if (!s.isLiteral) {
+                <span forDateRangeFieldSegment [segment]="s.type!"></span>
+              }
+            }
+          </div>
         </div>
       </div>
     </form>
@@ -166,6 +190,7 @@ class DateRangeFieldFormControlHost {
 class DaySubmissionHost implements NativeSubmissionHost {
   readonly value = signal<DateRange<Date> | null>(null);
   readonly fieldsetDisabled = signal(false);
+  readonly required = signal(false);
   commit(): void {
     this.value.set({ start: new Date(2026, 11, 5), end: new Date(2026, 11, 9) });
   }
@@ -175,14 +200,39 @@ class DaySubmissionHost implements NativeSubmissionHost {
 }
 
 @Component({
-  imports: [ForFieldset, ForDateRangeField, ForDateRangeFieldStart, ForDateRangeFieldEnd],
+  imports: [
+    ForFieldset,
+    ForDateRangeField,
+    ForDateRangeFieldStart,
+    ForDateRangeFieldEnd,
+    ForDateRangeFieldSegment,
+  ],
   providers: [...provideNativeDateAdapter()],
   template: `
     <form>
       <div forFieldset [disabled]="fieldsetDisabled()">
-        <div forDateRangeField name="trip" granularity="minute" [(value)]="value" ariaLabel="Trip">
-          <div forDateRangeFieldStart></div>
-          <div forDateRangeFieldEnd></div>
+        <div
+          forDateRangeField
+          name="trip"
+          [required]="required()"
+          granularity="minute"
+          [(value)]="value"
+          ariaLabel="Trip"
+        >
+          <div forDateRangeFieldStart #start="forDateRangeFieldStart">
+            @for (s of start.segments(); track s.id) {
+              @if (!s.isLiteral) {
+                <span forDateRangeFieldSegment [segment]="s.type!"></span>
+              }
+            }
+          </div>
+          <div forDateRangeFieldEnd #end="forDateRangeFieldEnd">
+            @for (s of end.segments(); track s.id) {
+              @if (!s.isLiteral) {
+                <span forDateRangeFieldSegment [segment]="s.type!"></span>
+              }
+            }
+          </div>
         </div>
       </div>
     </form>
@@ -191,6 +241,7 @@ class DaySubmissionHost implements NativeSubmissionHost {
 class MinuteSubmissionHost implements NativeSubmissionHost {
   readonly value = signal<DateRange<Date> | null>(null);
   readonly fieldsetDisabled = signal(false);
+  readonly required = signal(false);
   commit(): void {
     this.value.set({ start: new Date(2026, 11, 5, 9, 15), end: new Date(2026, 11, 9, 18, 45) });
   }

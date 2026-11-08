@@ -91,7 +91,7 @@ The bounds are `rangeMin` / `rangeMax` rather than `min` / `max` because `[formF
 <div forSlider [formField]="form.price" [rangeMin]="0" [rangeMax]="1000">…</div>
 ```
 
-For native `<form>` submit, set `[name]` and the directive mirrors `value()` into N `<input type="hidden">` siblings (one per thumb). A native reset of the owning `<form>` returns `value()` to what it held when the slider first rendered. `data-touched` / `data-dirty` / `data-pending` / `data-invalid` are reflected on the host as boolean `data-*` attributes (present when `true`, absent otherwise).
+For native `<form>` submit, set `[name]` and the directive mirrors `value()` into N `<input type="hidden">` siblings (one per thumb). A native reset of the owning `<form>` returns `value()` to what it held when the slider first rendered. A bound `[required]` blocks native submission while `value()` is empty, as a native required control does: an unnamed, visually hidden `<input required>` fails constraint validation, `form:invalid` matches, and when the browser reports the form, focus moves to the first thumb. `data-touched` / `data-dirty` / `data-pending` / `data-invalid` are reflected on the host as boolean `data-*` attributes (present when `true`, absent otherwise).
 
 ## Scoped defaults
 

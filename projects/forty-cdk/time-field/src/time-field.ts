@@ -307,6 +307,8 @@ export class ForTimeField<D>
         return [serializeISOTime(this.adapter, current, this.granularity())];
       }),
       disabled: this.effectiveDisabled,
+      required: this.required,
+      focus: () => this.focus(),
     });
     injectNativeFormResetToInitial(this.value, () => this.reset());
   }

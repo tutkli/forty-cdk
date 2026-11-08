@@ -48,7 +48,7 @@ class ToggleHost {
   template: `
     <form>
       <div forFieldset [disabled]="fieldsetDisabled()">
-        <button forToggle name="bold" [(checked)]="value">Bold</button>
+        <button forToggle name="bold" [required]="required()" [(checked)]="value">Bold</button>
       </div>
     </form>
   `,
@@ -56,6 +56,7 @@ class ToggleHost {
 class NativeSubmissionFixture implements NativeSubmissionHost {
   readonly value = signal<boolean>(false);
   readonly fieldsetDisabled = signal(false);
+  readonly required = signal(false);
   commit(): void {
     this.value.set(true);
   }

@@ -9,6 +9,8 @@ import {
   type Signal,
 } from '@angular/core';
 
+import { VISUALLY_HIDDEN_STYLE } from '../visually-hidden/visually-hidden';
+
 export interface HiddenInputConfig<T = string> {
   /**
    * Form name. While empty, no hidden inputs are mounted — set a non-empty
@@ -39,6 +41,20 @@ export interface HiddenInputConfig<T = string> {
    * form serialization, matching the behavior of disabled visible controls.
    */
   disabled?: Signal<boolean>;
+
+  /**
+   * Optional required state. While it is `true` and `values` is empty, the
+   * surrounding `<form>` fails native constraint validation: submission is
+   * blocked and `form:invalid` matches, as for a native `<select required>`.
+   * Independent of `name`. A disabled control never blocks.
+   */
+  required?: Signal<boolean>;
+
+  /**
+   * Moves focus into the control when the browser reports it invalid.
+   * Defaults to focusing the host element.
+   */
+  focus?: () => void;
 }
 
 /**
@@ -65,6 +81,12 @@ export interface HiddenInputConfig<T = string> {
  * the hydration pass". If incremental hydration ever needs the stricter
  * ordering, move the initial mount into `afterNextRender`.
  *
+ * A hidden input is barred from constraint validation, so a `required` control
+ * also gets one validation input: a visually hidden, unnamed
+ * `<input required tabindex="-1" aria-hidden="true">` mounted after the host,
+ * filled while `values` is non-empty. It submits nothing, and focusing it, which
+ * the browser does when it reports the form, moves focus into the control.
+ *
  * Returns a function that writes the current values into the hidden inputs
  * immediately. A control whose value changes in the same event that submits
  * the form calls it, so the submission carries the new value rather than the
@@ -78,7 +100,42 @@ export function injectHiddenInput<T = string>(config: HiddenInputConfig<T>): () 
   const host = inject<ElementRef<HTMLElement>>(ElementRef);
   const doc = inject(DOCUMENT);
   const inputs: HTMLInputElement[] = [];
+  let validation: HTMLInputElement | null = null;
   let destroyed = false;
+
+  const focusControl = (): void => {
+    if (config.focus) {
+      config.focus();
+    } else {
+      host.nativeElement.focus();
+    }
+  };
+
+  const syncValidation = (disabled: boolean): void => {
+    if (!(config.required?.() ?? false)) {
+      validation?.remove();
+      validation = null;
+      return;
+    }
+    if (validation === null) {
+      validation = doc.createElement('input');
+      validation.required = true;
+      validation.tabIndex = -1;
+      validation.autocomplete = 'off';
+      validation.setAttribute('aria-hidden', 'true');
+      validation.setAttribute('style', VISUALLY_HIDDEN_STYLE);
+      validation.addEventListener('focus', focusControl);
+      host.nativeElement.insertAdjacentElement('afterend', validation);
+    }
+    const filled = config.values().length > 0 ? 'on' : '';
+    if (validation.defaultValue !== filled) {
+      validation.defaultValue = filled;
+    }
+    if (validation.value !== filled) {
+      validation.value = filled;
+    }
+    validation.toggleAttribute('disabled', disabled);
+  };
 
   const sync = (): void => {
     if (destroyed) {
@@ -88,6 +145,7 @@ export function injectHiddenInput<T = string>(config: HiddenInputConfig<T>): () 
     const values = name ? config.values() : ([] as readonly T[]);
     const disabled = config.disabled?.() ?? false;
     const serialize = config.serialize;
+    syncValidation(disabled);
 
     while (inputs.length > values.length) {
       inputs.pop()?.remove();
@@ -129,6 +187,8 @@ export function injectHiddenInput<T = string>(config: HiddenInputConfig<T>): () 
       input.remove();
     }
     inputs.length = 0;
+    validation?.remove();
+    validation = null;
   });
 
   return sync;

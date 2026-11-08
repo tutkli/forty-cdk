@@ -113,12 +113,25 @@ class TimeFieldFormControlHost {
 }
 
 @Component({
-  imports: [ForFieldset, ForTimeField],
+  imports: [ForFieldset, ForTimeField, ForTimeFieldSegment],
   providers: [...provideNativeDateAdapter()],
   template: `
     <form>
       <div forFieldset [disabled]="fieldsetDisabled()">
-        <div forTimeField name="alarm" [(value)]="value" ariaLabel="Alarm"></div>
+        <div
+          forTimeField
+          name="alarm"
+          [required]="required()"
+          [(value)]="value"
+          ariaLabel="Alarm"
+          #field="forTimeField"
+        >
+          @for (s of field.segments(); track s.id) {
+            @if (!s.isLiteral) {
+              <span forTimeFieldSegment [segment]="s.type!"></span>
+            }
+          }
+        </div>
       </div>
     </form>
   `,
@@ -126,6 +139,7 @@ class TimeFieldFormControlHost {
 class MinuteSubmissionHost implements NativeSubmissionHost {
   readonly value = signal<Date | null>(null);
   readonly fieldsetDisabled = signal(false);
+  readonly required = signal(false);
   commit(): void {
     this.value.set(new Date(2026, 11, 5, 14, 30, 15));
   }
@@ -135,12 +149,26 @@ class MinuteSubmissionHost implements NativeSubmissionHost {
 }
 
 @Component({
-  imports: [ForFieldset, ForTimeField],
+  imports: [ForFieldset, ForTimeField, ForTimeFieldSegment],
   providers: [...provideNativeDateAdapter()],
   template: `
     <form>
       <div forFieldset [disabled]="fieldsetDisabled()">
-        <div forTimeField name="lap" granularity="second" [(value)]="value" ariaLabel="Lap"></div>
+        <div
+          forTimeField
+          name="lap"
+          [required]="required()"
+          granularity="second"
+          [(value)]="value"
+          ariaLabel="Lap"
+          #field="forTimeField"
+        >
+          @for (s of field.segments(); track s.id) {
+            @if (!s.isLiteral) {
+              <span forTimeFieldSegment [segment]="s.type!"></span>
+            }
+          }
+        </div>
       </div>
     </form>
   `,
@@ -148,6 +176,7 @@ class MinuteSubmissionHost implements NativeSubmissionHost {
 class SecondSubmissionHost implements NativeSubmissionHost {
   readonly value = signal<Date | null>(null);
   readonly fieldsetDisabled = signal(false);
+  readonly required = signal(false);
   commit(): void {
     this.value.set(new Date(2026, 11, 5, 14, 30, 15));
   }

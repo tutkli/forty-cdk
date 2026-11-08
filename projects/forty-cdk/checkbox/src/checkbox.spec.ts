@@ -70,7 +70,7 @@ const divCheckboxOf = (host: HTMLElement) => host.querySelector<HTMLElement>('[f
   template: `
     <form>
       <div forFieldset [disabled]="fieldsetDisabled()">
-        <button forCheckbox name="terms" [(checked)]="value">Terms</button>
+        <button forCheckbox name="terms" [required]="required()" [(checked)]="value">Terms</button>
       </div>
     </form>
   `,
@@ -78,6 +78,7 @@ const divCheckboxOf = (host: HTMLElement) => host.querySelector<HTMLElement>('[f
 class NativeSubmissionFixture implements NativeSubmissionHost {
   readonly value = signal<boolean>(false);
   readonly fieldsetDisabled = signal(false);
+  readonly required = signal(false);
   commit(): void {
     this.value.set(true);
   }
