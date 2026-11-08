@@ -1,6 +1,7 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  Directive,
   provideZonelessChangeDetection,
   signal,
   type Type,
@@ -9,7 +10,12 @@ import { TestBed } from '@angular/core/testing';
 
 import { flush } from '../../src/test-utils';
 import { provideForDragDropDefaults } from 'forty-cdk/defaults';
-import { ForDraggable, ForDragPlaceholder, moveItemInArray } from 'forty-cdk/drag-drop';
+import {
+  ForDraggable,
+  ForDragHandle,
+  ForDragPlaceholder,
+  moveItemInArray,
+} from 'forty-cdk/drag-drop';
 import { ForTableVirtualized } from 'forty-cdk/table-virtualization';
 
 import { ForTable } from './table';
@@ -1824,4 +1830,326 @@ describe('ForTableRowReorder — the drag placeholder stands in the lifted row�
       expect(query('[data-testid="placeholder"]')).toBeNull();
     });
   }
+});
+
+@Directive({
+  selector: '[wrappedReorderRow]',
+  hostDirectives: [{ directive: ForTableRow, inputs: ['virtualIndex'] }],
+})
+class WrappedReorderRow {}
+
+@Directive({
+  selector: '[composedReorderRow]',
+  hostDirectives: [
+    { directive: ForTableRow, inputs: ['virtualIndex'] },
+    { directive: ForDraggable, inputs: ['dragData'] },
+  ],
+})
+class ComposedReorderRow {}
+
+@Component({
+  imports: [
+    ForTable,
+    ForTableVirtualized,
+    WrappedReorderRow,
+    ForTableCell,
+    ForTableRowReorder,
+    ForDraggable,
+  ],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { 'data-fixture': 'wrapped-virtualized-row' },
+  template: `
+    <div
+      forTable
+      forTableVirtualized
+      mode="grid"
+      ariaLabel="Wrapped rows"
+      [rowCount]="rowCount"
+      [estimateRowSize]="rowHeight"
+      #v="forTableVirtualized"
+      style="height: 200px; overflow: auto"
+    >
+      <div
+        role="rowgroup"
+        forTableRowReorder
+        [style.height.px]="v.totalSize()"
+        (rowReorder)="onReorder($event)"
+      >
+        @for (vrow of v.virtualRows(); track vrow.index) {
+          <div
+            wrappedReorderRow
+            [virtualIndex]="vrow.index"
+            forDraggable
+            [dragData]="vrow.index"
+            [attr.data-index]="vrow.index"
+          >
+            <div forTableCell name="a" [attr.data-testid]="'cell-' + vrow.index">
+              {{ vrow.index }}
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  `,
+})
+class WrappedVirtualizedRowHost {
+  protected readonly rowCount = ROW_COUNT;
+  protected readonly rowHeight = ROW_HEIGHT;
+  last: TableRowReorderDescriptor | null = null;
+  reorders = 0;
+
+  protected onReorder(descriptor: TableRowReorderDescriptor): void {
+    this.last = descriptor;
+    this.reorders++;
+  }
+}
+
+@Component({
+  imports: [ForTable, ForTableVirtualized, ComposedReorderRow, ForTableCell, ForTableRowReorder],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { 'data-fixture': 'composed-virtualized-row' },
+  template: `
+    <div
+      forTable
+      forTableVirtualized
+      mode="grid"
+      ariaLabel="Composed rows"
+      [rowCount]="rowCount"
+      [estimateRowSize]="rowHeight"
+      #v="forTableVirtualized"
+      style="height: 200px; overflow: auto"
+    >
+      <div
+        role="rowgroup"
+        forTableRowReorder
+        [style.height.px]="v.totalSize()"
+        (rowReorder)="onReorder($event)"
+      >
+        @for (vrow of v.virtualRows(); track vrow.index) {
+          <div
+            composedReorderRow
+            [virtualIndex]="vrow.index"
+            [dragData]="vrow.index"
+            [attr.data-index]="vrow.index"
+          >
+            <div forTableCell name="a" [attr.data-testid]="'cell-' + vrow.index">
+              {{ vrow.index }}
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  `,
+})
+class ComposedVirtualizedRowHost {
+  protected readonly rowCount = ROW_COUNT;
+  protected readonly rowHeight = ROW_HEIGHT;
+  last: TableRowReorderDescriptor | null = null;
+  reorders = 0;
+
+  protected onReorder(descriptor: TableRowReorderDescriptor): void {
+    this.last = descriptor;
+    this.reorders++;
+  }
+}
+
+describe.each([
+  { shape: 'a hostDirectives-wrapped ForTableRow', host: WrappedVirtualizedRowHost },
+  { shape: 'one wrapper composing ForTableRow and ForDraggable', host: ComposedVirtualizedRowHost },
+])('ForTableRowReorder — a virtualized row rendered through $shape (#2716)', ({ host }) => {
+  afterEach(() => {
+    document.querySelectorAll('[aria-live]').forEach((node) => node.remove());
+  });
+
+  it('an armed pointer drag pins the row through a scroll past it', async () => {
+    const { cell, indices, scroller, settle } = await render<
+      WrappedVirtualizedRowHost | ComposedVirtualizedRowHost
+    >(host);
+
+    cell(2).dispatchEvent(pointer('pointerdown', 0, 100));
+    document.dispatchEvent(pointer('pointermove', 0, 120));
+    scroller.scrollTo({ top: 20000 });
+    await settle();
+
+    expect(indices()).toContain(2);
+
+    document.dispatchEvent(pointer('pointerup', 0, 120));
+    await settle();
+  });
+
+  it('an armed pointer drag stops a running scroll', async () => {
+    const cancelScroll = vi.spyOn(ForTableVirtualized.prototype, 'cancelScroll');
+    const { cell, settle } = await render<WrappedVirtualizedRowHost | ComposedVirtualizedRowHost>(
+      host,
+    );
+
+    cell(2).dispatchEvent(pointer('pointerdown', 0, 100));
+    document.dispatchEvent(pointer('pointermove', 0, 120));
+    expect(cancelScroll).toHaveBeenCalledTimes(1);
+
+    document.dispatchEvent(pointer('pointerup', 0, 120));
+    await settle();
+  });
+
+  it('a drag from another row during a keyboard lift cancels the lift and runs', async () => {
+    const { instance, settle, indices, cell, query } = await render<
+      WrappedVirtualizedRowHost | ComposedVirtualizedRowHost
+    >(host);
+    const from = Math.max(...indices());
+    const pressed = from - 2;
+    const lifted = cell(from);
+    lifted.focus();
+
+    press(lifted, ' ', { ctrlKey: true });
+    await settle();
+    expect(query(`[data-index="${from}"]`).getAttribute('data-dragging')).toBe('');
+
+    cell(pressed).dispatchEvent(pointer('pointerdown', 0, 140));
+    await settle();
+
+    expect(liveRegionText()).toContain('movement cancelled');
+    expect(query(`[data-index="${from}"]`).hasAttribute('data-dragging')).toBe(false);
+
+    document.dispatchEvent(pointer('pointermove', 0, 180));
+    await settle();
+    expect(query(`[data-index="${pressed}"]`).getAttribute('data-dragging')).toBe('');
+
+    document.dispatchEvent(pointer('pointerup', 0, 180));
+    await settle();
+    expect(instance.reorders).toBe(1);
+    expect(instance.last?.from).toBe(pressed);
+  });
+});
+
+@Component({
+  imports: [ForTable, WrappedReorderRow, ForTableCell, ForTableRowReorder, ForDraggable],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { 'data-fixture': 'wrapped-list-row' },
+  template: `
+    <div forTable mode="grid" ariaLabel="Wrapped rows">
+      <div role="rowgroup" forTableRowReorder>
+        @for (row of rows; track row) {
+          <div wrappedReorderRow forDraggable [dragData]="row" [attr.data-testid]="'row-' + row">
+            <div forTableCell name="a" [attr.data-testid]="'cell-' + row">{{ row }}</div>
+          </div>
+        }
+      </div>
+    </div>
+  `,
+})
+class WrappedListRowHost {
+  protected readonly rows = [0, 1, 2, 3];
+}
+
+describe('ForTableRowReorder — a press on another hostDirectives-wrapped row cancels a lift (#2716)', () => {
+  afterEach(() => {
+    document.querySelectorAll('[aria-live]').forEach((node) => node.remove());
+  });
+
+  it('a pointer drag on row 2 cancels the keyboard lift of row 0 and lifts row 2', async () => {
+    const { settle, query } = await render(WrappedListRowHost);
+    const lifted = query('[data-testid="cell-0"]');
+    lifted.focus();
+    press(lifted, 'Enter', { shiftKey: true });
+    await settle();
+    expect(query('[data-testid="row-0"]').getAttribute('data-dragging')).toBe('');
+
+    query('[data-testid="cell-2"]').dispatchEvent(pointer('pointerdown', 0, 100));
+    document.dispatchEvent(pointer('pointermove', 0, 130));
+    await settle();
+
+    expect(query('[data-testid="row-0"]').hasAttribute('data-dragging')).toBe(false);
+    expect(query('[data-testid="row-2"]').getAttribute('data-dragging')).toBe('');
+
+    document.dispatchEvent(pointer('pointercancel', 0, 130));
+    await settle();
+  });
+});
+
+@Component({
+  imports: [
+    ForTable,
+    ForTableVirtualized,
+    ForTableRow,
+    ForTableCell,
+    ForTableRowReorder,
+    ForDraggable,
+    ForDragHandle,
+  ],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `
+    <div
+      forTable
+      forTableVirtualized
+      mode="grid"
+      ariaLabel="Rows with drag handles"
+      [rowCount]="rowCount"
+      [estimateRowSize]="rowHeight"
+      #v="forTableVirtualized"
+      style="height: 200px; overflow: auto"
+    >
+      <div role="rowgroup" forTableRowReorder [style.height.px]="v.totalSize()">
+        @for (vrow of v.virtualRows(); track vrow.index) {
+          <div
+            forTableRow
+            [virtualIndex]="vrow.index"
+            forDraggable
+            [dragData]="vrow.index"
+            [attr.data-index]="vrow.index"
+          >
+            <div forTableCell name="handle">
+              <span forDragHandle [attr.data-testid]="'handle-' + vrow.index">=</span>
+            </div>
+            <div forTableCell name="a" [attr.data-testid]="'cell-' + vrow.index">
+              {{ vrow.index }}
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  `,
+})
+class HandleRowReorderHost {
+  protected readonly rowCount = ROW_COUNT;
+  protected readonly rowHeight = ROW_HEIGHT;
+}
+
+describe('ForTableRowReorder — a press outside the row drag handle arms nothing (#2716)', () => {
+  afterEach(() => {
+    document.querySelectorAll('[aria-live]').forEach((node) => node.remove());
+  });
+
+  it('pins nothing, stops no scroll and leaves Escape to the page', async () => {
+    const cancelScroll = vi.spyOn(ForTableVirtualized.prototype, 'cancelScroll');
+    const { cell, indices, scroller, settle } = await render(HandleRowReorderHost);
+
+    cell(2).dispatchEvent(pointer('pointerdown', 0, 100));
+    document.dispatchEvent(pointer('pointermove', 0, 130));
+    const escape = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true });
+    document.body.dispatchEvent(escape);
+    scroller.scrollTo({ top: 20000 });
+    await settle();
+    document.dispatchEvent(pointer('pointerup', 0, 130));
+    await settle();
+
+    expect(cancelScroll).not.toHaveBeenCalled();
+    expect(escape.defaultPrevented).toBe(false);
+    expect(indices()).not.toContain(2);
+  });
+
+  it('still pins the row for a press on its handle', async () => {
+    const cancelScroll = vi.spyOn(ForTableVirtualized.prototype, 'cancelScroll');
+    const { query, indices, scroller, settle } = await render(HandleRowReorderHost);
+
+    query('[data-testid="handle-2"]').dispatchEvent(pointer('pointerdown', 0, 100));
+    document.dispatchEvent(pointer('pointermove', 0, 130));
+    scroller.scrollTo({ top: 20000 });
+    await settle();
+
+    expect(cancelScroll).toHaveBeenCalledTimes(1);
+    expect(indices()).toContain(2);
+
+    document.dispatchEvent(pointer('pointerup', 0, 130));
+    await settle();
+  });
 });

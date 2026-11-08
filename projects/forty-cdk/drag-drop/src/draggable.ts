@@ -26,6 +26,7 @@ import {
   type PointerDragSession,
   createTemplatePreview,
   type DragPreview,
+  markDragItemHost,
   resolveText,
   unsetInput,
 } from 'forty-cdk/core';
@@ -186,10 +187,12 @@ export class ForDraggable implements ForDraggableContext {
   constructor() {
     assertInputBound(this.dragData, 'drag-drop', '[forDraggable]', 'dragData');
     registerWithEnclosingDraggable(this.#host.nativeElement, 'ForDraggable');
+    markDragItemHost(this.#host.nativeElement);
     const handle: ForDraggableHandle = {
       host: this.#host.nativeElement,
       data: this.dragData,
       disabled: this.effectiveDisabled,
+      acceptsPointerStart: (target) => this.#handleGuard.accepts(target),
       emitDragStart: (index) => {
         if (!this.#destroyRef.destroyed) {
           this.dragStart.emit({ source: this.#list, index });

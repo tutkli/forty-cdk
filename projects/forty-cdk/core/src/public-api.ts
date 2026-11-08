@@ -155,6 +155,11 @@ export {
 } from './drag-session/drag-geometry';
 export { dragAnnouncementLabel } from './drag-session/drag-announcement-label';
 export {
+  DragItemHosts,
+  injectHostCarriesDragItem,
+  markDragItemHost,
+} from './drag-session/drag-item-hosts';
+export {
   createDragPreview,
   createTemplatePreview,
   type DragPreview,
@@ -168,6 +173,12 @@ export {
   type PointerDragSession,
 } from './drag-session/pointer-session';
 export { layoutPlaceholderInSlot } from './drag-session/placeholder-slot';
+export {
+  findPressedDragItem,
+  type PressableDragItem,
+  type PressTarget,
+  resolvePressedDragItem,
+} from './drag-session/pressed-drag-item';
 export { PreviewController } from './drag-session/preview-controller';
 export { resolveWindowedReorder, translateWindowReorder } from './drag-session/window-index-map';
 export { type ElementBox, injectElementSize } from './element-size/element-size';

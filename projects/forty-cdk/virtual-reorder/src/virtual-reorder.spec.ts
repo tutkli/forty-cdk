@@ -2,6 +2,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  Directive,
   provideZonelessChangeDetection,
   signal,
   type Type,
@@ -11,7 +12,9 @@ import { TestBed } from '@angular/core/testing';
 
 import { flush } from '../../src/test-utils';
 import {
+  FOR_DRAGGABLE_CONTEXT,
   ForDraggable,
+  ForDragHandle,
   ForDragPlaceholder,
   ForDropList,
   ForDropListGroup,
@@ -1630,5 +1633,231 @@ describe('ForVirtualReorder — the drag placeholder stands in the lifted row’
     await f();
 
     expect(query('[data-testid="placeholder"]')).toBeNull();
+  });
+});
+
+@Directive({
+  selector: '[wrappedReorderRow]',
+  hostDirectives: [{ directive: ForDraggable, inputs: ['dragData', 'dragDisabled'] }],
+})
+class WrappedReorderRow {}
+
+@Directive({
+  selector: '[subclassedReorderRow]',
+  providers: [{ provide: FOR_DRAGGABLE_CONTEXT, useExisting: SubclassedReorderRow }],
+})
+class SubclassedReorderRow extends ForDraggable {}
+
+@Component({
+  imports: [ForVirtualViewport, ForVirtualFor, ForVirtualReorder, WrappedReorderRow],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { 'data-fixture': 'wrapped-reorder' },
+  template: `
+    <div
+      forVirtualViewport
+      [virtualCount]="rows().length"
+      [estimateSize]="40"
+      forVirtualReorder
+      (itemReorder)="onReorder($event)"
+      style="height: 200px; width: 200px"
+    >
+      <div
+        *forVirtualFor="let row of rows()"
+        wrappedReorderRow
+        [dragData]="row.id"
+        [attr.data-testid]="'row-' + row.id"
+      >
+        {{ row.label }}
+      </div>
+    </div>
+  `,
+})
+class WrappedRowReorderHost {
+  readonly rows = signal<readonly Row[]>(makeRows(1000));
+  readonly events = signal(0);
+
+  onReorder(event: ForVirtualReorderEvent): void {
+    this.events.update((n) => n + 1);
+    this.rows.update((rows) => moveItemInArray(rows, event.from, event.to));
+  }
+}
+
+@Component({
+  imports: [ForVirtualViewport, ForVirtualFor, ForVirtualReorder, SubclassedReorderRow],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { 'data-fixture': 'subclassed-reorder' },
+  template: `
+    <div
+      forVirtualViewport
+      [virtualCount]="rows().length"
+      [estimateSize]="40"
+      forVirtualReorder
+      (itemReorder)="onReorder($event)"
+      style="height: 200px; width: 200px"
+    >
+      <div
+        *forVirtualFor="let row of rows()"
+        subclassedReorderRow
+        [dragData]="row.id"
+        [attr.data-testid]="'row-' + row.id"
+      >
+        {{ row.label }}
+      </div>
+    </div>
+  `,
+})
+class SubclassedRowReorderHost {
+  readonly rows = signal<readonly Row[]>(makeRows(1000));
+  readonly events = signal(0);
+
+  onReorder(event: ForVirtualReorderEvent): void {
+    this.events.update((n) => n + 1);
+    this.rows.update((rows) => moveItemInArray(rows, event.from, event.to));
+  }
+}
+
+describe.each([
+  { shape: 'a hostDirectives wrapper', host: WrappedRowReorderHost },
+  { shape: 'a subclass', host: SubclassedRowReorderHost },
+])('ForVirtualReorder — a row whose ForDraggable arrives through $shape (#2716)', ({ host }) => {
+  afterEach(() => {
+    document.querySelectorAll('[aria-live]').forEach((n) => n.remove());
+  });
+
+  it('pins the dragged row through a scroll that carries the window past it, and commits the drop', async () => {
+    const {
+      instance,
+      query,
+      indices,
+      viewport,
+      flush: f,
+    } = await render<WrappedRowReorderHost | SubclassedRowReorderHost>(host);
+    const row = query('[data-testid="row-2"]')!;
+
+    row.dispatchEvent(pointer('pointerdown', 0, 100));
+    document.dispatchEvent(pointer('pointermove', 0, 120));
+    viewport.scrollTo({ top: 20000 });
+    await f();
+    await f();
+
+    expect(indices()).toContain(2);
+    expect(query('[data-testid="row-2"]')).toBe(row);
+    expect(row.getAttribute('data-dragging')).toBe('');
+    expect(assertiveText()).not.toContain('cancelled');
+
+    document.dispatchEvent(pointer('pointerup', 0, 120));
+    await f();
+
+    expect(instance.events()).toBe(1);
+  });
+
+  it('stops a running scroll when the drag arms', async () => {
+    const cancelScroll = vi.spyOn(ForVirtualViewport.prototype, 'cancelScroll');
+    const { query, flush: f } = await render<WrappedRowReorderHost | SubclassedRowReorderHost>(
+      host,
+    );
+
+    query('[data-testid="row-2"]')!.dispatchEvent(pointer('pointerdown', 0, 100));
+    document.dispatchEvent(pointer('pointermove', 0, 120));
+    expect(cancelScroll).toHaveBeenCalledTimes(1);
+
+    document.dispatchEvent(pointer('pointerup', 0, 120));
+    await f();
+  });
+
+  it('a press on another row cancels a keyboard lift, and the drag that follows runs', async () => {
+    const {
+      instance,
+      query,
+      flush: f,
+    } = await render<WrappedRowReorderHost | SubclassedRowReorderHost>(host);
+    const row = query('[data-testid="row-2"]')!;
+    row.focus();
+    dispatchKey(row, ' ');
+    await f();
+    expect(row.getAttribute('data-dragging')).toBe('');
+
+    const other = query('[data-testid="row-5"]')!;
+    other.dispatchEvent(pointer('pointerdown', 0, 220));
+    await f();
+
+    expect(assertiveText()).toContain('movement cancelled');
+    expect(row.hasAttribute('data-dragging')).toBe(false);
+
+    document.dispatchEvent(pointer('pointermove', 0, 260));
+    await f();
+    expect(other.getAttribute('data-dragging')).toBe('');
+
+    document.dispatchEvent(pointer('pointerup', 0, 260));
+    await f();
+    expect(instance.events()).toBe(1);
+  });
+});
+
+@Component({
+  imports: [ForVirtualViewport, ForVirtualFor, ForVirtualReorder, ForDraggable, ForDragHandle],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `
+    <div
+      forVirtualViewport
+      [virtualCount]="rows().length"
+      [estimateSize]="40"
+      forVirtualReorder
+      style="height: 200px; width: 200px"
+    >
+      <div
+        *forVirtualFor="let row of rows()"
+        forDraggable
+        [dragData]="row.id"
+        [attr.data-testid]="'row-' + row.id"
+      >
+        <span forDragHandle [attr.data-testid]="'handle-' + row.id">⠿</span>
+        <span [attr.data-testid]="'text-' + row.id">{{ row.label }}</span>
+      </div>
+    </div>
+  `,
+})
+class HandleReorderHost {
+  readonly rows = signal<readonly Row[]>(makeRows(1000));
+}
+
+describe('ForVirtualReorder — a press outside the row’s drag handle arms nothing (#2716)', () => {
+  afterEach(() => {
+    document.querySelectorAll('[aria-live]').forEach((n) => n.remove());
+  });
+
+  it('pins nothing, stops no scroll and leaves Escape to the page', async () => {
+    const cancelScroll = vi.spyOn(ForVirtualViewport.prototype, 'cancelScroll');
+    const { query, indices, viewport, flush: f } = await render(HandleReorderHost);
+
+    query('[data-testid="text-2"]')!.dispatchEvent(pointer('pointerdown', 0, 100));
+    document.dispatchEvent(pointer('pointermove', 0, 130));
+    const escape = dispatchKey(document.body, 'Escape');
+    viewport.scrollTo({ top: 20000 });
+    await f();
+    await f();
+    document.dispatchEvent(pointer('pointerup', 0, 130));
+    await f();
+
+    expect(cancelScroll).not.toHaveBeenCalled();
+    expect(escape.defaultPrevented).toBe(false);
+    expect(indices()).not.toContain(2);
+  });
+
+  it('still pins the row for a press on its handle', async () => {
+    const cancelScroll = vi.spyOn(ForVirtualViewport.prototype, 'cancelScroll');
+    const { query, indices, viewport, flush: f } = await render(HandleReorderHost);
+
+    query('[data-testid="handle-2"]')!.dispatchEvent(pointer('pointerdown', 0, 100));
+    document.dispatchEvent(pointer('pointermove', 0, 130));
+    viewport.scrollTo({ top: 20000 });
+    await f();
+    await f();
+
+    expect(cancelScroll).toHaveBeenCalledTimes(1);
+    expect(indices()).toContain(2);
+
+    document.dispatchEvent(pointer('pointerup', 0, 130));
+    await f();
   });
 });

@@ -10,8 +10,9 @@ import {
   output,
 } from '@angular/core';
 
+import { injectHostCarriesDragItem } from 'forty-cdk/core';
 import { eventFromInteractiveDescendant } from './interactive-descendant';
-import { hostHasDraggable, injectTableContext } from './table-context';
+import { injectTableContext } from './table-context';
 import { ForTableHeaderCell } from './table-header-cell';
 
 /** Sort direction for a column header. `'none'` means unsorted (no aria-sort emitted). */
@@ -41,9 +42,8 @@ export interface TableSortDescriptor {
  * along WAI-ARIA lines: `Space` lifts the column for reordering while `Enter` toggles the
  * sort, so a single key press never both sorts and starts a drag-lift. A column pinned with
  * `[dragDisabled]` has no lift for `Space` to collide with, so it sorts on both keys like a
- * sort-only header. The draggable is
- * detected by DOM marker (the `forDraggable` / `forFreeDrag` attribute), not by a
- * drag-drop value-import.
+ * sort-only header. The draggable is detected however it is applied (in the template,
+ * through `hostDirectives` or through a subclass), with no drag-drop value-import.
  *
  * While `sortable`, the directive reflects the `data-sortable` marker (a CSS styling
  * hook, absent when `sortable` is `false`). In `grid` / `treegrid` mode the header cell
@@ -83,7 +83,7 @@ export class ForTableSortHeader {
   private readonly ctx = injectTableContext('ForTableSortHeader');
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
   readonly #headerCell = inject(ForTableHeaderCell, { self: true, optional: true });
-  readonly #hasDraggable = hostHasDraggable(this.#host);
+  readonly #hasDraggable = injectHostCarriesDragItem(this.#host);
 
   /** Column identity included in the `sortChange` payload. */
   readonly column = input.required<string>();
@@ -138,7 +138,7 @@ export class ForTableSortHeader {
    * column-reorder header row); in a plain grid / treegrid header the roving grid
    * owns the tab stop and this intent is superseded.
    */
-  readonly #standaloneTabStop = computed(() => this.sortable() && !this.#hasDraggable);
+  readonly #standaloneTabStop = computed(() => this.sortable() && !this.#hasDraggable());
 
   constructor() {
     this.#headerCell?.registerStandaloneTabStop(this.#standaloneTabStop);
@@ -187,7 +187,7 @@ export class ForTableSortHeader {
     if (eventFromInteractiveDescendant(event)) {
       return;
     }
-    const draggableCanLift = this.#hasDraggable && !this.#host.hasAttribute('data-disabled');
+    const draggableCanLift = this.#hasDraggable() && !this.#host.hasAttribute('data-disabled');
     if (draggableCanLift && (isSpace || this.#host.hasAttribute('data-dragging'))) {
       return;
     }
