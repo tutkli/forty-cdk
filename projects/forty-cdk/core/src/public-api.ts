@@ -106,6 +106,7 @@ export { DateFieldEngine } from './datetime/date-field-engine';
 export { type DateRange } from './datetime/date-range';
 export { type FieldGranularity } from './datetime/date-segments';
 export { ForDateTimeLiteralBase } from './datetime/literal-directive';
+export { formatLocaleDigits } from './datetime/locale-digits';
 export { FOR_PICKER_SOURCE_HOST, type PickerSourceHost } from './datetime/picker-source-host';
 export { RangeFieldComposer } from './datetime/range-field-composer';
 export { ForDateTimeSegmentBase, type SegmentEditorContext } from './datetime/segment-directive';

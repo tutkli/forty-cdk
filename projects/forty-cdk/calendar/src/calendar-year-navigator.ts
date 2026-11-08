@@ -1,4 +1,4 @@
-import { Collection } from 'forty-cdk/core';
+import { Collection, formatLocaleDigits } from 'forty-cdk/core';
 import type {
   CalendarYearOption,
   CalendarYearRow,
@@ -9,7 +9,11 @@ import {
   isCalendarActivationKey,
   resolveCalendarGridMove,
 } from './calendar-keyboard';
-import type { CalendarSubGridHost, CalendarViewStrategy } from './calendar-sub-grid';
+import {
+  type CalendarSubGridHost,
+  type CalendarViewStrategy,
+  resolveCalendarLocale,
+} from './calendar-sub-grid';
 
 const GRID_COLUMNS = 3;
 
@@ -39,10 +43,15 @@ export class CalendarYearNavigator<D> implements CalendarViewStrategy {
   rows(): readonly CalendarYearRow[] {
     const start = this.#host.yearBlockStart();
     const size = this.#host.yearBlockSize();
+    const locale = resolveCalendarLocale(this.#host);
     const years: CalendarYearOption[] = [];
     for (let i = 0; i < size; i++) {
       const value = start + i;
-      years.push({ value, disabled: this.#host.isYearDisabled(value) });
+      years.push({
+        value,
+        label: formatLocaleDigits(value, 1, locale),
+        disabled: this.#host.isYearDisabled(value),
+      });
     }
     const rows: CalendarYearRow[] = [];
     for (let i = 0; i < years.length; i += GRID_COLUMNS) {
@@ -53,7 +62,9 @@ export class CalendarYearNavigator<D> implements CalendarViewStrategy {
 
   triggerLabel(): string {
     const start = this.#host.yearBlockStart();
-    return `${start} – ${start + this.#host.yearBlockSize() - 1}`;
+    const end = start + this.#host.yearBlockSize() - 1;
+    const locale = resolveCalendarLocale(this.#host);
+    return `${formatLocaleDigits(start, 1, locale)} – ${formatLocaleDigits(end, 1, locale)}`;
   }
 
   isPreviousDisabled(): boolean {

@@ -58,7 +58,7 @@ exports[`document structure > docs/date-adapters.md declares the sections and ta
           "Produced by",
         ],
         "role": "plain",
-        "rows": 3,
+        "rows": 4,
       },
     ],
     "title": "Writing your own adapter",

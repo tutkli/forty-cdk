@@ -2,6 +2,7 @@ import { computed, signal, type Signal } from '@angular/core';
 
 import type { RovingTabindex } from '../roving-tabindex/roving-tabindex';
 import { from12, matchDayPeriod, to12 } from './hour-cycle';
+import { formatLocaleDigits } from './locale-digits';
 import type { TimeSegmentType } from './segment-types';
 
 /** Which calendar part an editable date segment edits. */
@@ -147,6 +148,8 @@ export interface SegmentEditorHost<P extends SegmentParts> {
   readonly editableOrder: Signal<readonly SegmentType[]>;
   /** Localized AM / PM strings for the `dayPeriod` segment. */
   readonly periodNames: Signal<{ am: string; pm: string }>;
+  /** The resolved locale the segment digits render in, `undefined` for the runtime default. */
+  readonly locale: Signal<string | undefined>;
 
   /** Current entered parts. */
   parts(): P;
@@ -277,7 +280,7 @@ export class SegmentEditor<P extends SegmentParts, T extends SegmentType = Segme
   segmentDisplayText(type: SegmentType): string {
     const typing = this.#typing();
     if (typing && typing.type === type) {
-      return typing.buffer;
+      return formatLocaleDigits(Number(typing.buffer), typing.buffer.length, this.#host.locale());
     }
     if (type === 'dayPeriod') {
       const dayPeriod = this.#host.parts().dayPeriod;
@@ -291,7 +294,7 @@ export class SegmentEditor<P extends SegmentParts, T extends SegmentType = Segme
     if (value === null) {
       return this.#host.placeholderFor(type);
     }
-    return String(value).padStart(type === 'year' ? 4 : 2, '0');
+    return formatLocaleDigits(value, type === 'year' ? 4 : 2, this.#host.locale());
   }
 
   isSegmentEmpty(type: SegmentType): boolean {

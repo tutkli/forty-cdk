@@ -43,6 +43,6 @@ Measured on a production build of an app with four lazy routes (Tooltip, Calenda
 | `FOR_DATE_ADAPTER`           | token     | Holds the active adapter. A date or time primitive with no adapter in scope throws `FORCDK-CORE-002`.                                                                                                   |
 | `NativeDateAdapter`          | class     | A time-capable adapter over the built-in `Date`. Subclass it and override `locale()` to format in the app's language.                                                                                   |
 | `provideNativeDateAdapter()` | provider  | Binds `NativeDateAdapter` to `FOR_DATE_ADAPTER`.                                                                                                                                                        |
-| `createFormatterCache()`     | function  | Returns a function that hands back one `Intl.DateTimeFormat` per distinct `(locale, options)` pair, for an adapter of your own to format through.                                                       |
+| `createFormatterCache()`     | function  | Returns a function that hands back one Gregorian `Intl.DateTimeFormat` per distinct `(locale, options)` pair, for an adapter of your own to format through. A `calendar` in `options` overrides it.     |
 
 `injectDateAdapter` and `assertTimeCapable` are not here: they throw through the library's error helpers, which live with the primitives, and ship from [`forty-cdk/shared`](../shared).

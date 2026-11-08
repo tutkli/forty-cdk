@@ -137,7 +137,7 @@ import { provideInternationalizedDateAdapter } from 'forty-cdk/internationalized
                       [year]="y.value"
                       class="calendar-cell calendar-cell--pick"
                     >
-                      {{ y.value }}
+                      {{ y.label }}
                     </td>
                   }
                 </tr>

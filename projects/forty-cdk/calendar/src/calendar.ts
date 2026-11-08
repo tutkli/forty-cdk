@@ -19,6 +19,7 @@ import {
   injectDateAdapter,
   adoptHostId,
   FOR_PICKER_SOURCE_HOST,
+  formatLocaleDigits,
   IdGenerator,
   LiveAnnouncer,
   type WritingDirection,
@@ -44,7 +45,11 @@ import { FOR_CALENDAR_DEFAULTS } from 'forty-cdk/defaults';
 import { CalendarMonthNavigator } from './calendar-month-navigator';
 import { CalendarNavigation } from './calendar-navigation';
 import { CalendarRangeSelection } from './calendar-range-selection';
-import type { CalendarSubGridHost, CalendarViewStrategy } from './calendar-sub-grid';
+import {
+  type CalendarSubGridHost,
+  type CalendarViewStrategy,
+  resolveCalendarLocale,
+} from './calendar-sub-grid';
 import { CalendarYearNavigator } from './calendar-year-navigator';
 
 interface FocusedDateSource<D> {
@@ -415,6 +420,10 @@ export class ForCalendar<D> implements ForCalendarContext<D> {
 
   private unregisterHeading(): void {
     this.#headingCount.update((count) => count - 1);
+  }
+
+  private formatYear(year: number): string {
+    return formatLocaleDigits(year, 1, resolveCalendarLocale(this));
   }
 
   /**

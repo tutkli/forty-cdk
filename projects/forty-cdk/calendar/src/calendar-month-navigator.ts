@@ -1,4 +1,4 @@
-import { Collection } from 'forty-cdk/core';
+import { Collection, formatLocaleDigits } from 'forty-cdk/core';
 import type {
   CalendarMonthOption,
   CalendarMonthRow,
@@ -9,7 +9,11 @@ import {
   isCalendarActivationKey,
   resolveCalendarGridMove,
 } from './calendar-keyboard';
-import type { CalendarSubGridHost, CalendarViewStrategy } from './calendar-sub-grid';
+import {
+  type CalendarSubGridHost,
+  type CalendarViewStrategy,
+  resolveCalendarLocale,
+} from './calendar-sub-grid';
 
 const GRID_COLUMNS = 3;
 
@@ -61,7 +65,7 @@ export class CalendarMonthNavigator<D> implements CalendarViewStrategy {
   }
 
   triggerLabel(): string {
-    return String(this.#host.visibleYear());
+    return formatLocaleDigits(this.#host.visibleYear(), 1, resolveCalendarLocale(this.#host));
   }
 
   isPreviousDisabled(): boolean {

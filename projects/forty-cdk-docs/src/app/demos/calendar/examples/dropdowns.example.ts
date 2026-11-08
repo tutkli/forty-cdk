@@ -64,7 +64,7 @@ import { provideInternationalizedDateAdapter } from 'forty-cdk/internationalized
           class="calendar-select"
         >
           @for (opt of y.years(); track opt.value) {
-            <option [value]="opt.value" [disabled]="opt.disabled">{{ opt.value }}</option>
+            <option [value]="opt.value" [disabled]="opt.disabled">{{ opt.label }}</option>
           }
         </select>
 

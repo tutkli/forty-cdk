@@ -20,7 +20,7 @@ import { type CalendarYearOption, injectCalendarContext } from './calendar-conte
  *   [maxYear]="2100"
  * >
  *   @for (opt of y.years(); track opt.value) {
- *     <option [value]="opt.value" [disabled]="opt.disabled">{{ opt.value }}</option>
+ *     <option [value]="opt.value" [disabled]="opt.disabled">{{ opt.label }}</option>
  *   }
  * </select>
  * ```
@@ -62,7 +62,11 @@ export class ForCalendarYearSelect {
     const max = this.maxYear() ?? currentYear + 10;
     const out: CalendarYearOption[] = [];
     for (let year = min; year <= max; year++) {
-      out.push({ value: year, disabled: this.ctx.isYearDisabled(year) });
+      out.push({
+        value: year,
+        label: this.ctx.formatYear(year),
+        disabled: this.ctx.isYearDisabled(year),
+      });
     }
     return out;
   });

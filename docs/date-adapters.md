@@ -72,7 +72,7 @@ It stays a **peer** rather than a bundled dependency for a second reason: you co
 
 Two limits are worth knowing before you start.
 
-**The seam abstracts the date library, not the calendar system.** The grid, the month picker and the date field all assume a Gregorian-structured year: exactly twelve months, `month` numbered 1–12, the year ending at month 12. Both `@internationalized/date` adapters build Gregorian dates regardless of the runtime locale. An adapter over a calendar with a different month structure (a 13-month year, say) is not supported, and the optional `compareDate` hook overrides day-only _ordering_ only; it does not make the grid non-Gregorian.
+**The seam abstracts the date library, not the calendar system.** The grid, the month picker and the date field all assume a Gregorian-structured year: exactly twelve months, `month` numbered 1–12, the year ending at month 12. Both `@internationalized/date` adapters build Gregorian dates regardless of the runtime locale, and all three shipped adapters format in the Gregorian calendar too, so a locale whose default calendar is not Gregorian (`th-TH`, `fa-IR`, `ar-SA`) still names the Gregorian month and year the grid shows. They format through `createFormatterCache`, which pins `calendar: 'gregory'` unless the options name another calendar; an adapter of your own built on it gets the same default. An adapter over a calendar with a different month structure (a 13-month year, say) is not supported, and the optional `compareDate` hook overrides day-only _ordering_ only; it does not make the grid non-Gregorian.
 
 **Formatting is the adapter's, and so is the locale.** Every date and time primitive resolves one locale: its own `[locale]` input when you bind it, then the adapter's optional `locale()`, then the runtime default. Every localized part follows that one locale:
 
@@ -81,8 +81,11 @@ Two limits are worth knowing before you start.
 | Month names, weekday headers, cell labels, picker value text and slot labels | `adapter.format()`                             |
 | A segmented field's segment order and separators                             | `Intl.DateTimeFormat` over the resolved locale |
 | A field's hour cycle and AM/PM names                                         | `Intl.DateTimeFormat` over the resolved locale |
+| Segment digits, day-cell numbers, year cells and the month and year headings | `Intl.NumberFormat` over the resolved locale   |
 
 `[hourCycle]`, or the `hourCycle` key of the primitive's defaults provider, sets the cycle regardless of the locale.
+
+The numbers the primitives render without `adapter.format()` take the numbering system the locale formats its dates with, so under `ar-EG` a date field reads `٠٥/١١/٢٠٢٦` beside a trigger reading `٥ نوفمبر ٢٠٢٦`. Typing accepts both those digits and Latin ones. `aria-valuenow`, the form value and the hidden input stay Latin numbers.
 
 The shipped adapters report `null`, so the runtime locale applies until you say otherwise. To keep every field in the application's language, report it from the adapter once instead of binding `[locale]` on each field. A `locale()` that reads a signal makes every mounted field and formatted value follow a runtime language switch:
 

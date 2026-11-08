@@ -187,7 +187,7 @@ class DateFieldHost {
                 <tr>
                   @for (y of row.years; track y.value) {
                     <td forCalendarYearCell [year]="y.value" [attr.data-testid]="'year-' + y.value">
-                      {{ y.value }}
+                      {{ y.label }}
                     </td>
                   }
                 </tr>
@@ -251,7 +251,7 @@ class CalendarMonthHost {
               <tr>
                 @for (y of row.years; track y.value) {
                   <td forCalendarYearCell [year]="y.value" [attr.data-testid]="'year-' + y.value">
-                    {{ y.value }}
+                    {{ y.label }}
                   </td>
                 }
               </tr>

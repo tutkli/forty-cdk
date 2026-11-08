@@ -15,6 +15,11 @@ export type CalendarView = 'day' | 'month' | 'year';
 export interface CalendarYearOption {
   /** The full year (e.g. `2026`). */
   readonly value: number;
+  /**
+   * The year as the cell displays it, in the calendar locale's digits (e.g.
+   * `"2026"`, or `"٢٠٢٦"` under `ar-EG`).
+   */
+  readonly label: string;
   /** Whether the entire year falls outside `[min, max]`. */
   readonly disabled: boolean;
 }
@@ -85,7 +90,10 @@ export interface CalendarDayCell<D> {
   readonly key: string;
   /** The date this cell represents. Bind to `[date]` on `[forCalendarCell]`. */
   readonly date: D;
-  /** Day-of-month label, e.g. `"1"`. The cell's visible content. */
+  /**
+   * Day-of-month label in the calendar locale's digits, e.g. `"1"`, or `"١"`
+   * under `ar-EG`. The cell's visible content.
+   */
   readonly label: string;
   /**
    * Full accessible date string for the cell, host-bound to `aria-label` by
@@ -343,6 +351,8 @@ export interface CalendarPieceContext<D> {
   registerHeading(): void;
   /** Reported by `[forCalendarHeading]` when it is destroyed. */
   unregisterHeading(): void;
+  /** `year` in the calendar locale's digits, for `[forCalendarYearSelect]`'s options. */
+  formatYear(year: number): string;
 }
 
 /**
