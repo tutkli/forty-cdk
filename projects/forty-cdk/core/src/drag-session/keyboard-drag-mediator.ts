@@ -34,7 +34,8 @@ export interface KeyboardDragMediatorConfig {
   /**
    * A keydown fired while a keyboard drag is in progress. The caller resolves it to a move /
    * commit / cancel and consumes the event (`preventDefault` + `stopPropagation`) so the
-   * underlying collection never sees the navigation / activation key.
+   * underlying collection never sees the navigation / activation key. A key it maps to no action
+   * goes through `consumeUnmappedLiftedKey`, so no key reaches the collection while lifted.
    */
   onLiftedKeydown(event: KeyboardEvent): void;
   /**

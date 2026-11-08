@@ -66,6 +66,7 @@ import { FOR_TREE_NODE_DRAG_CONTEXT } from './tree-node-drag';
     '[attr.data-disabled]': 'effectiveDisabled() ? "" : null',
     '[attr.data-checked]': 'checkboxMode() && selectable() ? checkState() : null',
     '[attr.data-drop-position]': '_dropPosition()',
+    '[attr.data-drop-invalid]': '_dropInvalid() ? "" : null',
     '(keydown)': 'onKeyDown($event)',
     '(focus)': 'onFocus()',
     '(pointerdown)': 'onPointerDown($event)',
@@ -183,19 +184,26 @@ export class ForTreeItem<T = string> implements ForTreeItemContext<T> {
   });
   readonly effectiveDisabled = computed(() => this.disabled() || this.#tree.disabled());
 
+  /** The live drop indicator when it anchors to this row, `null` otherwise. */
+  private readonly _dropAnchor = computed(() => {
+    const indicator = this.#drag?.dropIndicator();
+    const equals = this.#tree.compareWith() as (a: unknown, b: unknown) => boolean;
+    return indicator && equals(indicator.anchor, this.value()) ? indicator : null;
+  });
+
   /**
    * Drop-indicator hook for `[forTreeNodeDrag]`: `'before'` / `'after'` when a live drag would
    * land adjacent to this row, `null` otherwise (and always `null` without a drag coordinator).
    * Reflected as `data-drop-position`.
    */
-  private readonly _dropPosition = computed<'before' | 'after' | null>(() => {
-    const indicator = this.#drag?.dropIndicator();
-    const equals = this.#tree.compareWith() as (a: unknown, b: unknown) => boolean;
-    if (!indicator || !equals(indicator.anchor, this.value())) {
-      return null;
-    }
-    return indicator.position;
-  });
+  private readonly _dropPosition = computed<'before' | 'after' | null>(
+    () => this._dropAnchor()?.position ?? null,
+  );
+
+  /**
+   * Whether `[canDrop]` refuses the drop this row anchors. Reflected as `data-drop-invalid`.
+   */
+  private readonly _dropInvalid = computed(() => this._dropAnchor()?.valid === false);
 
   readonly level = computed(() =>
     this.#virtualized() ? (this._levelInput() ?? this.#container.level()) : this.#container.level(),

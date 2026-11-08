@@ -1861,3 +1861,52 @@ describe('ForVirtualReorder — a press outside the row’s drag handle arms not
     await f();
   });
 });
+
+describe('ForVirtualReorder — a keyboard lift keeps unmapped keys from the rows (#2714)', () => {
+  afterEach(() => {
+    document.querySelectorAll('[aria-live]').forEach((n) => n.remove());
+  });
+
+  it('consumes a printable key, so it never reaches the lifted row', async () => {
+    const { viewport, query, flush: f } = await mount();
+    const row = query('[data-testid="row-2"]')!;
+    const seen: Event[] = [];
+    const record = (event: Event): void => {
+      seen.push(event);
+    };
+    row.addEventListener('keydown', record);
+    try {
+      row.focus();
+      dispatchKey(row, ' ');
+      await f();
+      seen.length = 0;
+
+      const letter = dispatchKey(row, 'x');
+      await f();
+
+      expect(letter.defaultPrevented).toBe(true);
+      expect(seen).toEqual([]);
+      expect(viewport.getAttribute('data-dragging')).toBe('');
+    } finally {
+      row.removeEventListener('keydown', record);
+    }
+  });
+
+  it('cancels the lift on Tab like the sibling coordinators, keeping focus on the row', async () => {
+    const { instance, viewport, query, flush: f } = await mount();
+    const row = query('[data-testid="row-2"]')!;
+    row.focus();
+    dispatchKey(row, ' ');
+    await f();
+    dispatchKey(row, 'ArrowDown');
+    await f();
+
+    const tab = dispatchKey(row, 'Tab');
+    await f();
+
+    expect(tab.defaultPrevented).toBe(true);
+    expect(viewport.hasAttribute('data-dragging')).toBe(false);
+    expect(instance.events()).toBe(0);
+    expect(document.activeElement).toBe(row);
+  });
+});

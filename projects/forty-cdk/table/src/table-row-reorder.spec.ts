@@ -2153,3 +2153,42 @@ describe('ForTableRowReorder — a press outside the row drag handle arms nothin
     await settle();
   });
 });
+
+describe('ForTableRowReorder — a keyboard lift keeps unmapped keys from the grid (#2714)', () => {
+  afterEach(() => {
+    document.querySelectorAll('[aria-live]').forEach((n) => n.remove());
+  });
+
+  function keydown(el: Element, key: string, init: KeyboardEventInit = {}): KeyboardEvent {
+    const event = new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true, ...init });
+    el.dispatchEvent(event);
+    return event;
+  }
+
+  it('consumes a printable key, so it never reaches the lifted cell', async () => {
+    const { settle, query } = await render(ListRowReorderHost);
+    const lifted = query('[data-testid="cell-1"]');
+    const seen: KeyboardEvent[] = [];
+    const record = (event: Event): void => {
+      seen.push(event as KeyboardEvent);
+    };
+    lifted.addEventListener('keydown', record);
+    try {
+      lifted.focus();
+      press(lifted, ' ', { ctrlKey: true });
+      await settle();
+      seen.length = 0;
+
+      const letter = keydown(lifted, 'x');
+      const chord = keydown(lifted, 'r', { ctrlKey: true });
+      await settle();
+
+      expect(letter.defaultPrevented).toBe(true);
+      expect(chord.defaultPrevented).toBe(false);
+      expect(seen).toEqual([]);
+      expect(query('[forTableRowReorder]').getAttribute('data-dragging')).toBe('');
+    } finally {
+      lifted.removeEventListener('keydown', record);
+    }
+  });
+});

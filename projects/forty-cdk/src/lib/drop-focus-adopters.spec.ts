@@ -138,3 +138,70 @@ describe('keyboard drop focus adoption (meta-guard)', () => {
     expect(missing).toEqual([]);
   });
 });
+
+const PRESS_ARBITER = 'arbitrateLiftPress';
+const KEY_CONSUMER = 'consumeUnmappedLiftedKey';
+
+/**
+ * Keyboard-drop owners that run no keyboard mediator and no pointer session of their own, each
+ * with the condition that keeps the exclusion true.
+ */
+const LIFT_ARBITRATION_EXCLUSIONS: Readonly<Record<string, (source: string) => boolean>> = {
+  'drag-drop/src/drop-list.ts': (source) =>
+    !calls(source, MEDIATOR) &&
+    !calls(source, 'createPointerDragSession') &&
+    /#beginLift\([^)]*\): number \{\s*if \([^\n]*this\.isDragging\(\)/.test(source),
+};
+
+function callbackMethod(source: string, option: string): string | null {
+  return (
+    new RegExp(`${option}: \\(event\\) => this\\.(#\\w+)\\(event\\)`).exec(source)?.[1] ?? null
+  );
+}
+
+function callbackReaches(path: string, option: string, helper: string): boolean {
+  const source = LIBRARY_CODE.get(path)!;
+  const method = callbackMethod(source, option);
+  return method !== null && calls(methodBodies(source).get(method) ?? '', helper);
+}
+
+function arbitratedOwners(): string[] {
+  return keyboardDropOwners().filter((path) => !(path in LIFT_ARBITRATION_EXCLUSIONS));
+}
+
+describe('keyboard lift arbitration (meta-guard)', () => {
+  it('finds both arbitration helpers in the drag-session core', () => {
+    expect(declaringPath(PRESS_ARBITER)).toMatch(/^core\/src\/drag-session\//);
+    expect(declaringPath(KEY_CONSUMER)).toMatch(/^core\/src\/drag-session\//);
+  });
+
+  it('derives the four coordinators as the owners that arbitrate a live keyboard lift', () => {
+    expect(arbitratedOwners()).toEqual([
+      'listbox/src/listbox-reorder.ts',
+      'table/src/table-row-reorder.ts',
+      'tree/src/tree-node-drag.ts',
+      'virtual-reorder/src/virtual-reorder.ts',
+    ]);
+  });
+
+  it('keeps every exclusion true to the condition that justifies it', () => {
+    const stale = Object.entries(LIFT_ARBITRATION_EXCLUSIONS).filter(
+      ([path, holds]) => !keyboardDropOwners().includes(path) || !holds(LIBRARY_CODE.get(path)!),
+    );
+    expect(stale.map(([path]) => path)).toEqual([]);
+  });
+
+  it('has every owner arbitrate a pointer press against the keyboard lift from its canStart', () => {
+    const missing = arbitratedOwners().filter(
+      (path) => !callbackReaches(path, 'canStart', PRESS_ARBITER),
+    );
+    expect(missing).toEqual([]);
+  });
+
+  it('has every owner consume the keys its lifted keydown maps to no action', () => {
+    const missing = arbitratedOwners().filter(
+      (path) => !callbackReaches(path, 'onLiftedKeydown', KEY_CONSUMER),
+    );
+    expect(missing).toEqual([]);
+  });
+});

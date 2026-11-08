@@ -16,6 +16,8 @@ import {
 } from '@angular/core';
 
 import {
+  arbitrateLiftPress,
+  consumeUnmappedLiftedKey,
   createDragPreview,
   focusWhenMounted,
   type FocusWhenMountedRef,
@@ -27,7 +29,7 @@ import {
   createPointerDragSession,
   type PointerDragSession,
 } from 'forty-cdk/core';
-import { isLiftedPassthroughKey, resolveTreeDragLiftedAction } from './tree-drag-keys';
+import { resolveTreeDragLiftedAction } from './tree-drag-keys';
 import {
   gapFromPointerY,
   levelFromPointerX,
@@ -66,6 +68,11 @@ export interface ForTreeDropIndicator<T = string> {
   readonly position: 'before' | 'after';
   /** Resolved 1-based depth of the drop (mirror of `--for-tree-drop-level`). */
   readonly level: number;
+  /**
+   * Whether `[canDrop]` accepts a drop at this position. `false` marks the anchor row with
+   * `data-drop-invalid`, and the drop would be refused.
+   */
+  readonly valid: boolean;
 }
 
 /** The coordination contract the handle uses to register with the coordinator. */
@@ -92,7 +99,8 @@ type DragMode = 'idle' | 'keyboard' | 'pointer';
  * Keyboard: focus a node, then press the lift key (`ForDragDropDefaults.liftKey`, Shift+Enter by
  * default). While lifted, ArrowUp/Down move the sibling position, Home/End jump to the first /
  * last position, ArrowRight/Left change depth, Space/Enter drops, Escape cancels. Every other key
- * is consumed until the drag ends, except Ctrl / Cmd / Alt chords and function keys.
+ * is kept from the tree items until the drag ends, and Ctrl / Cmd / Alt chords and function keys
+ * keep their browser meaning. A press on another node cancels a keyboard drag.
  *
  * Pointer: drag any enabled item to a new position; an optional `[forTreeNodeDragHandle]` on an
  * item constrains the grab area. Escape cancels the drag.
@@ -140,7 +148,8 @@ export class ForTreeNodeDrag<T = string> implements ForTreeNodeDragContext {
    * original position and an announcement is made. When omitted, all drops are accepted.
    *
    * It is also consulted for every position the drag resolves while live, to reflect
-   * `data-drop-target`, so it must not have side effects.
+   * `data-drop-target` and `data-drop-invalid` and to announce a refused position, so it must not
+   * have side effects.
    */
   readonly canDrop = input<((event: ForTreeDragDropEvent<T>) => boolean) | undefined>(undefined);
 
@@ -246,14 +255,12 @@ export class ForTreeNodeDrag<T = string> implements ForTreeNodeDragContext {
 
   #handleLiftedKeydown(event: KeyboardEvent): void {
     const action = resolveTreeDragLiftedAction(event, this.#ctx.dir());
-    if (action === null && isLiftedPassthroughKey(event)) {
+    if (action === null) {
+      consumeUnmappedLiftedKey(event);
       return;
     }
     event.preventDefault();
     event.stopPropagation();
-    if (action === null) {
-      return;
-    }
 
     if (action === 'cancel') {
       this.#cancelSession(true);
@@ -286,19 +293,23 @@ export class ForTreeNodeDrag<T = string> implements ForTreeNodeDragContext {
   }
 
   #canStartPointer(event: PointerEvent): boolean {
+    const target = event.target;
+    const entry = target instanceof Element ? this.#resolveVisibleNodeFromTarget(target) : null;
+    const free = arbitrateLiftPress({
+      keyboardLifted: this.#mode === 'keyboard',
+      liftedHost: this.#liftedHost,
+      pressedHost: entry?.handle.host ?? null,
+      cancelKeyboardLift: () => this.#cancelSession(true),
+    });
     if (
+      !free ||
       this.disabled() ||
       this.#ctx.disabled() ||
       (event.pointerType === 'mouse' && event.button !== 0)
     ) {
       return false;
     }
-    const target = event.target;
-    if (!(target instanceof Element)) {
-      return false;
-    }
-    const entry = this.#resolveVisibleNodeFromTarget(target);
-    if (!entry || entry.handle.disabled()) {
+    if (!(target instanceof Element) || !entry || entry.handle.disabled()) {
       return false;
     }
     const itemHost = entry.handle.host;
@@ -457,15 +468,14 @@ export class ForTreeNodeDrag<T = string> implements ForTreeNodeDragContext {
     });
   }
 
-  #publishDropTarget(rows: TreeDropRow<T>[], target: TreeDropTarget<T>): void {
+  #publishDropTarget(rows: TreeDropRow<T>[], target: TreeDropTarget<T>): boolean {
     const indicator = resolveDropIndicator(rows, this.#gapIndex, target.level);
-    this._dropTargetValid.set(
-      indicator !== null &&
-        this.#liftedValue !== null &&
-        this.#accepts(this.#dropEvent(this.#liftedValue, target)),
-    );
+    const valid =
+      this.#liftedValue !== null && this.#accepts(this.#dropEvent(this.#liftedValue, target));
+    this._dropTargetValid.set(indicator !== null && valid);
     this._dropLevel.set(target.level);
-    this.#dropIndicator.set(indicator);
+    this.#dropIndicator.set(indicator === null ? null : { ...indicator, valid });
+    return valid;
   }
 
   #dropEvent(node: T, target: TreeDropTarget<T>): ForTreeDragDropEvent<T> {
@@ -573,7 +583,10 @@ export class ForTreeNodeDrag<T = string> implements ForTreeNodeDragContext {
     const rows = buildTreeDropRows(visible, this.#liftedValue, equals, this.#ctx.dir());
     const target = resolveTreeDrop(rows, this.#gapIndex, this.#desiredLevel, equals);
     this.#desiredLevel = target.level;
-    this.#publishDropTarget(rows, target);
+    if (!this.#publishDropTarget(rows, target)) {
+      this.#announcer.announce(this.#defaults.dragAnnounceInvalid(this.#label), 'polite');
+      return;
+    }
 
     const parentLabel = treeParentLabel(visible, target.parentValue, equals);
     const total = treeDropTotal(visible, target, (v) => this.#ctx.isExpanded(v), equals);

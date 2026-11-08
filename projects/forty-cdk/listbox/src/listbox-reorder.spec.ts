@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
-import { renderHost } from '../../src/test-utils';
+import { renderHost, type RenderResult } from '../../src/test-utils';
 import { moveItemInArray } from 'forty-cdk/drag-drop';
 import { ForListbox } from './listbox';
 import { provideForDragDropDefaults, provideForListboxDefaults } from 'forty-cdk/defaults';
@@ -545,5 +545,134 @@ describe('ForListboxReorder — focus follows the dropped option (#2118)', () =>
 
     expect(order(queryAll)).toEqual(['d', 'a', 'b', 'c']);
     expect(document.activeElement).toBe(query('[data-testid="opt-d"]'));
+  });
+});
+
+function firePointer(
+  target: EventTarget,
+  type: string,
+  x: number,
+  y: number,
+  init: Partial<PointerEventInit> = {},
+): PointerEvent {
+  const event = new PointerEvent(type, {
+    clientX: x,
+    clientY: y,
+    button: 0,
+    pointerId: 1,
+    pointerType: 'mouse',
+    bubbles: true,
+    cancelable: true,
+    ...init,
+  });
+  target.dispatchEvent(event);
+  return event;
+}
+
+describe('ForListboxReorder — a keyboard lift owns the list until it ends (#2714)', () => {
+  afterEach(() => {
+    document.querySelectorAll('[aria-live]').forEach((n) => n.remove());
+  });
+
+  async function liftA(): Promise<RenderResult<ReorderHost>> {
+    const rendered = renderHost(ReorderHost);
+    await rendered.flush();
+    const optA = rendered.query('[data-testid="opt-a"]')!;
+    optA.focus();
+    dispatchKey(optA, ' ', { ctrlKey: true });
+    await rendered.flush();
+    return rendered;
+  }
+
+  it('cancels the lift when another option is pressed, so the press never re-targets it', async () => {
+    const rendered = await liftA();
+    const { instance, query, queryAll, flush: f } = rendered;
+    const list = query('[forListbox]')!;
+    dispatchKey(list, 'ArrowDown');
+    dispatchKey(list, 'ArrowDown');
+    await f();
+
+    const optD = query('[data-testid="opt-d"]')!;
+    firePointer(optD, 'pointerdown', 10, 10);
+    optD.focus();
+    firePointer(optD, 'pointerup', 10, 10);
+    await f();
+
+    expect(list.hasAttribute('data-dragging')).toBe(false);
+    expect(liveRegion('assertive')?.textContent).toBe('a, movement cancelled.');
+
+    dispatchKey(optD, 'Enter');
+    await f();
+
+    expect(instance.events()).toEqual([]);
+    expect(order(queryAll)).toEqual(['a', 'b', 'c', 'd']);
+    expect(queryAll('[forListboxOption][data-dragging]')).toEqual([]);
+  });
+
+  it('starts no pointer drag beside the lift when the lifted option itself is pressed', async () => {
+    const rendered = await liftA();
+    const { instance, query, flush: f } = rendered;
+    const list = query('[forListbox]')!;
+    const optA = query('[data-testid="opt-a"]')!;
+    dispatchKey(list, 'ArrowDown');
+    await f();
+
+    firePointer(optA, 'pointerdown', 10, 10);
+    firePointer(document, 'pointermove', 10, 40);
+    firePointer(document, 'pointerup', 10, 40);
+    await f();
+
+    expect(list.getAttribute('data-dragging')).toBe('');
+    expect(instance.events()).toEqual([]);
+
+    dispatchKey(optA, 'Enter');
+    await f();
+
+    expect(instance.events()).toEqual([{ from: 0, to: 1 }]);
+  });
+
+  it('consumes PageDown, so focus stays on the lifted option', async () => {
+    const { query, flush: f } = await liftA();
+    const optA = query('[data-testid="opt-a"]')!;
+
+    const pageDown = dispatchKey(optA, 'PageDown');
+    await f();
+
+    expect(pageDown.defaultPrevented).toBe(true);
+    expect(document.activeElement).toBe(optA);
+  });
+
+  it('consumes a typeahead character, so focus stays on the lifted option', async () => {
+    const { query, flush: f } = await liftA();
+    const optA = query('[data-testid="opt-a"]')!;
+
+    const letter = dispatchKey(optA, 'c');
+    await f();
+
+    expect(letter.defaultPrevented).toBe(true);
+    expect(document.activeElement).toBe(optA);
+  });
+
+  it('keeps Ctrl+A away from the options, leaving the selection unchanged', async () => {
+    const { instance, query, flush: f } = await liftA();
+    const optA = query('[data-testid="opt-a"]')!;
+
+    dispatchKey(optA, 'a', { ctrlKey: true });
+    await f();
+
+    expect(instance.value()).toEqual([]);
+    expect(document.activeElement).toBe(optA);
+  });
+
+  it('leaves the browser default of a Ctrl / Cmd chord and of a function key alone', async () => {
+    const { query, flush: f } = await liftA();
+    const optA = query('[data-testid="opt-a"]')!;
+
+    const chord = dispatchKey(optA, 'r', { ctrlKey: true });
+    const fKey = dispatchKey(optA, 'F5');
+    await f();
+
+    expect(chord.defaultPrevented).toBe(false);
+    expect(fKey.defaultPrevented).toBe(false);
   });
 });

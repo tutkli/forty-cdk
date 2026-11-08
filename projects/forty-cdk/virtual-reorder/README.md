@@ -70,7 +70,8 @@ A row's `[forDragPlaceholder]` renders in the lifted row's own slot for the whol
 | `ArrowUp` / `ArrowDown` | Step the target one position                                                                            |
 | `Home` / `End`          | Focus the first / last item of the dataset, scrolling it into view. While lifted, move the target there |
 | `PageUp` / `PageDown`   | Step the target by one window                                                                           |
-| `Escape`                | Cancel the gesture, scroll the origin back into view and keep focus on it                               |
+| `Escape` / `Tab`        | Cancel the gesture, scroll the origin back into view and keep focus on it                               |
+| Any other key           | Ignored while a row is lifted. Ctrl / Cmd / Alt chords and function keys keep their browser meaning     |
 
 Every lift, move, drop and cancel is announced through the live announcer using the `provideForDragDropDefaults` message builders, so a scope override localizes them centrally. Pointer and keyboard gestures alike announce dataset positions counted against the dataset size, and name the row by its accessible text, so an `aria-hidden` handle glyph is not read out.
 

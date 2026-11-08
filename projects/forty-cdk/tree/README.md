@@ -664,18 +664,20 @@ Annotating a `viewChild` / `@ViewChild` reference (`ForTreeNodeDrag<FileNode>`) 
 
 ### Keyboard interaction
 
-| Key               | Behavior while **not** lifted | Behavior while **lifted**                                                                                                                                                    |
-| ----------------- | ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Shift+Enter`     | Lifts the focused node.       | —                                                                                                                                                                            |
-| `ArrowDown`       | Normal tree navigation.       | Moves the insertion point one row down.                                                                                                                                      |
-| `ArrowUp`         | Normal tree navigation.       | Moves the insertion point one row up.                                                                                                                                        |
-| `Home` / `End`    | Normal tree navigation.       | Moves the insertion point to the first / last row. Focus stays on the lifted node.                                                                                           |
-| `ArrowRight`      | Normal expand / enter.        | Deepens the target level by 1 (LTR; reversed under RTL).                                                                                                                     |
-| `ArrowLeft`       | Normal collapse / leave.      | Shallows the target level by 1 (LTR; reversed under RTL).                                                                                                                    |
-| `Space` / `Enter` | Normal select / activate.     | Drops the node at the current resolved position. Focus follows the node, or lands on its new parent when that parent is collapsed.                                           |
-| `Escape`          | —                             | Cancels the drag; the node is returned to its original position.                                                                                                             |
-| `Tab`             | Normal focus leave.           | Cancels the drag.                                                                                                                                                            |
-| Any other key     | Normal tree behavior.         | Consumed, so `*`, typeahead and your own item key handlers cannot move focus or expand nodes mid-drag. Ctrl / Cmd / Alt chords and function keys keep their browser meaning. |
+| Key               | Behavior while **not** lifted | Behavior while **lifted**                                                                                                                                                                          |
+| ----------------- | ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Shift+Enter`     | Lifts the focused node.       | —                                                                                                                                                                                                  |
+| `ArrowDown`       | Normal tree navigation.       | Moves the insertion point one row down.                                                                                                                                                            |
+| `ArrowUp`         | Normal tree navigation.       | Moves the insertion point one row up.                                                                                                                                                              |
+| `Home` / `End`    | Normal tree navigation.       | Moves the insertion point to the first / last row. Focus stays on the lifted node.                                                                                                                 |
+| `ArrowRight`      | Normal expand / enter.        | Deepens the target level by 1 (LTR; reversed under RTL).                                                                                                                                           |
+| `ArrowLeft`       | Normal collapse / leave.      | Shallows the target level by 1 (LTR; reversed under RTL).                                                                                                                                          |
+| `Space` / `Enter` | Normal select / activate.     | Drops the node at the current resolved position. Focus follows the node, or lands on its new parent when that parent is collapsed.                                                                 |
+| `Escape`          | —                             | Cancels the drag; the node is returned to its original position.                                                                                                                                   |
+| `Tab`             | Normal focus leave.           | Cancels the drag.                                                                                                                                                                                  |
+| Any other key     | Normal tree behavior.         | Consumed, so `*`, typeahead, `Ctrl/Cmd+A` and your own item key handlers cannot move focus, select or expand nodes mid-drag. Ctrl / Cmd / Alt chords and function keys keep their browser meaning. |
+
+A press on another node cancels a keyboard drag, restoring the lifted node's expansion, so a drag that follows it is an ordinary pointer drag. A press on the lifted node itself starts no pointer drag.
 
 `Ctrl+Space` lifts too where the page receives it, but don't make it the only key you document: macOS takes Cmd+Space for Spotlight and Ctrl+Space for switching input sources, and many IMEs on Windows and Linux toggle on Ctrl+Space. To use another key, set `liftKey` in `provideForDragDropDefaults` and add the result to a `providers` array; it applies to every reorder coordinator in that scope. A key press that belongs to an IME composition never lifts.
 
@@ -783,8 +785,10 @@ export class Files {
     { id: 'readme', name: 'Readme' },
   ]);
 
+  readonly folders: ReadonlySet<string> = new Set(['documents', 'projects']);
+
   readonly canDrop = (event: ForTreeDragDropEvent): boolean => {
-    return event.newParent !== event.node;
+    return event.newParent === null || this.folders.has(event.newParent);
   };
 
   onDrop(event: ForTreeDragDropEvent): void {
@@ -812,9 +816,12 @@ export class Files {
 
 While a drag is live, the single `[forTreeItem]` the lifted node would land beside reflects **`data-drop-position`** so you can draw an indented insertion line. Exactly one visible item carries it at a time; it is absent on every other row and whenever the tree is idle. It tracks every pointer move and every Arrow step (in both LTR and RTL) and clears on drop / cancel / Escape / Tab.
 
-| Piece           | Attribute            | Values                                                        |
-| --------------- | -------------------- | ------------------------------------------------------------- |
-| `[forTreeItem]` | `data-drop-position` | `"before"` \| `"after"` (the line sits above / below the row) |
+| Piece           | Attribute            | Values                                                                 |
+| --------------- | -------------------- | ---------------------------------------------------------------------- |
+| `[forTreeItem]` | `data-drop-position` | `"before"` \| `"after"` (the line sits above / below the row)          |
+| `[forTreeItem]` | `data-drop-invalid`  | `""` (empty), on the anchor row while `[canDrop]` refuses the position |
+
+When `[canDrop]` refuses the resolved position, the anchor row keeps `data-drop-position` and also carries **`data-drop-invalid`**, so you can draw a "not allowed" line instead of hiding it, and the move is announced with `dragAnnounceInvalid` rather than as a position. The root's `data-drop-target` is absent at the same time.
 
 Pair it with the root's `--for-tree-drop-level` (the resolved depth) to indent the line to the target level. The anchor row is already indented by its own nesting, so offset the line by the difference between the two levels rather than by the drop level alone. Publish each row's level from the item's exported `level()`, and draw the line on a positioned label so it lands on the anchor row:
 
@@ -848,11 +855,14 @@ Pair it with the root's `--for-tree-drop-level` (the resolved depth) to indent t
 .tree-item[data-drop-position='after'] > .tree-label::after {
   bottom: 0;
 }
+.tree-item[data-drop-invalid] > .tree-label::after {
+  background: var(--danger);
+}
 ```
 
 `1rem` stands for the indent each nested group adds. `inset-inline-start` follows the writing direction, so the line indents from the right under `dir="rtl"`.
 
-Advanced consumers can read the same resolved position programmatically: `[forTreeNodeDrag]` exposes a read-only `dropIndicator: Signal<ForTreeDropIndicator<T> | null>` (`{ anchor, position, level }`, `null` when idle). Injecting it through `ForTreeNodeDragContext` reads the same signal at `ForTreeDropIndicator<unknown>`, since a token cannot carry the node value type.
+Advanced consumers can read the same resolved position programmatically: `[forTreeNodeDrag]` exposes a read-only `dropIndicator: Signal<ForTreeDropIndicator<T> | null>` (`{ anchor, position, level, valid }`, `null` when idle). Injecting it through `ForTreeNodeDragContext` reads the same signal at `ForTreeDropIndicator<unknown>`, since a token cannot carry the node value type.
 
 On lift the dragged node's subtree is collapsed (and restored on drop / cancel). This keeps the drop geometry tractable. Independently of it, the lifted node's descendants are never offered as drop positions, so a re-expansion during the drag (a toggle click or a write to `[(expanded)]`) cannot let a node be dropped into its own descendant; `[canDrop]` adds consumer-defined vetoes on top.
 

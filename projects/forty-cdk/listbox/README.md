@@ -246,6 +246,8 @@ export class DemoSortableTags {
 
 - **Shift+Enter** lifts the focused option. **Ctrl+Space** lifts it too where the page receives that key.
 - While lifted: **arrow keys** step the target position (linearly in DOM order, so a wrapping grid sorts with either axis), **Home / End** jump to the ends, **Space / Enter** drop, keeping focus on the dropped option, **Escape / Tab** cancel.
+- Every other key is ignored while an option is lifted, so typeahead, **PageUp / PageDown** and **Ctrl/Cmd+A** cannot move focus or change the selection mid-lift. Ctrl / Cmd / Alt chords and function keys keep their browser meaning.
+- A press on another option cancels the lift, so a drag that follows it is an ordinary pointer reorder. A press on the lifted option starts no pointer drag.
 - The lift key is intercepted in the capture phase, so it never collides with the option's native Space / Enter selection or with arrow navigation while idle.
 
 **Ctrl+Space is not reliable, so don't make it the only key you document.** On macOS, Cmd+Space opens Spotlight and Ctrl+Space switches the input source once a second one is enabled, so the page never sees either. Many IMEs on Windows and Linux also toggle on Ctrl+Space. Shift+Enter reaches the page on every platform. To use another key, set `liftKey` in `provideForDragDropDefaults` and add the result to a `providers` array. It applies to every reorder coordinator in that scope (listbox, tree and table):

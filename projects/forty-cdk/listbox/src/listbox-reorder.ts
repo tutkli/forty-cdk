@@ -14,6 +14,8 @@ import {
 } from '@angular/core';
 
 import {
+  arbitrateLiftPress,
+  consumeUnmappedLiftedKey,
   dragAnnouncementLabel,
   resolveDropTarget,
   isDragLiftKey,
@@ -28,7 +30,11 @@ import {
   type WritingDirection,
   isHistoryChord,
 } from 'forty-cdk/core';
-import { injectListboxContext, type ForListboxContext } from './listbox-context';
+import {
+  injectListboxContext,
+  type ForListboxContext,
+  type ForListboxOptionHandle,
+} from './listbox-context';
 import { FOR_DRAG_DROP_DEFAULTS, FOR_LISTBOX_DEFAULTS } from 'forty-cdk/defaults';
 
 const POINTER_ARM_THRESHOLD_PX = 5;
@@ -92,7 +98,9 @@ function resolveReorderAction(event: KeyboardEvent, dir: WritingDirection): Reor
  * Keyboard: focus an option and press the lift key (`ForDragDropDefaults.liftKey`, `Shift+Enter`
  * by default). While lifted, the arrow keys step the target position (linearly in DOM order, so a
  * wrapping chip grid works with either axis), `Home` / `End` jump to the ends, `Space` / `Enter`
- * drop, `Escape` / `Tab` cancel.
+ * drop, `Escape` / `Tab` cancel. Every other key is kept from the options until the lift ends,
+ * and Ctrl / Cmd / Alt chords and function keys keep their browser meaning. A press on another
+ * option cancels the lift.
  *
  * Pointer: drag an option past a small threshold to reorder; a short press without movement still
  * selects (the post-drag click is suppressed). A floating preview follows the pointer; drop
@@ -204,6 +212,15 @@ export class ForListboxReorder {
   }
 
   #resolveOption(target: EventTarget | null): { host: HTMLElement; index: number } | null {
+    const pressed = this.#pressedOption(target);
+    return pressed === null || pressed.option.disabled()
+      ? null
+      : { host: pressed.option.host, index: pressed.index };
+  }
+
+  #pressedOption(
+    target: EventTarget | null,
+  ): { option: ForListboxOptionHandle<unknown>; index: number } | null {
     if (!(target instanceof Node)) {
       return null;
     }
@@ -211,14 +228,20 @@ export class ForListboxReorder {
     for (let i = 0; i < options.length; i++) {
       const option = options[i]!;
       if (option.host === target || option.host.contains(target)) {
-        return option.disabled() ? null : { host: option.host, index: i };
+        return { option, index: i };
       }
     }
     return null;
   }
 
   #canStartPointer(event: PointerEvent): boolean {
-    if (!this.#reorderable() || (event.pointerType === 'mouse' && event.button !== 0)) {
+    const free = arbitrateLiftPress({
+      keyboardLifted: this.#mode === 'keyboard',
+      liftedHost: this.#liftedHost,
+      pressedHost: this.#pressedOption(event.target)?.option.host ?? null,
+      cancelKeyboardLift: () => this.#cancel(),
+    });
+    if (!free || !this.#reorderable() || (event.pointerType === 'mouse' && event.button !== 0)) {
       return false;
     }
     const resolved = this.#resolveOption(event.target);
@@ -299,6 +322,7 @@ export class ForListboxReorder {
   #onLiftedKeydown(event: KeyboardEvent): void {
     const action = resolveReorderAction(event, this.#ctx.dir());
     if (action === null) {
+      consumeUnmappedLiftedKey(event);
       return;
     }
     event.preventDefault();

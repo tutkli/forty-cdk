@@ -1890,3 +1890,110 @@ describe('ForTreeNodeDrag — the work a lift does grows linearly with the visib
     expect(liftCalls).toBeLessThan(3 * instance.ids.length);
   });
 });
+
+describe('ForTreeNodeDrag — a keyboard lift owns the tree until it ends (#2714)', () => {
+  afterEach(() => {
+    document.querySelectorAll('[aria-live]').forEach((n) => n.remove());
+  });
+
+  function labelOf(item: HTMLElement): HTMLElement {
+    return item.querySelector<HTMLElement>('[forTreeItemLabel]')!;
+  }
+
+  it('cancels the lift and restores its expansion when another node is pressed and dragged', async () => {
+    const { instance, query, flush: f } = renderHost(TreeDragHost);
+    instance.open.set(['docs']);
+    await f();
+    const docs = query<HTMLElement>('[data-testid="docs"]')!;
+    docs.focus();
+    dispatchKey(docs, ' ', { ctrlKey: true });
+    await f();
+    expect(instance.open()).not.toContain('docs');
+
+    const music = labelOf(query<HTMLElement>('[data-testid="music"]')!);
+    firePointer(music, 'pointerdown', 100, 100);
+    await f();
+
+    expect(instance.open()).toContain('docs');
+    expect(liveRegion('assertive')?.textContent).toContain(
+      'Docs returned to its original position.',
+    );
+
+    firePointer(document, 'pointermove', 100, 110);
+    firePointer(document, 'pointerup', 100, 110);
+    await f();
+
+    expect(instance.open()).toContain('docs');
+    expect(instance.dropped()?.node).toBe('music');
+  });
+
+  it('starts no pointer drag beside the lift when the lifted node itself is pressed', async () => {
+    const { instance, query, flush: f } = renderHost(TreeDragHost);
+    await f();
+    const tree = query<HTMLElement>('[forTree]')!;
+    const music = query<HTMLElement>('[data-testid="music"]')!;
+    music.focus();
+    dispatchKey(music, ' ', { ctrlKey: true });
+    await f();
+
+    firePointer(labelOf(music), 'pointerdown', 100, 100);
+    firePointer(document, 'pointermove', 100, 120);
+    firePointer(document, 'pointerup', 100, 120);
+    await f();
+
+    expect(tree.hasAttribute('data-dragging')).toBe(true);
+    expect(instance.dropped()).toBeNull();
+  });
+});
+
+describe('ForTreeNodeDrag — live feedback describes the drop [canDrop] allows (#2714)', () => {
+  afterEach(() => {
+    document.querySelectorAll('[aria-live]').forEach((n) => n.remove());
+  });
+
+  async function liftMusic(): Promise<{
+    tree: HTMLElement;
+    queryAll: (selector: string) => HTMLElement[];
+    f: () => Promise<void>;
+  }> {
+    const { instance, query, queryAll, flush: f } = renderHost(TreeDragHost);
+    instance.canDropFn.set((e) => e.newParent === null);
+    await f();
+    const music = query<HTMLElement>('[data-testid="music"]')!;
+    music.focus();
+    dispatchKey(music, ' ', { ctrlKey: true });
+    await f();
+    return { tree: query<HTMLElement>('[forTree]')!, queryAll, f };
+  }
+
+  it('marks the anchor row of a vetoed position with data-drop-invalid beside data-drop-position', async () => {
+    const { tree, queryAll, f } = await liftMusic();
+    expect(queryAll('[data-drop-position]')).toHaveLength(1);
+    expect(queryAll('[data-drop-invalid]')).toEqual([]);
+
+    dispatchKey(tree, 'ArrowRight');
+    await f();
+
+    const anchors = queryAll('[data-drop-position]');
+    expect(anchors).toHaveLength(1);
+    expect(queryAll('[data-drop-invalid]')).toEqual(anchors);
+
+    dispatchKey(tree, 'ArrowLeft');
+    await f();
+
+    expect(queryAll('[data-drop-position]')).toHaveLength(1);
+    expect(queryAll('[data-drop-invalid]')).toEqual([]);
+  });
+
+  it('announces a move onto a vetoed position as invalid, not as the move', async () => {
+    const { tree, f } = await liftMusic();
+
+    dispatchKey(tree, 'ArrowRight');
+    await f();
+    expect(liveRegion('polite')?.textContent).toBe('Cannot drop Music here.');
+
+    dispatchKey(tree, 'ArrowLeft');
+    await f();
+    expect(liveRegion('polite')?.textContent).not.toBe('Cannot drop Music here.');
+  });
+});
