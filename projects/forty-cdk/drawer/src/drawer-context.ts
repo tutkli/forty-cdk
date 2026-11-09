@@ -66,8 +66,9 @@ export interface ForDrawerContext {
    * Progress of the current swipe *toward the anchored edge* (dismiss
    * direction), as a fraction `∈ [0, 1]` of the distance to the edge from
    * where the drag started: the active snap's extent with snap points, the
-   * full dimension without, so `1` means fully swiped off-screen. `0` at rest
-   * and while growing away from the edge (with snap points). The backdrop publishes this as the
+   * full dimension without, so `1` means fully swiped off-screen. `0` at rest,
+   * while growing away from the edge (with snap points), and throughout under
+   * `prefers-reduced-motion: reduce`. The backdrop publishes this as the
    * `--for-drawer-swipe-progress` custom property so consumers can fade it
    * out as the surface is swiped off-screen — `opacity: calc(1 - var(--for-drawer-swipe-progress))`.
    */
@@ -197,8 +198,9 @@ export interface ForDrawerSwipeEvent {
    * Progress of the gesture toward the anchored edge (dismiss direction), a
    * unitless fraction `∈ [0, 1]` of the distance to the edge from where the
    * drag started: the active snap's extent with snap points, the full
-   * dimension without, so `1` means fully swiped off-screen. `0` on arm and
-   * while growing away from the edge (with snap points).
+   * dimension without, so `1` means fully swiped off-screen. `0` on arm,
+   * while growing away from the edge (with snap points), and throughout under
+   * `prefers-reduced-motion: reduce`.
    */
   readonly progress: number;
   readonly originalEvent: PointerEvent;

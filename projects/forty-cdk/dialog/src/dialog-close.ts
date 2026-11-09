@@ -23,7 +23,11 @@ export class ForDialogClose {
 
   readonly #ctx = injectDialogContext('ForDialogClose');
 
-  /** Optional value passed to `ForDialogRef.close()` (programmatic mode). */
+  /**
+   * Optional value passed to `ForDialogRef.close()` (programmatic mode). Not checked
+   * against the result a `FOR_DIALOG_CONTRACT` declares; close through
+   * `injectDialogRef()` for a checked result.
+   */
   readonly closeWith = input<unknown>(undefined);
 
   private onClick(): void {

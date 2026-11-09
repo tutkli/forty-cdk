@@ -181,6 +181,72 @@ test.describe('Drawer', () => {
       .toBeLessThan(1);
   });
 
+  test('scaleBackground animates the wrapper back on close', async ({ page }) => {
+    await gotoFixture(page, 'drawer', { scaleBackground: '1' });
+    const shell = el(page, 'shell');
+
+    await el(page, 'trigger').click();
+    await expect(el(page, 'drawer')).toBeVisible();
+    await expect
+      .poll(() => shell.evaluate((node) => (node as HTMLElement).style.transform))
+      .toMatch(/scale\(/);
+    await expect
+      .poll(() =>
+        shell.evaluate(
+          (node) => node.getAnimations().filter((a) => a.playState === 'running').length,
+        ),
+      )
+      .toBe(0);
+
+    await shell.evaluate((node) => {
+      const w = window as unknown as { __scaleSamples: Array<Record<string, unknown>> };
+      w.__scaleSamples = [];
+      const observer = new MutationObserver(() => {
+        if ((node as HTMLElement).style.transform.includes('scale(')) {
+          return;
+        }
+        observer.disconnect();
+        w.__scaleSamples.push({
+          phase: 'revert',
+          anims: node.getAnimations().map((a) => (a as CSSTransition).transitionProperty),
+        });
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            w.__scaleSamples.push({ phase: 'raf2', computed: getComputedStyle(node).transform });
+          });
+        });
+      });
+      observer.observe(node, { attributes: true, attributeFilter: ['style'] });
+    });
+
+    await el(page, 'close-btn').click();
+    await expect
+      .poll(() =>
+        page.evaluate(
+          () => (window as unknown as { __scaleSamples: unknown[] }).__scaleSamples.length,
+        ),
+      )
+      .toBe(2);
+    const samples = await page.evaluate(
+      () =>
+        (window as unknown as { __scaleSamples: Array<Record<string, unknown>> }).__scaleSamples,
+    );
+    const report = JSON.stringify(samples);
+    expect(samples[0]?.['anims'], `a transform transition runs on revert: ${report}`).toContain(
+      'transform',
+    );
+    expect(samples[1]?.['computed'], `still mid-animation two frames later: ${report}`).not.toBe(
+      'none',
+    );
+
+    await expect
+      .poll(() => shell.evaluate((node) => (node as HTMLElement).style.transitionDuration))
+      .toBe('');
+    await expect
+      .poll(() => shell.evaluate((node) => getComputedStyle(node).transform))
+      .toBe('none');
+  });
+
   test('nested: child registers data-depth="1" and parent reflects data-state-nested', async ({
     page,
   }) => {

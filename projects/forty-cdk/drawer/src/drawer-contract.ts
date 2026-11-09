@@ -6,12 +6,16 @@
  * class ConfirmDrawer {
  *   declare readonly [FOR_DRAWER_CONTRACT]: ForDrawerContract<ConfirmData, ConfirmResult>;
  *   readonly data = injectDrawerData<ConfirmDrawer>();
+ *   readonly ref = injectDrawerRef<ConfirmDrawer>();
  * }
  * ```
  *
  * `ForDrawerManager.open(ConfirmDrawer, { data })` then rejects a `data` that is not a
- * `ConfirmData` and returns a `ForDrawerRef<ConfirmResult>`. The member must be public. A
- * component that declares none keeps an unchecked `data` and an `unknown` result.
+ * `ConfirmData` and returns a `ForDrawerRef<ConfirmResult>`, and the component's `ref.close()`
+ * accepts only a `ConfirmResult`. The member must be public. A component that declares none
+ * keeps an unchecked `data` and an `unknown` result. A `[forDrawerClose]` button's `[closeWith]`
+ * is not checked against the contract: close through `injectDrawerRef()` where the result type
+ * matters.
  */
 export const FOR_DRAWER_CONTRACT: unique symbol = Symbol('forty-cdk/drawer:contract');
 

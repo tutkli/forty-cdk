@@ -47,6 +47,23 @@ export function injectDialogData<T = unknown>():
     (typeof FOR_DIALOG_CONTRACT extends keyof T ? ForDialogDataOf<T> : T) | null;
 }
 
+/**
+ * Typed accessor for the opened component's own {@link ForDialogRef}, to close
+ * the dialog with a result. Pass the dialog component itself when it declares a
+ * {@link FOR_DIALOG_CONTRACT}, and `close()` accepts only the result type that
+ * contract names, the type `open()` hands its caller; pass any other type and
+ * the result is that type, unchecked against the caller's. A
+ * `[forDialogClose]` button's `[closeWith]` is not checked against the
+ * contract, so close through this ref wherever the result type matters.
+ */
+export function injectDialogRef<T = unknown>(): ForDialogRef<
+  typeof FOR_DIALOG_CONTRACT extends keyof T ? ForDialogResultOf<T> : T
+> {
+  return inject(ForDialogRef) as ForDialogRef<
+    typeof FOR_DIALOG_CONTRACT extends keyof T ? ForDialogResultOf<T> : T
+  >;
+}
+
 export interface ForDialogOpenConfig<D = unknown> {
   /** Payload available inside the dialog component via `injectDialogData()`. */
   data?: D;

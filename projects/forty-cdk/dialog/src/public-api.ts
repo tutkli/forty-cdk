@@ -21,6 +21,7 @@ export {
   ForDialogManager,
   FOR_DIALOG_DATA,
   injectDialogData,
+  injectDialogRef,
   type ForDialogOpenConfig,
 } from './dialog-manager';
 export {

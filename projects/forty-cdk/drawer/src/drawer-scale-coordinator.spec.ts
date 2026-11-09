@@ -8,7 +8,11 @@ import {
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { type DrawerStackNode, type ForDrawerSide, ForDrawerStack } from 'forty-cdk/core-overlay';
-import { withReducedMotion } from 'forty-cdk/testing';
+import {
+  type FlippableReducedMotion,
+  withFlippableReducedMotion,
+  withReducedMotion,
+} from 'forty-cdk/testing';
 import { flush } from '../../src/test-utils';
 import { ForDrawerScaleCoordinator, type ForDrawerScaleConfig } from './drawer-scale-coordinator';
 
@@ -326,6 +330,159 @@ describe('ForDrawerScaleCoordinator', () => {
 
     expect(coordinator.active()).toBe(true);
     expect(wrapper.style.transform).toContain('scale(0.95)');
+  });
+});
+
+interface StubbedTransition {
+  finish(): void;
+  cancel(): void;
+}
+
+function stubTransformTransition(el: HTMLElement): StubbedTransition {
+  let finish!: () => void;
+  let cancel!: (reason: unknown) => void;
+  const finished = new Promise<void>((resolve, reject) => {
+    finish = resolve;
+    cancel = reject;
+  });
+  finished.catch(() => {});
+  Object.defineProperty(el, 'getAnimations', {
+    configurable: true,
+    value: () => [{ transitionProperty: 'transform', finished }],
+  });
+  return {
+    finish: () => finish(),
+    cancel: () => cancel(new DOMException('cancelled', 'AbortError')),
+  };
+}
+
+describe('ForDrawerScaleCoordinator close transition', () => {
+  let wrapper: HTMLElement;
+  let motion: FlippableReducedMotion;
+
+  beforeEach(() => {
+    motion = withFlippableReducedMotion(false);
+    document.body.style.backgroundColor = 'rgb(255, 255, 255)';
+    wrapper = makeWrapper();
+    wrapper.style.borderRadius = '4px';
+  });
+
+  afterEach(() => {
+    wrapper.remove();
+    document.body.style.backgroundColor = '';
+    motion.restore();
+  });
+
+  async function scaled() {
+    const host = await createHost();
+    host.coordinator.registerWrapper(wrapper);
+    const cleanup = host.coordinator.registerDrawer(signal(DEFAULT_CONFIG));
+    await flush(host.fixture);
+    expect(wrapper.style.transitionDuration).toBe('0.5s');
+    return { ...host, cleanup };
+  }
+
+  function expectConsumerStyles(): void {
+    expect(wrapper.style.transform).toBe('');
+    expect(wrapper.style.borderRadius).toBe('4px');
+    expect(wrapper.style.transformOrigin).toBe('');
+    expect(wrapper.style.overflow).toBe('');
+    expect(wrapper.style.transitionProperty).toBe('');
+    expect(wrapper.style.transitionDuration).toBe('');
+    expect(wrapper.style.transitionTimingFunction).toBe('');
+    expect(document.body.style.backgroundColor).toBe('rgb(255, 255, 255)');
+  }
+
+  it('drops the scale on close with its own transition, and restores the rest once it finishes', async () => {
+    const { fixture, cleanup } = await scaled();
+    const transition = stubTransformTransition(wrapper);
+
+    cleanup();
+    await flush(fixture);
+
+    expect(wrapper.style.transform).toBe('');
+    expect(wrapper.style.borderRadius).toBe('4px');
+    expect(wrapper.style.transitionProperty).toBe('transform, border-radius');
+    expect(wrapper.style.transitionDuration).toBe('0.5s');
+    expect(document.body.style.backgroundColor).toBe('black');
+
+    transition.finish();
+    await flush(fixture);
+
+    expectConsumerStyles();
+  });
+
+  it('restores the rest at once when the close transition is cancelled', async () => {
+    const { fixture, cleanup } = await scaled();
+    const transition = stubTransformTransition(wrapper);
+
+    cleanup();
+    await flush(fixture);
+    expect(wrapper.style.transitionDuration).toBe('0.5s');
+
+    transition.cancel();
+    await flush(fixture);
+
+    expectConsumerStyles();
+  });
+
+  it('a reopen while the wrapper animates back keeps the consumer snapshot', async () => {
+    const { coordinator, fixture, cleanup } = await scaled();
+    const transition = stubTransformTransition(wrapper);
+
+    cleanup();
+    await flush(fixture);
+    const reopen = coordinator.registerDrawer(signal(DEFAULT_CONFIG));
+    await flush(fixture);
+    expect(wrapper.style.transform).toContain('scale(0.95)');
+
+    transition.finish();
+    await flush(fixture);
+    expect(wrapper.style.transform).toContain('scale(0.95)');
+    expect(wrapper.style.transitionDuration).toBe('0.5s');
+
+    Object.defineProperty(wrapper, 'getAnimations', { configurable: true, value: () => [] });
+    reopen();
+    await flush(fixture);
+
+    expectConsumerStyles();
+  });
+
+  it('restores at once when the application is destroyed while the wrapper animates back', async () => {
+    const { fixture, cleanup } = await scaled();
+    stubTransformTransition(wrapper);
+
+    cleanup();
+    await flush(fixture);
+    expect(wrapper.style.transitionDuration).toBe('0.5s');
+
+    TestBed.resetTestingModule();
+
+    expectConsumerStyles();
+  });
+
+  it('restores at once when reduced motion turns on while scaled', async () => {
+    const { fixture } = await scaled();
+    stubTransformTransition(wrapper);
+
+    motion.set(true);
+    await flush(fixture);
+
+    expectConsumerStyles();
+  });
+
+  it('restores at once when reduced motion turns on while the wrapper animates back', async () => {
+    const { fixture, cleanup } = await scaled();
+    stubTransformTransition(wrapper);
+
+    cleanup();
+    await flush(fixture);
+    expect(wrapper.style.transitionDuration).toBe('0.5s');
+
+    motion.set(true);
+    await flush(fixture);
+
+    expectConsumerStyles();
   });
 });
 

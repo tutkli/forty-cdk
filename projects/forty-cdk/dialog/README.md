@@ -225,8 +225,8 @@ import {
   FOR_DIALOG_CONTRACT,
   type ForDialogContract,
   ForDialogManager,
-  ForDialogRef,
   injectDialogData,
+  injectDialogRef,
 } from 'forty-cdk/dialog';
 
 interface ConfirmData {
@@ -245,7 +245,7 @@ type ConfirmResult = 'confirm' | 'cancel';
 class ConfirmDialog {
   declare readonly [FOR_DIALOG_CONTRACT]: ForDialogContract<ConfirmData, ConfirmResult>;
   readonly data = injectDialogData<ConfirmDialog>();
-  readonly ref = inject(ForDialogRef<ConfirmResult>);
+  readonly ref = injectDialogRef<ConfirmDialog>();
 }
 
 @Component({
@@ -265,7 +265,7 @@ export class DemoHost {
 }
 ```
 
-**Typing the payload and the result.** The `[FOR_DIALOG_CONTRACT]` member states, once, the data a dialog component reads and the result it closes with. Declare it with `declare` and no initializer, and keep it public. `open()` then infers both from the component: a `data` of any other shape fails to compile, and the returned ref is a `ForDialogRef<ConfirmResult>`. `injectDialogData<ConfirmDialog>()` reads the payload at the type the contract names, so the component and every caller share one definition. A component without the member keeps an unchecked `data` and an `unknown` result, and `injectDialogData<T>()` with a plain type still types the payload as `T`. Explicit type arguments (`open<ConfirmDialog, ConfirmResult>`) override what the contract supplies.
+**Typing the payload and the result.** The `[FOR_DIALOG_CONTRACT]` member states, once, the data a dialog component reads and the result it closes with. Declare it with `declare` and no initializer, and keep it public. `open()` then infers both from the component: a `data` of any other shape fails to compile, and the returned ref is a `ForDialogRef<ConfirmResult>`. `injectDialogData<ConfirmDialog>()` reads the payload at the type the contract names, and `injectDialogRef<ConfirmDialog>()` hands the component its own ref typed with the declared result, so `ref.close(42)` fails to compile and the component and every caller share one definition. A `[forDialogClose]` button's `[closeWith]` is not checked against the contract, so close through that ref wherever the result type matters. A component without the member keeps an unchecked `data` and an `unknown` result, and `injectDialogData<T>()` with a plain type still types the payload as `T`. Explicit type arguments (`open<ConfirmDialog, ConfirmResult>`) override what the contract supplies.
 
 `injectDialogData()` returns `null` too: the manager provides `null` when `open()` is called without `data`, so guard (`data?.message`) before dereferencing the payload.
 
@@ -332,6 +332,7 @@ class ScopedHost {
 | `ForDialogManager`      | Injectable. `open(component, config?)` returns a `ForDialogRef<R>`. `closeAll(result?)` closes every open dialog, topmost first, with reason `'programmatic'`; exit animations still play and focus ends where the bottom dialog returns it. `openCount` is a `Signal<number>` of the dialogs still open, counting a closed one until its exit animation finishes. |
 | `ForDialogRef<R>`       | `close(result?)`, `closed: Promise<{ reason: ForDialogCloseReason; result: R \| undefined }>`, `result: Signal<R \| undefined>`, `isClosed: Signal<boolean>`.                                                                                                                                                                                                      |
 | `FOR_DIALOG_DATA`       | Token for the `data` payload. Inject in the opened component.                                                                                                                                                                                                                                                                                                      |
+| `injectDialogRef<T>()`  | Typed accessor for the opened component's own `ForDialogRef`: `ForDialogRef<R>` for the result `R` the contract names when `T` is a component declaring `FOR_DIALOG_CONTRACT`, else `ForDialogRef<T>`.                                                                                                                                                             |
 | `injectDialogData<T>()` | Typed accessor for `FOR_DIALOG_DATA`. Returns `T \| null` (`null` when `open()` got no `data`), or the data type the contract names when `T` is a component declaring `FOR_DIALOG_CONTRACT`.                                                                                                                                                                       |
 | `FOR_DIALOG_CONTRACT`   | Key of the member a dialog component declares as `ForDialogContract<D, R>` so `open()` checks `data` against `D` and returns a `ForDialogRef<R>`. `ForDialogDataOf<C>` / `ForDialogResultOf<C>` read the two types off a component.                                                                                                                                |
 

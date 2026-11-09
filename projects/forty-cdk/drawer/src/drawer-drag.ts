@@ -21,7 +21,7 @@ import {
   FLICK_VELOCITY_PX_PER_MS,
   flickVelocity,
   injectHostScrollAxes,
-  injectPrefersReducedMotion,
+  injectSwipeMotion,
   isScrollableAtEdge,
   swipeTouchAction,
   type SwipeDirection,
@@ -138,7 +138,7 @@ export interface DrawerDragConfig {
 export interface DrawerDragHandle {
   /** `true` while a pointer drag gesture is in flight. Host-bound as `data-dragging`. */
   readonly dragging: Signal<boolean>;
-  /** Progress of the current swipe toward the anchored edge, `∈ [0, 1]`. */
+  /** Progress of the current swipe toward the anchored edge, `∈ [0, 1]`; `0` under reduced motion. */
   readonly swipeProgress: Signal<number>;
   /** Live swipe displacement in CSS px along the x axis; published as `--for-drawer-swipe-movement-x`. */
   readonly swipeMovementX: Signal<number>;
@@ -195,7 +195,7 @@ export interface DrawerDragHandle {
 export function injectDrawerDrag(config: DrawerDragConfig): DrawerDragHandle {
   const host = inject<ElementRef<HTMLElement>>(ElementRef);
   const errorHandler = inject(ErrorHandler);
-  const prefersReducedMotion = injectPrefersReducedMotion();
+  const motion = injectSwipeMotion();
   const namespacer = inject(CssVarNamespacer);
   const swipeMovementXVar = namespacer.namespace('--for-drawer-swipe-movement-x');
   const swipeMovementYVar = namespacer.namespace('--for-drawer-swipe-movement-y');
@@ -208,12 +208,9 @@ export function injectDrawerDrag(config: DrawerDragConfig): DrawerDragHandle {
 
   const canDismiss = computed(() => config.swipeToDismiss() && config.dismissible());
   const hasSnapPoints = computed(() => !!snapPoints()?.length);
-  // The drag has somewhere to go — a swipe that can dismiss, or snap points to
-  // move between — and the user hasn't asked for reduced motion (drag
-  // animations are vestibular-hostile).
-  const gestureEnabled = computed(
-    () => (canDismiss() || hasSnapPoints()) && !prefersReducedMotion(),
-  );
+  // The drag has somewhere to go: a swipe that can dismiss, or snap points to
+  // move between.
+  const gestureEnabled = computed(() => canDismiss() || hasSnapPoints());
   const hostScrolls = injectHostScrollAxes(host.nativeElement);
   const touchAction = computed(() =>
     gestureEnabled() && !config.handleOnly()
@@ -224,13 +221,14 @@ export function injectDrawerDrag(config: DrawerDragConfig): DrawerDragHandle {
 
   const dragOffset = linkedSignal({ source: gestureEnabled, computation: () => 0 }); // px translated along the dismissal axis (positive = toward the edge)
   const dragging = linkedSignal({ source: gestureEnabled, computation: () => false });
-  const swipeProgress = linkedSignal({ source: gestureEnabled, computation: () => 0 }); // [0, 1] progress toward the anchored edge (dismiss direction)
+  const progress = linkedSignal({ source: gestureEnabled, computation: () => 0 }); // [0, 1] progress toward the anchored edge (dismiss direction)
+  const swipeProgress = computed(() => motion.follow(progress()));
 
   const swipeMovementX = computed<number>(() =>
-    sideAxis(side()) === 'x' ? sideSign(side()) * dragOffset() : 0,
+    sideAxis(side()) === 'x' ? sideSign(side()) * motion.follow(dragOffset()) : 0,
   );
   const swipeMovementY = computed<number>(() =>
-    sideAxis(side()) === 'y' ? sideSign(side()) * dragOffset() : 0,
+    sideAxis(side()) === 'y' ? sideSign(side()) * motion.follow(dragOffset()) : 0,
   );
 
   // Pointer state for velocity tracking.
@@ -373,7 +371,7 @@ export function injectDrawerDrag(config: DrawerDragConfig): DrawerDragHandle {
     }
 
     dragging.set(true);
-    swipeProgress.set(0);
+    progress.set(0);
     dragOffset.set(
       Math.min(
         dragMaxOffset,
@@ -420,14 +418,13 @@ export function injectDrawerDrag(config: DrawerDragConfig): DrawerDragHandle {
 
     // `progress` tracks progress toward dismiss, so growth (a negative
     // offset) reads as 0 rather than a negative number.
-    const progress = Math.min(1, Math.max(0, nextOffset / (offscreenOffsetAtStart || 1)));
-    swipeProgress.set(progress);
-    config.emitSwipeMove({ progress, originalEvent: event });
+    progress.set(Math.min(1, Math.max(0, nextOffset / (offscreenOffsetAtStart || 1))));
+    config.emitSwipeMove({ progress: swipeProgress(), originalEvent: event });
   }
 
   function resetDragState(): void {
     dragOffset.set(0);
-    swipeProgress.set(0);
+    progress.set(0);
     dragging.set(false);
   }
 
@@ -603,10 +600,8 @@ export function injectDrawerDrag(config: DrawerDragConfig): DrawerDragHandle {
 
   // ---- Drag gate. Arms the pointer listeners only while `gestureEnabled`
   // holds. Every input is read reactively so a runtime flip — a
-  // `[swipeToDismiss]` / `[dismissible]` / `[snapPoints]` rebind or a live
-  // `prefers-reduced-motion` change — arms or disarms the gesture,
-  // mirroring how `ForDrawerScaleCoordinator` already reacts to the
-  // preference. Attaching/detaching listeners is a DOM side effect, so an
+  // `[swipeToDismiss]` / `[dismissible]` / `[snapPoints]` rebind — arms or
+  // disarms the gesture. Attaching/detaching listeners is a DOM side effect, so an
   // `effect` is the right tool; `swipeReady` gates the pre-render run so the
   // gesture arms on a host already attached via the shell's portal.
   effect(() => {
@@ -629,7 +624,7 @@ export function injectDrawerDrag(config: DrawerDragConfig): DrawerDragHandle {
 
   return {
     dragging: dragging.asReadonly(),
-    swipeProgress: swipeProgress.asReadonly(),
+    swipeProgress,
     swipeMovementX,
     swipeMovementY,
     touchAction,

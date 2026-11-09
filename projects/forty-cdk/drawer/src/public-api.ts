@@ -27,6 +27,7 @@ export {
   ForDrawerManager,
   FOR_DRAWER_DATA,
   injectDrawerData,
+  injectDrawerRef,
   type ForDrawerOpenConfig,
 } from './drawer-manager';
 export {

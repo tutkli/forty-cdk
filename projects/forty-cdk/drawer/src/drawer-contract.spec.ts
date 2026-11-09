@@ -1,4 +1,4 @@
-import { Component, inject, provideZonelessChangeDetection } from '@angular/core';
+import { Component, provideZonelessChangeDetection } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
 import { afterEachOverlayCleanup } from '../../src/test-utils';
@@ -8,8 +8,8 @@ import {
   type ForDrawerDataOf,
   type ForDrawerResultOf,
 } from './drawer-contract';
-import { ForDrawerManager, injectDrawerData } from './drawer-manager';
-import { ForDrawerRef } from './drawer-ref';
+import { ForDrawerManager, injectDrawerData, injectDrawerRef } from './drawer-manager';
+import { type ForDrawerRef } from './drawer-ref';
 
 type Equal<A, B> =
   (<T>() => T extends A ? 1 : 2) extends <T>() => T extends B ? 1 : 2 ? true : false;
@@ -29,12 +29,13 @@ type RenameResult = 'saved' | 'discarded';
 class RenameDrawer {
   declare readonly [FOR_DRAWER_CONTRACT]: ForDrawerContract<RenameData, RenameResult>;
   readonly data = injectDrawerData<RenameDrawer>();
-  readonly ref = inject(ForDrawerRef<RenameResult>);
+  readonly ref = injectDrawerRef<RenameDrawer>();
 }
 
 @Component({ template: `<p>untyped</p>` })
 class UntypedDrawer {
   readonly data = injectDrawerData<{ count: number }>();
+  readonly ref = injectDrawerRef();
 }
 
 function setup(): ForDrawerManager {
@@ -65,6 +66,20 @@ describe('ForDrawerContract', () => {
     const contract: Equal<RenameDrawer['data'], RenameData | null> = true;
     const plain: Equal<UntypedDrawer['data'], { count: number } | null> = true;
     expect([contract, plain]).toEqual([true, true]);
+  });
+
+  it('types injectDrawerRef() from the contract when given the component', () => {
+    const contract: Equal<RenameDrawer['ref'], ForDrawerRef<RenameResult>> = true;
+    const plain: Equal<UntypedDrawer['ref'], ForDrawerRef<unknown>> = true;
+    expect([contract, plain]).toEqual([true, true]);
+  });
+
+  it('rejects a close value outside the declared result', () => {
+    const closeOutsideContract = (ref: RenameDrawer['ref']): void => {
+      // @ts-expect-error the result must match the declared contract
+      ref.close(42);
+    };
+    expect(closeOutsideContract).toBeTypeOf('function');
   });
 
   it('returns a ref typed with the declared result and delivers the declared data', async () => {

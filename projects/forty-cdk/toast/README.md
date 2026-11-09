@@ -320,7 +320,7 @@ A viewport-level default applies to every toast that omits its own; a per-toast 
 <for-toast-viewport animateLeave="toast-out" animateEnter="toast-in" />
 ```
 
-`animateLeave` is the load-bearing hook. A pure-CSS exit cannot defer the `@for` unmount, so `animateLeave` is the only way to play an exit animation on the programmatic path. `animateEnter` is optional: a plain `@keyframes` on `[forToast]` already plays on mount without it (this is why programmatic toasts have always animated _in_). Leaving `animateLeave` unset keeps the existing synchronous unmount on dismiss. `prefers-reduced-motion` is honored by your own CSS exactly as with the swipe / enter hooks, because the directive adds no animation of its own.
+`animateLeave` is the load-bearing hook. A pure-CSS exit cannot defer the `@for` unmount, so `animateLeave` is the only way to play an exit animation on the programmatic path. `animateEnter` is optional: a plain `@keyframes` on `[forToast]` already plays on mount without it (this is why programmatic toasts have always animated _in_). Leaving `animateLeave` unset keeps the existing synchronous unmount on dismiss. `prefers-reduced-motion` is honored by your own CSS exactly as with the enter hook, because the directive adds no animation of its own.
 
 The **declarative** path is unchanged: write `animate.leave` directly on your `<div forToast>` (see [Declarative usage](#declarative-usage)).
 
@@ -457,8 +457,8 @@ While the gesture is live the host carries:
 | ----------------------------------- | ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `data-swipe`                        | `"start" \| "move" \| "cancel" \| "end"` | Lifecycle marker: `"start"` marks the move that armed the gesture until the next move replaces it with `"move"`. `"end"` means "about to fire `(dismiss)` with reason `swipe`", and stays on the leaving node with the released movement vars, so an `animate.leave` (or the viewport's `animateLeave`) can fling the toast out from where it was released. `"cancel"` is parked (with the released movement vars) so your CSS can spring the toast back, then cleared on the next `pointerdown`. |
 | `data-swipe-direction`              | `"left" \| "right" \| "up" \| "down"`    | Direction the gesture armed in.                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
-| `--for-toast-swipe-movement-x` (px) | continuous                               | Horizontal pointer travel, clamped to the half-line of the active direction.                                                                                                                                                                                                                                                                                                                                                                                                                      |
-| `--for-toast-swipe-movement-y` (px) | continuous                               | Vertical pointer travel, clamped to the half-line of the active direction.                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| `--for-toast-swipe-movement-x` (px) | continuous                               | Horizontal pointer travel, clamped to the half-line of the active direction; `0px` under `prefers-reduced-motion: reduce`.                                                                                                                                                                                                                                                                                                                                                                        |
+| `--for-toast-swipe-movement-y` (px) | continuous                               | Vertical pointer travel, clamped to the half-line of the active direction; `0px` under `prefers-reduced-motion: reduce`.                                                                                                                                                                                                                                                                                                                                                                          |
 
 The directive does NOT animate anything. The consumer's CSS transitions / `animate.leave` drive the visual feedback:
 
@@ -489,6 +489,8 @@ Outputs:
 - `(swipeCancel)`: released before threshold, or `pointercancel`.
 
 `dismissible=false` disables swipe entirely: a sticky / forced-action toast cannot be user-dismissed.
+
+Under `prefers-reduced-motion: reduce` the gesture stays and the motion goes, as on every swipe surface in the library: a swipe past `swipeThreshold` still dismisses, `data-swipe` / `data-swipe-direction` and the four outputs still report it, but `--for-toast-swipe-movement-x` / `-y` stay at `0px`, so the toast does not follow the finger and your swipe CSS needs no reduced-motion rule of its own.
 
 ## Auto-dismiss + pause-on-hover
 
@@ -587,10 +589,10 @@ Toast pieces (`[forToast]`, `[forToastTitle]`, `[forToastDescription]`, `[forToa
 
 Written on the `[forToast]` host while a swipe gesture is live, so the consumer can drive a transform-based animation entirely from CSS.
 
-| Property                       | Meaning                                                                 |
-| ------------------------------ | ----------------------------------------------------------------------- |
-| `--for-toast-swipe-movement-x` | Horizontal pointer travel in px, clamped to the active swipe direction. |
-| `--for-toast-swipe-movement-y` | Vertical pointer travel in px, clamped to the active swipe direction.   |
+| Property                       | Meaning                                                                                                               |
+| ------------------------------ | --------------------------------------------------------------------------------------------------------------------- |
+| `--for-toast-swipe-movement-x` | Horizontal pointer travel in px, clamped to the active swipe direction; `0px` under `prefers-reduced-motion: reduce`. |
+| `--for-toast-swipe-movement-y` | Vertical pointer travel in px, clamped to the active swipe direction; `0px` under `prefers-reduced-motion: reduce`.   |
 
 ```css
 [forToast] {

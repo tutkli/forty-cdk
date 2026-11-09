@@ -23,7 +23,11 @@ export class ForDrawerClose {
 
   readonly #ctx = injectDrawerContext('ForDrawerClose');
 
-  /** Optional value passed to `ForDrawerRef.close()` (programmatic mode). */
+  /**
+   * Optional value passed to `ForDrawerRef.close()` (programmatic mode). Not checked
+   * against the result a `FOR_DRAWER_CONTRACT` declares; close through
+   * `injectDrawerRef()` for a checked result.
+   */
   readonly closeWith = input<unknown>(undefined);
 
   private onClick(): void {

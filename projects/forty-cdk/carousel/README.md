@@ -346,9 +346,9 @@ so compose it **without** the `-1` factor the consumer may apply to
 
 ### Reduced motion
 
-Under `prefers-reduced-motion: reduce` the directive does **not** publish
-`--for-carousel-swipe-movement-x` / `-y` (no live track motion). The gesture still snaps
-`activeIndex` on release. Only the continuous live offset is suppressed.
+Under `prefers-reduced-motion: reduce` the gesture stays and the motion goes, as on every swipe
+surface in the library: the directive does **not** publish `--for-carousel-swipe-movement-x` / `-y`
+(no live track motion), and the gesture still snaps `activeIndex` on release.
 
 ### Cross-axis / touch
 

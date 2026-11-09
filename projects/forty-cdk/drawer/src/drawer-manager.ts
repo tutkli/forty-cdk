@@ -53,6 +53,23 @@ export function injectDrawerData<T = unknown>():
     (typeof FOR_DRAWER_CONTRACT extends keyof T ? ForDrawerDataOf<T> : T) | null;
 }
 
+/**
+ * Typed accessor for the opened component's own {@link ForDrawerRef}, to close
+ * the drawer with a result. Pass the drawer component itself when it declares a
+ * {@link FOR_DRAWER_CONTRACT}, and `close()` accepts only the result type that
+ * contract names, the type `open()` hands its caller; pass any other type and
+ * the result is that type, unchecked against the caller's. A
+ * `[forDrawerClose]` button's `[closeWith]` is not checked against the
+ * contract, so close through this ref wherever the result type matters.
+ */
+export function injectDrawerRef<T = unknown>(): ForDrawerRef<
+  typeof FOR_DRAWER_CONTRACT extends keyof T ? ForDrawerResultOf<T> : T
+> {
+  return inject(ForDrawerRef) as ForDrawerRef<
+    typeof FOR_DRAWER_CONTRACT extends keyof T ? ForDrawerResultOf<T> : T
+  >;
+}
+
 export interface ForDrawerOpenConfig<D = unknown> {
   /** Payload available inside the drawer component via `injectDrawerData()`. */
   data?: D;
