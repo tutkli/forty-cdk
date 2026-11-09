@@ -275,6 +275,7 @@ export {
   type WritingDirection,
 } from './keyboard-navigation/keyboard-navigation';
 export { LiveAnnouncer } from './live-announcer/live-announcer';
+export { ModalOwnedRegions } from './modal-owned-regions/modal-owned-regions';
 export { injectPrefersReducedMotion, MediaQueryRegistry } from './media-query/media-query';
 export {
   clamp,

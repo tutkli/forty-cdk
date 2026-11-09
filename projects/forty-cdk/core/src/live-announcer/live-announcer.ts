@@ -2,12 +2,14 @@ import { DOCUMENT, DestroyRef, Injectable, PLATFORM_ID, inject } from '@angular/
 import { isPlatformBrowser } from '@angular/common';
 
 import { MODAL_EXEMPT_ATTRIBUTE } from '../host-attributes/modal-attributes';
+import { ModalOwnedRegions } from '../modal-owned-regions/modal-owned-regions';
 import { VISUALLY_HIDDEN_STYLE } from '../visually-hidden/visually-hidden';
 
 type Politeness = 'polite' | 'assertive';
 
 interface LiveRegion {
   readonly element: HTMLElement;
+  readonly unregister: () => void;
   generation: number;
   timer: ReturnType<typeof setTimeout> | null;
 }
@@ -36,7 +38,9 @@ interface LiveRegion {
  *
  * Each region carries the `MODAL_EXEMPT_ATTRIBUTE`, so an open modal does not inert it and swallow
  * every announcement made over it. The marker is stamped before the region is appended, so a region
- * created while a modal is already open is skipped too.
+ * created while a modal is already open is skipped too. The topmost open `aria-modal` surface of
+ * the library also lists each region in its `aria-owns`, so a screen reader that hides everything
+ * outside that surface still reads it.
  *
  * The regions are detached and every pending write cancelled when the injector is destroyed. DOM
  * access is gated on `isPlatformBrowser`, so `announce()` and `clear()` are no-ops on the server.
@@ -55,6 +59,7 @@ export class LiveAnnouncer {
   readonly #document = inject(DOCUMENT);
   readonly #isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
   readonly #regions = new Map<Politeness, LiveRegion>();
+  readonly #modalOwned = inject(ModalOwnedRegions);
 
   constructor() {
     if (this.#isBrowser) {
@@ -65,6 +70,7 @@ export class LiveAnnouncer {
     inject(DestroyRef).onDestroy(() => {
       for (const region of this.#regions.values()) {
         this.#cancel(region);
+        region.unregister();
         region.element.remove();
       }
       this.#regions.clear();
@@ -125,6 +131,11 @@ export class LiveAnnouncer {
     // Visually hidden but kept in the accessibility tree.
     region.style.cssText = VISUALLY_HIDDEN_STYLE;
     this.#document.body.appendChild(region);
-    this.#regions.set(politeness, { element: region, generation: 0, timer: null });
+    this.#regions.set(politeness, {
+      element: region,
+      unregister: this.#modalOwned.register(region),
+      generation: 0,
+      timer: null,
+    });
   }
 }
