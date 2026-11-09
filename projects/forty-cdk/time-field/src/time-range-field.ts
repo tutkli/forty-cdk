@@ -288,7 +288,7 @@ export class ForTimeRangeField<D>
       minTime: this.minTime,
       maxTime: this.maxTime,
       source: this.#composer.startSource,
-      onCommit: () => this.#composer.recompose(),
+      onCommit: (composed) => this.#composer.commitEndpoint(this.#startEngine, composed),
     });
     this.#endEngine = new TimeFieldEngine<D>({
       adapter: this.adapter,
@@ -303,7 +303,7 @@ export class ForTimeRangeField<D>
       minTime: this.minTime,
       maxTime: this.maxTime,
       source: this.#composer.endSource,
-      onCommit: () => this.#composer.recompose(),
+      onCommit: (composed) => this.#composer.commitEndpoint(this.#endEngine, composed),
     });
     this.#startContext = this.#composer.makeEndpointContext(this.#startEngine, 'start');
     this.#endContext = this.#composer.makeEndpointContext(this.#endEngine, 'end');

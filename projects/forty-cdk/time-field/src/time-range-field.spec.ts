@@ -821,6 +821,52 @@ describe('ForTimeRangeField', () => {
     });
   });
 
+  describe('a clamped endpoint while the other is incomplete (#2750)', () => {
+    for (const to of ['end', 'outside'] as const) {
+      const where = to === 'end' ? 'to the end endpoint' : 'outside the field';
+
+      for (const allowOvernight of [false, true]) {
+        it(`shows a start typed below minTime clamped once focus moves ${where}${allowOvernight ? ' under allowOvernight' : ''}`, async () => {
+          const r = renderHost(Host);
+          r.instance.allowOvernight.set(allowOvernight);
+          r.instance.minTime.set(new Date(2000, 0, 1, 8, 0));
+          await flush(r.fixture);
+
+          await fill(r, 'start', '07', '00');
+          expect(seg(r, 'start', 'hour').getAttribute('aria-valuenow')).toBe('7');
+
+          seg(r, 'start', 'minute').dispatchEvent(
+            new FocusEvent('blur', { relatedTarget: to === 'end' ? seg(r, 'end', 'hour') : null }),
+          );
+          await flush(r.fixture);
+          expect(seg(r, 'start', 'hour').getAttribute('aria-valuenow')).toBe('8');
+          expect(seg(r, 'start', 'minute').getAttribute('aria-valuenow')).toBe('0');
+          expect(r.instance.value()).toBeNull();
+
+          await type(r, 'end', 'hour', '12');
+          await type(r, 'end', 'minute', '00');
+          expect(seg(r, 'start', 'hour').getAttribute('aria-valuenow')).toBe('8');
+          const range = r.instance.value()!;
+          expect(adapter.getHours(range.start)).toBe(8);
+          expect(adapter.getHours(range.end)).toBe(12);
+        });
+      }
+    }
+
+    it('keeps the typed start while focus stays inside the start endpoint', async () => {
+      const r = renderHost(Host);
+      r.instance.minTime.set(new Date(2000, 0, 1, 8, 0));
+      await flush(r.fixture);
+
+      await fill(r, 'start', '07', '00');
+      seg(r, 'start', 'minute').dispatchEvent(
+        new FocusEvent('blur', { relatedTarget: seg(r, 'start', 'hour') }),
+      );
+      await flush(r.fixture);
+      expect(seg(r, 'start', 'hour').getAttribute('aria-valuenow')).toBe('7');
+    });
+  });
+
   describe('overnight ranges', () => {
     it('commits a midnight-crossing range when the start falls after the end', async () => {
       const r = renderHost(Host);

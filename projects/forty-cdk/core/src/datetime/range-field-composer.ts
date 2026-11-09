@@ -25,6 +25,15 @@ export type RangeFieldEndpoint = 'start' | 'end';
  */
 export type RangeFieldEndpointEngine = SegmentEditorDelegate;
 
+/**
+ * The engine surface {@link RangeFieldComposer.commitEndpoint} hands a held
+ * endpoint's composed value back through. Both `DateFieldEngine` and
+ * `TimeFieldEngine` satisfy it structurally.
+ */
+export interface RangeFieldCommitTarget<D> {
+  adoptCommit(value: D): void;
+}
+
 /** The committed range paired with the generation of its last internal write. */
 interface CommittedRange<D> {
   range: DateRange<D> | null;
@@ -178,6 +187,24 @@ export class RangeFieldComposer<D> {
       return;
     }
     this.#config.value.set(this.#config.compose(start, end));
+  }
+
+  /**
+   * The `onCommit` sink of an endpoint engine: {@link recompose}s the range and,
+   * while the range is held at an internal `null` (the other endpoint incomplete,
+   * or the two out of order), hands the endpoint's composed value back to its
+   * engine through `adoptCommit`. The engine then shows that value once focus
+   * leaves the endpoint, so an entry clamped to the bounds displays clamped
+   * without waiting for the other endpoint, as it does in a complete range.
+   *
+   * @param engine The engine whose commit is in progress.
+   * @param composed The value it composed, clamped to its bounds, or `null` while incomplete.
+   */
+  commitEndpoint(engine: RangeFieldCommitTarget<D>, composed: D | null): void {
+    this.recompose();
+    if (composed !== null && untracked(this.#config.value) === null) {
+      engine.adoptCommit(composed);
+    }
   }
 
   /**

@@ -709,6 +709,32 @@ describe('ForDateRangeField', () => {
     });
   });
 
+  describe('a clamped endpoint while the other is incomplete (#2750)', () => {
+    for (const to of ['end', 'outside'] as const) {
+      it(`shows a start typed below minDate clamped once focus moves ${to === 'end' ? 'to the end endpoint' : 'outside the field'}`, async () => {
+        const r = renderHost(Host);
+        r.instance.minDate.set(new Date(2026, 5, 10));
+        await flush(r.fixture);
+
+        await fill(r, 'start', '06', '05', '2026');
+        expect(seg(r, 'start', 'day').getAttribute('aria-valuenow')).toBe('5');
+
+        seg(r, 'start', 'year').dispatchEvent(
+          new FocusEvent('blur', { relatedTarget: to === 'end' ? seg(r, 'end', 'month') : null }),
+        );
+        await flush(r.fixture);
+        expect(seg(r, 'start', 'day').getAttribute('aria-valuenow')).toBe('10');
+        expect(r.instance.value()).toBeNull();
+
+        await fill(r, 'end', '06', '20', '2026');
+        expect(seg(r, 'start', 'day').getAttribute('aria-valuenow')).toBe('10');
+        const range = r.instance.value()!;
+        expect(range.start.getTime()).toBe(new Date(2026, 5, 10).getTime());
+        expect(range.end.getTime()).toBe(new Date(2026, 5, 20).getTime());
+      });
+    }
+  });
+
   describe('field integration', () => {
     @Component({
       imports: [
