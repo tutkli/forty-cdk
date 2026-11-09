@@ -1117,3 +1117,145 @@ describe('ForTableVirtualized — table mode and the header-inclusive row index 
     expect(rows.every((row) => row.querySelector('[role="cell"]') !== null)).toBe(true);
   });
 });
+
+describe('ForTableVirtualized — the scroll margin inside an ancestor scroller (#2737)', () => {
+  const ANCESTOR_TOTAL = 1000;
+  const ANCESTOR_ROW = 44;
+
+  @Component({
+    imports: [ForTable, ForTableVirtualized, ForTableRow, ForTableCell],
+    host: { 'data-fixture': 'ancestor-scroller' },
+    template: `
+      <span data-testid="clock">{{ clock() }}</span>
+      <div data-testid="shell" #shell style="height: 200px; overflow: auto">
+        <div data-testid="intro" [style.height.px]="introHeight()">Intro</div>
+        <div
+          forTable
+          forTableVirtualized
+          mode="grid"
+          ariaLabel="Virtualized table in an ancestor scroller"
+          data-testid="root"
+          [rowCount]="total"
+          [estimateRowSize]="rowHeight"
+          [scrollElement]="shell"
+          #v="forTableVirtualized"
+        >
+          <div role="rowgroup" [style.height.px]="v.totalSize()">
+            @for (vrow of v.virtualRows(); track vrow.index) {
+              <div forTableRow [virtualIndex]="vrow.index" [attr.data-index]="vrow.index">
+                <div forTableCell name="a">{{ vrow.index }}</div>
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+    `,
+  })
+  class AncestorScrollerHost {
+    protected readonly total = ANCESTOR_TOTAL;
+    protected readonly rowHeight = ANCESTOR_ROW;
+    readonly clock = signal(0);
+    readonly introHeight = signal(400);
+  }
+
+  let resizeCallbacks: ResizeObserverCallback[];
+
+  beforeEach(() => {
+    resizeCallbacks = [];
+    vi.stubGlobal(
+      'ResizeObserver',
+      class {
+        constructor(callback: ResizeObserverCallback) {
+          resizeCallbacks.push(callback);
+        }
+        observe(): void {}
+        unobserve(): void {}
+        disconnect(): void {}
+      },
+    );
+    TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+  });
+
+  async function mount() {
+    const fixture = TestBed.createComponent(AncestorScrollerHost);
+    const el = fixture.nativeElement as HTMLElement;
+    const byId = (id: string): HTMLElement =>
+      el.querySelector<HTMLElement>(`[data-testid="${id}"]`)!;
+    const shell = byId('shell');
+    Object.defineProperty(shell, 'clientHeight', { configurable: true, value: 200 });
+    Object.defineProperty(shell, 'offsetHeight', { configurable: true, value: 200 });
+    Object.defineProperty(shell, 'clientWidth', { configurable: true, value: 200 });
+    Object.defineProperty(shell, 'offsetWidth', { configurable: true, value: 200 });
+    let top = 0;
+    Object.defineProperty(shell, 'scrollTop', {
+      configurable: true,
+      get: () => top,
+      set: (value: number) => {
+        top = value;
+      },
+    });
+    const rectReads = vi.fn();
+    shell.getBoundingClientRect = () => {
+      rectReads();
+      return new DOMRect(0, 0, 200, 200);
+    };
+    byId('root').getBoundingClientRect = () => {
+      rectReads();
+      return new DOMRect(0, 400 - top, 200, ANCESTOR_TOTAL * ANCESTOR_ROW);
+    };
+    fixture.detectChanges();
+    await flush(fixture);
+    expect(rectReads).toHaveBeenCalled();
+    rectReads.mockClear();
+    return { fixture, instance: fixture.componentInstance, byId, rectReads };
+  }
+
+  it('reads no layout on a render that changed nothing above the table', async () => {
+    const { fixture, instance, rectReads } = await mount();
+
+    for (let i = 1; i <= 3; i++) {
+      instance.clock.set(i);
+      await flush(fixture);
+    }
+
+    expect(rectReads).not.toHaveBeenCalled();
+  });
+
+  it('reads no layout when a scroll re-renders only the rows of the table', async () => {
+    const { fixture, byId, rectReads } = await mount();
+    const shell = byId('shell');
+    const rendered = (): number[] =>
+      Array.from(byId('root').querySelectorAll('[data-index]')).map((row) =>
+        Number(row.getAttribute('data-index')),
+      );
+    expect(rendered()).toContain(0);
+
+    shell.scrollTop = 100 * ANCESTOR_ROW;
+    shell.dispatchEvent(new Event('scroll'));
+    await flush(fixture);
+    await flush(fixture);
+
+    expect(rendered()).not.toContain(0);
+    expect(rectReads).not.toHaveBeenCalled();
+  });
+
+  it('measures the offset again once the content above the table changes', async () => {
+    const { fixture, instance, rectReads } = await mount();
+
+    instance.introHeight.set(800);
+    await flush(fixture);
+
+    expect(rectReads).toHaveBeenCalled();
+  });
+
+  it('measures the offset again once the scroller or the table resizes', async () => {
+    const { fixture, rectReads } = await mount();
+
+    for (const callback of resizeCallbacks) {
+      callback([], {} as ResizeObserver);
+    }
+    await flush(fixture);
+
+    expect(rectReads).toHaveBeenCalled();
+  });
+});

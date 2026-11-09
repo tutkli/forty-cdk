@@ -1381,6 +1381,30 @@ describe('ForTableRowReorder — focus follows the dropped row (#2118)', () => {
     expect(document.activeElement).toBe(cell(ROW_COUNT - 1));
   });
 
+  it('a virtualized drop after the user scrolled away from the target focuses the target row', async () => {
+    const { instance, settle, scrollTo, cell } = await mount();
+    const lifted = cell(2);
+    lifted.focus();
+
+    press(lifted, ' ', { ctrlKey: true });
+    await settle();
+    press(lifted, 'ArrowDown');
+    await settle();
+    press(lifted, 'ArrowDown');
+    await settle();
+    const rendered = await scrollTo(200 * ROW_HEIGHT);
+    expect(rendered).not.toContain(4);
+    expect(document.activeElement).toBe(lifted);
+
+    press(lifted, ' ');
+    for (let i = 0; i < 6; i++) {
+      await settle();
+    }
+
+    expect(instance.last).toEqual({ from: 2, to: 4 });
+    expect(document.activeElement).toBe(cell(4));
+  });
+
   it('a virtualized drop releases the pin once focus has landed', async () => {
     const { settle, indices, cell } = await mount();
     const from = Math.max(...indices());

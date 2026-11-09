@@ -425,18 +425,33 @@ export class ForTableRowReorder {
     this.#announce.drop(this.#item(), this.#position(to));
     this.#kbTeardown(true);
     if (lifted !== null) {
-      this.#followRow(lifted, to, column, () => this.#registration.setReorderingRow(to));
+      this.#followRow(lifted, to, column, { scroll: false });
     }
   }
 
-  #followRow(lifted: HTMLElement, index: number, column: number, reveal: () => void): void {
+  /**
+   * Pin the row at `index` and move focus onto the same column of it once it mounts.
+   * With `scroll`, the container is also scrolled to the row and focus waits for the
+   * window to cover it; without, the pinned row is the target wherever the window is.
+   */
+  #followRow(
+    lifted: HTMLElement,
+    index: number,
+    column: number,
+    { scroll }: { scroll: boolean },
+  ): void {
     this.#pendingFocus = focusWhenMounted({
       injector: this.#injector,
       document: this.#document,
       from: lifted,
-      reveal,
+      reveal: () => {
+        this.#registration.setReorderingRow(index);
+        if (scroll) {
+          this.#registration.virtualRowNavigation()?.scrollToRow(index);
+        }
+      },
       target: () =>
-        this.#registration.virtualRowNavigation()?.isRowInWindow(index) === false
+        scroll && this.#registration.virtualRowNavigation()?.isRowInWindow(index) === false
           ? null
           : this.#focusTargetIn(index, column),
       release: () => {
@@ -473,10 +488,7 @@ export class ForTableRowReorder {
     this.#announce.cancel(this.#item());
     this.#kbTeardown(false);
     if (restoreFocus && lifted !== null) {
-      this.#followRow(lifted, from, column, () => {
-        this.#registration.setReorderingRow(from);
-        this.#registration.virtualRowNavigation()?.scrollToRow(from);
-      });
+      this.#followRow(lifted, from, column, { scroll: true });
     }
   }
 
