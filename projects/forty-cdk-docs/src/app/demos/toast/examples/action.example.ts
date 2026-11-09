@@ -5,7 +5,7 @@ import {
   inject,
   ViewEncapsulation,
 } from '@angular/core';
-import { ForToastManager, ForToastViewport } from 'forty-cdk/toast';
+import { ForToastManager, type ForToastRef, ForToastViewport } from 'forty-cdk/toast';
 
 @Component({
   selector: 'app-toast-action-example',
@@ -169,26 +169,36 @@ import { ForToastManager, ForToastViewport } from 'forty-cdk/toast';
 })
 export class ToastActionExample {
   protected readonly manager = inject(ForToastManager);
+  readonly #opened = new Set<ForToastRef>();
 
   constructor() {
-    inject(DestroyRef).onDestroy(() => this.manager.dismissAll());
-  }
-
-  protected archive(): void {
-    this.manager.show({
-      title: 'Message archived',
-      description: 'It was moved out of your inbox.',
-      region: 'toast-action',
-      action: {
-        label: 'Undo',
-        activate: () => this.manager.show({ title: 'Restored', region: 'toast-action' }),
-      },
-      duration: 6000,
+    inject(DestroyRef).onDestroy(() => {
+      for (const ref of this.#opened) {
+        ref.dismiss();
+      }
     });
   }
 
+  protected archive(): void {
+    this.#track(
+      this.manager.show({
+        title: 'Message archived',
+        description: 'It was moved out of your inbox.',
+        region: 'toast-action',
+        action: {
+          label: 'Undo',
+          activate: () =>
+            this.#track(this.manager.show({ title: 'Restored', region: 'toast-action' })),
+        },
+        duration: 6000,
+      }),
+    );
+  }
+
   protected save(): void {
-    const ref = this.manager.show({ title: 'Saving…', duration: 0, region: 'toast-action' });
+    const ref = this.#track(
+      this.manager.show({ title: 'Saving…', duration: 0, region: 'toast-action' }),
+    );
     setTimeout(
       () =>
         ref.update({
@@ -199,5 +209,11 @@ export class ToastActionExample {
         }),
       1200,
     );
+  }
+
+  #track(ref: ForToastRef): ForToastRef {
+    this.#opened.add(ref);
+    void ref.closed.then(() => this.#opened.delete(ref));
+    return ref;
   }
 }
