@@ -325,9 +325,11 @@ export function injectItemAlignedPositioner(config: ItemAlignedConfig): void {
 }
 
 /**
- * Strip the transient sizing vars, CSS custom properties, and `data-*`
- * attributes `injectItemAlignedPositioner` writes to the listbox — including
- * the `clip-path` hide baseline — while **retaining** the resolved `translate`.
+ * Strip the transient sizing CSS custom properties
+ * `injectItemAlignedPositioner` writes to the listbox — including the
+ * `clip-path` hide baseline — while **retaining** the resolved `translate` and
+ * `data-position="item-aligned"`, so a leave animation scoped to that selector
+ * keeps matching through the exit.
  * Mirrors `resetFloatingStyles` in `floating.ts`: the surface is portaled
  * until `getAnimations().finished`, so during an `animate.leave` exit the host
  * keeps `position: fixed; left: 0; top: 0` and the retained `translate` stays
@@ -341,5 +343,4 @@ function resetItemAlignedStyles(el: HTMLElement, vars: FloatingCustomProperties)
   el.style.removeProperty(vars.anchorWidth);
   el.style.removeProperty(vars.anchorHeight);
   el.style.removeProperty(vars.availableHeight);
-  el.removeAttribute('data-position');
 }

@@ -405,7 +405,7 @@ The directive sets the shared `--for-floating-available-height` on the content h
 }
 ```
 
-When `position="item-aligned"`, the following inputs are **no-ops**: `side`, `align`, `sideOffset`, `alignOffset`, `avoidCollisions`, `sticky`, `hideWhenDetached`, `clipUntilPositioned`. Only `collisionPadding` (default `8`) is honored. It drives both the viewport clamp and the available-height variable. The content gets `data-position="item-aligned"` so consumers can target it with CSS; in popper mode the attribute is absent and the `data-side` / `data-align` / `data-placement` markers from `injectFloating` apply instead.
+When `position="item-aligned"`, the following inputs are **no-ops**: `side`, `align`, `sideOffset`, `alignOffset`, `avoidCollisions`, `sticky`, `hideWhenDetached`, `clipUntilPositioned`. Only `collisionPadding` (default `8`) is honored. It drives both the viewport clamp and the available-height variable. The content gets `data-position="item-aligned"` so consumers can target it with CSS, and keeps it through the close so a leave animation scoped to it still matches; in popper mode the attribute is absent and the `data-side` / `data-align` / `data-placement` markers from `injectFloating` apply instead.
 
 The default stays `popper` so existing consumers' visuals don't shift on upgrade. Opt in per primitive when the macOS feel is what you want.
 

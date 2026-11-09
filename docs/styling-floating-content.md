@@ -73,7 +73,7 @@ Typical usage: `-4px` to `-6px` so the arrow visually straddles the content bord
 
 ## CSS custom properties
 
-All floating content directives set these properties on the **content host element** while `open` is `true`. The sizing vars (`--for-floating-anchor-width`, `--for-floating-anchor-height`, `--for-floating-available-width`, `--for-floating-available-height`) are cleared on close; like the positioner's `translate`, `--for-floating-content-transform-origin` is **retained through the close** (so a scale `animate.leave` keeps its trigger-edge pivot) and recomputed on the next open.
+All floating content directives set these properties on the **content host element** while `open` is `true`. The sizing vars (`--for-floating-anchor-width`, `--for-floating-anchor-height`, `--for-floating-available-width`, `--for-floating-available-height`) are cleared on close; like the positioner's `translate` and the `data-side` / `data-align` / `data-placement` markers, `--for-floating-content-transform-origin` is **retained through the close** (so a scale `animate.leave` keeps its trigger-edge pivot) and recomputed on the next open. Select's `position="item-aligned"` content likewise keeps `data-position="item-aligned"` through the close.
 
 | Custom property                           | Direction | Meaning                                                                                                                                                                                                                                                                                                                                     |
 | ----------------------------------------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -125,7 +125,7 @@ With `provideCssVarNamespacing()`, every property in both tables carries the nam
 
 ### Arrow recipe
 
-The arrow is a rotated square (CSS "diamond" trick). `data-side` on the arrow element reflects the resolved placement side so you can rotate accordingly.
+The arrow is a rotated square (CSS "diamond" trick). `data-side` on the arrow element reflects the resolved placement side so you can rotate accordingly. Like the content, the arrow keeps its inline position and `data-side` through the close, so it still points at the trigger while an `animate.leave` runs.
 
 ```css
 .my-arrow {
