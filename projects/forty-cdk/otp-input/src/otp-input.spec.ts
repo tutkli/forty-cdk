@@ -484,6 +484,41 @@ describe('ForOtpInput', () => {
       expect(input.selectionStart).toBe(4);
       expect(input.selectionEnd).toBe(4);
     });
+
+    it('keeps the entered code and caret when every pasted character is rejected (#2750)', async () => {
+      const { input, instance, flush } = await mountOtp();
+      typeIntoAt(input, '1234', 2);
+      await flush();
+      pasteInto(input, 'abcd');
+      await flush();
+      expect(instance.code()).toBe('1234');
+      expect(input.value).toBe('1234');
+      expect(input.selectionStart).toBe(2);
+      expect(input.selectionEnd).toBe(2);
+      expect(instance.invalidEvents()).toEqual([{ value: 'abcd' }]);
+    });
+
+    it('keeps the entered code when the clipboard holds no text (#2750)', async () => {
+      const { input, instance, flush } = await mountOtp();
+      typeInto(input, '1234');
+      await flush();
+      pasteInto(input, '');
+      await flush();
+      expect(instance.code()).toBe('1234');
+      expect(input.value).toBe('1234');
+      expect(instance.invalidEvents()).toEqual([]);
+    });
+
+    it('keeps the entered code when pasteTransformer returns an empty string (#2750)', async () => {
+      const { input, instance, flush } = await mountOtp();
+      instance.pasteTransformer.set(() => '');
+      typeInto(input, '1234');
+      await flush();
+      pasteInto(input, '987654');
+      await flush();
+      expect(instance.code()).toBe('1234');
+      expect(instance.invalidEvents()).toEqual([]);
+    });
   });
 
   describe('completion', () => {
