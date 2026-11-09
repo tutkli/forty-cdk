@@ -3010,6 +3010,26 @@ describe('ForSelect', () => {
       expect(content.dataset['side']).toBeUndefined();
       expect(content.dataset['align']).toBeUndefined();
     });
+
+    it('does not carry data-position into a popper open after an item-aligned one', async () => {
+      const r = renderHost(PositionHost);
+      r.instance.position.set('item-aligned');
+      r.instance.open.set(true);
+      await flushPositioning(r.fixture);
+      expect(document.querySelector<HTMLElement>('[forSelectContent]')!.dataset['position']).toBe(
+        'item-aligned',
+      );
+
+      r.instance.open.set(false);
+      await flushPositioning(r.fixture);
+      r.instance.position.set('popper');
+      r.instance.open.set(true);
+      await flushPositioning(r.fixture);
+
+      const content = document.querySelector<HTMLElement>('[forSelectContent]')!;
+      expect(content.dataset['position']).toBeUndefined();
+      expect(content.dataset['side']).toBe('bottom');
+    });
   });
 
   describe('selected (single-select accessor)', () => {

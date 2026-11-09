@@ -135,7 +135,7 @@ describe('injectItemAlignedPositioner', () => {
     expect(lbEl.style.translate).toMatch(/^-?\d+px -?\d+px$/);
   });
 
-  it('clears --for-* / clip-path / data-position on close but retains translate for the exit animation', async () => {
+  it('clears --for-* / clip-path on close but retains translate and data-position for the exit animation', async () => {
     TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
     const fixture = TestBed.createComponent(Host);
     await flushPositioning(fixture);
@@ -169,15 +169,15 @@ describe('injectItemAlignedPositioner', () => {
     lb.open.set(false);
     await flushPositioning(fixture);
 
-    // Closed: the transient sizing vars, the clip-path baseline, and the
-    // data-position tag are wiped — but `translate` is deliberately RETAINED.
+    // Closed: the transient sizing vars and the clip-path baseline are
+    // wiped — but `translate` and the data-position tag are deliberately RETAINED.
     // The surface is portaled until `getAnimations().finished`, so during an
     // `animate.leave` exit the host must keep its resolved `translate` (over
     // the trigger) instead of losing it and flashing at the viewport origin
     // (position: fixed; left: 0; top: 0). This mirrors `resetFloatingStyles`
     // in `floating.ts`. The test fails if `resetItemAlignedStyles` clears
     // `translate`.
-    expect(lbEl.dataset['position']).toBeUndefined();
+    expect(lbEl.dataset['position']).toBe('item-aligned');
     expect(lbEl.style.translate).toMatch(/^-?\d+px -?\d+px$/);
     expect(lbEl.style.getPropertyValue('clip-path')).toBe('');
     expect(lbEl.style.getPropertyValue('--for-floating-anchor-width')).toBe('');

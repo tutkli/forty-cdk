@@ -426,7 +426,7 @@ describe('injectFloating', () => {
       expect(bubbleEl.dataset['placement']).toBe('bottom');
     });
 
-    it('clears the transient styles, CSS vars, and data-* attrs on close — except the resolved-placement outputs (translate, transform-origin, data-side/align/placement) retained for animate.leave', async () => {
+    it('clears the transient styles, CSS vars, and data-* attrs on close — except the resolved-placement outputs (translate, transform-origin, data-side/align/placement) and the arrow pose retained for animate.leave', async () => {
       TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
       const fixture = TestBed.createComponent(BubbleHost);
       await flushPositioning(fixture);
@@ -472,14 +472,10 @@ describe('injectFloating', () => {
       expect(bubbleEl.style.getPropertyValue('--for-floating-available-width')).toBe('');
       expect(bubbleEl.style.getPropertyValue('--for-floating-available-height')).toBe('');
 
-      // Arrow is wiped too.
-      expect(arrowEl.style.position).toBe('');
-      expect(arrowEl.style.left).toBe('');
-      expect(arrowEl.style.top).toBe('');
-      expect(arrowEl.style.right).toBe('');
-      expect(arrowEl.style.bottom).toBe('');
-      expect(arrowEl.dataset['placement']).toBeUndefined();
-      expect(arrowEl.dataset['side']).toBeUndefined();
+      expect(arrowEl.style.position).toBe('absolute');
+      expect(arrowEl.style.bottom).toBe('var(--for-floating-arrow-offset, 0px)');
+      expect(arrowEl.dataset['placement']).toBe('top');
+      expect(arrowEl.dataset['side']).toBe('top');
     });
 
     it('survives a computePosition rejection without leaving the DOM half-written', async () => {

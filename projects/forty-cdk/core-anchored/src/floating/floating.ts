@@ -305,9 +305,10 @@ export function floatingPositioner(config: FloatingConfig): OverlayShellPosition
  *
  * Cleanup is asymmetric on purpose: {@link resetFloatingStyles} strips the
  * transient sizing vars and occlusion attributes but retains the resolved
- * `translate` and placement outputs so a closing surface stays anchored to its
- * trigger through `animate.leave`; the next mount re-arms the baseline and
- * recomputes everything before painting.
+ * `translate` and placement outputs, and the arrow keeps its inline position,
+ * `data-side` and `data-placement`, so a closing surface and its arrow stay
+ * anchored to the trigger through `animate.leave`; the next mount re-arms the
+ * baseline and recomputes everything before painting.
  *
  * Stylistic concerns (which side gets the arrow offset via
  * `--for-floating-arrow-offset`, pointer events, background, animations) stay with the
@@ -452,9 +453,6 @@ export function injectFloating(config: FloatingConfig): void {
         },
         reset() {
           resetFloatingStyles(el, vars);
-          if (arrowEl) {
-            resetArrowStyles(arrowEl);
-          }
         },
       };
     },
@@ -470,7 +468,9 @@ export function injectFloating(config: FloatingConfig): void {
  * to its trigger — and keeps pivoting its scale leave from the trigger edge —
  * through `animate.leave`; the next mount re-arms the `clip-path` baseline in
  * `afterNextRender` and recomputes all of them before painting, so a retained
- * value never produces a stale-position flash.
+ * value never produces a stale-position flash. The arrow element is not reset
+ * at all: everything a run writes to it is resolved placement, rewritten in
+ * full by the next run, so it keeps pointing at the trigger through the exit.
  */
 function resetFloatingStyles(el: HTMLElement, vars: FloatingCustomProperties): void {
   // Clearing (not re-arming) the hide baseline keeps a closing surface
@@ -483,18 +483,4 @@ function resetFloatingStyles(el: HTMLElement, vars: FloatingCustomProperties): v
   el.style.removeProperty(vars.availableHeight);
   el.removeAttribute('data-occluded');
   el.removeAttribute('data-detached');
-}
-
-/**
- * Strip every inline style and `data-*` attribute `injectFloating` writes
- * to the optional arrow element. Mirrors `resetFloatingStyles`.
- */
-function resetArrowStyles(arrowEl: HTMLElement): void {
-  arrowEl.style.removeProperty('position');
-  arrowEl.style.removeProperty('left');
-  arrowEl.style.removeProperty('top');
-  arrowEl.style.removeProperty('right');
-  arrowEl.style.removeProperty('bottom');
-  arrowEl.removeAttribute('data-placement');
-  arrowEl.removeAttribute('data-side');
 }
