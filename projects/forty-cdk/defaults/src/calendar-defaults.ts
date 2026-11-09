@@ -23,6 +23,18 @@ export interface ForCalendarDefaults {
    * formatter; a `ForCalendar` bound to its own `[dateLabel]` ignores it.
    */
   outsideMonthLabel: (formattedDate: string) => string;
+  /**
+   * Builds the polite announcement made when a range calendar sets its anchor,
+   * from the anchor date formatted as day, month and year (default
+   * `"Start date <date>. Choose the end date."`).
+   */
+  rangeStartAnnouncement: (formattedStart: string) => string;
+  /**
+   * Builds the polite announcement made when a range calendar commits a range,
+   * from its start and end dates formatted as day, month and year (default
+   * `"Selected <start> to <end>."`).
+   */
+  rangeSelectedAnnouncement: (formattedStart: string, formattedEnd: string) => string;
 }
 
 /**
@@ -33,6 +45,9 @@ export interface ForCalendarDefaults {
 export const FOR_CALENDAR_FALLBACK_DEFAULTS: ForCalendarDefaults = {
   firstDayOfWeek: null,
   outsideMonthLabel: (formattedDate) => `${formattedDate} (outside month)`,
+  rangeStartAnnouncement: (formattedStart) => `Start date ${formattedStart}. Choose the end date.`,
+  rangeSelectedAnnouncement: (formattedStart, formattedEnd) =>
+    `Selected ${formattedStart} to ${formattedEnd}.`,
 };
 
 /** Token holding the resolved calendar defaults for the current scope. */

@@ -28,6 +28,16 @@ export interface CalendarRangeHost<D> {
 }
 
 /**
+ * The outcome of an accepted range click: the anchor it set, or the range it
+ * committed.
+ *
+ * @typeParam D The adapter's immutable date type.
+ */
+export type CalendarRangeStep<D> =
+  | { readonly kind: 'anchored'; readonly anchor: D }
+  | { readonly kind: 'committed'; readonly range: DateRange<D> };
+
+/**
  * Owns the two-click anchor → commit range-selection state machine for
  * `ForCalendar` in `selectionMode="range"`: the pending `anchor`, the pointer
  * `hovered` cursor, the derived `effectiveRange` (committed when idle, preview
@@ -85,10 +95,18 @@ export class CalendarRangeSelection<D> {
     return er !== null && er.preview && this.#withinInclusive(date, er);
   }
 
-  /** Whether `date` is within the effective range, used by the day cell's `isSelected`. */
+  /**
+   * Whether `date` is selected, used by the day cell's `isSelected`: it lies in
+   * the committed range, which stays selected until a commit replaces it, or it
+   * is the pending anchor. The preview band is never selected.
+   */
   contains(date: D): boolean {
-    const er = this.#effectiveRange();
-    return er !== null && !er.preview && this.#withinInclusive(date, er);
+    const anchor = this.#anchor();
+    if (anchor !== null && this.#host.adapter.isSameDay(date, anchor)) {
+      return true;
+    }
+    const committed = this.#host.range();
+    return committed !== null && this.#withinInclusive(date, committed);
   }
 
   setHovered(date: D | null): void {
@@ -108,24 +126,25 @@ export class CalendarRangeSelection<D> {
    * the anchor and leaves the committed range untouched until the second click
    * replaces it; the second commits the range in **either direction** — clicking
    * before the anchor commits the inverted band `[date, anchor]` (honouring the
-   * hover preview) rather than starting over. Returns `true` when the click moved
-   * the selection (so the root should move focus to `date`), `false` when it was
-   * rejected by the min / max length guard (anchor preserved, no focus move).
+   * hover preview) rather than starting over. Returns the step the click took
+   * (so the root moves focus to `date` and announces it), or `null` when the
+   * min / max length guard rejected it (anchor preserved, no focus move).
    */
-  select(date: D): boolean {
+  select(date: D): CalendarRangeStep<D> | null {
     const adapter = this.#host.adapter;
     const anchor = this.#anchor();
     if (anchor === null) {
       this.#anchor.set(date);
-      return true;
+      return { kind: 'anchored', anchor: date };
     }
     const [start, end] = compareDateOf(adapter, date, anchor) < 0 ? [date, anchor] : [anchor, date];
     if (!this.#rangeLengthSatisfied(start, end)) {
-      return false;
+      return null;
     }
-    this.#host.range.set({ start, end });
+    const range = { start, end };
+    this.#host.range.set(range);
     this.#anchor.set(null);
-    return true;
+    return { kind: 'committed', range };
   }
 
   #rangeLengthSatisfied(start: D, end: D): boolean {

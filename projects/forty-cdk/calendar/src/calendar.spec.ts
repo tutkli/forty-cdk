@@ -11,6 +11,7 @@ import { CalendarDate, CalendarDateTime } from '@internationalized/date';
 
 import { compareDateOf, type DateRange, LiveAnnouncer } from 'forty-cdk/core';
 import { type DateAdapter } from 'forty-cdk/date-adapter';
+import { provideForCalendarDefaults } from 'forty-cdk/defaults';
 import { flush, renderHost, type RenderResult } from '../../src/test-utils';
 import { buildMonthMatrix } from './build-month-matrix';
 import { ForCalendar } from './calendar';
@@ -246,6 +247,35 @@ class CalendarRangeHost {
 }
 
 @Component({
+  imports: [ForCalendar, ForCalendarGrid, ForCalendarCell],
+  providers: [
+    ...provideNativeDateAdapter(),
+    provideForCalendarDefaults({
+      rangeStartAnnouncement: (start) => `Inicio ${start}`,
+      rangeSelectedAnnouncement: (start, end) => `Del ${start} al ${end}`,
+    }),
+  ],
+  template: `
+    <div forCalendar selectionMode="range">
+      <table forCalendarGrid #grid="forCalendarGrid">
+        <tbody>
+          @for (week of grid.weeks(); track week.key) {
+            <tr>
+              @for (cell of week.days; track cell.key) {
+                <td forCalendarCell [date]="cell.date" [attr.data-testid]="'cell-' + cell.key">
+                  {{ cell.label }}
+                </td>
+              }
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  `,
+})
+class CalendarRangeLocalizedHost {}
+
+@Component({
   imports: [ForCalendar, ForCalendarHeading, ForCalendarGrid, ForCalendarCell],
   providers: [...provideNativeDateAdapter()],
   template: `
@@ -410,6 +440,7 @@ class CalendarDropdownsHost {
         @default never;
       }
     </div>
+    <button type="button" data-testid="outside">Outside</button>
   `,
 })
 class CalendarViewsHost {
@@ -768,6 +799,29 @@ describe('ForCalendar', () => {
       expect(focusedCell(r)).toBe(cell(r, JUN_15));
     });
 
+    it('a move inside the visible month neither reformats the day grid nor re-checks availability', async () => {
+      const r = renderHost(CalendarHost);
+      const isUnavailable = vi.fn((_date: Date) => false);
+      r.instance.unavailable.set(isUnavailable);
+      await flush(r.fixture);
+      const format = vi.spyOn(NativeDateAdapter.prototype, 'format');
+      isUnavailable.mockClear();
+      const jun16 = cell(r, new Date(2026, 5, 16));
+
+      pressKey(focusedCell(r), 'ArrowRight');
+      await flush(r.fixture);
+
+      expect(focusedCell(r)).toBe(jun16);
+      expect(isUnavailable).not.toHaveBeenCalled();
+      expect(format).not.toHaveBeenCalled();
+
+      pressKey(focusedCell(r), 'PageDown');
+      await flush(r.fixture);
+
+      expect(format).toHaveBeenCalled();
+      expect(isUnavailable).toHaveBeenCalled();
+    });
+
     it('Home / End move to the bounds of the focused week', async () => {
       const r = renderHost(CalendarHost);
       const offset = (adapter.getDayOfWeek(JUN_15) - 0 + 7) % 7;
@@ -910,6 +964,46 @@ describe('ForCalendar', () => {
       await flush(r.fixture);
       expect(early.getAttribute('aria-selected')).toBe('false');
       expect(cell(r, JUN_15).getAttribute('aria-selected')).toBe('true');
+    });
+
+    it('a click on a padding day past [max] keeps the visible month and the tab stop', async () => {
+      const r = renderHost(CalendarHost);
+      r.instance.locale.set('en-US');
+      r.instance.value.set(null);
+      r.instance.max.set(new Date(2026, 5, 20));
+      await flush(r.fixture);
+      expect(focusedCell(r)).toBe(cell(r, JUN_15));
+
+      cell(r, new Date(2026, 6, 2)).dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      await flush(r.fixture);
+
+      expect(r.query('[data-testid="heading"]')!.textContent).toContain('June 2026');
+      expect(tabbableCells(r)).toEqual([cell(r, JUN_15)]);
+      expect(r.instance.value()).toBeNull();
+    });
+
+    it('a click on an in-month day past [max] does not move the tab stop onto it', async () => {
+      const r = renderHost(CalendarHost);
+      r.instance.value.set(null);
+      r.instance.max.set(new Date(2026, 5, 20));
+      await flush(r.fixture);
+
+      cell(r, new Date(2026, 5, 25)).dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      await flush(r.fixture);
+
+      expect(tabbableCells(r)).toEqual([cell(r, JUN_15)]);
+      expect(r.instance.value()).toBeNull();
+    });
+
+    it('a click on a day before [min] does not move the tab stop onto it', async () => {
+      const r = renderHost(CalendarHost);
+      r.instance.min.set(new Date(2026, 5, 10));
+      await flush(r.fixture);
+
+      cell(r, new Date(2026, 5, 5)).dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      await flush(r.fixture);
+
+      expect(tabbableCells(r)).toEqual([cell(r, JUN_15)]);
     });
 
     it('honours the isDateUnavailable predicate', async () => {
@@ -1364,7 +1458,7 @@ describe('ForCalendar', () => {
       expect(r.instance.range()).toBe(committed);
       expect(rangeCell(r, JUN_20).hasAttribute('data-range-start')).toBe(true);
       expect(rangeCell(r, new Date(2026, 5, 12)).hasAttribute('data-in-range')).toBe(false);
-      expect(rangeCell(r, new Date(2026, 5, 12)).getAttribute('aria-selected')).toBe('false');
+      expect(rangeCell(r, new Date(2026, 5, 12)).getAttribute('aria-selected')).toBe('true');
 
       click(rangeCell(r, new Date(2026, 5, 25)));
       await flush(r.fixture);
@@ -1388,6 +1482,94 @@ describe('ForCalendar', () => {
       }
       expect(rangeCell(r, new Date(2026, 5, 9)).getAttribute('aria-selected')).toBe('false');
       expect(rangeCell(r, new Date(2026, 5, 16)).getAttribute('aria-selected')).toBe('false');
+    });
+
+    describe('feedback while a range is picked', () => {
+      const JUN_24 = new Date(2026, 5, 24);
+      const longDate = (date: Date) =>
+        adapter.format(date, { day: 'numeric', month: 'long', year: 'numeric' });
+      const spyAnnounce = () => vi.spyOn(TestBed.inject(LiveAnnouncer), 'announce');
+
+      it('announces the anchor, and the anchor and the committed range stay selected while it is pending', async () => {
+        const r = renderHost(CalendarRangeHost);
+        r.instance.range.set({ start: JUN_10, end: JUN_15 });
+        await flush(r.fixture);
+        const announce = spyAnnounce();
+
+        pressKey(rangeCell(r, JUN_20), 'Enter');
+        await flush(r.fixture);
+
+        expect(announce.mock.calls).toEqual([
+          [`Start date ${longDate(JUN_20)}. Choose the end date.`, 'polite'],
+        ]);
+        expect(rangeCell(r, JUN_20).getAttribute('aria-selected')).toBe('true');
+        for (let d = 10; d <= 15; d++) {
+          expect(rangeCell(r, new Date(2026, 5, d)).getAttribute('aria-selected')).toBe('true');
+        }
+        expect(rangeCell(r, new Date(2026, 5, 16)).getAttribute('aria-selected')).toBe('false');
+      });
+
+      it('leaves the preview band unselected while the cursor moves away from the anchor', async () => {
+        const r = renderHost(CalendarRangeHost);
+
+        pressKey(rangeCell(r, JUN_20), 'Enter');
+        await flush(r.fixture);
+        pressKey(rangeCell(r, JUN_20), 'ArrowRight');
+        await flush(r.fixture);
+        pressKey(rangeCell(r, new Date(2026, 5, 21)), 'ArrowRight');
+        await flush(r.fixture);
+
+        const jun21 = rangeCell(r, new Date(2026, 5, 21));
+        expect(jun21.hasAttribute('data-range-preview')).toBe(true);
+        expect(jun21.getAttribute('aria-selected')).toBe('false');
+        expect(rangeCell(r, new Date(2026, 5, 22)).getAttribute('aria-selected')).toBe('false');
+        expect(rangeCell(r, JUN_20).getAttribute('aria-selected')).toBe('true');
+      });
+
+      it('announces the committed range', async () => {
+        const r = renderHost(CalendarRangeHost);
+        pressKey(rangeCell(r, JUN_20), 'Enter');
+        await flush(r.fixture);
+        const announce = spyAnnounce();
+
+        pressKey(rangeCell(r, JUN_24), 'Enter');
+        await flush(r.fixture);
+
+        expect(announce.mock.calls).toEqual([
+          [`Selected ${longDate(JUN_20)} to ${longDate(JUN_24)}.`, 'polite'],
+        ]);
+      });
+
+      it('announces nothing for a commit the range-length guard rejects', async () => {
+        const r = renderHost(CalendarRangeHost);
+        r.instance.maxRangeLength.set(3);
+        await flush(r.fixture);
+        pressKey(rangeCell(r, JUN_20), 'Enter');
+        await flush(r.fixture);
+        const announce = spyAnnounce();
+
+        pressKey(rangeCell(r, JUN_24), 'Enter');
+        await flush(r.fixture);
+
+        expect(r.instance.range()).toBeNull();
+        expect(announce).not.toHaveBeenCalled();
+      });
+
+      it('reads both announcements from provideForCalendarDefaults', async () => {
+        const r = renderHost(CalendarRangeLocalizedHost);
+        await flush(r.fixture);
+        const announce = spyAnnounce();
+
+        pressKey(r.query<HTMLElement>(`[data-testid="cell-${keyOf(JUN_20)}"]`)!, 'Enter');
+        await flush(r.fixture);
+        pressKey(r.query<HTMLElement>(`[data-testid="cell-${keyOf(JUN_24)}"]`)!, 'Enter');
+        await flush(r.fixture);
+
+        expect(announce.mock.calls).toEqual([
+          [`Inicio ${longDate(JUN_20)}`, 'polite'],
+          [`Del ${longDate(JUN_20)} al ${longDate(JUN_24)}`, 'polite'],
+        ]);
+      });
     });
 
     it('hover preview: data-range-preview spans anchor→hovered inclusive while selecting', async () => {
@@ -2517,6 +2699,52 @@ describe('ForCalendar', () => {
       await flush(r.fixture);
 
       expect(document.activeElement).toBe(monthCell(r, 6));
+    });
+
+    it('a consumer write to [(view)] leaves focus where it was', async () => {
+      const r = renderHost(CalendarViewsHost);
+      await flush(r.fixture);
+      const outside = r.query<HTMLElement>('[data-testid="outside"]')!;
+      outside.focus();
+
+      r.instance.view.set('month');
+      await flush(r.fixture);
+      expect(viewRoot(r).getAttribute('data-view')).toBe('month');
+      expect(document.activeElement).toBe(outside);
+
+      r.instance.view.set('year');
+      await flush(r.fixture);
+      expect(viewRoot(r).getAttribute('data-view')).toBe('year');
+      expect(document.activeElement).toBe(outside);
+
+      r.instance.view.set('day');
+      await flush(r.fixture);
+      expect(viewRoot(r).getAttribute('data-view')).toBe('day');
+      expect(document.activeElement).toBe(outside);
+    });
+
+    it('drilling into a year from its cell moves focus into the month grid', async () => {
+      const r = renderHost(CalendarViewsHost);
+      r.instance.view.set('year');
+      await flush(r.fixture);
+
+      click(yearCell(r, 2025));
+      await flush(r.fixture);
+
+      expect(viewRoot(r).getAttribute('data-view')).toBe('month');
+      expect(document.activeElement).toBe(monthCell(r, 6));
+    });
+
+    it('drilling into a month from its cell moves focus into the day grid', async () => {
+      const r = renderHost(CalendarViewsHost);
+      r.instance.view.set('month');
+      await flush(r.fixture);
+
+      click(monthCell(r, 3));
+      await flush(r.fixture);
+
+      expect(viewRoot(r).getAttribute('data-view')).toBe('day');
+      expect(document.activeElement).toBe(r.query('[data-testid="cell-2026-3-15"]'));
     });
 
     describe('Home / End stay in the focused row', () => {

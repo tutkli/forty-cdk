@@ -1083,6 +1083,229 @@ describe('ForStepper', () => {
     });
   });
 
+  describe('Next / Previous re-point the tab stop to the current step', () => {
+    const tabindexes = (el: HTMLElement) => triggers(el).map((t) => t.getAttribute('tabindex'));
+
+    it('Next moves the tab stop from the last-focused trigger to the newly current trigger', async () => {
+      const { el, fixture, flush } = renderHost(StepperHost);
+      triggerAt(el, 0).focus();
+      await flush();
+      triggerAt(el, 0).blur();
+      nextBtn(el).click();
+      nextBtn(el).click();
+      fixture.detectChanges();
+      await flush();
+      expect(tabindexes(el)).toEqual(['-1', '-1', '0']);
+    });
+
+    it('Previous moves the tab stop from the last-focused trigger to the newly current trigger', async () => {
+      const { el, instance, fixture, flush } = renderHost(StepperHost);
+      instance.selectedIndex.set(2);
+      fixture.detectChanges();
+      triggerAt(el, 2).focus();
+      await flush();
+      triggerAt(el, 2).blur();
+      prevBtn(el).click();
+      fixture.detectChanges();
+      await flush();
+      expect(tabindexes(el)).toEqual(['-1', '0', '-1']);
+    });
+
+    it('a consumer selectedIndex write moves the tab stop to the newly current trigger', async () => {
+      const { el, instance, fixture, flush } = renderHost(StepperHost);
+      triggerAt(el, 0).focus();
+      await flush();
+      triggerAt(el, 0).blur();
+      instance.selectedIndex.set(1);
+      fixture.detectChanges();
+      await flush();
+      expect(tabindexes(el)).toEqual(['-1', '0', '-1']);
+    });
+
+    it('manual-mode arrow navigation keeps the tab stop on the focused trigger', async () => {
+      const { el, instance, flush } = renderHost(StepperHost);
+      triggerAt(el, 0).focus();
+      await flush();
+      pressKey(triggerAt(el, 0), 'ArrowRight');
+      await flush();
+      expect(instance.selectedIndex()).toBe(0);
+      expect(tabindexes(el)).toEqual(['-1', '0', '-1']);
+    });
+
+    it('activating the focused trigger after arrow navigation keeps the tab stop on it', async () => {
+      const { el, instance, flush } = renderHost(StepperHost);
+      triggerAt(el, 0).focus();
+      await flush();
+      pressKey(triggerAt(el, 0), 'ArrowRight');
+      await flush();
+      triggerAt(el, 1).click();
+      await flush();
+      expect(instance.selectedIndex()).toBe(1);
+      expect(tabindexes(el)).toEqual(['-1', '0', '-1']);
+    });
+
+    it('a disabled trigger focused after Next yields every tab stop', async () => {
+      const { el, instance, fixture, flush } = renderHost(StepperHost);
+      instance.steps.update((ss) => ss.map((s, i) => (i === 1 ? { ...s, disabled: true } : s)));
+      fixture.detectChanges();
+      nextBtn(el).click();
+      await flush();
+      expect(instance.selectedIndex()).toBe(2);
+      triggerAt(el, 1).focus();
+      await flush();
+      expect(tabindexes(el)).toEqual(['-1', '-1', '-1']);
+    });
+
+    it('automatic-mode arrow navigation gives the tab stop to the focused, selected trigger', async () => {
+      const { el, instance, fixture, flush } = renderHost(StepperHost);
+      instance.activationMode.set('automatic');
+      fixture.detectChanges();
+      triggerAt(el, 0).focus();
+      await flush();
+      pressKey(triggerAt(el, 0), 'ArrowRight');
+      await flush();
+      expect(instance.selectedIndex()).toBe(1);
+      expect(tabindexes(el)).toEqual(['-1', '0', '-1']);
+    });
+  });
+
+  describe('Next / Previous land only on a step the trigger path could select', () => {
+    const disableStep = (instance: StepperHost, index: number) =>
+      instance.steps.update((ss) => ss.map((s, i) => (i === index ? { ...s, disabled: true } : s)));
+
+    const fourSteps = (instance: StepperHost) =>
+      instance.steps.update((ss) => [...ss, { ...ss[0]!, label: 'D' }]);
+
+    it('Next skips a disabled step', () => {
+      const { el, instance, fixture } = renderHost(StepperHost);
+      disableStep(instance, 1);
+      fixture.detectChanges();
+      nextBtn(el).click();
+      fixture.detectChanges();
+      expect(instance.selectedIndex()).toBe(2);
+    });
+
+    it('Previous skips a disabled step', () => {
+      const { el, instance, fixture } = renderHost(StepperHost);
+      disableStep(instance, 1);
+      instance.selectedIndex.set(2);
+      fixture.detectChanges();
+      prevBtn(el).click();
+      fixture.detectChanges();
+      expect(instance.selectedIndex()).toBe(0);
+    });
+
+    it('Previous is aria-disabled when every earlier step is disabled', () => {
+      const { el, instance, fixture } = renderHost(StepperHost);
+      disableStep(instance, 0);
+      instance.selectedIndex.set(1);
+      fixture.detectChanges();
+      expect(prevBtn(el).getAttribute('aria-disabled')).toBe('true');
+      prevBtn(el).click();
+      fixture.detectChanges();
+      expect(instance.selectedIndex()).toBe(1);
+    });
+
+    it('Next skips a disabled last step into the terminal completed state', () => {
+      const { el, instance, fixture } = renderHost(StepperHost);
+      disableStep(instance, 2);
+      instance.selectedIndex.set(1);
+      fixture.detectChanges();
+      nextBtn(el).click();
+      fixture.detectChanges();
+      expect(instance.selectedIndex()).toBe(3);
+    });
+
+    it('linear Next stays put on a restored index whose earlier steps are incomplete', () => {
+      const { el, instance, fixture } = renderHost(StepperHost);
+      fourSteps(instance);
+      instance.linear.set(true);
+      instance.selectedIndex.set(2);
+      instance.steps.update((ss) => ss.map((s, i) => (i === 2 ? { ...s, completed: true } : s)));
+      fixture.detectChanges();
+      expect(nextBtn(el).getAttribute('aria-disabled')).toBe('true');
+      nextBtn(el).click();
+      fixture.detectChanges();
+      expect(instance.selectedIndex()).toBe(2);
+    });
+
+    it('linear Next never emits complete while a required step is incomplete', () => {
+      const { el, instance, fixture } = renderHost(StepperHost);
+      instance.linear.set(true);
+      instance.selectedIndex.set(2);
+      instance.steps.update((ss) => ss.map((s, i) => (i >= 1 ? { ...s, completed: true } : s)));
+      fixture.detectChanges();
+      nextBtn(el).click();
+      fixture.detectChanges();
+      expect(instance.selectedIndex()).toBe(2);
+      expect(instance.completeCount()).toBe(0);
+    });
+
+    it('linear Next skips a disabled step that is also optional', () => {
+      const { el, instance, fixture } = renderHost(StepperHost);
+      instance.linear.set(true);
+      instance.steps.update((ss) =>
+        ss.map((s, i) =>
+          i === 0
+            ? { ...s, completed: true }
+            : i === 1
+              ? { ...s, disabled: true, optional: true }
+              : s,
+        ),
+      );
+      fixture.detectChanges();
+      nextBtn(el).click();
+      fixture.detectChanges();
+      expect(instance.selectedIndex()).toBe(2);
+    });
+
+    it('linear Next is blocked by a disabled step that is neither optional nor completed', () => {
+      const { el, instance, fixture } = renderHost(StepperHost);
+      instance.linear.set(true);
+      instance.steps.update((ss) =>
+        ss.map((s, i) =>
+          i === 0 ? { ...s, completed: true } : i === 1 ? { ...s, disabled: true } : s,
+        ),
+      );
+      fixture.detectChanges();
+      expect(nextBtn(el).getAttribute('aria-disabled')).toBe('true');
+    });
+
+    it('select() on a disabled step is a no-op', () => {
+      const { fixture, instance } = renderHost(StepperHost);
+      disableStep(instance, 1);
+      fixture.detectChanges();
+      const stepper = fixture.debugElement.query(By.directive(ForStepper)).injector.get(ForStepper);
+      stepper.select(1);
+      fixture.detectChanges();
+      expect(instance.selectedIndex()).toBe(0);
+    });
+  });
+
+  describe('Next / Previous data-disabled', () => {
+    it('Previous carries data-disabled at the first step', () => {
+      const { el } = renderHost(StepperHost);
+      expect(prevBtn(el).getAttribute('data-disabled')).toBe('');
+    });
+
+    it('Next carries data-disabled at the linear gate', () => {
+      const { el, instance, fixture } = renderHost(StepperHost);
+      instance.linear.set(true);
+      fixture.detectChanges();
+      expect(nextBtn(el).getAttribute('data-disabled')).toBe('');
+    });
+
+    it('both drop data-disabled exactly when they drop aria-disabled', () => {
+      const { el, instance, fixture } = renderHost(StepperHost);
+      instance.selectedIndex.set(1);
+      fixture.detectChanges();
+      for (const btn of [nextBtn(el), prevBtn(el)]) {
+        expect(btn.hasAttribute('aria-disabled')).toBe(false);
+        expect(btn.hasAttribute('data-disabled')).toBe(false);
+      }
+    });
+  });
+
   describe('completed terminal state', () => {
     it('next() into terminal emits complete once and the completed panel becomes active', async () => {
       const { el, instance, fixture, flush } = renderHost(StepperHost);
