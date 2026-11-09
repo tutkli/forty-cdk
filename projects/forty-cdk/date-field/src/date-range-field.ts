@@ -240,7 +240,7 @@ export class ForDateRangeField<D>
       minDate: this.minDate,
       maxDate: this.maxDate,
       source: this.#composer.startSource,
-      onCommit: () => this.#composer.recompose(),
+      onCommit: (composed) => this.#composer.commitEndpoint(this.#startEngine, composed),
       piece: 'ForDateRangeField',
       scope: 'date-field',
     });
@@ -257,7 +257,7 @@ export class ForDateRangeField<D>
       minDate: this.minDate,
       maxDate: this.maxDate,
       source: this.#composer.endSource,
-      onCommit: () => this.#composer.recompose(),
+      onCommit: (composed) => this.#composer.commitEndpoint(this.#endEngine, composed),
       piece: 'ForDateRangeField',
       scope: 'date-field',
     });

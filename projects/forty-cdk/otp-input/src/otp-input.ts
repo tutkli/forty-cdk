@@ -155,7 +155,10 @@ export class ForOtpInput
   /** Toggle `autocomplete="one-time-code"` for mobile SMS autofill. */
   readonly oneTimeCode = input(true, { transform: booleanAttribute });
 
-  /** Rewrite pasted text before it fills the slots (e.g. strip separators). */
+  /**
+   * Rewrite pasted text before it fills the slots (e.g. strip separators). A paste
+   * whose rewritten text holds no accepted character leaves the code unchanged.
+   */
   readonly pasteTransformer = input<((pasted: string) => string) | null>(null);
 
   /**
@@ -422,6 +425,12 @@ export class ForOtpInput
     const transformed = transformer ? transformer(text) : text;
     const { filtered, rejected } = this.#filter(transformed);
     const clamped = filtered.slice(0, this.length());
+    if (clamped === '') {
+      if (rejected) {
+        this.reject.emit({ value: text });
+      }
+      return;
+    }
     el.value = clamped;
     el.setSelectionRange(clamped.length, clamped.length);
     this.#commit(clamped);

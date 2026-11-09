@@ -38,6 +38,7 @@ import {
   ForTableRowSelector,
   ForTableSelectAll,
 } from 'forty-cdk/table';
+import { ForToggleGroup, ForToggleGroupItem } from 'forty-cdk/toggle';
 import { ForTree, ForTreeItem, ForTreeItemLabel, ForTreeVirtualized } from 'forty-cdk/tree';
 
 import type { StaticAdoptionAdopter } from './mount';
@@ -274,7 +275,7 @@ class ComboboxPickerBare {
 @Component({
   imports: [ForRadioGroup, ForRadio],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `<div forRadioGroup [(value)]="value">
+  template: `<div forRadioGroup [(value)]="value" aria-label="Probe shipping">
     <button type="button" forRadio value="a" id="probe-radio">A</button>
   </div>`,
 })
@@ -292,6 +293,24 @@ class RadioGroupAdopted {
 class RadioGroupBare {
   readonly value = signal('');
 }
+
+@Component({
+  imports: [ForToggleGroup, ForToggleGroupItem],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `<div forToggleGroup aria-label="Probe alignment">
+    <button forToggleGroupItem value="left">Left</button>
+  </div>`,
+})
+class ToggleGroupAdopted {}
+
+@Component({
+  imports: [ForToggleGroup, ForToggleGroupItem],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `<div forToggleGroup>
+    <button forToggleGroupItem value="left">Left</button>
+  </div>`,
+})
+class ToggleGroupBare {}
 
 @Component({
   imports: [ForTree, ForTreeItem, ForTreeItemLabel, ForTreeVirtualized],
@@ -648,6 +667,29 @@ export const COLLECTION_FAMILY_ADOPTERS: readonly StaticAdoptionAdopter[] = [
         seam: 'hostId',
         probe: 'probe-radio',
         fallback: { generated: 'for-radio' },
+      },
+      {
+        key: '[forRadioGroup]',
+        channel: 'aria-label',
+        source: 'radio-group/src/radio-group.ts',
+        seam: 'hostAriaLabel',
+        probe: 'Probe shipping',
+        fallback: null,
+      },
+    ],
+  },
+  {
+    label: 'ToggleGroup',
+    adopted: ToggleGroupAdopted,
+    bare: ToggleGroupBare,
+    claims: [
+      {
+        key: '[forToggleGroup]',
+        channel: 'aria-label',
+        source: 'toggle/src/toggle-group.ts',
+        seam: 'hostAriaLabel',
+        probe: 'Probe alignment',
+        fallback: null,
       },
     ],
   },

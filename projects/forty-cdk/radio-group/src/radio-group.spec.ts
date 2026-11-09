@@ -34,6 +34,7 @@ const RADIO_IMPORTS = [ForRadioGroup, ForRadio] as const;
       [required]="groupRequired()"
       [invalid]="groupInvalid()"
       [loop]="loop()"
+      [ariaLabel]="ariaLabel()"
     >
       @for (option of options(); track option.value) {
         <button
@@ -58,6 +59,7 @@ class RadioGroupHost {
   readonly groupRequired = signal(false);
   readonly groupInvalid = signal(false);
   readonly loop = signal(true);
+  readonly ariaLabel = signal<string | null>(null);
   readonly options = signal([
     { value: 'red', label: 'Red', disabled: false },
     { value: 'green', label: 'Green', disabled: false },
@@ -319,6 +321,24 @@ describe('ForRadioGroup', () => {
         expect(r.getAttribute('type')).toBe('button');
         expect(r.getAttribute('aria-checked')).toBe('false');
       }
+    });
+
+    it('names the group from [ariaLabel] and emits no aria-label for null or empty', async () => {
+      const r = renderHost(RadioGroupHost);
+      const group = groupOf(r.el);
+      expect(group.hasAttribute('aria-label')).toBe(false);
+
+      r.instance.ariaLabel.set('Shipping');
+      await r.flush();
+      expect(group.getAttribute('aria-label')).toBe('Shipping');
+
+      r.instance.ariaLabel.set('');
+      await r.flush();
+      expect(group.hasAttribute('aria-label')).toBe(false);
+
+      r.instance.ariaLabel.set(null);
+      await r.flush();
+      expect(group.hasAttribute('aria-label')).toBe(false);
     });
 
     it('starts with unique ids per radio', () => {

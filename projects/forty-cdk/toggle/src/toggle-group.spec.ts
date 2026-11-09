@@ -30,6 +30,7 @@ import { ForToggleGroupItem } from './toggle-group-item';
       [orientation]="orientation()"
       [dir]="dir()"
       [loop]="loop()"
+      [ariaLabel]="ariaLabel()"
     >
       @for (item of items(); track item.value) {
         <button
@@ -51,6 +52,7 @@ class ToggleGroupHost {
   readonly orientation = signal<'horizontal' | 'vertical'>('horizontal');
   readonly dir = signal<'ltr' | 'rtl'>('ltr');
   readonly loop = signal(true);
+  readonly ariaLabel = signal<string | null>(null);
   readonly items = signal([
     { value: 'left', label: 'Left', disabled: false },
     { value: 'center', label: 'Center', disabled: false },
@@ -320,6 +322,24 @@ describe('ForToggleGroup', () => {
         expect(item.getAttribute('type')).toBe('button');
         expect(item.getAttribute('aria-pressed')).toBe('false');
       }
+    });
+
+    it('names the group from [ariaLabel] and emits no aria-label for null or empty', async () => {
+      const r = renderHost(ToggleGroupHost);
+      const group = groupOf(r.el);
+      expect(group.hasAttribute('aria-label')).toBe(false);
+
+      r.instance.ariaLabel.set('Alignment');
+      await r.flush();
+      expect(group.getAttribute('aria-label')).toBe('Alignment');
+
+      r.instance.ariaLabel.set('');
+      await r.flush();
+      expect(group.hasAttribute('aria-label')).toBe(false);
+
+      r.instance.ariaLabel.set(null);
+      await r.flush();
+      expect(group.hasAttribute('aria-label')).toBe(false);
     });
 
     it('reflects orientation changes', async () => {
