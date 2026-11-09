@@ -131,18 +131,23 @@ test.describe('ForStepper — interactive mode', () => {
   }) => {
     await gotoFixture(page, 'stepper');
     await rovingFirst(page, 'trigger-0');
-    await el(page, 'next').click();
-    await el(page, 'next').click();
+    await page.keyboard.press('Tab');
+    await expectFocused(el(page, 'content-0'));
+    await page.keyboard.press('Tab');
+    await expectFocused(el(page, 'prev'));
+    await page.keyboard.press('Tab');
+    await expectFocused(el(page, 'next'));
+    await page.keyboard.press('Enter');
+    await expect(el(page, 'trigger-1')).toHaveAttribute('aria-selected', 'true');
+    await page.keyboard.press('Enter');
     await expect(el(page, 'trigger-2')).toHaveAttribute('aria-selected', 'true');
     await expect(el(page, 'trigger-2')).toHaveAttribute('tabindex', '0');
-    await el(page, 'next').focus();
-    for (let i = 0; i < 6; i++) {
-      await page.keyboard.press('Shift+Tab');
-      const role = await page.evaluate(() => document.activeElement?.getAttribute('role'));
-      if (role === 'tab') {
-        break;
-      }
-    }
+
+    await page.keyboard.press('Shift+Tab');
+    await expectFocused(el(page, 'prev'));
+    await page.keyboard.press('Shift+Tab');
+    await expectFocused(el(page, 'content-2'));
+    await page.keyboard.press('Shift+Tab');
     await expectFocused(el(page, 'trigger-2'));
     await expect(el(page, 'trigger-2')).toHaveAttribute('aria-selected', 'true');
   });
