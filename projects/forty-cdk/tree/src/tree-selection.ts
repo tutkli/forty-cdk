@@ -183,13 +183,13 @@ export class TreeSelection<T> {
       span.push(item.value);
     }
     const current = this.#deps.value();
+    if (!this.#cascading()) {
+      this.#deps.setValue(appendMissing(current, span, equals));
+      return;
+    }
+    const { group, locked } = this.#cascadeOf(span);
     this.#deps.setValue(
-      this.#cascading()
-        ? this.#reconcileAncestors(
-            span,
-            appendMissing(current, this.#withDescendants(span), equals),
-          )
-        : appendMissing(current, span, equals),
+      this.#reconcileAncestors([...span, ...locked], appendMissing(current, group, equals)),
     );
   }
 
@@ -206,13 +206,22 @@ export class TreeSelection<T> {
     }
     const equals = this.#deps.compareWith();
     const current = this.#deps.value();
-    const cascading = this.#cascading();
-    const targets = cascading ? this.#withDescendants(values) : values;
-    const isTarget = membership(targets, equals);
-    const next = targets.every(membership(current, equals))
-      ? current.filter((value) => !isTarget(value))
-      : dedupeValues([...current, ...targets], equals);
-    this.#deps.setValue(cascading ? this.#reconcileAncestors(values, next) : next);
+    const isChecked = membership(current, equals);
+    if (!this.#cascading()) {
+      const isTarget = membership(values, equals);
+      this.#deps.setValue(
+        values.every(isChecked)
+          ? current.filter((value) => !isTarget(value))
+          : dedupeValues([...current, ...values], equals),
+      );
+      return;
+    }
+    const { group, locked, blocked } = this.#cascadeOf(values);
+    const inGroup = membership(group, equals);
+    const next = group.filter((value) => !blocked(value)).every(isChecked)
+      ? current.filter((value) => !inGroup(value))
+      : dedupeValues([...current, ...group], equals);
+    this.#deps.setValue(this.#reconcileAncestors([...values, ...locked], next));
   }
 
   #cascading(): boolean {
@@ -220,41 +229,108 @@ export class TreeSelection<T> {
   }
 
   /**
-   * Cascade toggle of one node and its subtree, following the state the node
-   * shows: a node reading `'true'` clears the group, any other state checks it.
+   * Cascade toggle of one node and its subtree. The direction follows the
+   * descendants the cascade may write, leaving out the ancestors of a disabled
+   * descendant, whose entry follows that descendant: when all of them are
+   * checked the group clears, otherwise it is checked. A node without
+   * descendants follows its own entry.
    */
   #toggleGroup(value: T, current: readonly T[]): readonly T[] {
     const equals = this.#deps.compareWith();
-    const descendants = this.#resolveDescendants(value);
-    const group = dedupeValues([value, ...descendants], equals);
+    const { group, locked, blocked } = this.#cascadeOf([value]);
     const isChecked = membership(current, equals);
     const inGroup = membership(group, equals);
-    const checked = descendants.length === 0 ? isChecked(value) : descendants.every(isChecked);
+    const descendants = group.filter((v) => !equals(v, value));
+    const checked =
+      descendants.length === 0 && locked.length === 0
+        ? isChecked(value)
+        : descendants.filter((v) => !blocked(v)).every(isChecked);
     const next = checked
       ? current.filter((v) => !inGroup(v))
       : dedupeValues([...current, ...group], equals);
-    return this.#reconcileAncestors([value], next);
+    return this.#reconcileAncestors([value, ...locked], next);
   }
 
-  #withDescendants(values: readonly T[]): T[] {
-    return dedupeValues(
-      values.flatMap((value) => [value, ...this.#resolveDescendants(value)]),
-      this.#deps.compareWith(),
+  /**
+   * The part of the subtrees of `values` a cascade may write. `group` holds
+   * `values` and their descendants minus every mounted disabled node, `locked`
+   * the disabled descendants it left out, and `blocked` tests for the mounted
+   * ancestors of a locked node, whose own entry follows the locked node rather
+   * than the write.
+   */
+  #cascadeOf(values: readonly T[]): {
+    readonly group: readonly T[];
+    readonly locked: readonly T[];
+    readonly blocked: (value: T) => boolean;
+  } {
+    const equals = this.#deps.compareWith();
+    const entries = this.#deps.visibleNodes();
+    const isDisabled = membership(
+      entries.filter((entry) => entry.handle.disabled()).map((entry) => entry.value),
+      equals,
     );
+    const group: T[] = [];
+    const locked: T[] = [];
+    for (const value of values) {
+      group.push(value);
+      for (const descendant of this.#resolveDescendants(value)) {
+        (isDisabled(descendant) ? locked : group).push(descendant);
+      }
+    }
+    const uniqueLocked = dedupeValues(locked, equals);
+    return {
+      group: dedupeValues(group, equals),
+      locked: uniqueLocked,
+      blocked: membership(
+        this.#mountedAncestors(uniqueLocked).map((index) => entries[index]!.value),
+        equals,
+      ),
+    };
   }
 
   /**
    * Keeps each mounted ancestor of `values` in `next` exactly when all its
-   * descendants are. Every ancestor is visited once, deepest first, so a parent
-   * reads the already-settled entry of an intermediate one.
+   * descendants are, leaving a disabled ancestor's entry as it is. Every
+   * ancestor is visited once, deepest first, so a parent reads the
+   * already-settled entry of an intermediate one.
    */
   #reconcileAncestors(values: readonly T[], next: readonly T[]): readonly T[] {
     const equals = this.#deps.compareWith();
     const entries = this.#deps.visibleNodes();
+    let result = next;
+    for (const i of this.#mountedAncestors(values)) {
+      const { handle, value: ancestor } = entries[i]!;
+      if (!handle.selectable() || handle.disabled()) {
+        continue;
+      }
+      const descendants = this.#resolveDescendants(ancestor);
+      if (descendants.length === 0) {
+        continue;
+      }
+      const isChecked = membership(result, equals);
+      const full = descendants.every(isChecked);
+      if (full && !isChecked(ancestor)) {
+        result = [...result, ancestor];
+      } else if (!full && isChecked(ancestor)) {
+        result = result.filter((v) => !equals(v, ancestor));
+      }
+    }
+    return result;
+  }
+
+  /**
+   * The visible-node indices of every mounted ancestor of `values`, each once,
+   * deepest first.
+   */
+  #mountedAncestors(values: readonly T[]): number[] {
+    if (values.length === 0) {
+      return [];
+    }
+    const entries = this.#deps.visibleNodes();
     const indexOf = lookupByValue(
       entries.map((_, index) => index),
       (index) => entries[index]!.value,
-      equals,
+      this.#deps.compareWith(),
     );
     const ancestors = new Set<number>();
     for (const value of values) {
@@ -275,25 +351,7 @@ export class TreeSelection<T> {
         level = candidateLevel;
       }
     }
-    let result = next;
-    for (const i of [...ancestors].sort((a, b) => b - a)) {
-      const { handle, value: ancestor } = entries[i]!;
-      if (!handle.selectable()) {
-        continue;
-      }
-      const descendants = this.#resolveDescendants(ancestor);
-      if (descendants.length === 0) {
-        continue;
-      }
-      const isChecked = membership(result, equals);
-      const full = descendants.every(isChecked);
-      if (full && !isChecked(ancestor)) {
-        result = [...result, ancestor];
-      } else if (!full && isChecked(ancestor)) {
-        result = result.filter((v) => !equals(v, ancestor));
-      }
-    }
-    return result;
+    return [...ancestors].sort((a, b) => b - a);
   }
 
   #resolveDescendants(value: T): readonly T[] {

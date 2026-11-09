@@ -24,6 +24,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   implements `FormUiControl.reset`: the editable single-select input shows the label of the
   selection the reset leaves, and is empty when there is none, in multi mode, in the picker anatomy
   and without `commitOnSelect`.
+- **Tree** — with `selectionMode="checkbox"` and `cascade`, a press on a parent, Shift+Arrow,
+  Shift+Space and Ctrl/Cmd+A no longer check or uncheck a disabled descendant
+  ([#2745](https://github.com/tutkli/forty-cdk/issues/2745)). The cascade wrote the whole subtree, so
+  a locked child was granted or revoked through its parent, and pressing Ctrl/Cmd+A twice removed a
+  preselected disabled node. A mounted disabled node now keeps its state, still counts toward its
+  ancestors (a parent whose locked child is unchecked reads `mixed` and stays out of `[(value)]`),
+  and a parent still toggles in both directions. A disabled ancestor's own entry no longer follows
+  its children either. A disabled node in a collapsed subtree is unknown to the tree and is still
+  written; leave it out of `descendantsOf` to protect it there.
 
 ## [0.42.0] - 2026-11-08
 
