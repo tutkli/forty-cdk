@@ -346,7 +346,7 @@ export class ForDropList implements ForDropListContext {
     if (delegated !== undefined && delegated !== null) {
       return delegated;
     }
-    return this.roving.active() === el;
+    return this.roving.isActive(el);
   }
 
   isItemDragging(el: HTMLElement): boolean {

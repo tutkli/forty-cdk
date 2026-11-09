@@ -1,5 +1,6 @@
-import { linkedSignal, type Signal, signal } from '@angular/core';
+import { computed, linkedSignal, type Signal, signal, untracked } from '@angular/core';
 
+import { KeyedFlag } from '../keyed-flag/keyed-flag';
 import type { HostRovingItemHandle } from './host-roving-context';
 import { RovingFocusYield } from './roving-focus-yield';
 
@@ -43,11 +44,42 @@ import { RovingFocusYield } from './roving-focus-yield';
  * for all of them and {@link hasActive} reports that the tracker owns the tab
  * stop, so the group holds none and `Tab` / `Shift+Tab` leave it.
  *
+ * The per-item reads, {@link isActive}, {@link tabindexFor} and {@link hasActive},
+ * cost O(1) per move: moving the active element between two usable items
+ * notifies only the reads for those two items, so a group of N items does not
+ * re-evaluate N item bindings per arrow key. {@link active} stays a group-wide
+ * read for the container's own handlers.
+ *
  * Construct directly with `new RovingTabindex()` — there is no internal
  * state requiring an injection context or `DestroyRef` cleanup.
  */
 export class RovingTabindex {
   readonly #rawActive = signal<HTMLElement | null>(null);
+
+  /** Marks the element {@link setActive} last named, read per item by {@link isActive}. */
+  readonly #raw = new KeyedFlag<HTMLElement>();
+
+  /**
+   * Bumped by a write that changes {@link #settled}'s answer, the only way a
+   * change of the raw pointer reaches it, so a move that leaves the answer as
+   * it was notifies none of its readers.
+   */
+  readonly #epoch = signal(0);
+
+  /**
+   * Set by the first write naming an element. Until then {@link #settled} does
+   * not track the items, so a group nothing has been focused in never reads
+   * its item list.
+   */
+  #tracksItems = false;
+
+  /**
+   * The group-wide facts every item reads: whether the tracker owns the tab
+   * stop, and the element promoted in place of an unusable raw pointer. Tracks
+   * the items and their `disabled` state, which can move the reconciled
+   * pointer without a write, and reads the raw pointer untracked.
+   */
+  readonly #settled: Signal<Settled>;
 
   readonly #keepsDeparted: boolean;
 
@@ -93,6 +125,30 @@ export class RovingTabindex {
     });
     this.active = this.#active;
     this.#focusYield = items ? new RovingFocusYield(items) : null;
+    this.#settled = computed(
+      () => {
+        this.#epoch();
+        if (items && this.#tracksItems) {
+          for (const item of items()) {
+            item.disabled();
+          }
+        }
+        return untracked(() => this.#settle());
+      },
+      { equal: sameSettled },
+    );
+  }
+
+  /**
+   * Whether `el` is the active element, as {@link active} reports it. Reactive
+   * per element: a move notifies only the reads for the element losing the
+   * pointer and the element gaining it.
+   */
+  isActive(el: HTMLElement): boolean {
+    if (this.#raw.has(el)) {
+      return this.#active() === el;
+    }
+    return this.#settled().promoted === el;
   }
 
   /**
@@ -107,8 +163,19 @@ export class RovingTabindex {
     if (this.#focusYield?.yields() === true) {
       return true;
     }
-    const el = this.#active();
+    if (!this.#settled().owns) {
+      return false;
+    }
+    const el = untracked(this.#active);
     return el !== null && !isStale(el);
+  }
+
+  /**
+   * Whether {@link active} is non-null, without {@link hasActive}'s discount of
+   * a stale element. Notifies its readers only when that answer changes.
+   */
+  holdsActive(): boolean {
+    return this.#settled().present;
   }
 
   /**
@@ -123,11 +190,7 @@ export class RovingTabindex {
     if (this.#focusYield?.yields() === true) {
       return -1;
     }
-    const active = this.#active();
-    if (active === null || isStale(active)) {
-      return -1;
-    }
-    return active === el ? 0 : -1;
+    return this.isActive(el) && !isStale(el) ? 0 : -1;
   }
 
   /**
@@ -140,7 +203,7 @@ export class RovingTabindex {
   }
 
   setActive(el: HTMLElement | null): void {
-    this.#rawActive.set(el);
+    this.#write(el);
   }
 
   /**
@@ -153,7 +216,7 @@ export class RovingTabindex {
    */
   unregister(el: HTMLElement): void {
     if (!this.#keepsDeparted && this.#active() === el) {
-      this.#rawActive.set(null);
+      this.#write(null);
     }
   }
 
@@ -167,10 +230,49 @@ export class RovingTabindex {
       return;
     }
     if (target !== this.#active()) {
-      this.#rawActive.set(target);
+      this.#write(target);
     }
     target.focus();
   }
+
+  #write(next: HTMLElement | null): void {
+    untracked(() => {
+      if (this.#rawActive() === next) {
+        return;
+      }
+      const before = this.#settled();
+      this.#raw.move(next);
+      this.#rawActive.set(next);
+      const after = this.#settle();
+      const subscribes = next !== null && !this.#tracksItems;
+      if (subscribes) {
+        this.#tracksItems = true;
+      }
+      if (subscribes || !sameSettled(before, after)) {
+        this.#epoch.update((epoch) => epoch + 1);
+      }
+    });
+  }
+
+  #settle(): Settled {
+    const raw = this.#rawActive();
+    const active = this.#active();
+    return {
+      present: active !== null,
+      owns: active !== null && !isStale(active),
+      promoted: active === raw ? null : active,
+    };
+  }
+}
+
+interface Settled {
+  readonly present: boolean;
+  readonly owns: boolean;
+  readonly promoted: HTMLElement | null;
+}
+
+function sameSettled(a: Settled, b: Settled): boolean {
+  return a.present === b.present && a.owns === b.owns && a.promoted === b.promoted;
 }
 
 interface ActiveSource {

@@ -110,9 +110,7 @@ export abstract class ForDateTimeSegmentBase {
 
   #restoreContent: (() => void) | null = null;
 
-  private readonly highlighted = computed(
-    () => this.ctx.roving.active() === this.host.nativeElement,
-  );
+  private readonly highlighted = computed(() => this.ctx.roving.isActive(this.host.nativeElement));
 
   /**
    * APG tabindex: the user-focused segment owns `tabindex=0` (tracked by the
