@@ -52,13 +52,19 @@ export abstract class FormUiControlBase {
    */
   readonly disabled = input(false, { transform: booleanAttribute });
 
-  /** When true, interaction is ignored but the control stays focusable; `aria-readonly="true"`. */
+  /**
+   * When true, interaction is ignored but the control stays focusable. Reflected
+   * as `data-readonly`, plus `aria-readonly="true"` where the control's role
+   * supports it; a `role="group"` or `role="button"` host carries `data-readonly`
+   * alone.
+   */
   readonly readonly = input(false, { transform: booleanAttribute });
 
   /**
    * Marks the control required. A control hosted on a native `<input>` or
    * `<textarea>` reflects it as the native `required` attribute, a custom-role
-   * control as `aria-required="true"` where its role supports it.
+   * control as `aria-required="true"` where its role supports it, and a
+   * `role="group"` or `role="button"` host as `data-required`.
    */
   readonly required = input(false, { transform: booleanAttribute });
 

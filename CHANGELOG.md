@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Date field, Time field, Date range field, Time range field, Date picker, Time picker** — a
+  pending control is announced as busy ([#2734](https://github.com/tutkli/forty-cdk/issues/2734)).
+  The four field roots reflected `pending` as `data-pending` only, and a picker with
+  `anatomy="field"` left its trigger without `aria-busy` too, so nothing in the composite told a
+  screen reader that an async validator was running. Each field root now carries
+  `aria-busy="true"` while `pending`, and a field-anatomy picker passes its own `pending` to the
+  field it adopts.
 - **Checkbox, Switch, Toggle, Toggle group, Radio group, Listbox, Select, Combobox, Slider, Date
   field, Date picker, Time field, Time picker** — a required control no longer gives the page a
   phantom outer scrollbar ([#2785](https://github.com/tutkli/forty-cdk/issues/2785)). Since 0.42.0
@@ -779,7 +786,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `@angular/forms/signals`, so a project without the optional peer failed with `TS2307`; only the 16
   entry points the package README lists import it now. `ForFieldError.errors()` and
   `FieldControlHandle.errors` are typed `readonly FieldValidationError[]` (a `kind` and an optional
-  `message`), published from `forty-cdk/field`, and `[field]` on `[forStepperItem]` takes
+  `message`), published from `forty-cdk/field`, as is the `errors` input every form control
+  inherits, and `[field]` on `[forStepperItem]` takes
   `StepperField | null`, published from `forty-cdk/stepper`, which every `FieldTree` satisfies. The
   error objects are unchanged at runtime, but `fieldTree` is no longer in their declared type:
   **read it from the Signal Forms field's own `errors()` where you need it**.

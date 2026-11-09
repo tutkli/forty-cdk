@@ -93,6 +93,7 @@ class Host {
       [readonly]="isReadonly()"
       [required]="isRequired()"
       [invalid]="isInvalid()"
+      [pending]="isPending()"
       [(touched)]="isTouched"
       [dirty]="isDirty()"
       #field="forDateField"
@@ -112,6 +113,7 @@ class DateFieldFormControlHost {
   readonly isReadonly = signal(false);
   readonly isRequired = signal(false);
   readonly isInvalid = signal(false);
+  readonly isPending = signal(false);
   readonly isTouched = signal(false);
   readonly isDirty = signal(false);
 }
@@ -226,6 +228,9 @@ describe('ForDateField', () => {
             case 'invalid':
               r.instance.isInvalid.set(value);
               return;
+            case 'pending':
+              r.instance.isPending.set(value);
+              return;
             case 'touched':
               r.instance.isTouched.set(value);
               return;
@@ -238,7 +243,7 @@ describe('ForDateField', () => {
       return result;
     },
     {
-      flags: ['readonly', 'required', 'invalid', 'touched', 'dirty'],
+      flags: ['readonly', 'required', 'invalid', 'pending', 'touched', 'dirty'],
       roleSupportsAriaReadonly: false,
       roleSupportsAriaRequired: false,
     },

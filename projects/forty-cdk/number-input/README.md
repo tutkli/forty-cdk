@@ -149,16 +149,16 @@ export const appConfig: ApplicationConfig = {
 
 | Property                                                               | Type                                      | Description                                                                                                           |
 | ---------------------------------------------------------------------- | ----------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| `value`                                                                | `model<number \| null>`                   | Two-way bindable value. `null` is the empty input (reflected as `data-empty`).<br>**Default:** —                      |
+| `value`                                                                | `model<number \| null>`                   | Two-way bindable value. `null` is the empty input (reflected as `data-empty`).<br>**Default:** `null`                 |
 | `min`                                                                  | `input<number \| undefined>`              | Lower bound. Reflected as `aria-valuemin`. Unset → no lower bound.<br>**Default:** —                                  |
 | `max`                                                                  | `input<number \| undefined>`              | Upper bound. Reflected as `aria-valuemax`. Unset → no upper bound.<br>**Default:** —                                  |
 | `step`                                                                 | `input<number>`                           | Increment for ArrowUp / ArrowDown and the buttons.<br>**Default:** `1`                                                |
 | `stepMultiplier`                                                       | `input<number>`                           | Multiplier over `step` for PageUp / PageDown (configurable via `provideForNumberInputDefaults`).<br>**Default:** `10` |
 | `formatOptions`                                                        | `input<Intl.NumberFormatOptions \| null>` | When set, drives the displayed text and `aria-valuetext`.<br>**Default:** —                                           |
 | `locale`                                                               | `input<string \| null>`                   | BCP 47 locale for parsing and formatting. Defaults to the runtime locale.<br>**Default:** —                           |
-| `disabled` / `readonly` / `required` / `invalid` / `pending` / `dirty` | `input<boolean>`                          | Shared form-control flags (see [Field](../field/README.md)).<br>**Default:** —                                        |
-| `name`                                                                 | `input<string>`                           | Mounts a hidden `<input>` carrying the **raw** number for native form submission.<br>**Default:** —                   |
-| `touched`                                                              | `model<boolean>`                          | Set to `true` on blur, and on an increment / decrement button click.<br>**Default:** —                                |
+| `disabled` / `readonly` / `required` / `invalid` / `pending` / `dirty` | `input<boolean>`                          | Shared form-control flags (see [Field](../field/README.md)).<br>**Default:** `false`                                  |
+| `name`                                                                 | `input<string>`                           | Mounts a hidden `<input>` carrying the **raw** number for native form submission.<br>**Default:** `''`                |
+| `touched`                                                              | `model<boolean>`                          | Set to `true` on blur, and on an increment / decrement button click.<br>**Default:** `false`                          |
 
 | Data attribute  | Values                                       |
 | --------------- | -------------------------------------------- |

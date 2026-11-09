@@ -95,9 +95,9 @@ export class MyListbox {}
 ```
 
 ```html
-<ul myListbox [(value)]="picked" ariaLabel="Fruit">
-  <li><button type="button" forListboxOption value="apple">Apple</button></li>
-</ul>
+<div myListbox [(value)]="picked" ariaLabel="Fruit">
+  <button type="button" forListboxOption value="apple">Apple</button>
+</div>
 ```
 
 ### Exposing only part of the surface

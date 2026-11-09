@@ -59,7 +59,7 @@ export class ForComboboxStatus {
 
   /**
    * Number of results the listbox holds, for interpolating `{{ status.count() }}`
-   * inside the live region: the root's `[totalCount]` when set, so a virtualized
+   * inside the live region: `[forComboboxVirtualized]`'s `totalCount` when set, so a virtualized
    * listbox announces its full result count rather than its rendered window, and
    * the number of registered options otherwise.
    */

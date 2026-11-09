@@ -345,6 +345,7 @@ Composes the [WAI-ARIA Spinbutton pattern](https://www.w3.org/WAI/ARIA/apg/patte
 - **Literals are `aria-hidden`** and never focusable, so assistive tech reads only the spinbutton segments.
 - **Boolean `data-*`** on each segment, present when true and absent when false: `data-highlighted` (the roving tab stop, kept after blur), `data-placeholder` (empty), `data-disabled`, `data-readonly`.
 - **`aria-readonly` belongs on the segments, not the group.** WAI-ARIA supports it on `role="spinbutton"` but not on `role="group"`, so each segment carries `aria-readonly="true"` while the group reflects the `data-readonly` styling hook only.
+- **`aria-busy="true"` on the group while `pending`**, beside the `data-pending` hook, so an async validator in flight is announced as it is on the other form controls. A picker in the field anatomy passes its own `pending` to the field it adopts, so the composite carries it once, on the group.
 - **On-screen keyboards work.** A segment of a field that is neither disabled nor read-only is a `contenteditable="plaintext-only"` editing host with `inputmode="numeric"`, so tapping it on a touch device opens the numeric keypad (the AM/PM segment opens the text keyboard). What the keyboard or an input method types goes through the [Keyboard](#keyboard) map above and is never inserted into the segment, which keeps rendering `{{ seg.text }}`.
 
 ## Styling
