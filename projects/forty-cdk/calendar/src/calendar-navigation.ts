@@ -2,7 +2,7 @@ import type { Signal, WritableSignal } from '@angular/core';
 
 import { type DateAdapter } from 'forty-cdk/date-adapter';
 import type { CalendarBounds } from './calendar-bounds';
-import type { CalendarRangeSelection } from './calendar-range-selection';
+import type { CalendarRangeSelection, CalendarRangeStep } from './calendar-range-selection';
 import { IntendedDayCursor } from './intended-day-cursor';
 
 /**
@@ -44,6 +44,8 @@ export interface CalendarNavigationHost<D> {
   readonly range: CalendarRangeSelection<D>;
   /** Announce `label` politely (used when a navigation changes the active view's period). */
   announce(label: string): void;
+  /** Announce politely the anchor a range click set, or the range it committed. */
+  announceRangeStep(step: CalendarRangeStep<D>): void;
   /** Schedule `fn` to run after the next render. */
   scheduleFocus(fn: () => void): void;
   /** Move DOM focus to the day cell matching `target`, after the next render. */
@@ -81,11 +83,13 @@ export class CalendarNavigation<D> {
 
   /**
    * Apply a pointer activation of the day cell for `date`: select it, or, when
-   * the selection is refused, still move the focused date there so the clicked
-   * cell owns the tab stop. A no-op while the calendar is disabled.
+   * the selection is refused for a date inside `[min, max]`, still move the
+   * focused date there so the clicked cell owns the tab stop. A refused date
+   * outside `[min, max]` leaves the focused date where it is. A no-op while the
+   * calendar is disabled.
    */
   activateDate(date: D): void {
-    if (this.#host.disabled() || this.#select(date)) {
+    if (this.#host.disabled() || this.#select(date) || !this.#host.bounds.contains(date)) {
       return;
     }
     this.#cursor.setFocusedDay(date);
@@ -163,12 +167,14 @@ export class CalendarNavigation<D> {
       return false;
     }
     if (this.#host.selectionMode() === 'range') {
-      if (!this.#host.range.select(date)) {
+      const step = this.#host.range.select(date);
+      if (step === null) {
         return false;
       }
       this.#cursor.setFocusedDay(date);
       this.#setFocusedDate(date);
       this.#host.focusDayCell(date);
+      this.#host.announceRangeStep(step);
       return true;
     }
     this.#cursor.setFocusedDay(date);

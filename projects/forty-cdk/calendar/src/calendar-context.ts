@@ -220,16 +220,21 @@ export interface ForCalendarContext<D> {
   /** Whether the next button should be disabled for the active view. */
   readonly isNextDisabled: Signal<boolean>;
 
-  /** Cycle the view one step coarser: `day → month → year`, clamped at `'year'`. */
+  /**
+   * Cycle the view one step coarser: `day → month → year`, clamped at
+   * `'year'`, and move DOM focus to the active cell of the new grid.
+   */
   cycleView(): void;
   /**
    * Drill into a month (1-12): navigate to it and switch to day view, read-only
-   * included. No-op when disabled or out of bounds.
+   * included, moving DOM focus into the day grid. No-op when disabled or out of
+   * bounds.
    */
   selectMonth(month: number): void;
   /**
    * Drill into a year: navigate to it and switch to month view, read-only
-   * included. No-op when disabled or out of bounds.
+   * included, moving DOM focus into the month grid. No-op when disabled or out of
+   * bounds.
    */
   selectYear(year: number): void;
   /** Page backward by one month / year / block depending on the active view. */
