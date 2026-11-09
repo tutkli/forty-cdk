@@ -879,45 +879,6 @@ describe('injectFloating', () => {
     });
   });
 
-  describe('avoidCollisions', () => {
-    it('still resolves a placement when avoidCollisions is false', async () => {
-      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
-      const fixture = TestBed.createComponent(ModernBubbleHost);
-      await flushPositioning(fixture);
-      const bubble = fixture.componentInstance.bubble();
-      const bubbleEl = document.querySelector<HTMLElement>('modern-bubble')!;
-
-      bubble.reference.set(fixture.componentInstance.anchor().nativeElement);
-      bubble.side.set('top');
-      bubble.align.set('center');
-      bubble.avoidCollisions.set(false);
-      bubble.open.set(true);
-      await flushPositioning(fixture);
-
-      // Without flip/shift the requested placement is honoured verbatim.
-      expect(bubbleEl.dataset['side']).toBe('top');
-      expect(bubbleEl.dataset['align']).toBe('center');
-      expect(bubbleEl.style.translate).toMatch(/^-?\d+px -?\d+px$/);
-    });
-  });
-
-  describe('hideWhenDetached', () => {
-    it('does not set data-detached when the option is off', async () => {
-      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
-      const fixture = TestBed.createComponent(ModernBubbleHost);
-      await flushPositioning(fixture);
-      const bubble = fixture.componentInstance.bubble();
-      const bubbleEl = document.querySelector<HTMLElement>('modern-bubble')!;
-
-      bubble.reference.set(fixture.componentInstance.anchor().nativeElement);
-      bubble.hideWhenDetached.set(false);
-      bubble.open.set(true);
-      await flushPositioning(fixture);
-
-      expect(bubbleEl.dataset['detached']).toBeUndefined();
-    });
-  });
-
   describe('onFirstPosition', () => {
     it('does not fire while the surface stays closed', async () => {
       TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });

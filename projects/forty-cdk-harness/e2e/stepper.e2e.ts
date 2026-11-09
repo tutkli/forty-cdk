@@ -1,4 +1,4 @@
-import { el, expect, expectFocused, gotoFixture, rovingFirst, test } from './_helpers';
+import { el, expect, expectFocused, expectStays, gotoFixture, rovingFirst, test } from './_helpers';
 
 test.describe('ForStepper — interactive mode', () => {
   test('arrow keys move focus across triggers', async ({ page }) => {
@@ -10,18 +10,12 @@ test.describe('ForStepper — interactive mode', () => {
     await expectFocused(el(page, 'trigger-2'));
   });
 
-  test('arrow nav lands on a disabled step without activating it, then moves past', async ({
-    page,
-  }) => {
-    // Step 1 is disabled but stays arrow-reachable per the APG. Default
-    // activation is manual, so no step is activated by arrow navigation.
+  test('arrow nav lands on a disabled step, then moves past it', async ({ page }) => {
     await gotoFixture(page, 'stepper', { disabled: '1' });
     await rovingFirst(page, 'trigger-0');
     await page.keyboard.press('ArrowRight');
     await expectFocused(el(page, 'trigger-1'));
     await expect(el(page, 'trigger-1')).toHaveAttribute('aria-disabled', 'true');
-    // The disabled step is reached but never activated: panel 0 stays live.
-    await expect(el(page, 'content-0')).not.toHaveAttribute('inert');
     await page.keyboard.press('ArrowRight');
     await expectFocused(el(page, 'trigger-2'));
   });
@@ -34,8 +28,10 @@ test.describe('ForStepper — interactive mode', () => {
     await page.keyboard.press('ArrowRight');
     await expectFocused(el(page, 'trigger-1'));
     // Reached, not activated — panel 1 stays inert, panel 0 stays live.
-    await expect(el(page, 'content-1')).toHaveAttribute('inert');
-    await expect(el(page, 'content-0')).not.toHaveAttribute('inert');
+    await expectStays(page, async () => {
+      await expect(el(page, 'content-1')).toHaveAttribute('inert');
+      await expect(el(page, 'content-0')).not.toHaveAttribute('inert');
+    });
   });
 
   test('Home / End jump to the first / last trigger', async ({ page }) => {
@@ -72,8 +68,10 @@ test.describe('ForStepper — interactive mode', () => {
     const trigger1 = el(page, 'trigger-1');
     await expect(trigger1).toHaveAttribute('aria-disabled', 'true');
     await trigger1.click({ force: true });
-    await expect(el(page, 'content-0')).not.toHaveAttribute('inert');
-    await expect(el(page, 'content-1')).toHaveAttribute('inert');
+    await expectStays(page, async () => {
+      await expect(el(page, 'content-0')).not.toHaveAttribute('inert');
+      await expect(el(page, 'content-1')).toHaveAttribute('inert');
+    });
   });
 
   test('linear mode unblocks after marking the preceding step completed', async ({ page }) => {

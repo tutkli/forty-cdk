@@ -1,7 +1,6 @@
 import {
   ChangeDetectionStrategy,
   Component,
-  ErrorHandler,
   provideZonelessChangeDetection,
   signal,
   type Type,
@@ -24,7 +23,7 @@ import {
 import { pressKey } from 'forty-cdk/testing';
 import { ForTree, ForTreeItem, ForTreeItemLabel, ForTreeVirtualized } from 'forty-cdk/tree';
 
-import { afterEachOverlayCleanup, flush } from '../test-utils';
+import { afterEachOverlayCleanup, captureHandledErrors, flush } from '../test-utils';
 import { LIBRARY_CODE } from '../test-utils/source-scan';
 
 abstract class GuardHost {
@@ -240,13 +239,10 @@ async function navigate(
   host: Type<GuardHost>,
   multiple: boolean,
 ): Promise<{ readonly captured: readonly unknown[]; readonly from: string; readonly to: string }> {
-  const captured: unknown[] = [];
+  const { captured, provider: errorHandler } = captureHandledErrors();
   TestBed.configureTestingModule({
     rethrowApplicationErrors: false,
-    providers: [
-      provideZonelessChangeDetection(),
-      { provide: ErrorHandler, useValue: { handleError: (e: unknown) => captured.push(e) } },
-    ],
+    providers: [provideZonelessChangeDetection(), errorHandler],
   });
   const fixture = TestBed.createComponent(host);
   fixture.componentInstance.multiple.set(multiple);

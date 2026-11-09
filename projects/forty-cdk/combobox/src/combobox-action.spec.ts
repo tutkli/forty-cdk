@@ -1,4 +1,4 @@
-import { Component, ErrorHandler, provideZonelessChangeDetection, signal } from '@angular/core';
+import { Component, provideZonelessChangeDetection, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
 import { pressKey, pressWithMouse } from 'forty-cdk/testing';
@@ -11,6 +11,7 @@ import { ForComboboxInput } from './combobox-input';
 import { ForComboboxList } from './combobox-list';
 import { ForComboboxOption } from './combobox-option';
 import { ForComboboxTrigger } from './combobox-trigger';
+import { captureHandledErrors } from '../../src/test-utils/handled-errors';
 
 const FRUITS = ['apple', 'banana', 'cherry'] as const;
 
@@ -548,18 +549,10 @@ describe('ForComboboxAction', () => {
 
   describe('requires a [forComboboxList]', () => {
     async function collectErrors<T>(host: new () => T): Promise<unknown[]> {
-      const captured: unknown[] = [];
-      class CapturingHandler implements ErrorHandler {
-        handleError(err: unknown): void {
-          captured.push(err);
-        }
-      }
+      const { captured, provider: errorHandler } = captureHandledErrors();
 
       TestBed.configureTestingModule({
-        providers: [
-          provideZonelessChangeDetection(),
-          { provide: ErrorHandler, useClass: CapturingHandler },
-        ],
+        providers: [provideZonelessChangeDetection(), errorHandler],
       });
 
       const fixture = TestBed.createComponent(host);
@@ -589,17 +582,9 @@ describe('ForComboboxAction', () => {
     });
 
     it('throws even when the action is disabled (a disabled action is still a listbox child)', async () => {
-      const captured: unknown[] = [];
-      class CapturingHandler implements ErrorHandler {
-        handleError(err: unknown): void {
-          captured.push(err);
-        }
-      }
+      const { captured, provider: errorHandler } = captureHandledErrors();
       TestBed.configureTestingModule({
-        providers: [
-          provideZonelessChangeDetection(),
-          { provide: ErrorHandler, useClass: CapturingHandler },
-        ],
+        providers: [provideZonelessChangeDetection(), errorHandler],
       });
       const fixture = TestBed.createComponent(NoListActionHost);
       fixture.componentInstance.actionDisabled.set(true);

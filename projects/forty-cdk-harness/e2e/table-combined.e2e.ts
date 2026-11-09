@@ -147,19 +147,29 @@ test.describe('Table combined composition', () => {
   });
 
   test('row selection persists across virtualized recycling', async ({ page }) => {
-    const selector0 = el(page, 'selector-0');
-    await selector0.click();
+    await el(page, 'selector-0').click();
     await expect(el(page, 'row-0')).toHaveAttribute('aria-selected', 'true');
+    const headerName = el(page, 'header-name');
+    await headerName.focus();
+    await expectFocused(headerName);
+    await el(page, 'row-0').evaluate((node) => {
+      (node as HTMLElement & { recycled?: false }).recycled = false;
+    });
 
     await el(page, 'root').evaluate((node, h) => {
       (node as HTMLElement).scrollTop = 50 * h;
     }, ROW_HEIGHT);
     await expect(el(page, 'row-50')).toBeAttached();
+    await expect(el(page, 'row-0'), 'row-0 unmounted at row 50').toHaveCount(0);
 
     await el(page, 'root').evaluate((node) => {
       (node as HTMLElement).scrollTop = 0;
     });
     await expect(el(page, 'row-0')).toHaveAttribute('aria-selected', 'true');
+    const sameNode = await el(page, 'row-0').evaluate(
+      (node) => (node as HTMLElement & { recycled?: false }).recycled === false,
+    );
+    expect(sameNode, 'row-0 is a re-created node').toBe(false);
   });
 
   test('select-all is total-aware: spans unmounted rows and reports a correct tri-state', async ({

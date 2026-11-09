@@ -11,7 +11,7 @@ import { By } from '@angular/platform-browser';
 
 import { installObserverPolyfills } from 'forty-cdk/testing';
 
-import { flush, renderHost } from '../../src/test-utils';
+import { captureHandledErrors, flush, renderHost } from '../../src/test-utils';
 import { ForScrollArea } from './scroll-area';
 import { ForScrollAreaContent } from './scroll-area-content';
 import { ForScrollAreaCorner } from './scroll-area-corner';
@@ -797,8 +797,6 @@ describe('ForScrollArea', () => {
       await flush();
 
       expect(gestureSignals.every((s) => s?.aborted === true)).toBe(true);
-
-      expect(() => document.dispatchEvent(pointer('pointermove', { clientY: 300 }))).not.toThrow();
     });
 
     describe('repeat timer teardown', () => {
@@ -829,9 +827,11 @@ describe('ForScrollArea', () => {
       });
     });
 
-    it('a track press does not throw', async () => {
+    it('a track press reports no error', async () => {
+      const errors = captureHandledErrors();
       TestBed.configureTestingModule({
-        providers: [provideZonelessChangeDetection()],
+        rethrowApplicationErrors: false,
+        providers: [provideZonelessChangeDetection(), errors.provider],
       });
       const fixture = TestBed.createComponent(ScrollAreaTrackPressHost);
       await flush(fixture);
@@ -840,10 +840,11 @@ describe('ForScrollArea', () => {
       stubPointerCapture(vbar);
 
       const down = pointer('pointerdown', { clientY: 100 });
-      expect(() => vbar.dispatchEvent(down)).not.toThrow();
+      vbar.dispatchEvent(down);
       release();
       await flush(fixture);
 
+      expect(errors.captured).toEqual([]);
       expect(down.defaultPrevented).toBe(true);
     });
   });

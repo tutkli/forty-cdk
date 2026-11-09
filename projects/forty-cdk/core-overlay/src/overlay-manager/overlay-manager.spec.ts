@@ -5,7 +5,6 @@ import {
   createComponent,
   DestroyRef,
   effect,
-  ErrorHandler,
   inject,
   Injectable,
   InjectionToken,
@@ -20,7 +19,12 @@ import { TestBed } from '@angular/core/testing';
 
 import { FOR_FIELD_ANCHOR_CONTEXT, FOR_FIELD_CONTEXT } from 'forty-cdk/core';
 
-import { flush, nextMacrotask } from '../../../src/test-utils';
+import {
+  captureHandledErrors,
+  flush,
+  nextMacrotask,
+  type HandledErrors,
+} from '../../../src/test-utils';
 import {
   OverlayManagerCore,
   type OverlayManagerEntry,
@@ -317,20 +321,13 @@ describe('OverlayManagerCore', () => {
   });
 
   describe('open() from within change detection (NG0101 — #1138)', () => {
-    class CapturingErrorHandler implements ErrorHandler {
-      readonly errors: unknown[] = [];
-      handleError(error: unknown): void {
-        this.errors.push(error);
-      }
-    }
-
     async function openIn(host: Type<unknown>): Promise<{
-      handler: CapturingErrorHandler;
+      handler: HandledErrors;
       manager: TestManager;
     }> {
-      const handler = new CapturingErrorHandler();
+      const handler = captureHandledErrors();
       TestBed.configureTestingModule({
-        providers: [provideZonelessChangeDetection(), { provide: ErrorHandler, useValue: handler }],
+        providers: [provideZonelessChangeDetection(), handler.provider],
       });
       const manager = TestBed.inject(TestManager);
       const fixture = TestBed.createComponent(host);
@@ -381,19 +378,19 @@ describe('OverlayManagerCore', () => {
 
     it('does not throw NG0101 when open() runs inside effect()', async () => {
       const { handler, manager } = await openIn(EffectOpener);
-      expect(handler.errors).toEqual([]);
+      expect(handler.captured).toEqual([]);
       expect(manager.openCount()).toBe(1);
     });
 
     it('does not throw NG0101 when open() runs inside ngOnInit', async () => {
       const { handler, manager } = await openIn(OnInitOpener);
-      expect(handler.errors).toEqual([]);
+      expect(handler.captured).toEqual([]);
       expect(manager.openCount()).toBe(1);
     });
 
     it('does not throw NG0101 when open() runs inside afterNextRender', async () => {
       const { handler, manager } = await openIn(AfterRenderOpener);
-      expect(handler.errors).toEqual([]);
+      expect(handler.captured).toEqual([]);
       expect(manager.openCount()).toBe(1);
     });
   });

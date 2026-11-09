@@ -1,10 +1,4 @@
-import {
-  Component,
-  Directive,
-  ErrorHandler,
-  provideZonelessChangeDetection,
-  signal,
-} from '@angular/core';
+import { Component, Directive, provideZonelessChangeDetection, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { form, FormField, required as requiredRule } from '@angular/forms/signals';
@@ -42,6 +36,7 @@ import { ForDatePickerContent } from './date-picker-content';
 import { ForDatePickerTrigger } from './date-picker-trigger';
 import { ForDatePickerValue } from './date-picker-value';
 import { ForDateRangePicker } from './date-range-picker';
+import { captureHandledErrors } from '../../src/test-utils/handled-errors';
 
 const adapter = new NativeDateAdapter();
 
@@ -815,18 +810,10 @@ describe('ForDateRangePicker', () => {
     }
 
     it('reports FORCDK-DATE-PICKER-006 once per pick, and nothing on open or close', async () => {
-      const captured: unknown[] = [];
-      class CapturingHandler implements ErrorHandler {
-        handleError(err: unknown): void {
-          captured.push(err);
-        }
-      }
+      const { captured, provider: errorHandler } = captureHandledErrors();
       TestBed.configureTestingModule({
         rethrowApplicationErrors: false,
-        providers: [
-          provideZonelessChangeDetection(),
-          { provide: ErrorHandler, useClass: CapturingHandler },
-        ],
+        providers: [provideZonelessChangeDetection(), errorHandler],
       });
       const fixture = TestBed.createComponent(SingleCalendarHost);
       const reported = (): number =>

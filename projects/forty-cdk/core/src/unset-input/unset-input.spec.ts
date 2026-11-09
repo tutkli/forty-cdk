@@ -2,7 +2,6 @@ import {
   Component,
   computed,
   Directive,
-  ErrorHandler,
   input,
   provideZonelessChangeDetection,
   type Signal,
@@ -12,6 +11,7 @@ import { TestBed } from '@angular/core/testing';
 
 import { flush } from '../../../src/test-utils';
 import { assertInputBound, isUnset, unsetInput } from './unset-input';
+import { captureHandledErrors } from '../../../src/test-utils/handled-errors';
 
 describe('unsetInput', () => {
   it('is distinguishable from every ordinary value a consumer may bind', () => {
@@ -126,18 +126,10 @@ describe('assertInputBound', () => {
   }
 
   function mount(bound: boolean): unknown[] {
-    const captured: unknown[] = [];
-    class CapturingHandler implements ErrorHandler {
-      handleError(error: unknown): void {
-        captured.push(error);
-      }
-    }
+    const { captured, provider: errorHandler } = captureHandledErrors();
 
     TestBed.configureTestingModule({
-      providers: [
-        provideZonelessChangeDetection(),
-        { provide: ErrorHandler, useClass: CapturingHandler },
-      ],
+      providers: [provideZonelessChangeDetection(), errorHandler],
     });
     const fixture = TestBed.createComponent(Host);
     fixture.componentInstance.bound.set(bound);

@@ -1,11 +1,5 @@
 import { NgTemplateOutlet } from '@angular/common';
-import {
-  Component,
-  Directive,
-  ErrorHandler,
-  provideZonelessChangeDetection,
-  signal,
-} from '@angular/core';
+import { Component, Directive, provideZonelessChangeDetection, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 
@@ -44,6 +38,7 @@ import { FOR_SELECT_OPTION, ForSelectOption } from './select-option';
 import { ForSelectSeparator } from './select-separator';
 import { ForSelectTrigger } from './select-trigger';
 import { ForSelectValue } from './select-value';
+import { captureHandledErrors } from '../../src/test-utils/handled-errors';
 
 const BASE_IMPORTS = [ForSelect, ForSelectTrigger, ForSelectContent, ForSelectOption];
 
@@ -5091,17 +5086,10 @@ describe('ForSelect', () => {
     }
 
     async function setupGuard(captured: unknown[], followsFocus: boolean) {
-      class CapturingHandler implements ErrorHandler {
-        handleError(err: unknown): void {
-          captured.push(err);
-        }
-      }
+      const errorHandler = captureHandledErrors(captured).provider;
       TestBed.configureTestingModule({
         rethrowApplicationErrors: false,
-        providers: [
-          provideZonelessChangeDetection(),
-          { provide: ErrorHandler, useClass: CapturingHandler },
-        ],
+        providers: [provideZonelessChangeDetection(), errorHandler],
       });
       const fixture = TestBed.createComponent(GuardHost);
       fixture.componentInstance.total.set(3);
@@ -5227,17 +5215,10 @@ describe('ForSelect', () => {
     }
 
     async function setupMulti(captured: unknown[]) {
-      class CapturingHandler implements ErrorHandler {
-        handleError(err: unknown): void {
-          captured.push(err);
-        }
-      }
+      const errorHandler = captureHandledErrors(captured).provider;
       TestBed.configureTestingModule({
         rethrowApplicationErrors: false,
-        providers: [
-          provideZonelessChangeDetection(),
-          { provide: ErrorHandler, useClass: CapturingHandler },
-        ],
+        providers: [provideZonelessChangeDetection(), errorHandler],
       });
       const fixture = TestBed.createComponent(MultiVirtualSelectHost);
       fixture.componentInstance.open.set(true);
@@ -5311,18 +5292,10 @@ describe('ForSelect', () => {
     });
 
     it('does not intercept shortcuts in a single-select virtualized select', async () => {
-      const captured: unknown[] = [];
-      class CapturingHandler implements ErrorHandler {
-        handleError(err: unknown): void {
-          captured.push(err);
-        }
-      }
+      const { captured, provider: errorHandler } = captureHandledErrors();
       TestBed.configureTestingModule({
         rethrowApplicationErrors: false,
-        providers: [
-          provideZonelessChangeDetection(),
-          { provide: ErrorHandler, useClass: CapturingHandler },
-        ],
+        providers: [provideZonelessChangeDetection(), errorHandler],
       });
 
       @Component({

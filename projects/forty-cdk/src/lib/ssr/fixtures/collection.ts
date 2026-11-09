@@ -2,23 +2,44 @@ import { Component, signal } from '@angular/core';
 import {
   ForCombobox,
   ForComboboxAction,
+  ForComboboxAnchor,
+  ForComboboxChip,
+  ForComboboxChipRemove,
+  ForComboboxChips,
+  ForComboboxClear,
   ForComboboxContent,
+  ForComboboxEmpty,
+  ForComboboxGroup,
+  ForComboboxGroupLabel,
+  ForComboboxIndicator,
   ForComboboxInput,
   ForComboboxList,
   ForComboboxOption,
+  ForComboboxSeparator,
+  ForComboboxStatus,
   ForComboboxToggle,
+  ForComboboxTrigger,
+  ForComboboxVirtualized,
 } from 'forty-cdk/combobox';
 import {
   ForListbox,
   ForListboxController,
+  ForListboxGroup,
+  ForListboxGroupLabel,
   ForListboxOption,
+  ForListboxOptionIndicator,
   ForListboxReorder,
   ForListboxVirtualized,
 } from 'forty-cdk/listbox';
 import {
   ForSelect,
+  ForSelectAnchor,
   ForSelectContent,
+  ForSelectGroup,
+  ForSelectGroupLabel,
+  ForSelectIndicator,
   ForSelectOption,
+  ForSelectSeparator,
   ForSelectTrigger,
   ForSelectValue,
   ForSelectVirtualized,
@@ -274,3 +295,156 @@ export class TreeVirtualizedFixture {}
   `,
 })
 export class TreeNodeDragFixture {}
+
+@Component({
+  imports: [
+    ForSelect,
+    ForSelectAnchor,
+    ForSelectTrigger,
+    ForSelectValue,
+    ForSelectContent,
+    ForSelectGroup,
+    ForSelectGroupLabel,
+    ForSelectOption,
+    ForSelectIndicator,
+    ForSelectSeparator,
+  ],
+  template: `
+    <div forSelect [open]="true" [(value)]="value">
+      <div forSelectAnchor>
+        <button forSelectTrigger>
+          <span forSelectValue></span>
+        </button>
+      </div>
+      <div forSelectContent>
+        <div forSelectGroup>
+          <div forSelectGroupLabel>Letters</div>
+          <button forSelectOption value="a">A <span forSelectIndicator>✓</span></button>
+        </div>
+        <div forSelectSeparator></div>
+        <button forSelectOption value="b">B</button>
+      </div>
+    </div>
+  `,
+})
+export class SelectGroupedOpenFixture {
+  readonly value = signal<readonly string[]>(['a']);
+}
+
+@Component({
+  imports: [
+    ForCombobox,
+    ForComboboxAnchor,
+    ForComboboxTrigger,
+    ForComboboxContent,
+    ForComboboxInput,
+    ForComboboxList,
+    ForComboboxGroup,
+    ForComboboxGroupLabel,
+    ForComboboxOption,
+    ForComboboxIndicator,
+    ForComboboxSeparator,
+    ForComboboxEmpty,
+    ForComboboxStatus,
+  ],
+  template: `
+    <div forCombobox [open]="true" [(value)]="value">
+      <span id="ssr-picker-label">Country</span>
+      <div forComboboxAnchor>
+        <button forComboboxTrigger aria-labelledby="ssr-picker-label">A</button>
+      </div>
+      <div forComboboxContent>
+        <input forComboboxInput aria-label="Search countries" />
+        <div forComboboxList>
+          <div forComboboxGroup>
+            <div forComboboxGroupLabel>Europe</div>
+            <div forComboboxOption value="a" label="A">A <span forComboboxIndicator>✓</span></div>
+          </div>
+          <div forComboboxSeparator></div>
+          <div forComboboxOption value="b" label="B">B</div>
+        </div>
+        <div forComboboxEmpty>No matches.</div>
+        <div forComboboxStatus>2 results</div>
+      </div>
+    </div>
+  `,
+})
+export class ComboboxPickerOpenFixture {
+  readonly value = signal<readonly string[]>(['a']);
+}
+
+@Component({
+  imports: [
+    ForCombobox,
+    ForComboboxChips,
+    ForComboboxChip,
+    ForComboboxChipRemove,
+    ForComboboxInput,
+    ForComboboxClear,
+    ForComboboxContent,
+    ForComboboxOption,
+  ],
+  template: `
+    <div forCombobox multiple [open]="true" [(value)]="value">
+      <div forComboboxChips>
+        @for (chip of value(); track chip) {
+          <span forComboboxChip [value]="chip">
+            {{ chip }}
+            <button forComboboxChipRemove>×</button>
+          </span>
+        }
+        <input forComboboxInput aria-label="Tags" />
+      </div>
+      <button forComboboxClear>×</button>
+      <div forComboboxContent>
+        <div forComboboxOption value="a" label="Alpha">Alpha</div>
+      </div>
+    </div>
+  `,
+})
+export class ComboboxChipsOpenFixture {
+  readonly value = signal<readonly string[]>(['a']);
+}
+
+@Component({
+  imports: [
+    ForCombobox,
+    ForComboboxVirtualized,
+    ForComboboxInput,
+    ForComboboxContent,
+    ForComboboxOption,
+  ],
+  template: `
+    <div forCombobox forComboboxVirtualized [open]="true" [totalCount]="3">
+      <input forComboboxInput aria-label="Letters" />
+      <div forComboboxContent>
+        <div forComboboxOption value="a" label="A" [posInSet]="0">A</div>
+        <div forComboboxOption value="b" label="B" [posInSet]="1">B</div>
+        <div forComboboxOption value="c" label="C" [posInSet]="2">C</div>
+      </div>
+    </div>
+  `,
+})
+export class ComboboxVirtualizedOpenFixture {}
+
+@Component({
+  imports: [
+    ForListbox,
+    ForListboxGroup,
+    ForListboxGroupLabel,
+    ForListboxOption,
+    ForListboxOptionIndicator,
+  ],
+  template: `
+    <div forListbox ariaLabel="Fruit">
+      <div forListboxGroup>
+        <div forListboxGroupLabel>Citrus</div>
+        <button type="button" forListboxOption value="lemon">
+          Lemon
+          <span forListboxOptionIndicator>✓</span>
+        </button>
+      </div>
+    </div>
+  `,
+})
+export class ListboxGroupedFixture {}

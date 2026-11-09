@@ -1,11 +1,5 @@
 import { NgTemplateOutlet } from '@angular/common';
-import {
-  Component,
-  Directive,
-  ErrorHandler,
-  provideZonelessChangeDetection,
-  signal,
-} from '@angular/core';
+import { Component, Directive, provideZonelessChangeDetection, signal } from '@angular/core';
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import {
@@ -69,6 +63,7 @@ import { ForDatePickerContent } from './date-picker-content';
 import { provideForDatePickerDefaults } from 'forty-cdk/defaults';
 import { ForDatePickerTrigger } from './date-picker-trigger';
 import { ForDatePickerValue } from './date-picker-value';
+import { captureHandledErrors } from '../../src/test-utils/handled-errors';
 
 const adapter = new NativeDateAdapter();
 
@@ -1715,18 +1710,10 @@ describe('ForDatePicker', () => {
       fixture: ComponentFixture<DayOnlyHost>;
       messages: () => string;
     } {
-      const captured: unknown[] = [];
-      class CapturingHandler implements ErrorHandler {
-        handleError(err: unknown): void {
-          captured.push(err);
-        }
-      }
+      const { captured, provider: errorHandler } = captureHandledErrors();
       TestBed.configureTestingModule({
         rethrowApplicationErrors: false,
-        providers: [
-          provideZonelessChangeDetection(),
-          { provide: ErrorHandler, useClass: CapturingHandler },
-        ],
+        providers: [provideZonelessChangeDetection(), errorHandler],
       });
       const fixture = TestBed.createComponent(DayOnlyHost);
       return {
@@ -1758,18 +1745,10 @@ describe('ForDatePicker', () => {
     }
 
     it('reports FORCDK-CORE-003 under the date-picker scope when the hidden input serializes a preset value', async () => {
-      const captured: unknown[] = [];
-      class CapturingHandler implements ErrorHandler {
-        handleError(err: unknown): void {
-          captured.push(err);
-        }
-      }
+      const errorHandler = captureHandledErrors().provider;
       TestBed.configureTestingModule({
         rethrowApplicationErrors: false,
-        providers: [
-          provideZonelessChangeDetection(),
-          { provide: ErrorHandler, useClass: CapturingHandler },
-        ],
+        providers: [provideZonelessChangeDetection(), errorHandler],
       });
       const fixture = TestBed.createComponent(DayOnlyNamedHost);
 
@@ -2184,18 +2163,10 @@ describe('ForDatePicker', () => {
     }
 
     it('reports FORCDK-DATE-PICKER-005 on a time commit from a source on a different adapter', async () => {
-      const captured: unknown[] = [];
-      class CapturingHandler implements ErrorHandler {
-        handleError(err: unknown): void {
-          captured.push(err);
-        }
-      }
+      const { captured, provider: errorHandler } = captureHandledErrors();
       TestBed.configureTestingModule({
         rethrowApplicationErrors: false,
-        providers: [
-          provideZonelessChangeDetection(),
-          { provide: ErrorHandler, useClass: CapturingHandler },
-        ],
+        providers: [provideZonelessChangeDetection(), errorHandler],
       });
       const fixture = TestBed.createComponent(ForeignAdapterHost);
       const reported = (): number =>
@@ -2373,18 +2344,10 @@ describe('ForDatePicker', () => {
     }
 
     it('reports FORCDK-DATE-PICKER-001 on a pick from a subclassed calendar on a different adapter', async () => {
-      const captured: unknown[] = [];
-      class CapturingHandler implements ErrorHandler {
-        handleError(err: unknown): void {
-          captured.push(err);
-        }
-      }
+      const { captured, provider: errorHandler } = captureHandledErrors();
       TestBed.configureTestingModule({
         rethrowApplicationErrors: false,
-        providers: [
-          provideZonelessChangeDetection(),
-          { provide: ErrorHandler, useClass: CapturingHandler },
-        ],
+        providers: [provideZonelessChangeDetection(), errorHandler],
       });
       const fixture = TestBed.createComponent(WrappedCalendarHost);
       const reported = (): number =>
@@ -3478,18 +3441,10 @@ describe('ForDatePicker', () => {
       });
 
       it('reports FORCDK-DATE-PICKER-007 when the trigger opens the calendar', async () => {
-        const captured: unknown[] = [];
-        class CapturingHandler implements ErrorHandler {
-          handleError(err: unknown): void {
-            captured.push(err);
-          }
-        }
+        const { captured, provider: errorHandler } = captureHandledErrors();
         TestBed.configureTestingModule({
           rethrowApplicationErrors: false,
-          providers: [
-            provideZonelessChangeDetection(),
-            { provide: ErrorHandler, useClass: CapturingHandler },
-          ],
+          providers: [provideZonelessChangeDetection(), errorHandler],
         });
         const fixture = TestBed.createComponent(MissingFieldHost);
         fixture.detectChanges();
