@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Checkbox, Switch, Toggle, Toggle group, Radio group, Listbox, Select, Combobox, Slider, Date
+  field, Date picker, Time field, Time picker** — a required control no longer gives the page a
+  phantom outer scrollbar ([#2785](https://github.com/tutkli/forty-cdk/issues/2785)). Since 0.42.0
+  the validation input it mounts was `position: absolute`, so inside an `overflow: auto` container
+  with no positioned ancestor (an app shell whose content scrolls inside `<main>`) it stretched
+  `<html>` down to the lowest required control, and scrolling the document moved the whole shell,
+  header included. The input is now `position: fixed`, which never adds to a scrollable overflow.
+  Reporting the form still focuses the control and scrolls it into view.
+
 ## [0.42.0] - 2026-11-08
 
 ### Added
