@@ -182,7 +182,7 @@ export class CarouselDefaultExample {
 
 ### Multiple slides per view
 
-Set `slidesPerView` above `1` to show several slides at once. Each slide is `flex: 0 0 calc(100% / var(--for-carousel-slides-per-view))`; `loop` wraps once the last visible set is reached.
+Set `slidesPerView` above `1` to show several slides at once. Each slide is `flex: 0 0 calc(100% / var(--for-carousel-slides-per-view))`. Navigation still moves one slide at a time, with one indicator per slide, so the views past the last full set would show empty space. This example sets `containScroll`, which holds the track once the last full set is in view; under `loop` the clamp is off and the carousel wraps only after the last slide, so pair `slidesPerView` with `containScroll` rather than `loop` when every view has to be full. See [Contain scroll](#contain-scroll).
 
 ### Autoplay with pause control
 
@@ -454,8 +454,9 @@ viewport's trailing edge:
 
 Every slide still has its own indicator; trailing indicators that would map to the
 same clamped view simply share the same visual position. The clamp has no effect
-when `loop` is enabled (the entire range is valid when wrapping) or when
-`slidesPerView` is `1` (a single-view carousel never overscrolls).
+when `slidesPerView` is `1` (a single-view carousel never overscrolls) or when
+`loop` is enabled: a looping carousel with `slidesPerView > 1` overscrolls into
+the same empty space and wraps only after the last slide.
 
 ### `ForCarouselDrag` inputs
 
