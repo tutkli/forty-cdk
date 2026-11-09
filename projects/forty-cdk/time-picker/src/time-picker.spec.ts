@@ -1,5 +1,11 @@
 import { NgTemplateOutlet } from '@angular/common';
-import { Component, ErrorHandler, provideZonelessChangeDetection, signal } from '@angular/core';
+import {
+  Component,
+  ErrorHandler,
+  provideZonelessChangeDetection,
+  signal,
+  viewChild,
+} from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import {
@@ -29,7 +35,7 @@ import {
   type NativeSubmissionHost,
 } from '../../src/test-utils/contract';
 import { type VetoableNativeEvent } from 'forty-cdk/core';
-import { type DateAdapter, FOR_DATE_ADAPTER } from 'forty-cdk/date-adapter';
+import { type DateAdapter, FOR_DATE_ADAPTER, NativeDateAdapter } from 'forty-cdk/date-adapter';
 import { provideNativeDateAdapter } from 'forty-cdk/shared';
 import { ForField, ForFieldError, ForLabel } from 'forty-cdk/field';
 import { ForFieldset } from 'forty-cdk/fieldset';
@@ -43,6 +49,7 @@ import {
   ForTimePickerTrigger,
   ForTimePickerValue,
   provideForTimePickerDefaults,
+  type ForTimeSlot,
 } from './public-api';
 
 const BASE_IMPORTS = [
@@ -2508,5 +2515,90 @@ describe('ForTimePickerOption value binding', () => {
     await r.flush();
 
     expect(r.instance.value()).toEqual(new Date(2026, 0, 1, 10, 0));
+  });
+});
+
+describe('ForTimePicker slot list on a value change', () => {
+  class CountingDateAdapter extends NativeDateAdapter {
+    formatCalls = 0;
+
+    override format(date: Date, options: Intl.DateTimeFormatOptions, locale?: string): string {
+      this.formatCalls++;
+      return super.format(date, options, locale);
+    }
+  }
+
+  @Component({
+    imports: BASE_IMPORTS,
+    providers: [{ provide: FOR_DATE_ADAPTER, useClass: CountingDateAdapter }],
+    template: `
+      <div
+        forTimePicker
+        [(value)]="value"
+        [(open)]="open"
+        [step]="1"
+        [closeOnSelect]="false"
+        #picker="forTimePicker"
+      >
+        <button forTimePickerTrigger></button>
+        @if (open()) {
+          <div forTimePickerContent>
+            @for (slot of picker.slots(); track slot.id) {
+              <div forTimePickerOption [value]="slot.value" [attr.data-testid]="slot.id">
+                {{ slot.label }}
+              </div>
+            }
+          </div>
+        }
+      </div>
+    `,
+  })
+  class StepOneHost {
+    readonly value = signal<Date | null>(null);
+    readonly open = signal(true);
+    readonly picker = viewChild.required(ForTimePicker<Date>);
+  }
+
+  afterEachOverlayCleanup();
+
+  async function renderAndPick(): Promise<{
+    adapter: CountingDateAdapter;
+    before: readonly ForTimeSlot<Date>[];
+    after: readonly ForTimeSlot<Date>[];
+  }> {
+    const r = renderHost(StepOneHost);
+    await r.flush();
+    const adapter = r.fixture.debugElement.injector.get(FOR_DATE_ADAPTER) as CountingDateAdapter;
+    const before = r.instance.picker().slots();
+    expect(before).toHaveLength(1440);
+    adapter.formatCalls = 0;
+
+    document.querySelector<HTMLElement>('[data-testid="slot-32400"]')!.click();
+    await r.flush();
+
+    expect(r.instance.open()).toBe(true);
+    expect(r.instance.value()!.getHours()).toBe(9);
+    return { adapter, before, after: r.instance.picker().slots() };
+  }
+
+  it('formats no slot label when a pick changes the value', async () => {
+    const { adapter } = await renderAndPick();
+
+    expect(adapter.formatCalls).toBe(0);
+  });
+
+  it('keeps every slot value object across a pick', async () => {
+    const { before, after } = await renderAndPick();
+
+    expect(after).toHaveLength(before.length);
+    expect(after.every((slot, index) => slot.value === before[index]!.value)).toBe(true);
+  });
+
+  it('reuses every slot whose selected flag did not change', async () => {
+    const { before, after } = await renderAndPick();
+
+    const replaced = after.filter((slot, index) => slot !== before[index]).map((slot) => slot.id);
+    expect(replaced).toEqual(['slot-32400']);
+    expect(after.filter((slot) => slot.selected).map((slot) => slot.id)).toEqual(['slot-32400']);
   });
 });
