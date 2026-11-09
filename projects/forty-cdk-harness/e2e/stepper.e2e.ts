@@ -125,6 +125,42 @@ test.describe('ForStepper — interactive mode', () => {
     await expect(el(page, 'content-3')).not.toHaveAttribute('inert');
     await expect(el(page, 'next')).not.toHaveAttribute('aria-disabled');
   });
+
+  test('Shift+Tab back into the step list after Next lands on the selected step', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'stepper');
+    await rovingFirst(page, 'trigger-0');
+    await page.keyboard.press('Tab');
+    await expectFocused(el(page, 'content-0'));
+    await page.keyboard.press('Tab');
+    await expectFocused(el(page, 'prev'));
+    await page.keyboard.press('Tab');
+    await expectFocused(el(page, 'next'));
+    await page.keyboard.press('Enter');
+    await expect(el(page, 'trigger-1')).toHaveAttribute('aria-selected', 'true');
+    await page.keyboard.press('Enter');
+    await expect(el(page, 'trigger-2')).toHaveAttribute('aria-selected', 'true');
+    await expect(el(page, 'trigger-2')).toHaveAttribute('tabindex', '0');
+
+    await page.keyboard.press('Shift+Tab');
+    await expectFocused(el(page, 'prev'));
+    await page.keyboard.press('Shift+Tab');
+    await expectFocused(el(page, 'content-2'));
+    await page.keyboard.press('Shift+Tab');
+    await expectFocused(el(page, 'trigger-2'));
+    await expect(el(page, 'trigger-2')).toHaveAttribute('aria-selected', 'true');
+  });
+
+  test('Next and Previous skip a disabled step', async ({ page }) => {
+    await gotoFixture(page, 'stepper', { disabled: '1' });
+    await el(page, 'next').click();
+    await expect(el(page, 'content-2')).not.toHaveAttribute('inert');
+    await expect(el(page, 'trigger-1')).toHaveAttribute('aria-selected', 'false');
+    await el(page, 'prev').click();
+    await expect(el(page, 'content-0')).not.toHaveAttribute('inert');
+    await expect(el(page, 'prev')).toHaveAttribute('data-disabled', '');
+  });
 });
 
 test.describe('ForStepper — progress mode', () => {

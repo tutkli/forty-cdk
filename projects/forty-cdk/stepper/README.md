@@ -208,11 +208,11 @@ A display-only status tracker: the list renders as a plain ordered list with `ar
 
 #### Boolean `data-*`
 
-| Attribute          | When present                                    |
-| ------------------ | ----------------------------------------------- |
-| `data-disabled`    | Root or step is disabled                        |
-| `data-orientation` | Always: `horizontal` or `vertical`              |
-| `data-mode`        | Always (root only): `interactive` or `progress` |
+| Attribute          | When present                                                                                                                                  |
+| ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| `data-disabled`    | Root or step is disabled; on `[forStepperNext]` / `[forStepperPrevious]`, the button has nowhere to move (always paired with `aria-disabled`) |
+| `data-orientation` | Always: `horizontal` or `vertical`                                                                                                            |
+| `data-mode`        | Always (root only): `interactive` or `progress`                                                                                               |
 
 ---
 
@@ -224,7 +224,9 @@ A display-only status tracker: the list renders as a plain ordered list with `ar
 </div>
 ```
 
-`[linear]` gates forward movement on completion: `[forStepperNext]` advances only while the current step is `[completed]` or `[optional]`, and a trigger further ahead is selectable only once every step before it is one of the two. Going back is never gated: `[forStepperPrevious]` and the earlier triggers stay live throughout.
+`[linear]` gates forward movement on completion: a step is reachable only once every step before it is `[completed]` or `[optional]`, and that holds for a trigger click and for `[forStepperNext]` alike. Next therefore stays disabled when the selection was restored past an incomplete step, and `(complete)` fires only once every step is one of the two. Going back is never gated: `[forStepperPrevious]` and the earlier triggers stay live throughout.
+
+`[forStepperNext]` and `[forStepperPrevious]` skip a `[disabled]` step: Next moves to the nearest later step that is not disabled, or into the completed state when none remains, and Previous to the nearest earlier one. In linear mode a disabled step still counts toward reachability, so the steps after it stay unreachable unless it is also `[optional]` or `[completed]`.
 
 ## Completed-all content
 
@@ -448,6 +450,7 @@ Implements the [WAI-ARIA Tabs pattern](https://www.w3.org/WAI/ARIA/apg/patterns/
 - **Interactive mode** implements the WAI-ARIA Tabs pattern. Each trigger carries `role="tab"`, the list carries `role="tablist"`, and content panels carry `role="tabpanel"`. Each `<li forStepperItem>` carries `role="presentation"` so the `tablist` owns the `tab` triggers directly. An interposed implicit `listitem` would violate the tablist's required-owned-elements contract. `aria-selected` is always emitted, and `aria-controls` is emitted on every trigger whose panel is registered, so a panel kept mounted while inactive is referenced and one unmounted with `@if` is not. The trigger ↔ panel pairing resolves each side by its step index: a trigger through its `[forStepperItem]`, a panel through `[step]` (or its position when unbound). Hiding one trigger or panel with `@if` therefore never shifts the pairing of the others.
 - **Progress mode** uses a standard `<ol role="list">` with `aria-current="step"` on the active trigger; each `<li forStepperItem>` keeps its implicit `listitem` role. No tab-stop manipulation is performed; triggers carry no `role`.
 - **Disabled triggers** in interactive mode reflect `aria-disabled="true"` + `data-disabled=""` rather than the native `disabled` attribute. They leave the `Tab` sequence but stay reachable with the arrow keys and `Home` / `End`, so assistive technology can announce them; activating one does nothing. While one holds focus no trigger holds the Tab stop, so `Tab` and `Shift+Tab` leave the list from it.
+- **Tab stop.** In interactive mode `Tab` into the list lands on the selected step's trigger. After arrow navigation it lands on the last focused trigger instead, until the selection next changes; a change through `[forStepperNext]`, `[forStepperPrevious]`, a trigger or a `[(selectedIndex)]` write hands the stop back to the selected step.
 - **Removing the focused trigger** in interactive mode moves focus to the trigger that takes over the Tab stop, the one before it or else the one after, so focus never falls to `<body>`; focus outside the list stays where it is.
 - **Linear mode** reflects unreachable ahead-steps as `aria-disabled="true"` on the trigger. `data-disabled` stays reserved for an explicit `disabled`, so style an unreachable step off `[aria-disabled]`. Like a disabled trigger, an unreachable one is reached by arrow navigation but not activated, and `activationMode="automatic"` does not select it.
 - **RTL** is supported: set `dir="rtl"` on the root or a DOM ancestor.

@@ -6,6 +6,7 @@ import {
   navigateFromRovingItem,
   registerHandle,
   rovingTabStop,
+  selectionTabStop,
 } from 'forty-cdk/core';
 import { injectStepperContext, injectStepperItemContext } from './stepper-context';
 
@@ -64,7 +65,7 @@ export class ForStepperTrigger {
    * APG tabindex cascade (interactive mode only). In progress mode returns
    * `null` so no tab-stop attribute is emitted. In interactive mode:
    * - `-1` when not selectable (disabled or unreachable in linear mode).
-   * - Roving-tracker value once any trigger has been focused.
+   * - Roving-tracker value while a trigger has been focused since the selection last changed.
    * - `0` when this step is current.
    * - `-1` when another trigger owns the current step.
    * - `0` if this is the first selectable trigger (fallback entry point).
@@ -74,14 +75,15 @@ export class ForStepperTrigger {
     if (this.ctx.mode() !== 'interactive') {
       return null;
     }
-    return rovingTabStop({
+    const selection = {
       disabled: !this.item.selectable(),
       selected: this.item.current(),
       hasSelected: this.ctx.hasCurrentTrigger(),
       isFirstEnabled: this.ctx.isFirstSelectableTrigger(this.#host),
-      roving: this.ctx.roving,
-      host: this.#host,
-    });
+    };
+    return this.ctx.rovingOwnsTabStop()
+      ? rovingTabStop({ ...selection, roving: this.ctx.roving, host: this.#host })
+      : selectionTabStop(selection);
   });
 
   constructor() {
@@ -107,10 +109,10 @@ export class ForStepperTrigger {
   }
 
   private onFocus(): void {
-    if (this.ctx.mode() !== 'interactive' || !this.item.selectable()) {
+    if (this.ctx.mode() !== 'interactive') {
       return;
     }
-    this.ctx.roving.setActive(this.#host);
+    this.ctx.focusTrigger(this.#host, this.item.selectable());
   }
 
   private onKeyDown(event: KeyboardEvent): void {

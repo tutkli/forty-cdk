@@ -4,9 +4,9 @@ import { hostButtonType } from 'forty-cdk/core';
 import { injectStepperContext } from './stepper-context';
 
 /**
- * "Previous" button for the stepper. Apply on a `<button>` element. Reflects
- * `aria-disabled="true"` when `canRetreat()` is false (first step reached or
- * root disabled).
+ * "Previous" button for the stepper. Apply on a `<button>` element. Moves to the nearest earlier
+ * step that is not disabled. Reflects `aria-disabled="true"` + `data-disabled` when
+ * `canRetreat()` is false (no earlier step that is not disabled, or root disabled).
  *
  * The directive forces `type="button"` through a host binding, so a consumer
  * `type="submit"` on the host cannot make going back a step submit a
@@ -20,6 +20,7 @@ import { injectStepperContext } from './stepper-context';
   host: {
     '[attr.type]': 'buttonType()',
     '[attr.aria-disabled]': '!ctx.canRetreat() ? "true" : null',
+    '[attr.data-disabled]': '!ctx.canRetreat() ? "" : null',
     '(click)': 'onClick()',
   },
 })
