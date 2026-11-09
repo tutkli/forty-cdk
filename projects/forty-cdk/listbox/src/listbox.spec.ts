@@ -1,10 +1,4 @@
-import {
-  Component,
-  Directive,
-  ErrorHandler,
-  provideZonelessChangeDetection,
-  signal,
-} from '@angular/core';
+import { Component, Directive, provideZonelessChangeDetection, signal } from '@angular/core';
 import { form, FormField, required, requiredError, validate } from '@angular/forms/signals';
 import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
@@ -35,6 +29,7 @@ import { ForListboxGroup } from './listbox-group';
 import { ForListboxGroupLabel } from './listbox-group-label';
 import { FOR_LISTBOX_OPTION, ForListboxOption } from './listbox-option';
 import { ForListboxOptionIndicator } from './listbox-option-indicator';
+import { captureHandledErrors } from '../../src/test-utils/handled-errors';
 
 const LISTBOX_IMPORTS = [ForListbox, ForListboxOption] as const;
 const GROUP_IMPORTS = [
@@ -492,18 +487,10 @@ describe('ForListbox', () => {
     }
 
     it('mounts a non-empty selection without throwing, and seeds the roving tab stop', async () => {
-      const captured: unknown[] = [];
-      class CapturingHandler implements ErrorHandler {
-        handleError(err: unknown): void {
-          captured.push(err);
-        }
-      }
+      const { captured, provider: errorHandler } = captureHandledErrors();
 
       TestBed.configureTestingModule({
-        providers: [
-          provideZonelessChangeDetection(),
-          { provide: ErrorHandler, useClass: CapturingHandler },
-        ],
+        providers: [provideZonelessChangeDetection(), errorHandler],
       });
 
       const fixture = TestBed.createComponent(SeededHost);
@@ -3020,17 +3007,10 @@ describe('ForListbox', () => {
     }
 
     async function setupGuard(captured: unknown[]) {
-      class CapturingHandler implements ErrorHandler {
-        handleError(err: unknown): void {
-          captured.push(err);
-        }
-      }
+      const errorHandler = captureHandledErrors(captured).provider;
       TestBed.configureTestingModule({
         rethrowApplicationErrors: false,
-        providers: [
-          provideZonelessChangeDetection(),
-          { provide: ErrorHandler, useClass: CapturingHandler },
-        ],
+        providers: [provideZonelessChangeDetection(), errorHandler],
       });
       const fixture = TestBed.createComponent(GuardHost);
       fixture.componentInstance.total.set(3);
@@ -3104,18 +3084,10 @@ describe('ForListbox', () => {
     });
 
     it('does not throw when navigating a virtualized listbox without selectionFollowsFocus', async () => {
-      const captured: unknown[] = [];
-      class CapturingHandler implements ErrorHandler {
-        handleError(err: unknown): void {
-          captured.push(err);
-        }
-      }
+      const { captured, provider: errorHandler } = captureHandledErrors();
       TestBed.configureTestingModule({
         rethrowApplicationErrors: false,
-        providers: [
-          provideZonelessChangeDetection(),
-          { provide: ErrorHandler, useClass: CapturingHandler },
-        ],
+        providers: [provideZonelessChangeDetection(), errorHandler],
       });
       const fixture = TestBed.createComponent(GuardHost);
       fixture.componentInstance.total.set(3);
@@ -3171,17 +3143,10 @@ describe('ForListbox', () => {
     }
 
     async function setupMulti(captured: unknown[]) {
-      class CapturingHandler implements ErrorHandler {
-        handleError(err: unknown): void {
-          captured.push(err);
-        }
-      }
+      const errorHandler = captureHandledErrors(captured).provider;
       TestBed.configureTestingModule({
         rethrowApplicationErrors: false,
-        providers: [
-          provideZonelessChangeDetection(),
-          { provide: ErrorHandler, useClass: CapturingHandler },
-        ],
+        providers: [provideZonelessChangeDetection(), errorHandler],
       });
       const fixture = TestBed.createComponent(MultiVirtualHost);
       fixture.detectChanges();
@@ -3262,18 +3227,10 @@ describe('ForListbox', () => {
     });
 
     it('does not intercept shortcuts in a single-select virtualized listbox', async () => {
-      const captured: unknown[] = [];
-      class CapturingHandler implements ErrorHandler {
-        handleError(err: unknown): void {
-          captured.push(err);
-        }
-      }
+      const { captured, provider: errorHandler } = captureHandledErrors();
       TestBed.configureTestingModule({
         rethrowApplicationErrors: false,
-        providers: [
-          provideZonelessChangeDetection(),
-          { provide: ErrorHandler, useClass: CapturingHandler },
-        ],
+        providers: [provideZonelessChangeDetection(), errorHandler],
       });
 
       @Component({
@@ -3311,16 +3268,26 @@ describe('ForListbox', () => {
       expect(throwsUnsupported(captured)).toBe(false);
     });
 
-    it('does not throw when the multi listbox is not virtualized (roving path keeps range keys)', async () => {
-      const r = renderHost(MultiVirtualHost);
-      r.instance.total.set(undefined);
-      await flush(r.fixture);
-      const first = r.el.querySelector<HTMLElement>('[data-test-id="opt-0"]')!;
+    it('reports no error when the multi listbox is not virtualized (roving path keeps range keys)', async () => {
+      const errors = captureHandledErrors();
+      TestBed.configureTestingModule({
+        rethrowApplicationErrors: false,
+        providers: [provideZonelessChangeDetection(), errors.provider],
+      });
+      const fixture = TestBed.createComponent(MultiVirtualHost);
+      fixture.componentInstance.total.set(undefined);
+      await flush(fixture);
+      const first = (fixture.nativeElement as HTMLElement).querySelector<HTMLElement>(
+        '[data-test-id="opt-0"]',
+      )!;
       first.focus();
-      await flush(r.fixture);
-      expect(() => pressKey(first, 'ArrowDown', { shiftKey: true })).not.toThrow();
-      await flush(r.fixture);
-      expect(r.instance.picked()).toContain('item-1');
+      await flush(fixture);
+
+      pressKey(first, 'ArrowDown', { shiftKey: true });
+      await flush(fixture);
+
+      expect(errors.captured).toEqual([]);
+      expect(fixture.componentInstance.picked()).toContain('item-1');
     });
   });
 

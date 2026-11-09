@@ -3,10 +3,13 @@ import {
   ForCalendar,
   ForCalendarCell,
   ForCalendarGrid,
+  ForCalendarGridHeader,
   ForCalendarHeading,
   ForCalendarMonthCell,
   ForCalendarMonthGrid,
   ForCalendarMonthSelect,
+  ForCalendarNextButton,
+  ForCalendarPrevButton,
   ForCalendarViewTrigger,
   ForCalendarYearCell,
   ForCalendarYearGrid,
@@ -24,6 +27,7 @@ import {
 } from 'forty-cdk/date-field';
 import {
   ForDatePicker,
+  ForDatePickerAnchor,
   ForDatePickerContent,
   ForDatePickerTrigger,
   ForDatePickerValue,
@@ -42,6 +46,7 @@ import {
 } from 'forty-cdk/time-field';
 import {
   ForTimePicker,
+  ForTimePickerAnchor,
   ForTimePickerContent,
   ForTimePickerOption,
   ForTimePickerTrigger,
@@ -346,13 +351,15 @@ export class TimeRangeFieldFixture {
 }
 
 @Component({
-  imports: [ForDatePicker, ForDatePickerTrigger, ForDatePickerValue],
+  imports: [ForDatePicker, ForDatePickerAnchor, ForDatePickerTrigger, ForDatePickerValue],
   providers: [...provideNativeDateAdapter()],
   template: `
     <div forDatePicker [(value)]="value" ariaLabel="Choose date">
-      <button forDatePickerTrigger>
-        <span forDatePickerValue placeholder="Pick a date"></span>
-      </button>
+      <div forDatePickerAnchor>
+        <button forDatePickerTrigger>
+          <span forDatePickerValue placeholder="Pick a date"></span>
+        </button>
+      </div>
     </div>
   `,
 })
@@ -403,6 +410,7 @@ export class DateRangePickerOpenFixture {
 @Component({
   imports: [
     ForTimePicker,
+    ForTimePickerAnchor,
     ForTimePickerTrigger,
     ForTimePickerValue,
     ForTimePickerContent,
@@ -411,9 +419,11 @@ export class DateRangePickerOpenFixture {
   providers: [...provideNativeDateAdapter()],
   template: `
     <div forTimePicker [open]="true" [step]="60" #picker="forTimePicker">
-      <button forTimePickerTrigger>
-        <span forTimePickerValue placeholder="Pick a time"></span>
-      </button>
+      <div forTimePickerAnchor>
+        <button forTimePickerTrigger>
+          <span forTimePickerValue placeholder="Pick a time"></span>
+        </button>
+      </div>
       <div forTimePickerContent>
         @for (slot of picker.slots(); track slot.id) {
           <div forTimePickerOption [value]="slot.value" [disabled]="slot.disabled">
@@ -425,3 +435,45 @@ export class DateRangePickerOpenFixture {
   `,
 })
 export class TimePickerOpenFixture {}
+
+@Component({
+  imports: [
+    ForCalendar,
+    ForCalendarPrevButton,
+    ForCalendarHeading,
+    ForCalendarNextButton,
+    ForCalendarGrid,
+    ForCalendarGridHeader,
+    ForCalendarCell,
+  ],
+  providers: [...provideNativeDateAdapter()],
+  template: `
+    <div forCalendar [value]="value" [max]="max">
+      <button forCalendarPrevButton ariaLabel="Previous month">‹</button>
+      <h2 forCalendarHeading #heading="forCalendarHeading">{{ heading.label() }}</h2>
+      <button forCalendarNextButton ariaLabel="Next month">›</button>
+      <table forCalendarGrid #grid="forCalendarGrid">
+        <thead forCalendarGridHeader>
+          <tr>
+            @for (day of grid.weekDays(); track day.key) {
+              <th scope="col" [attr.aria-label]="day.long">{{ day.short }}</th>
+            }
+          </tr>
+        </thead>
+        <tbody>
+          @for (week of grid.weeks(); track week.key) {
+            <tr>
+              @for (cell of week.days; track cell.key) {
+                <td forCalendarCell [date]="cell.date">{{ cell.label }}</td>
+              }
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  `,
+})
+export class CalendarNavigationFixture {
+  readonly value = new Date(2026, 5, 15);
+  readonly max = new Date(2026, 5, 30);
+}

@@ -1,6 +1,5 @@
 import {
   Component,
-  ErrorHandler,
   provideZonelessChangeDetection,
   signal,
   type Type,
@@ -13,6 +12,7 @@ import { ForDrawer, ForDrawerBackdrop, ForDrawerHandle, ForDrawerWrapper } from 
 
 import { afterEachOverlayCleanup, flush } from '../test-utils';
 import { LIBRARY_CODE } from '../test-utils/source-scan';
+import { captureHandledErrors } from '../test-utils/handled-errors';
 
 /**
  * Adoption guard for the single-element registries
@@ -218,18 +218,10 @@ describe('single-slot registration adoption', () => {
   it.each(REGISTRIES)(
     'swaps $name with sibling @if blocks without an error or a warning',
     async ({ host, registered }) => {
-      const captured: unknown[] = [];
-      class CapturingHandler implements ErrorHandler {
-        handleError(err: unknown): void {
-          captured.push(err);
-        }
-      }
+      const { captured, provider: errorHandler } = captureHandledErrors();
       TestBed.configureTestingModule({
         rethrowApplicationErrors: false,
-        providers: [
-          provideZonelessChangeDetection(),
-          { provide: ErrorHandler, useClass: CapturingHandler },
-        ],
+        providers: [provideZonelessChangeDetection(), errorHandler],
       });
       const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
       const fixture = TestBed.createComponent<SwapHost>(host);

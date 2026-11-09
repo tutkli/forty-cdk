@@ -19,6 +19,8 @@ import {
   ForTableRowCellDef,
   ForTableRowDef,
   ForTableRowReorder,
+  ForTableRowSelector,
+  ForTableSelectAll,
   ForTableSortHeader,
   ForTableVariantCell,
 } from 'forty-cdk/table';
@@ -443,3 +445,36 @@ export class TableBodyVirtualizedFixture {
   `,
 })
 export class TableVirtualizedReorderFixture {}
+
+@Component({
+  imports: [
+    ForTable,
+    ForTableHeaderRow,
+    ForTableHeaderCell,
+    ForTableSelectAll,
+    ForTableRow,
+    ForTableCell,
+    ForTableRowSelector,
+  ],
+  template: `
+    <div forTable mode="grid" ariaLabel="People" selectionMode="multiple">
+      <div role="rowgroup">
+        <div forTableHeaderRow>
+          <div forTableHeaderCell name="sel">
+            <button type="button" forTableSelectAll ariaLabel="Select all rows"></button>
+          </div>
+          <div forTableHeaderCell name="name">Name</div>
+        </div>
+      </div>
+      <div role="rowgroup">
+        <div forTableRow [value]="1">
+          <div forTableCell name="sel">
+            <span forTableRowSelector ariaLabel="Select Ada"></span>
+          </div>
+          <div forTableCell name="name">Ada</div>
+        </div>
+      </div>
+    </div>
+  `,
+})
+export class TableSelectionFixture {}

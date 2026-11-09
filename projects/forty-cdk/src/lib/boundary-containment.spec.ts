@@ -1,4 +1,4 @@
-import { Component, ErrorHandler, provideZonelessChangeDetection, signal } from '@angular/core';
+import { Component, provideZonelessChangeDetection, signal } from '@angular/core';
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { ForDateField, ForDateFieldSegment } from 'forty-cdk/date-field';
@@ -15,31 +15,21 @@ import { ForTabs, ForTabsContent, ForTabsList, ForTabsTrigger } from 'forty-cdk/
 import { installObserverPolyfills, pressKey } from 'forty-cdk/testing';
 
 import { flush } from '../test-utils/flush';
-
-class CapturingErrorHandler implements ErrorHandler {
-  readonly captured: unknown[] = [];
-
-  handleError(error: unknown): void {
-    this.captured.push(error);
-  }
-}
+import { captureHandledErrors } from '../test-utils/handled-errors';
 
 function mount<T>(host: new () => T): {
   fixture: ComponentFixture<T>;
   el: HTMLElement;
   captured: readonly unknown[];
 } {
+  const errors = captureHandledErrors();
   TestBed.configureTestingModule({
     rethrowApplicationErrors: false,
-    providers: [
-      provideZonelessChangeDetection(),
-      { provide: ErrorHandler, useClass: CapturingErrorHandler },
-    ],
+    providers: [provideZonelessChangeDetection(), errors.provider],
   });
   const fixture = TestBed.createComponent(host);
   fixture.detectChanges();
-  const handler = TestBed.inject(ErrorHandler) as CapturingErrorHandler;
-  return { fixture, el: fixture.nativeElement as HTMLElement, captured: handler.captured };
+  return { fixture, el: fixture.nativeElement as HTMLElement, captured: errors.captured };
 }
 
 const text = (el: HTMLElement, selector: string): string | null =>

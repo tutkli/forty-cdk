@@ -1,6 +1,5 @@
 import {
   Component,
-  ErrorHandler,
   provideZonelessChangeDetection,
   signal,
   ViewEncapsulation,
@@ -34,6 +33,7 @@ import { ForDrawerHandle } from './drawer-handle';
 import { ForDrawerTitle } from './drawer-title';
 import { ForDrawerTrigger } from './drawer-trigger';
 import { ForDrawerWrapper } from './drawer-wrapper';
+import { captureHandledErrors } from '../../src/test-utils/handled-errors';
 
 @Component({
   imports: [
@@ -1361,18 +1361,10 @@ describe('ForDrawer (declarative)', () => {
         readonly snaps: ReadonlyArray<ForDrawerSnapPoint> = [0.5, 0.25, 1];
       }
 
-      const captured: unknown[] = [];
-      class CapturingHandler implements ErrorHandler {
-        handleError(err: unknown): void {
-          captured.push(err);
-        }
-      }
+      const { captured, provider: errorHandler } = captureHandledErrors();
 
       TestBed.configureTestingModule({
-        providers: [
-          provideZonelessChangeDetection(),
-          { provide: ErrorHandler, useClass: CapturingHandler },
-        ],
+        providers: [provideZonelessChangeDetection(), errorHandler],
       });
       const fixture = TestBed.createComponent(BadHost);
       fixture.detectChanges();
@@ -1397,17 +1389,9 @@ describe('ForDrawer (declarative)', () => {
       function captureDrawerErrors(
         host: new (...args: unknown[]) => { open: { set(v: boolean): void } },
       ): Promise<unknown[]> {
-        const captured: unknown[] = [];
-        class CapturingHandler implements ErrorHandler {
-          handleError(err: unknown): void {
-            captured.push(err);
-          }
-        }
+        const { captured, provider: errorHandler } = captureHandledErrors();
         TestBed.configureTestingModule({
-          providers: [
-            provideZonelessChangeDetection(),
-            { provide: ErrorHandler, useClass: CapturingHandler },
-          ],
+          providers: [provideZonelessChangeDetection(), errorHandler],
         });
         const fixture = TestBed.createComponent(host);
         fixture.detectChanges();
@@ -1495,18 +1479,10 @@ describe('ForDrawer (declarative)', () => {
         readonly open = signal(false);
       }
 
-      const captured: unknown[] = [];
-      class CapturingHandler implements ErrorHandler {
-        handleError(err: unknown): void {
-          captured.push(err);
-        }
-      }
+      const { captured, provider: errorHandler } = captureHandledErrors();
 
       TestBed.configureTestingModule({
-        providers: [
-          provideZonelessChangeDetection(),
-          { provide: ErrorHandler, useClass: CapturingHandler },
-        ],
+        providers: [provideZonelessChangeDetection(), errorHandler],
       });
       const fixture = TestBed.createComponent(BadHost);
       fixture.detectChanges();
@@ -1538,18 +1514,10 @@ describe('ForDrawer (declarative)', () => {
         readonly bad = Number.NaN;
       }
 
-      const captured: unknown[] = [];
-      class CapturingHandler implements ErrorHandler {
-        handleError(err: unknown): void {
-          captured.push(err);
-        }
-      }
+      const { captured, provider: errorHandler } = captureHandledErrors();
 
       TestBed.configureTestingModule({
-        providers: [
-          provideZonelessChangeDetection(),
-          { provide: ErrorHandler, useClass: CapturingHandler },
-        ],
+        providers: [provideZonelessChangeDetection(), errorHandler],
       });
       const fixture = TestBed.createComponent(BadHost);
       fixture.detectChanges();
@@ -1580,18 +1548,10 @@ describe('ForDrawer (declarative)', () => {
         readonly open = signal(false);
       }
 
-      const captured: unknown[] = [];
-      class CapturingHandler implements ErrorHandler {
-        handleError(err: unknown): void {
-          captured.push(err);
-        }
-      }
+      const { captured, provider: errorHandler } = captureHandledErrors();
 
       TestBed.configureTestingModule({
-        providers: [
-          provideZonelessChangeDetection(),
-          { provide: ErrorHandler, useClass: CapturingHandler },
-        ],
+        providers: [provideZonelessChangeDetection(), errorHandler],
       });
       const fixture = TestBed.createComponent(GoodHost);
       fixture.detectChanges();
@@ -1624,18 +1584,10 @@ describe('ForDrawer (declarative)', () => {
         readonly snaps: ReadonlyArray<ForDrawerSnapPoint> = [0.25, 0.5, 1];
       }
 
-      const captured: unknown[] = [];
-      class CapturingHandler implements ErrorHandler {
-        handleError(err: unknown): void {
-          captured.push(err);
-        }
-      }
+      const { captured, provider: errorHandler } = captureHandledErrors();
 
       TestBed.configureTestingModule({
-        providers: [
-          provideZonelessChangeDetection(),
-          { provide: ErrorHandler, useClass: CapturingHandler },
-        ],
+        providers: [provideZonelessChangeDetection(), errorHandler],
       });
       const fixture = TestBed.createComponent(BadHost);
       fixture.detectChanges();
@@ -1671,17 +1623,9 @@ describe('ForDrawer (declarative)', () => {
       }
 
       vi.stubGlobal('ngDevMode', false);
-      const captured: unknown[] = [];
-      class CapturingHandler implements ErrorHandler {
-        handleError(err: unknown): void {
-          captured.push(err);
-        }
-      }
+      const { captured, provider: errorHandler } = captureHandledErrors();
       TestBed.configureTestingModule({
-        providers: [
-          provideZonelessChangeDetection(),
-          { provide: ErrorHandler, useClass: CapturingHandler },
-        ],
+        providers: [provideZonelessChangeDetection(), errorHandler],
       });
       const fixture = TestBed.createComponent(BadHost);
       fixture.detectChanges();
@@ -1745,17 +1689,9 @@ describe('ForDrawer (declarative)', () => {
         fixture: ReturnType<typeof TestBed.createComponent<RebindHost>>;
         captured: unknown[];
       } {
-        const captured: unknown[] = [];
-        class CapturingHandler implements ErrorHandler {
-          handleError(err: unknown): void {
-            captured.push(err);
-          }
-        }
+        const { captured, provider: errorHandler } = captureHandledErrors();
         TestBed.configureTestingModule({
-          providers: [
-            provideZonelessChangeDetection(),
-            { provide: ErrorHandler, useClass: CapturingHandler },
-          ],
+          providers: [provideZonelessChangeDetection(), errorHandler],
         });
         const fixture = TestBed.createComponent(RebindHost);
         fixture.detectChanges();

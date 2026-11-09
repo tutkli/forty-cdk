@@ -1,11 +1,5 @@
 import { NgTemplateOutlet } from '@angular/common';
-import {
-  Component,
-  ErrorHandler,
-  provideZonelessChangeDetection,
-  signal,
-  viewChild,
-} from '@angular/core';
+import { Component, provideZonelessChangeDetection, signal, viewChild } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import {
@@ -51,6 +45,7 @@ import {
   provideForTimePickerDefaults,
   type ForTimeSlot,
 } from './public-api';
+import { captureHandledErrors } from '../../src/test-utils/handled-errors';
 
 const BASE_IMPORTS = [
   ForTimePicker,
@@ -2374,18 +2369,10 @@ describe('ForTimePicker', () => {
       });
 
       it('reports FORCDK-TIME-PICKER-004 when the trigger opens the listbox', async () => {
-        const captured: unknown[] = [];
-        class CapturingHandler implements ErrorHandler {
-          handleError(err: unknown): void {
-            captured.push(err);
-          }
-        }
+        const { captured, provider: errorHandler } = captureHandledErrors();
         TestBed.configureTestingModule({
           rethrowApplicationErrors: false,
-          providers: [
-            provideZonelessChangeDetection(),
-            { provide: ErrorHandler, useClass: CapturingHandler },
-          ],
+          providers: [provideZonelessChangeDetection(), errorHandler],
         });
         const fixture = TestBed.createComponent(MissingFieldHost);
         fixture.detectChanges();

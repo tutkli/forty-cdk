@@ -279,6 +279,9 @@ class UnseededResizeTableHost {}
     ForTableHeaderCell,
     ForTableColumnResizer,
     ForTableSelectAll,
+    ForTableRow,
+    ForTableCell,
+    ForTableRowSelector,
   ],
   template: `
     <form (submit)="onSubmit($event)">
@@ -291,6 +294,12 @@ class UnseededResizeTableHost {}
             Name
             <button forTableColumnResizer column="name" data-testid="resizer"></button>
           </div>
+        </div>
+        <div forTableRow [value]="1" data-testid="row-1">
+          <div forTableCell name="sel">
+            <button forTableRowSelector type="submit" data-testid="row-selector"></button>
+          </div>
+          <div forTableCell name="name">Alice</div>
         </div>
       </div>
       <button type="submit" data-testid="native-submit">Save</button>
@@ -3355,6 +3364,20 @@ describe('ForTable', () => {
       selectAll.click();
 
       expect(selectAll.getAttribute('type')).toBe('button');
+      expect(instance.submits()).toBe(1);
+    });
+
+    it('the row selector forces type="button" over a consumer type="submit" so a click does not submit a surrounding form', async () => {
+      const { el, instance, flush } = renderHost(FormWrappedResizeTableHost);
+      el.querySelector<HTMLElement>('[data-testid="native-submit"]')!.click();
+      expect(instance.submits()).toBe(1);
+
+      const selector = el.querySelector<HTMLElement>('[data-testid="row-selector"]')!;
+      selector.click();
+      await flush();
+
+      expect(selector.getAttribute('type')).toBe('button');
+      expect(selector.getAttribute('aria-checked')).toBe('true');
       expect(instance.submits()).toBe(1);
     });
 

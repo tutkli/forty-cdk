@@ -1,7 +1,6 @@
 import {
   Component,
   computed,
-  ErrorHandler,
   provideZonelessChangeDetection,
   signal,
   viewChild,
@@ -25,6 +24,7 @@ import { ForTreeItemCheckbox } from './tree-item-checkbox';
 import { ForTreeItemCheckboxIndicator } from './tree-item-checkbox-indicator';
 import { ForTreeItemLabel } from './tree-item-label';
 import { ForTreeItemToggle } from './tree-item-toggle';
+import { captureHandledErrors } from '../../src/test-utils/handled-errors';
 
 @Component({
   imports: [ForTree, ForTreeItem, ForTreeItemLabel, ForTreeItemToggle, ForTreeGroup],
@@ -4097,17 +4097,10 @@ describe('ForTree', () => {
       followsFocus: boolean,
       selectionMode: 'highlight' | 'checkbox' = 'highlight',
     ) {
-      class CapturingHandler implements ErrorHandler {
-        handleError(err: unknown): void {
-          captured.push(err);
-        }
-      }
+      const errorHandler = captureHandledErrors(captured).provider;
       TestBed.configureTestingModule({
         rethrowApplicationErrors: false,
-        providers: [
-          provideZonelessChangeDetection(),
-          { provide: ErrorHandler, useClass: CapturingHandler },
-        ],
+        providers: [provideZonelessChangeDetection(), errorHandler],
       });
       const fixture = TestBed.createComponent(GuardHost);
       fixture.componentInstance.total.set(3);
@@ -4290,17 +4283,10 @@ describe('ForTree', () => {
     }
 
     async function setupMulti(captured: unknown[]) {
-      class CapturingHandler implements ErrorHandler {
-        handleError(err: unknown): void {
-          captured.push(err);
-        }
-      }
+      const errorHandler = captureHandledErrors(captured).provider;
       TestBed.configureTestingModule({
         rethrowApplicationErrors: false,
-        providers: [
-          provideZonelessChangeDetection(),
-          { provide: ErrorHandler, useClass: CapturingHandler },
-        ],
+        providers: [provideZonelessChangeDetection(), errorHandler],
       });
       const fixture = TestBed.createComponent(MultiVirtualHost);
       fixture.detectChanges();
@@ -4373,16 +4359,26 @@ describe('ForTree', () => {
       expect(throwsUnsupported(captured)).toBe(false);
     });
 
-    it('does not throw when the multi tree is not virtualized (roving path keeps range keys)', async () => {
-      const r = renderHost(MultiVirtualHost);
-      r.instance.total.set(undefined);
-      await flush(r.fixture);
-      const first = r.el.querySelector<HTMLElement>('[data-test-id="n-0"]')!;
+    it('reports no error when the multi tree is not virtualized (roving path keeps range keys)', async () => {
+      const errors = captureHandledErrors();
+      TestBed.configureTestingModule({
+        rethrowApplicationErrors: false,
+        providers: [provideZonelessChangeDetection(), errors.provider],
+      });
+      const fixture = TestBed.createComponent(MultiVirtualHost);
+      fixture.componentInstance.total.set(undefined);
+      await flush(fixture);
+      const first = (fixture.nativeElement as HTMLElement).querySelector<HTMLElement>(
+        '[data-test-id="n-0"]',
+      )!;
       first.focus();
-      await flush(r.fixture);
-      expect(() => pressKey(first, 'ArrowDown', { shiftKey: true })).not.toThrow();
-      await flush(r.fixture);
-      expect(r.instance.picked()).toContain('n-1');
+      await flush(fixture);
+
+      pressKey(first, 'ArrowDown', { shiftKey: true });
+      await flush(fixture);
+
+      expect(errors.captured).toEqual([]);
+      expect(fixture.componentInstance.picked()).toContain('n-1');
     });
   });
 

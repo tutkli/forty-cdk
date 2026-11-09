@@ -12,11 +12,16 @@ import {
   TabsServerRepeatFixture,
 } from './disclosure';
 import {
+  ComboboxChipsOpenFixture,
   ComboboxOpenFixture,
+  ComboboxPickerOpenFixture,
+  ComboboxVirtualizedOpenFixture,
   ListboxControllerFixture,
   ListboxFixture,
+  ListboxGroupedFixture,
   ListboxReorderFixture,
   ListboxVirtualizedFixture,
+  SelectGroupedOpenFixture,
   SelectOpenFixture,
   SelectVirtualizedOpenFixture,
   TreeCascadeFixture,
@@ -30,6 +35,7 @@ import {
   CalendarFixture,
   CalendarHeadinglessFixture,
   CalendarMonthViewFixture,
+  CalendarNavigationFixture,
   CalendarSelectDirectivesFixture,
   CalendarYearViewFixture,
   DateFieldFixture,
@@ -57,9 +63,11 @@ import {
 import {
   ButtonFixture,
   CheckboxFixture,
+  FieldBoundaryFixture,
   FieldFixture,
   FieldsetFixture,
   FileUploadFixture,
+  InputFixture,
   NumberInputFixture,
   OtpInputFixture,
   PreselectedToggleGroupFixture,
@@ -74,6 +82,7 @@ import {
 import {
   ContextMenuOpenFixture,
   DropdownMenuOpenFixture,
+  MenuCheckableOpenFixture,
   MenuMultiOpenerOpenFixture,
   MenuSubOpenFixture,
   MenubarOpenFixture,
@@ -94,14 +103,19 @@ import {
   DialogContainedModalFixture,
   DialogFixture,
   DialogOpenFixture,
+  DialogTriggerOpenFixture,
   DrawerContainedFixture,
   DrawerContainedModalFixture,
   DrawerOpenFixture,
+  DrawerTriggerOpenFixture,
   DrawerWrapperOpenFixture,
+  HoverCardArrowOpenFixture,
   HoverCardOpenFixture,
   OverlayManagersOpenFixture,
+  PopoverAnatomyOpenFixture,
   PopoverOpenFixture,
   ToastFixture,
+  TooltipArrowOpenFixture,
   TooltipFixture,
   TooltipOpenFixture,
 } from './overlay';
@@ -115,6 +129,7 @@ import {
   TableFixture,
   TableGridFixture,
   TableGridVariantFixture,
+  TableSelectionFixture,
   TableTreegridFixture,
   TableVirtualizedFixture,
   TableVirtualizedReorderFixture,
@@ -593,6 +608,11 @@ export const SSR_FIXTURES: readonly SsrFixture[] = [
     component: CheckboxFixture,
     markup: [
       { select: '[forCheckbox]', attributes: { role: 'checkbox', 'aria-checked': 'false' } },
+      {
+        select: '[forCheckboxIndicator]',
+        attributes: { 'data-state': 'unchecked' },
+        within: '[forCheckbox]',
+      },
     ],
   },
   {
@@ -627,6 +647,10 @@ export const SSR_FIXTURES: readonly SsrFixture[] = [
       {
         select: '[forRadio]',
         attributes: { role: 'radio', 'aria-checked': 'false', tabindex: '0' },
+      },
+      {
+        select: '[forRadioIndicator]',
+        attributes: { 'data-state': 'unchecked', 'data-orientation': 'vertical' },
       },
     ],
   },
@@ -1230,6 +1254,7 @@ export const SSR_FIXTURES: readonly SsrFixture[] = [
           'aria-expanded': 'false',
           'aria-controls': null,
         },
+        within: '[forDatePickerAnchor]',
       },
     ],
   },
@@ -1255,6 +1280,7 @@ export const SSR_FIXTURES: readonly SsrFixture[] = [
         select: '[forTimePickerTrigger]',
         attributes: { role: 'combobox', 'aria-haspopup': 'listbox', 'aria-expanded': 'true' },
         pairs: { 'aria-controls': '[forTimePickerContent]' },
+        within: '[forTimePickerAnchor]',
       },
       {
         select: '[forTimePickerContent]',
@@ -1536,6 +1562,387 @@ export const SSR_FIXTURES: readonly SsrFixture[] = [
     markup: [
       { select: '[forLabel]', pairs: { for: '[forFieldControl]' } },
       { select: '[forFieldControl]', pairs: { 'aria-labelledby': '[forLabel]' } },
+    ],
+  },
+  {
+    component: TooltipArrowOpenFixture,
+    open: true,
+    markup: [
+      { select: '[forTooltipTrigger]', pairs: { 'aria-describedby': '[forTooltipContent]' } },
+      {
+        select: '[forTooltipArrow]',
+        attributes: { 'aria-hidden': 'true', 'data-tooltip-arrow': '' },
+        within: '[forTooltipContent]',
+      },
+    ],
+  },
+  {
+    component: HoverCardArrowOpenFixture,
+    open: true,
+    markup: [
+      {
+        select: '[forHoverCardArrow]',
+        attributes: { 'aria-hidden': 'true', 'data-hover-card-arrow': '' },
+        within: '[forHoverCardContent]',
+      },
+    ],
+  },
+  {
+    component: PopoverAnatomyOpenFixture,
+    open: true,
+    markup: [
+      {
+        select: '[forPopoverTrigger]',
+        attributes: { 'aria-haspopup': 'dialog', 'aria-expanded': 'true' },
+        pairs: { 'aria-controls': '[forPopoverContent]' },
+        within: '[forPopoverAnchor]',
+      },
+      {
+        select: '[forPopoverContent]',
+        attributes: { role: 'dialog', 'data-state': 'open' },
+        pairs: {
+          'aria-labelledby': '[forPopoverTitle]',
+          'aria-describedby': '[forPopoverDescription]',
+        },
+      },
+      { select: '[forPopoverClose]', attributes: { type: 'button' } },
+      {
+        select: '[forPopoverArrow]',
+        attributes: { 'aria-hidden': 'true', 'data-popover-arrow': '' },
+      },
+    ],
+  },
+  {
+    component: DialogTriggerOpenFixture,
+    open: true,
+    markup: [
+      {
+        select: '[forDialogTrigger]',
+        attributes: {
+          type: 'button',
+          'aria-haspopup': 'dialog',
+          'aria-expanded': 'true',
+          'data-state': 'open',
+        },
+        pairs: { 'aria-controls': '[forDialog]' },
+      },
+      {
+        select: '[forDialog]',
+        attributes: { role: 'dialog', 'aria-modal': 'true' },
+        pairs: {
+          'aria-labelledby': '[forDialogTitle]',
+          'aria-describedby': '[forDialogDescription]',
+        },
+      },
+      { select: '[forDialogClose]', attributes: { type: 'button', 'data-state': 'open' } },
+    ],
+  },
+  {
+    component: DrawerTriggerOpenFixture,
+    open: true,
+    markup: [
+      {
+        select: '[forDrawerTrigger]',
+        attributes: {
+          type: 'button',
+          'aria-haspopup': 'dialog',
+          'aria-expanded': 'true',
+          'data-state': 'open',
+        },
+        pairs: { 'aria-controls': '[forDrawer]' },
+      },
+      {
+        select: '[forDrawer]',
+        attributes: { role: 'dialog', 'aria-modal': 'true' },
+        pairs: {
+          'aria-labelledby': '[forDrawerTitle]',
+          'aria-describedby': '[forDrawerDescription]',
+        },
+      },
+      {
+        select: '[forDrawerHandle]',
+        attributes: { 'aria-hidden': 'true', 'data-for-drawer-handle': '' },
+      },
+      { select: '[forDrawerClose]', attributes: { type: 'button', 'data-state': 'open' } },
+    ],
+  },
+  {
+    component: SelectGroupedOpenFixture,
+    open: true,
+    markup: [
+      {
+        select: '[forSelectTrigger]',
+        pairs: { 'aria-controls': '[forSelectContent]' },
+        within: '[forSelectAnchor]',
+      },
+      {
+        select: '[forSelectContent]',
+        attributes: { role: 'listbox' },
+        pairs: { 'aria-labelledby': '[forSelectTrigger]' },
+      },
+      {
+        select: '[forSelectGroup]',
+        attributes: { role: 'group' },
+        pairs: { 'aria-labelledby': '[forSelectGroupLabel]' },
+      },
+      {
+        select: '[forSelectIndicator]',
+        attributes: { 'aria-hidden': 'true', 'data-state': 'checked', hidden: null },
+      },
+      {
+        select: '[forSelectSeparator]',
+        attributes: { role: 'none', 'data-orientation': 'horizontal' },
+      },
+    ],
+  },
+  {
+    component: ComboboxPickerOpenFixture,
+    open: true,
+    markup: [
+      {
+        select: '[forComboboxTrigger]',
+        attributes: {
+          role: 'combobox',
+          'aria-haspopup': 'dialog',
+          'aria-expanded': 'true',
+          'data-state': 'open',
+        },
+        pairs: {
+          'aria-controls': '[forComboboxContent]',
+          'aria-labelledby': '#ssr-picker-label',
+        },
+        within: '[forComboboxAnchor]',
+      },
+      {
+        select: '[forComboboxContent]',
+        attributes: { role: 'dialog' },
+        pairs: { 'aria-labelledby': '[forComboboxTrigger]' },
+      },
+      {
+        select: '[forComboboxInput]',
+        pairs: {
+          'aria-controls': '[forComboboxList]',
+          'aria-activedescendant': '[forComboboxOption]',
+        },
+      },
+      {
+        select: '[forComboboxList]',
+        attributes: { role: 'listbox' },
+        pairs: { 'aria-labelledby': '[forComboboxInput]' },
+      },
+      {
+        select: '[forComboboxGroup]',
+        attributes: { role: 'group' },
+        pairs: { 'aria-labelledby': '[forComboboxGroupLabel]' },
+      },
+      {
+        select: '[forComboboxIndicator]',
+        attributes: { 'aria-hidden': 'true', 'data-state': 'checked', hidden: null },
+      },
+      {
+        select: '[forComboboxSeparator]',
+        attributes: { role: 'none', 'data-orientation': 'horizontal' },
+      },
+      { select: '[forComboboxEmpty]', attributes: { role: 'status', hidden: '' } },
+      { select: '[forComboboxStatus]', attributes: { role: 'status' } },
+    ],
+  },
+  {
+    component: ComboboxChipsOpenFixture,
+    open: true,
+    markup: [
+      {
+        select: '[forComboboxChips]',
+        attributes: { role: 'group', 'aria-label': 'Selected items' },
+      },
+      {
+        select: '[forComboboxChip]',
+        attributes: { 'data-value': 'a', tabindex: '-1' },
+        within: '[forComboboxChips]',
+      },
+      {
+        select: '[forComboboxChipRemove]',
+        attributes: { type: 'button', tabindex: '-1', 'aria-label': 'Remove Alpha' },
+      },
+      {
+        select: '[forComboboxClear]',
+        attributes: { 'aria-label': 'Clear', tabindex: '-1', hidden: null },
+      },
+      {
+        select: '[forComboboxInput]',
+        pairs: {
+          'aria-controls': '[forComboboxContent]',
+          'aria-activedescendant': '[forComboboxOption]',
+        },
+      },
+      {
+        select: '[forComboboxContent]',
+        attributes: { role: 'listbox', 'aria-multiselectable': 'true' },
+        pairs: { 'aria-labelledby': '[forComboboxInput]' },
+      },
+    ],
+  },
+  {
+    component: ComboboxVirtualizedOpenFixture,
+    open: true,
+    markup: [
+      {
+        select: '[forComboboxInput]',
+        pairs: {
+          'aria-controls': '[forComboboxContent]',
+          'aria-activedescendant': '[forComboboxOption]',
+        },
+      },
+      {
+        select: '[forComboboxContent]',
+        attributes: { role: 'listbox' },
+        pairs: { 'aria-labelledby': '[forComboboxInput]' },
+      },
+      {
+        select: '[forComboboxOption]',
+        attributes: { role: 'option', 'aria-posinset': '1', 'aria-setsize': '3' },
+      },
+    ],
+  },
+  {
+    component: ListboxGroupedFixture,
+    tabStop: '[forListboxOption]',
+    markup: [
+      { select: '[forListbox]', attributes: { role: 'listbox' } },
+      {
+        select: '[forListboxGroup]',
+        attributes: { role: 'group' },
+        pairs: { 'aria-labelledby': '[forListboxGroupLabel]' },
+      },
+      {
+        select: '[forListboxOptionIndicator]',
+        attributes: { 'aria-hidden': 'true', 'data-state': 'unchecked', hidden: '' },
+      },
+    ],
+  },
+  {
+    component: MenuCheckableOpenFixture,
+    open: true,
+    markup: [
+      { select: '[forDropdownMenuTrigger]', pairs: { 'aria-controls': '[forMenuContent]' } },
+      {
+        select: '[forMenuContent]',
+        attributes: { role: 'menu' },
+        pairs: { 'aria-labelledby': '[forDropdownMenuTrigger]' },
+      },
+      {
+        select: '[forMenuGroup]',
+        attributes: { role: 'group' },
+        pairs: { 'aria-labelledby': '[forMenuGroup] [forMenuGroupLabel]' },
+      },
+      {
+        select: '[forMenuCheckboxItem]',
+        attributes: { role: 'menuitemcheckbox', 'aria-checked': 'true', 'data-state': 'checked' },
+      },
+      {
+        select: '[forMenuItemIndicator]',
+        attributes: { 'aria-hidden': 'true', 'data-state': 'checked', hidden: null },
+      },
+      {
+        select: '[forMenuSeparator]',
+        attributes: { role: 'separator', 'data-orientation': 'horizontal' },
+      },
+      {
+        select: '[forMenuRadioGroup]',
+        attributes: { role: 'group' },
+        pairs: { 'aria-labelledby': '[forMenuRadioGroup] [forMenuGroupLabel]' },
+      },
+      {
+        select: '[forMenuRadioItem]',
+        attributes: { role: 'menuitemradio', 'aria-checked': 'true', 'data-state': 'checked' },
+      },
+      {
+        select: '[forMenuRadioItem][value="date"]',
+        attributes: { 'aria-checked': 'false', 'data-state': 'unchecked' },
+      },
+    ],
+  },
+  {
+    component: CalendarNavigationFixture,
+    tabStop: '[forCalendarCell]',
+    markup: [
+      { select: '[forCalendarGrid]', pairs: { 'aria-labelledby': '[forCalendarHeading]' } },
+      { select: '[forCalendarGridHeader]', attributes: { role: 'rowgroup' } },
+      {
+        select: '[forCalendarPrevButton]',
+        attributes: {
+          type: 'button',
+          'aria-label': 'Previous month',
+          'aria-disabled': null,
+          'data-disabled': null,
+        },
+      },
+      {
+        select: '[forCalendarNextButton]',
+        attributes: {
+          type: 'button',
+          'aria-label': 'Next month',
+          'aria-disabled': 'true',
+          'data-disabled': '',
+        },
+      },
+    ],
+  },
+  {
+    component: InputFixture,
+    markup: [
+      {
+        select: '[forInput]',
+        attributes: {
+          'aria-readonly': 'true',
+          'aria-invalid': 'true',
+          'aria-busy': 'true',
+          'data-readonly': '',
+        },
+      },
+    ],
+  },
+  {
+    component: FieldBoundaryFixture,
+    markup: [
+      { select: '[forLabel]', pairs: { for: '[forFieldControl]' } },
+      {
+        select: '[forFieldControl]',
+        pairs: { 'aria-labelledby': '[forLabel]' },
+        within: '[forFieldAnchor]',
+      },
+      {
+        select: '[forFieldBoundary] [forInput]',
+        attributes: { id: null, 'aria-labelledby': null, 'aria-label': 'Picker search' },
+      },
+    ],
+  },
+  {
+    component: TableSelectionFixture,
+    tabStop: '[forTableHeaderCell], [forTableCell]',
+    markup: [
+      { select: '[forTable]', attributes: { role: 'grid', 'aria-multiselectable': 'true' } },
+      {
+        select: '[forTableSelectAll]',
+        attributes: {
+          role: 'checkbox',
+          type: 'button',
+          tabindex: '-1',
+          'aria-checked': 'false',
+          'aria-label': 'Select all rows',
+          'data-state': 'unchecked',
+        },
+      },
+      {
+        select: '[forTableRowSelector]',
+        attributes: {
+          role: 'checkbox',
+          tabindex: '-1',
+          'aria-checked': 'false',
+          'aria-label': 'Select Ada',
+          'data-state': 'unchecked',
+        },
+      },
     ],
   },
 ];

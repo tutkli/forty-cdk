@@ -3,8 +3,15 @@ import { ForContextMenu, ForContextMenuTrigger } from 'forty-cdk/context-menu';
 import { ForDropdownMenu, ForDropdownMenuTrigger } from 'forty-cdk/dropdown-menu';
 import {
   ForMenu,
+  ForMenuCheckboxItem,
   ForMenuContent,
+  ForMenuGroup,
+  ForMenuGroupLabel,
   ForMenuItem,
+  ForMenuItemIndicator,
+  ForMenuRadioGroup,
+  ForMenuRadioItem,
+  ForMenuSeparator,
   ForMenuSub,
   ForMenuSubTrigger,
 } from 'forty-cdk/menu';
@@ -150,3 +157,39 @@ export class ContextMenuOpenFixture {}
   `,
 })
 export class MenuMultiOpenerOpenFixture {}
+
+@Component({
+  imports: [
+    ForDropdownMenu,
+    ForDropdownMenuTrigger,
+    ForMenuContent,
+    ForMenuGroup,
+    ForMenuGroupLabel,
+    ForMenuCheckboxItem,
+    ForMenuItemIndicator,
+    ForMenuSeparator,
+    ForMenuRadioGroup,
+    ForMenuRadioItem,
+  ],
+  template: `
+    <div forDropdownMenu [open]="true">
+      <button forDropdownMenuTrigger>View</button>
+      <div forMenuContent>
+        <div forMenuGroup>
+          <div forMenuGroupLabel>Appearance</div>
+          <button forMenuCheckboxItem [checked]="true">
+            <span forMenuItemIndicator>✓</span>
+            Bold
+          </button>
+        </div>
+        <hr forMenuSeparator />
+        <div forMenuRadioGroup value="name">
+          <div forMenuGroupLabel>Sort by</div>
+          <button forMenuRadioItem value="name">Name</button>
+          <button forMenuRadioItem value="date">Date</button>
+        </div>
+      </div>
+    </div>
+  `,
+})
+export class MenuCheckableOpenFixture {}

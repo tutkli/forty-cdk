@@ -388,7 +388,7 @@ describe('ForDropdownMenu', () => {
       trigger.focus();
       await flush(r.fixture);
 
-      expect(() => pressKey(trigger, 'ArrowDown')).not.toThrow();
+      pressKey(trigger, 'ArrowDown');
       await flush(r.fixture);
 
       expect(r.instance.open()).toBe(true);

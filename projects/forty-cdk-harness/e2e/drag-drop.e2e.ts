@@ -1,4 +1,4 @@
-import { el, expect, expectFocused, gotoFixture, test } from './_helpers';
+import { el, expect, expectFocused, expectStays, gotoFixture, test } from './_helpers';
 
 test.describe('drag-drop boundary + lockAxis', () => {
   test('lockAxis="y" — preview y tracks pointer while x stays at lift-time x', async ({ page }) => {
@@ -191,10 +191,13 @@ test.describe('drag-drop pointer dragging', () => {
     await page.mouse.down();
     await page.mouse.move(bodyX, startY + 5);
     await page.mouse.move(box2.x + box2.width / 2, box2.y + box2.height - 4);
+    await expectStays(page, () => expect(page.locator('li[data-dragging]')).toHaveCount(0));
     await page.mouse.up();
 
-    const afterTexts = await page.locator('[data-testid="list-a"] li').allTextContents();
-    expect(afterTexts.map((t) => t.trim())).toEqual(initialTexts.map((t) => t.trim()));
+    await expectStays(page, async () => {
+      const afterTexts = await page.locator('[data-testid="list-a"] li').allTextContents();
+      expect(afterTexts.map((t) => t.trim())).toEqual(initialTexts.map((t) => t.trim()));
+    });
   });
 
   test('handle gating — drag starting on handle does move', async ({ page }) => {
@@ -218,29 +221,28 @@ test.describe('drag-drop pointer dragging', () => {
     await expect(page.locator('[data-testid="a-item-2"]')).toHaveText(/Alpha/);
   });
 
-  test('Escape cancels a pointer drag mid-flight — order unchanged', async ({ page }) => {
-    const item0 = el(page, 'a-item-0');
-    const item2 = el(page, 'a-item-2');
-
-    const box0 = await item0.boundingBox();
-    const box2 = await item2.boundingBox();
-    if (!box0 || !box2) throw new Error('Elements not found');
-
+  test('Escape cancels a pointer drag mid-flight, order unchanged', async ({ page }) => {
+    const handle = await el(page, 'a-item-0-handle').boundingBox();
+    const box2 = await el(page, 'a-item-2').boundingBox();
+    if (!handle || !box2) throw new Error('Elements not found');
     const initialTexts = await page.locator('[data-testid="list-a"] li').allTextContents();
-
-    const startX = box0.x + box0.width / 2;
-    const startY = box0.y + box0.height / 2;
+    const startX = handle.x + handle.width / 2;
+    const startY = handle.y + handle.height / 2;
 
     await page.mouse.move(startX, startY);
     await page.mouse.down();
     await page.mouse.move(startX, startY + 5);
     await page.mouse.move(box2.x + box2.width / 2, box2.y + box2.height / 2);
+    await expect(page.locator('li[data-dragging]'), 'drag lifted from the handle').toHaveCount(1);
 
     await page.keyboard.press('Escape');
     await page.mouse.up();
+    await expect(page.locator('li[data-dragging]')).toHaveCount(0);
 
-    const afterTexts = await page.locator('[data-testid="list-a"] li').allTextContents();
-    expect(afterTexts.map((t) => t.trim())).toEqual(initialTexts.map((t) => t.trim()));
+    await expectStays(page, async () => {
+      const afterTexts = await page.locator('[data-testid="list-a"] li').allTextContents();
+      expect(afterTexts.map((t) => t.trim())).toEqual(initialTexts.map((t) => t.trim()));
+    });
   });
 
   test('keyboard reorder still works in the browser', async ({ page }) => {

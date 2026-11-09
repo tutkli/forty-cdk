@@ -1,8 +1,10 @@
 import { Component, signal } from '@angular/core';
 import { ForButton } from 'forty-cdk/button';
-import { ForCheckbox } from 'forty-cdk/checkbox';
+import { ForCheckbox, ForCheckboxIndicator } from 'forty-cdk/checkbox';
 import {
   ForField,
+  ForFieldAnchor,
+  ForFieldBoundary,
   ForFieldControl,
   ForFieldDescription,
   ForFieldError,
@@ -10,7 +12,7 @@ import {
 } from 'forty-cdk/field';
 import { ForFieldset, ForFieldsetLegend } from 'forty-cdk/fieldset';
 import { ForFileUpload, ForFileUploadInput, ForFileUploadTrigger } from 'forty-cdk/file-upload';
-import { ForTextarea } from 'forty-cdk/input';
+import { ForInput, ForTextarea } from 'forty-cdk/input';
 import {
   ForNumberInput,
   ForNumberInputDecrement,
@@ -18,7 +20,7 @@ import {
   ForNumberInputIncrement,
 } from 'forty-cdk/number-input';
 import { ForOtpInput, ForOtpInputSlot } from 'forty-cdk/otp-input';
-import { ForRadio, ForRadioGroup } from 'forty-cdk/radio-group';
+import { ForRadio, ForRadioGroup, ForRadioIndicator } from 'forty-cdk/radio-group';
 import { ForSearch, ForSearchClear, ForSearchGroup } from 'forty-cdk/search';
 import { ForSlider, ForSliderRange, ForSliderThumb, ForSliderTrack } from 'forty-cdk/slider';
 import { ForSwitch } from 'forty-cdk/switch';
@@ -31,8 +33,8 @@ import { ForToggle, ForToggleGroup, ForToggleGroupItem } from 'forty-cdk/toggle'
 export class SwitchFixture {}
 
 @Component({
-  imports: [ForCheckbox],
-  template: `<button forCheckbox>cb</button>`,
+  imports: [ForCheckbox, ForCheckboxIndicator],
+  template: `<button forCheckbox>cb <span forCheckboxIndicator></span></button>`,
 })
 export class CheckboxFixture {}
 
@@ -63,10 +65,10 @@ export class SearchFixture {}
 export class ButtonFixture {}
 
 @Component({
-  imports: [ForRadioGroup, ForRadio],
+  imports: [ForRadioGroup, ForRadio, ForRadioIndicator],
   template: `
     <div forRadioGroup>
-      <button forRadio value="a">A</button>
+      <button forRadio value="a">A <span forRadioIndicator></span></button>
       <button forRadio value="b">B</button>
     </div>
   `,
@@ -189,3 +191,25 @@ export class FieldFixture {}
 export class FieldsetFixture {
   readonly locked = signal(false);
 }
+
+@Component({
+  imports: [ForInput],
+  template: `<input forInput readonly required invalid pending aria-label="Display name" />`,
+})
+export class InputFixture {}
+
+@Component({
+  imports: [ForField, ForLabel, ForFieldControl, ForFieldAnchor, ForFieldBoundary, ForInput],
+  template: `
+    <div forField>
+      <label forLabel>Start time</label>
+      <div forFieldAnchor>
+        <input forFieldControl />
+      </div>
+      <div forFieldBoundary>
+        <input forInput aria-label="Picker search" />
+      </div>
+    </div>
+  `,
+})
+export class FieldBoundaryFixture {}

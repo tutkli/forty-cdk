@@ -6,6 +6,7 @@
  */
 export { renderHost, type RenderResult } from './render';
 export { flush, flushPositioning, nextMacrotask } from './flush';
+export { captureHandledErrors, type HandledErrors } from './handled-errors';
 export {
   hydrationHarness,
   settleHydration,

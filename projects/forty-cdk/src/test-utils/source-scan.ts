@@ -135,6 +135,89 @@ export function entryPointOf(path: string): string {
 }
 
 /**
+ * The entry points that make up the internal core tier. They are imported by
+ * the primitives rather than by consumers, so nothing they export is public.
+ */
+const INTERNAL_TIER_ENTRY_POINTS: ReadonlySet<string> = new Set([
+  'core',
+  'core-overlay',
+  'core-anchored',
+]);
+
+/** A directive or component a consumer can import from a public entry point. */
+export interface PublicDirective {
+  /** The exported class name, `For`-prefixed. */
+  readonly name: string;
+  /** The entry point whose barrel exports it. */
+  readonly entryPoint: string;
+  /** The file declaring the class, keyed like {@link LIBRARY_SOURCES}. */
+  readonly source: string;
+}
+
+const DECORATED_CLASS = /@(?:Directive|Component)\(/g;
+const NEXT_EXPORTED_CLASS = /\bexport\s+(?:abstract\s+)?class\s+(\w+)/g;
+const BARREL_EXPORT = /\bexport\s+(type\s+)?\{([^}]*)\}\s*from\s*'([^']+)'/g;
+
+/** The class each `@Directive` / `@Component` decorator in a file decorates. */
+function decoratedClasses(code: string): ReadonlySet<string> {
+  const names = new Set<string>();
+  for (const decorator of code.matchAll(DECORATED_CLASS)) {
+    NEXT_EXPORTED_CLASS.lastIndex = decorator.index;
+    const declaration = NEXT_EXPORTED_CLASS.exec(code);
+    if (declaration !== null) names.add(declaration[1]!);
+  }
+  return names;
+}
+
+function resolveBarrelSpecifier(entryPoint: string, specifier: string): string | undefined {
+  const base = `${entryPoint}/src/${specifier.replace(/^\.\//, '')}`;
+  return [`${base}.ts`, `${base}/index.ts`].find((path) => LIBRARY_CODE.has(path));
+}
+
+/**
+ * Every `For*` directive and component a public entry point's barrel
+ * re-exports, derived from source: a value export of an
+ * `<entry-point>/src/public-api.ts` whose declaring file decorates it with
+ * `@Directive` or `@Component`. Tokens, refs, managers, functions and types
+ * drop out by construction, and so does the internal core tier. A class the
+ * barrel reaches through another module or another entry point's specifier is
+ * resolved to the file declaring it. Each name is reported once, against the
+ * first barrel exporting it.
+ */
+export function publicDirectiveRoster(): readonly PublicDirective[] {
+  const declaredIn = new Map<string, string>();
+  for (const [path, code] of LIBRARY_CODE) {
+    for (const name of decoratedClasses(code)) declaredIn.set(name, path);
+  }
+
+  const roster = new Map<string, PublicDirective>();
+  for (const [path, code] of LIBRARY_CODE) {
+    const entryPoint = entryPointOf(path);
+    if (path !== `${entryPoint}/src/public-api.ts`) continue;
+    if (INTERNAL_TIER_ENTRY_POINTS.has(entryPoint)) continue;
+    for (const [, typeOnly, list, specifier] of code.matchAll(BARREL_EXPORT)) {
+      if (typeOnly !== undefined) continue;
+      const file = specifier!.startsWith('.')
+        ? resolveBarrelSpecifier(entryPoint, specifier!)
+        : undefined;
+      for (const raw of list!.split(',')) {
+        const entry = raw.trim();
+        if (entry === '' || entry.startsWith('type ')) continue;
+        const [local, exported = local] = entry.split(/\s+as\s+/).map((part) => part.trim());
+        if (!exported!.startsWith('For') || roster.has(exported!)) continue;
+        const source =
+          file !== undefined && decoratedClasses(LIBRARY_CODE.get(file)!).has(local!)
+            ? file
+            : declaredIn.get(local!);
+        if (source === undefined) continue;
+        roster.set(exported!, { name: exported!, entryPoint, source });
+      }
+    }
+  }
+  return [...roster.values()];
+}
+
+/**
  * Source with its comments removed, so prose naming a symbol never reads as a
  * use of it — the anchoring failure the marker rules hit in
  * [#1606](https://github.com/tutkli/forty-cdk/issues/1606).

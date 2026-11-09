@@ -48,8 +48,6 @@ import { STATIC_ADOPTION_ADOPTERS } from './fixtures/registry';
  *     ARIA, so a surface adopting a static name must also drop its generated
  *     labelledby fallback, or the trigger's text stays the announced name. Two
  *     attributes at once is outside a per-`(piece, channel)` claim.
- *   - **State transitions**: a menu content that stays mounted while its bar
- *     closes, or is shared across a switch of openers, keeps the id it was given.
  *   - **The deliberate non-adopters**: a per-instance computed name, and a
  *     channel the library never binds at all.
  */

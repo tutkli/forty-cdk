@@ -1,21 +1,50 @@
 import { Component, inject, signal } from '@angular/core';
-import { ForDialog, ForDialogBackdrop, ForDialogManager, ForDialogTitle } from 'forty-cdk/dialog';
+import {
+  ForDialog,
+  ForDialogBackdrop,
+  ForDialogClose,
+  ForDialogDescription,
+  ForDialogInitialFocus,
+  ForDialogManager,
+  ForDialogTitle,
+  ForDialogTrigger,
+} from 'forty-cdk/dialog';
 import {
   ForDrawer,
   ForDrawerBackdrop,
+  ForDrawerClose,
+  ForDrawerDescription,
+  ForDrawerHandle,
+  ForDrawerInitialFocus,
   ForDrawerManager,
   ForDrawerTitle,
+  ForDrawerTrigger,
   ForDrawerWrapper,
 } from 'forty-cdk/drawer';
-import { ForHoverCard, ForHoverCardContent, ForHoverCardTrigger } from 'forty-cdk/hover-card';
+import {
+  ForHoverCard,
+  ForHoverCardArrow,
+  ForHoverCardContent,
+  ForHoverCardTrigger,
+} from 'forty-cdk/hover-card';
 import {
   ForPopover,
+  ForPopoverAnchor,
+  ForPopoverArrow,
+  ForPopoverClose,
   ForPopoverContent,
+  ForPopoverDescription,
+  ForPopoverInitialFocus,
   ForPopoverTitle,
   ForPopoverTrigger,
 } from 'forty-cdk/popover';
 import { ForToast, ForToastTitle, ForToastViewport } from 'forty-cdk/toast';
-import { ForTooltip, ForTooltipContent, ForTooltipTrigger } from 'forty-cdk/tooltip';
+import {
+  ForTooltip,
+  ForTooltipArrow,
+  ForTooltipContent,
+  ForTooltipTrigger,
+} from 'forty-cdk/tooltip';
 
 @Component({
   imports: [ForTooltip, ForTooltipTrigger, ForTooltipContent],
@@ -187,3 +216,104 @@ export class HoverCardOpenFixture {}
   `,
 })
 export class ToastFixture {}
+
+@Component({
+  imports: [ForTooltip, ForTooltipTrigger, ForTooltipContent, ForTooltipArrow],
+  template: `
+    <span forTooltip [open]="true">
+      <button forTooltipTrigger>t</button>
+      <div forTooltipContent>
+        tip
+        <div forTooltipArrow></div>
+      </div>
+    </span>
+  `,
+})
+export class TooltipArrowOpenFixture {}
+
+@Component({
+  imports: [ForHoverCard, ForHoverCardTrigger, ForHoverCardContent, ForHoverCardArrow],
+  template: `
+    <span forHoverCard [open]="true">
+      <a forHoverCardTrigger href="/users/ada">Ada</a>
+      <div forHoverCardContent>
+        Preview
+        <div forHoverCardArrow></div>
+      </div>
+    </span>
+  `,
+})
+export class HoverCardArrowOpenFixture {}
+
+@Component({
+  imports: [
+    ForPopover,
+    ForPopoverAnchor,
+    ForPopoverTrigger,
+    ForPopoverContent,
+    ForPopoverTitle,
+    ForPopoverDescription,
+    ForPopoverInitialFocus,
+    ForPopoverClose,
+    ForPopoverArrow,
+  ],
+  template: `
+    <div forPopover [open]="true">
+      <div forPopoverAnchor>
+        <button forPopoverTrigger>Open</button>
+      </div>
+      <div forPopoverContent>
+        <h2 forPopoverTitle>Settings</h2>
+        <p forPopoverDescription>Adjust the view.</p>
+        <input forPopoverInitialFocus aria-label="Name" />
+        <button forPopoverClose>Close</button>
+        <div forPopoverArrow></div>
+      </div>
+    </div>
+  `,
+})
+export class PopoverAnatomyOpenFixture {}
+
+@Component({
+  imports: [
+    ForDialogTrigger,
+    ForDialog,
+    ForDialogTitle,
+    ForDialogDescription,
+    ForDialogInitialFocus,
+    ForDialogClose,
+  ],
+  template: `
+    <button forDialogTrigger [open]="true" controls="ssr-trigger-dialog">Delete account</button>
+    <div forDialog id="ssr-trigger-dialog">
+      <h2 forDialogTitle>Delete account?</h2>
+      <p forDialogDescription>This action is permanent.</p>
+      <input forDialogInitialFocus aria-label="Confirm" />
+      <button forDialogClose>Cancel</button>
+    </div>
+  `,
+})
+export class DialogTriggerOpenFixture {}
+
+@Component({
+  imports: [
+    ForDrawerTrigger,
+    ForDrawer,
+    ForDrawerHandle,
+    ForDrawerTitle,
+    ForDrawerDescription,
+    ForDrawerInitialFocus,
+    ForDrawerClose,
+  ],
+  template: `
+    <button forDrawerTrigger [open]="true" controls="ssr-trigger-drawer">Filters</button>
+    <div forDrawer id="ssr-trigger-drawer">
+      <div forDrawerHandle></div>
+      <h2 forDrawerTitle>Filters</h2>
+      <p forDrawerDescription>Narrow the results.</p>
+      <input forDrawerInitialFocus aria-label="Search" />
+      <button forDrawerClose>Done</button>
+    </div>
+  `,
+})
+export class DrawerTriggerOpenFixture {}
