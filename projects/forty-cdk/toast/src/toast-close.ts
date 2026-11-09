@@ -8,6 +8,9 @@ import { FOR_TOAST_DEFAULTS } from 'forty-cdk/defaults';
  * Close button inside a toast. Apply on a `<button type="button">` so
  * Space / Enter dispatch a native click. Clicking emits `(dismiss)` from
  * the parent `[forToast]` with reason `'manual'`.
+ *
+ * While the toast is not dismissible the button stays focusable but carries
+ * `aria-disabled="true"` and `data-disabled`, and clicking it does nothing.
  */
 @Directive({
   selector: '[forToastClose]',
@@ -15,6 +18,8 @@ import { FOR_TOAST_DEFAULTS } from 'forty-cdk/defaults';
   host: {
     '[attr.type]': 'buttonType()',
     '[attr.aria-label]': 'resolvedAriaLabel()',
+    '[attr.aria-disabled]': 'ctx.dismissible() ? null : "true"',
+    '[attr.data-disabled]': 'ctx.dismissible() ? null : ""',
     '(click)': 'onClick()',
   },
 })

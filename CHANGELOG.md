@@ -33,6 +33,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and a parent still toggles in both directions. A disabled ancestor's own entry no longer follows
   its children either. A disabled node in a collapsed subtree is unknown to the tree and is still
   written; leave it out of `descendantsOf` to protect it there.
+- **Toast** — `[forToastClose]` on a toast shown with `dismissible: false` now carries
+  `aria-disabled="true"` and `data-disabled` ([#2747](https://github.com/tutkli/forty-cdk/issues/2747)).
+  In a custom template that renders it unconditionally, the button was enabled and announced while
+  pressing it did nothing. It stays focusable and still does nothing. The README's custom-template
+  examples now leave it out of such a toast with `@if (toast.config.dismissible !== false)`, as the
+  built-in shape does.
+- **Toast docs** — the hero and the other toast examples no longer close every toast in the app
+  when they are destroyed ([#2747](https://github.com/tutkli/forty-cdk/issues/2747)). Their
+  teardown called `ForToastManager.dismissAll()`, so pasting one into a routed page dismissed the
+  app's other toasts, an Undo toast among them, on every navigation away. Each example now keeps
+  the refs `show()` returns and dismisses only those.
 
 ## [0.42.0] - 2026-11-08
 
