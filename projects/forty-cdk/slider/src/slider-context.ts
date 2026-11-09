@@ -46,6 +46,8 @@ export interface ForSliderContext {
    */
   readonly effectiveDisabled: Signal<boolean>;
   readonly readonly: Signal<boolean>;
+  /** The slider's invalid state, which every `[forSliderThumb]` reflects as `aria-invalid`. */
+  readonly invalid: Signal<boolean>;
   readonly minStepsBetweenThumbs: Signal<number>;
   readonly inverted: Signal<boolean>;
 
@@ -92,7 +94,6 @@ export interface ForSliderContext {
 
   // track el (registered by `ForSliderTrack`)
   setTrack(el: HTMLElement | null): void;
-  trackElement(): HTMLElement | null;
 
   // form
   /**

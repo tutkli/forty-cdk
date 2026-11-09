@@ -31,7 +31,7 @@ It renders **nothing** and imposes no layout, and there is **no control contract
 
 ## How the control connects
 
-- **forty-cdk controls** (`forSwitch`, `forCheckbox`, `forSlider`, `forSelect`, `forListbox`, `forCombobox`, `forRadioGroup`, `forToggle`, `forToggleGroup`) auto-wire, because they inherit the association from the shared form base. No marker needed.
+- **forty-cdk controls** (`forSwitch`, `forCheckbox`, `forSlider`, `forSelect`, `forListbox`, `forCombobox`, `forRadioGroup`, `forToggle`, `forToggleGroup`) auto-wire, because they inherit the association from the shared form base. No marker needed. A control whose host is a wrapper wires its focusable part instead: the `forSelect` trigger, the `forCombobox` input, and the thumb of a single-thumb `forSlider`. A multi-thumb `forSlider` keeps its `role="group"` root as the target, so each thumb still needs its own `[ariaLabel]`.
 - **Native controls** add `[forFieldControl]` and drive validation state via its `invalid` / `required` / `disabled` / `touched` inputs. A bound `required` or `disabled` reaches the control as the native attribute, so native constraint validation and `:required` / `:disabled` apply as on a bare element.
 
 `ForField` owns the control's `id` (it assigns one if the control has none, otherwise it adopts the existing id), so a `<label forLabel>`'s `for` always resolves to the control.

@@ -208,7 +208,9 @@ Implements the [WAI-ARIA Slider pattern](https://www.w3.org/WAI/ARIA/apg/pattern
 - The root has `role="group"` and `dir="rtl"` mirrored when `dir()==='rtl'`, so screen readers and CSS layout agree.
 - `disabled` thumbs receive `tabindex="-1"` and `aria-disabled="true"`.
 - **`aria-readonly` belongs on the thumb, not the root.** WAI-ARIA supports it on `role="slider"` but not on `role="group"`, so each thumb carries `aria-readonly="true"` while the root reflects the `data-readonly` styling hook only.
+- **`aria-invalid` belongs on the thumb too.** An invalid slider marks every thumb `aria-invalid="true"`, the element assistive technology reads on focus, while the root reflects the `data-invalid` styling hook only.
 - Provide `[ariaLabel]` on every thumb. Even single-thumb sliders benefit from explicit naming. The directive does not synthesize a label. When the name is already visible in the DOM, write a native `aria-labelledby` on the thumb instead; the directive leaves that attribute alone.
+- **Inside a `[forField]`, a single-thumb slider is named by the field.** The field wires its id (the label's `for` target), `aria-labelledby`, `aria-describedby` and, while invalid, `aria-errormessage` onto the thumb, so the thumb needs no `[ariaLabel]`. A multi-thumb slider keeps the `role="group"` root as the field's target, because one label cannot name both ends of a range: the group takes the field's name and description, and each thumb still needs its own `[ariaLabel]`.
 - A degenerate configuration (`rangeMin` greater than `rangeMax`, or a non-positive `step`) leaves the slider inoperable and is dev-guarded by a `console.warn` in development builds.
 
 ## Styling
