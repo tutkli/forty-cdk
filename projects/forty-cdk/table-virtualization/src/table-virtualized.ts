@@ -19,6 +19,7 @@ import {
 import { FOR_TABLE_CONTEXT, type ForTableContext } from 'forty-cdk/table';
 import { injectVirtualizer, type VirtualItem } from 'forty-cdk/virtualization';
 
+import { ScrollMarginWatch } from './scroll-margin-watch';
 import { TableVirtualizedNavigator } from './table-virtualized-navigator';
 
 function injectTableContext(): ForTableContext {
@@ -110,6 +111,9 @@ export class ForTableVirtualized {
   readonly #rowCount = computed(() => this.virtualRowCount() ?? this.#ctx.rowCount() ?? 0);
 
   readonly #scrollMargin = signal(0);
+  readonly #scrollMarginWatch = new ScrollMarginWatch(this.#rootEl, (margin) =>
+    this.#scrollMargin.set(margin),
+  );
 
   readonly #virtualizer = injectVirtualizer({
     count: this.#rowCount,
@@ -137,11 +141,14 @@ export class ForTableVirtualized {
       totalSize: this.totalSize,
       measureRow: (element) => this.measureRow(element),
     });
-    afterEveryRender(() => this.#scrollMargin.set(this.#measureScrollMargin()));
+    afterEveryRender({ read: () => this.#scrollMarginWatch.sync(this.#scrollElement()) });
     inject(DestroyRef).onDestroy(() => {
+      this.#scrollMarginWatch.disconnect();
       this.#registration.registerVirtualNavigation(null);
       this.#registration.registerVirtualWindow(null);
     });
+    // @sanctioned-effect(untracked-read): tryResolvePending moves the roving pointer one file
+    // away only inside untracked, and the tracked rows, cells and disabled flags never read it.
     effect(() => {
       this.#registration.rows();
       this.#navigator.tryResolvePending();
@@ -217,18 +224,5 @@ export class ForTableVirtualized {
    */
   measureRow(element: HTMLElement | null): void {
     this.#virtualizer.measureElement(element);
-  }
-
-  #measureScrollMargin(): number {
-    const scroller = this.#scrollElement();
-    if (scroller === this.#rootEl) {
-      return 0;
-    }
-    const offset =
-      this.#rootEl.getBoundingClientRect().top -
-      scroller.getBoundingClientRect().top -
-      scroller.clientTop +
-      scroller.scrollTop;
-    return Math.round(offset);
   }
 }
