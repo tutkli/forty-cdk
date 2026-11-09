@@ -7,76 +7,58 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Fixed
+## [0.43.0] - 2026-11-09
 
-- **Date field, Time field, Date range field, Time range field, Date picker, Time picker** — a
-  pending control is announced as busy ([#2734](https://github.com/tutkli/forty-cdk/issues/2734)).
-  The four field roots reflected `pending` as `data-pending` only, and a picker with
-  `anatomy="field"` left its trigger without `aria-busy` too, so nothing in the composite told a
-  screen reader that an async validator was running. Each field root now carries
-  `aria-busy="true"` while `pending`, and a field-anatomy picker passes its own `pending` to the
-  field it adopts.
-- **Checkbox, Switch, Toggle, Toggle group, Radio group, Listbox, Select, Combobox, Slider, Date
-  field, Date picker, Time field, Time picker** — a required control no longer gives the page a
-  phantom outer scrollbar ([#2785](https://github.com/tutkli/forty-cdk/issues/2785)). Since 0.42.0
-  the validation input it mounts was `position: absolute`, so inside an `overflow: auto` container
-  with no positioned ancestor (an app shell whose content scrolls inside `<main>`) it stretched
-  `<html>` down to the lowest required control, and scrolling the document moved the whole shell,
-  header included. The input is now `position: fixed`, which never adds to a scrollable overflow.
-  Reporting the form still focuses the control and scrolls it into view.
-- **Dialog, Alert dialog, Drawer, Date picker, Toast** — announcements made while a modal is open
-  are no longer outside it in the accessibility tree
-  ([#2749](https://github.com/tutkli/forty-cdk/issues/2749)). The `LiveAnnouncer` regions and the
-  toast viewport sit in `<body>`, outside every `aria-modal="true"` surface, so a screen reader that
-  hides everything outside the modal could drop a drag-and-drop reorder, a calendar month change or
-  a toast shown over a dialog. The topmost open modal surface
-  now lists them in its `aria-owns`, merged with any `aria-owns` you set, hands them to a modal
-  stacked above it and takes them back, and removes them when it closes. A toast viewport set to
-  `overModal: 'inert'` is left out.
-- **Combobox** — a Signal Forms reset (`form().reset()`, or `reset()` on the bound field) no
-  longer leaves the picked label or typed text in the input
-  ([#2742](https://github.com/tutkli/forty-cdk/issues/2742)). The reset reached `value` only, so a
-  pristine, untouched field could read "Spain" while holding nothing. `[forCombobox]` now
-  implements `FormUiControl.reset`: the editable single-select input shows the label of the
-  selection the reset leaves, and is empty when there is none, in multi mode, in the picker anatomy
-  and without `commitOnSelect`.
-- **Tree** — with `selectionMode="checkbox"` and `cascade`, a press on a parent, Shift+Arrow,
-  Shift+Space and Ctrl/Cmd+A no longer check or uncheck a disabled descendant
-  ([#2745](https://github.com/tutkli/forty-cdk/issues/2745)). The cascade wrote the whole subtree, so
-  a locked child was granted or revoked through its parent, and pressing Ctrl/Cmd+A twice removed a
-  preselected disabled node. A mounted disabled node now keeps its state, still counts toward its
-  ancestors (a parent whose locked child is unchecked reads `mixed` and stays out of `[(value)]`),
-  and a parent still toggles in both directions. A disabled ancestor's own entry no longer follows
-  its children either. A disabled node in a collapsed subtree is unknown to the tree and is still
-  written; leave it out of `descendantsOf` to protect it there.
-- **Toast** — `[forToastClose]` on a toast shown with `dismissible: false` now carries
-  `aria-disabled="true"` and `data-disabled` ([#2747](https://github.com/tutkli/forty-cdk/issues/2747)).
-  In a custom template that renders it unconditionally, the button was enabled and announced while
-  pressing it did nothing. It stays focusable and still does nothing. The README's custom-template
-  examples now leave it out of such a toast with `@if (toast.config.dismissible !== false)`, as the
-  built-in shape does.
-- **Toast docs** — the hero and the other toast examples no longer close every toast in the app
-  when they are destroyed ([#2747](https://github.com/tutkli/forty-cdk/issues/2747)). Their
-  teardown called `ForToastManager.dismissAll()`, so pasting one into a routed page dismissed the
-  app's other toasts, an Undo toast among them, on every navigation away. Each example now keeps
-  the refs `show()` returns and dismisses only those.
-- **Scroll area** — `[forScrollAreaCorner]` now reflects `data-state` (`visible` / `hidden`) and
-  reads `visible` only while both scrollbars do
-  ([#2746](https://github.com/tutkli/forty-cdk/issues/2746)). Under `type="hover"` and
-  `type="scroll"` the corner stayed painted while both bars faded and carried no attribute to fade
-  it with, although the README said it showed only with both scrollbars. A fade keyed off
-  `[data-state='hidden']` now covers the corner too; it is still mounted whenever both axes
-  overflow.
-- **Drag and drop** — with `[animateReorder]`, `data-drag-animating` and the settling preview now
-  last exactly as long as the item's or the preview's own `transform` transition
-  ([#2748](https://github.com/tutkli/forty-cdk/issues/2748)). The first `transitionend` of any
-  property, or one bubbling up from a descendant, used to end the wait or use it up, so a row with
-  a second transition (a hover background, a fade, an animated child icon) lost the hook mid-flight
-  or kept it past its transition, and `data-drag-animating` was removed after a fixed 500 ms
-  whatever the CSS said. The fallback for a `transitionend` that never arrives is now timed from
-  the computed transition, and with no transition configured `data-drag-animating` clears at once.
+### Added
+
+- **Dialog, Drawer** — `injectDialogRef()` and `injectDrawerRef()` hand an opened component its own
+  ref, typed with the result its contract declares
+  ([#2751](https://github.com/tutkli/forty-cdk/issues/2751)). On a component that declares
+  `FOR_DIALOG_CONTRACT` / `FOR_DRAWER_CONTRACT`, `injectDialogRef<ConfirmDialog>()` returns a
+  `ForDialogRef<ConfirmResult>`, so `ref.close(42)` fails to compile; any other type argument types
+  the ref as that type, and none types it `unknown`. They are published from `forty-cdk/dialog` and
+  `forty-cdk/drawer` and replace `inject(ForDialogRef<…>)`, which repeated the result type by hand.
+  A `[forDialogClose]` / `[forDrawerClose]` button's `[closeWith]` is still not checked against the
+  contract, so close through the ref wherever the result type matters; the README contract sections
+  show the pattern.
+
+- **Radio group, Toggle group** — `[forRadioGroup]` and `[forToggleGroup]` take the uniform
+  `ariaLabel: input<string | null>` ([#2750](https://github.com/tutkli/forty-cdk/issues/2750)).
+  `[ariaLabel]` used to compile against the native `Element.ariaLabel` reflection, so `''` wrote
+  `aria-label=""`. It is now reflected as `aria-label` only when non-empty, a static `aria-label` on
+  the host wins over it, and `FOR_RADIO_GROUP_HOST_DIRECTIVE_INPUTS` /
+  `FOR_TOGGLE_GROUP_HOST_DIRECTIVE_INPUTS` list it, so a wrapper composing the root through
+  `hostDirectives` forwards it.
+
+- **Calendar** — a range calendar announces its anchor and the range it commits
+  ([#2741](https://github.com/tutkli/forty-cdk/issues/2741)). Both are polite, with the dates
+  formatted as day, month and year in the calendar's `locale`:
+  `"Start date June 20, 2026. Choose the end date."` and
+  `"Selected June 20, 2026 to June 24, 2026."`. A click the length limits reject announces nothing.
+  Localize them through the new `provideForCalendarDefaults` keys `rangeStartAnnouncement` and
+  `rangeSelectedAnnouncement`.
+
+- **Tree** — `[forTreeNodeDrag]` on a virtualized tree starts no drag and warns once in dev mode
+  (`FORCDK-TREE-007`) ([#2735](https://github.com/tutkli/forty-cdk/issues/2735)). A pointer drop
+  used to resolve its parent and index from the rendered window alone, so a two-row drag inside a
+  folder whose own row was scrolled away emitted `newParent: null` with a window-relative index and
+  moved the node to the wrong place in your data, while the keyboard lift never started and
+  Shift+Enter selected the node. Now neither gesture lifts, Shift+Enter keeps its tree meaning, and
+  `[forTreeNodeDragHandle]` no longer sets `touch-action: none` there. **Remove
+  `[forTreeNodeDrag]`**, or render the tree without `[forTreeVirtualized]`; the README lists drag
+  among the virtualized tree's limitations.
+
+- **Virtual reorder** — an idle PageUp / PageDown moves focus by one rendered window
+  ([#2736](https://github.com/tutkli/forty-cdk/issues/2736)), as an idle Home / End already moves it
+  to the dataset ends. While a row is lifted they still step the drop target.
 
 ### Changed
+
+- **Slider — BREAKING.** `ForSliderContext` no longer declares `trackElement()`, and declares a new
+  `invalid: Signal<boolean>` ([#2743](https://github.com/tutkli/forty-cdk/issues/2743)). No piece
+  read `trackElement()` through the context. **Call it on the root instead** (`#slider="forSlider"`,
+  then `slider.trackElement()`); an object written by hand as a `ForSliderContext` must add
+  `invalid`.
 
 - **Scroll area — BREAKING.** `setDragging`, `registerThumb` and `unregisterThumb` are no longer
   public on `ForScrollAreaScrollbar`, and `ForScrollAreaThumb.scrollbar` is no longer public
@@ -85,6 +67,207 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   track visible until something reset it. The geometry signals and the `scrollToTrackPoint` /
   `pageBy` / `scrollToPosition` commands a hand-rolled track gesture uses stay public. **Migrate**
   by reaching the scrollbar through its own template reference instead of the thumb's.
+
+- **Drawer, Toast** — under `prefers-reduced-motion: reduce` a swipe keeps its gesture and drops
+  only the motion, as the carousel's already did
+  ([#2751](https://github.com/tutkli/forty-cdk/issues/2751)). A drawer used to arm no swipe at all
+  under reduced motion; it now dismisses or snaps on release, while the surface does not follow the
+  finger and `swipeProgress`, `--for-drawer-swipe-progress` and `--for-drawer-swipe-movement-x` /
+  `-y` stay `0`. A toast used to publish its live `--for-toast-swipe-movement-x` / `-y`; they now
+  stay `0px`, and a swipe past the threshold still dismisses.
+
+- **Table** — in `mode="treegrid"`, ArrowLeft / ArrowRight expand or collapse a parent row only from
+  its first cell ([#2744](https://github.com/tutkli/forty-cdk/issues/2744)). They used to act on
+  every cell, so moving left from the Modified cell of an expanded folder collapsed it, unmounted
+  its children and left focus where it was. Every other cell now navigates. **Render the expand
+  toggle in the first column** so the key and the pointer act in the same place.
+
+### Fixed
+
+- **Date field, Time field, Date range field, Time range field, Date picker, Time picker** — a
+  pending control is announced as busy ([#2734](https://github.com/tutkli/forty-cdk/issues/2734)).
+  The four field roots reflected `pending` as `data-pending` only, and a picker with
+  `anatomy="field"` left its trigger without `aria-busy` too, so nothing in the composite told a
+  screen reader that an async validator was running. Each field root now carries `aria-busy="true"`
+  while `pending`, and a field-anatomy picker passes its own `pending` to the field it adopts.
+
+- **Checkbox, Switch, Toggle, Toggle group, Radio group, Listbox, Select, Combobox, Slider, Date
+  field, Date picker, Time field, Time picker** — a required control no longer gives the page a
+  phantom outer scrollbar ([#2785](https://github.com/tutkli/forty-cdk/issues/2785)). Since 0.42.0
+  the validation input it mounts was `position: absolute`, so inside an `overflow: auto` container
+  with no positioned ancestor (an app shell whose content scrolls inside `<main>`) it stretched
+  `<html>` down to the lowest required control, and scrolling the document moved the whole shell,
+  header included. The input is now `position: fixed`, which never adds to a scrollable overflow.
+  Reporting the form still focuses the control and scrolls it into view.
+
+- **Dialog, Alert dialog, Drawer, Date picker, Toast** — announcements made while a modal is open
+  are no longer outside it in the accessibility tree
+  ([#2749](https://github.com/tutkli/forty-cdk/issues/2749)). The `LiveAnnouncer` regions and the
+  toast viewport sit in `<body>`, outside every `aria-modal="true"` surface, so a screen reader that
+  hides everything outside the modal could drop a drag-and-drop reorder, a calendar month change or
+  a toast shown over a dialog. The topmost open modal surface now lists them in its `aria-owns`,
+  merged with any `aria-owns` you set, hands them to a modal stacked above it and takes them back,
+  and removes them when it closes. A toast viewport set to `overModal: 'inert'` is left out.
+
+- **Combobox** — a Signal Forms reset (`form().reset()`, or `reset()` on the bound field) no longer
+  leaves the picked label or typed text in the input
+  ([#2742](https://github.com/tutkli/forty-cdk/issues/2742)). The reset reached `value` only, so a
+  pristine, untouched field could read "Spain" while holding nothing. `[forCombobox]` now implements
+  `FormUiControl.reset`: the editable single-select input shows the label of the selection the reset
+  leaves, and is empty when there is none, in multi mode, in the picker anatomy and without
+  `commitOnSelect`.
+
+- **Slider** — a surrounding `[forField]` labels the thumb, and every thumb reflects `aria-invalid`
+  ([#2743](https://github.com/tutkli/forty-cdk/issues/2743)). The field wrote its id,
+  `aria-labelledby`, `aria-describedby` and `aria-errormessage` onto the root, which is not the
+  `role="slider"` element, and only the root carried `data-invalid`. A single-thumb slider now hands
+  the field its thumb; with two or more thumbs the field keeps labelling the `role="group"` root.
+  The Slider and Field READMEs describe both labellings.
+
+- **Calendar** — a consumer write to `[(view)]` no longer moves focus into the grid, a click on a
+  cell outside `[min, max]` no longer moves anything, and a pending range anchor no longer clears
+  the selection for assistive technology ([#2741](https://github.com/tutkli/forty-cdk/issues/2741)).
+  Only `cycleView()`, `selectMonth()` and `selectYear()` move focus now. The refused click used to
+  move the focused date, the visible month and the tab stop. While an anchor is pending, the
+  committed range keeps `aria-selected="true"`, matching `range`, which still holds it, and the
+  anchor cell is selected too; both used to read `"false"`.
+
+- **Stepper** — `[forStepperNext]` and `[forStepperPrevious]` follow the rules the triggers follow
+  ([#2739](https://github.com/tutkli/forty-cdk/issues/2739)). They skip a `[disabled]` step, and
+  with `[linear]` Next checks every step before the target rather than only the current one, so a
+  `selectedIndex` restored past an incomplete step no longer walks on and fires `(complete)`. Both
+  buttons reflect `data-disabled` beside `aria-disabled`. Any selection change, including Next,
+  Previous and a `[(selectedIndex)]` write, now hands the tab stop back to the selected step's
+  trigger, so Shift+Tab back into the list no longer lands on a step that is not selected.
+
+- **Tree** — with `selectionMode="checkbox"` and `cascade`, a press on a parent, Shift+Arrow,
+  Shift+Space and Ctrl/Cmd+A no longer check or uncheck a disabled descendant
+  ([#2745](https://github.com/tutkli/forty-cdk/issues/2745)). The cascade wrote the whole subtree,
+  so a locked child was granted or revoked through its parent, and pressing Ctrl/Cmd+A twice removed
+  a preselected disabled node. A mounted disabled node now keeps its state, still counts toward its
+  ancestors (a parent whose locked child is unchecked reads `mixed` and stays out of `[(value)]`),
+  and a parent still toggles in both directions. A disabled ancestor's own entry no longer follows
+  its children either. A disabled node in a collapsed subtree is unknown to the tree and is still
+  written; leave it out of `descendantsOf` to protect it there.
+
+- **Virtualization** — a focused row stays mounted when a scroll or a keyed reorder takes it out of
+  the rendered window ([#2736](https://github.com/tutkli/forty-cdk/issues/2736)). `*forVirtualFor`
+  removed it and focus fell to `<body>`, against its own documentation. The row is recycled once
+  focus leaves it; a keyed row follows its item through a reorder, and an index-keyed row stays at
+  its index.
+
+- **Table** — `[(columnWidths)]` on `<for-table-body>` sizes every displayed column it holds a width
+  for, `resizable` or not ([#2744](https://github.com/tutkli/forty-cdk/issues/2744)). Only a stamped
+  resize handle published `--for-table-col-<name>-width`, so a non-resizable column ignored the map,
+  against the declarative-columns guide, and turning `resizable` off snapped every column back to
+  its fallback track while the map still held its width. The body now owns the var, and a handle
+  only reports changes into the map.
+
+- **Table** — Escape in an entered cell leaves an overlay above the grid to close first, and the
+  row-lift chord on a row that cannot lift does nothing
+  ([#2744](https://github.com/tutkli/forty-cdk/issues/2744)). Escape used to leave the cell and move
+  focus out of the widget, so a tooltip on the widget closed only as a side effect and a
+  hover-opened one stayed open. An overlay that contains the grid, such as a dialog around it, still
+  lets the first Escape leave the cell. Shift+Enter / Ctrl+Space on a `[dragDisabled]` row, or one
+  with no `[forDraggable]`, emitted `cellActivate` or toggled the row's selection.
+
+- **Table, Table virtualization** — a keyboard row drop under `[forTableVirtualized]` made after
+  scrolling away from the target moves focus to the dropped row
+  ([#2737](https://github.com/tutkli/forty-cdk/issues/2737)). It waited for the window to cover the
+  target, so focus stayed on the row that slid into the lifted slot. Only a cancel, which scrolls
+  back to the origin, waits now.
+
+- **Tooltip, Popover, Hover card, Menu, Select** — the arrow and an item-aligned select's
+  `data-position` hold through the exit animation
+  ([#2738](https://github.com/tutkli/forty-cdk/issues/2738)). The reset run as soon as `open` turned
+  `false` stripped the arrow's inline position and its `data-side` / `data-placement`, so during
+  `animate.leave` it dropped into the content's text flow, and a selector scoped to
+  `[data-position='item-aligned']` stopped matching.
+
+- **Drawer** — with `scaleBackground`, the `[forDrawerWrapper]` animates back on close instead of
+  snapping ([#2751](https://github.com/tutkli/forty-cdk/issues/2751)). Its transform reverts through
+  the wrapper's own transition, and its other inline styles and the body colour are restored once
+  that transition settles. Reduced motion still reverts at once.
+
+- **Date range field, Time range field** — an endpoint entered outside `[min, max]` shows its
+  clamped value once focus leaves it ([#2750](https://github.com/tutkli/forty-cdk/issues/2750)).
+  While the other endpoint was incomplete it kept the unclamped entry after blur, then jumped to the
+  clamped value while the user typed in the other group.
+
+- **OTP input** — a paste with no accepted character leaves the code alone
+  ([#2750](https://github.com/tutkli/forty-cdk/issues/2750)). A paste whose filtered text was empty
+  (every character rejected, an empty clipboard, or a `pasteTransformer` returning `''`) cleared the
+  code and moved the caret to the start. It now leaves the value, the input and the selection
+  untouched, and fires `(reject)` only when it held a rejected character.
+
+- **Progress, Meter** — a non-finite number no longer reaches `aria-value*`, `data-*` or the
+  indicator's percentage ([#2755](https://github.com/tutkli/forty-cdk/issues/2755)). As on
+  `<progress>`, a non-finite `value` makes `[forProgress]` indeterminate, so
+  `loaded() / total() * 100` read while `total()` is `0` shows a busy bar instead of `NaN`. As on
+  `<meter>`, `[forMeter]` reads a non-finite `value` as `0`, a non-finite `min` / `max` as `0` /
+  `100`, and a non-finite `low` / `high` / `optimum` as unset.
+
+- **Toast** — `[forToastClose]` on a toast shown with `dismissible: false` now carries
+  `aria-disabled="true"` and `data-disabled`
+  ([#2747](https://github.com/tutkli/forty-cdk/issues/2747)). In a custom template that renders it
+  unconditionally, the button was enabled and announced while pressing it did nothing. It stays
+  focusable and still does nothing. The README's custom-template examples now leave it out of such a
+  toast with `@if (toast.config.dismissible !== false)`, as the built-in shape does.
+
+- **Toast docs** — the hero and the other toast examples no longer close every toast in the app when
+  they are destroyed ([#2747](https://github.com/tutkli/forty-cdk/issues/2747)). Their teardown
+  called `ForToastManager.dismissAll()`, so pasting one into a routed page dismissed the app's other
+  toasts, an Undo toast among them, on every navigation away. Each example now keeps the refs
+  `show()` returns and dismisses only those.
+
+- **Scroll area** — `[forScrollAreaCorner]` now reflects `data-state` (`visible` / `hidden`) and
+  reads `visible` only while both scrollbars do
+  ([#2746](https://github.com/tutkli/forty-cdk/issues/2746)). Under `type="hover"` and
+  `type="scroll"` the corner stayed painted while both bars faded and carried no attribute to fade
+  it with, although the README said it showed only with both scrollbars. A fade keyed off
+  `[data-state='hidden']` now covers the corner too; it is still mounted whenever both axes
+  overflow.
+
+- **Drag and drop** — with `[animateReorder]`, `data-drag-animating` and the settling preview now
+  last exactly as long as the item's or the preview's own `transform` transition
+  ([#2748](https://github.com/tutkli/forty-cdk/issues/2748)). The first `transitionend` of any
+  property, or one bubbling up from a descendant, used to end the wait or use it up, so a row with a
+  second transition (a hover background, a fade, an animated child icon) lost the hook mid-flight or
+  kept it past its transition, and `data-drag-animating` was removed after a fixed 500 ms whatever
+  the CSS said. The fallback for a `transitionend` that never arrives is now timed from the computed
+  transition, and with no transition configured `data-drag-animating` clears at once.
+
+- **Carousel docs** — the "Multiple slides per view" section no longer promises that `loop` wraps
+  once the last visible set is reached ([#2740](https://github.com/tutkli/forty-cdk/issues/2740)).
+  Navigation steps one slide at a time and `containScroll` is off under `loop`, so a looping
+  multi-slide carousel pages into partly empty views and wraps only after the last slide. The README
+  says so and points to `containScroll` for a flush last page.
+
+- **Combobox, Listbox, Drag and drop, form-control docs** — README snippets and API rows match the
+  code ([#2734](https://github.com/tutkli/forty-cdk/issues/2734)). Both picker-anatomy combobox
+  examples name their `role="combobox"` trigger through `aria-labelledby`, the listbox wrapper
+  example puts its options directly in the host, the drag-and-drop README describes the
+  window-to-absolute index mapping instead of an internal helper, and every form-control API table
+  types `errors` as `input<readonly FieldValidationError[]>`.
+
+### Performance
+
+- **Select, Combobox, Listbox, Dropdown menu, Context menu, Menu, Popover, Tooltip, Hover card, Date
+  picker, Time picker** — mounting or unmounting N triggers costs O(N) instead of O(N²)
+  ([#2753](https://github.com/tutkli/forty-cdk/issues/2753)). The registry behind them copied its
+  handle array on every add and remove.
+
+- **Time picker** — picking a time on an open picker formats no label and keeps every option's value
+  object ([#2753](https://github.com/tutkli/forty-cdk/issues/2753)). The slot list used to be
+  rebuilt from the value, so every pick reformatted every slot.
+
+- **Calendar** — a key move inside the visible month no longer rebuilds the grid, reformats its
+  labels or re-runs `isDateUnavailable` ([#2741](https://github.com/tutkli/forty-cdk/issues/2741)).
+
+- **Table virtualization** — inside an ancestor scroller, `[forTableVirtualized]` measures its
+  scroll margin only after something that can move the table changed, in the read phase, instead of
+  reading two bounding boxes on every render
+  ([#2737](https://github.com/tutkli/forty-cdk/issues/2737)).
 
 ## [0.42.0] - 2026-11-08
 
@@ -5539,7 +5722,8 @@ primitives.
 - **Display** — avatar, progress, meter, tree.
 - `forty-cdk/internationalized-date` secondary entry point exposing the `@internationalized/date` adapters for the date and time primitives.
 
-[Unreleased]: https://github.com/tutkli/forty-cdk/compare/v0.42.0...HEAD
+[Unreleased]: https://github.com/tutkli/forty-cdk/compare/v0.43.0...HEAD
+[0.43.0]: https://github.com/tutkli/forty-cdk/compare/v0.42.0...v0.43.0
 [0.42.0]: https://github.com/tutkli/forty-cdk/compare/v0.41.1...v0.42.0
 [0.41.1]: https://github.com/tutkli/forty-cdk/compare/v0.41.0...v0.41.1
 [0.41.0]: https://github.com/tutkli/forty-cdk/compare/v0.40.0...v0.41.0
