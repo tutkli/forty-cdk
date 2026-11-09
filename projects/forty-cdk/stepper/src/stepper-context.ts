@@ -135,29 +135,31 @@ export interface ForStepperContext {
   /** Returns the resolved `data-state` string for step at `index`. */
   resolvedStateFor(index: number): string;
   /**
-   * Selects step `index`. No-op when the root is disabled, when `index` is
-   * out of range, or when the step is not reachable in linear mode.
+   * Selects step `index`, or the terminal completed state when `index` is `count()`. No-op when
+   * the root is disabled, when the step is disabled, or when it is not reachable in linear mode.
    */
   select(index: number): void;
   /**
-   * Advances to the next step, or into the terminal completed state when on
-   * the last step. No-op when the root is disabled, when already in the terminal state, or
-   * (in linear mode) when the current step is neither completed nor optional.
+   * Advances to the nearest later step that is not disabled, or into the terminal completed state
+   * when no such step remains. In linear mode the target must be reachable, so the completed state
+   * is entered only once every step is completed or optional. No-op when `canAdvance()` is false.
    */
   next(): void;
   /**
-   * Retreats to the previous step. No-op when the root is disabled or the
-   * first step is already selected. Bypasses the linear reachability gate —
-   * going back always works.
+   * Retreats to the nearest earlier step that is not disabled. Bypasses the linear reachability
+   * gate. No-op when `canRetreat()` is false.
    */
   previous(): void;
   /**
-   * Returns true when the Next button can advance — including advancing the last
-   * step into the terminal completed state. False when disabled, already in the
-   * terminal state, or (in linear mode) the current step is not completed/optional.
+   * Returns true when `next()` has a step or the terminal completed state to land on. False when
+   * the root is disabled, already in the terminal state, or every later target is disabled or (in
+   * linear mode) unreachable.
    */
   canAdvance(): boolean;
-  /** Returns true when the Previous button can retreat. False when disabled or at the first step. */
+  /**
+   * Returns true when `previous()` has an earlier step that is not disabled to land on. False when
+   * the root is disabled or every earlier step is disabled.
+   */
   canRetreat(): boolean;
   /**
    * Moves focus from `currentTrigger` according to `action` (interactive mode
@@ -255,6 +257,17 @@ export interface ForStepperItemContext {
  * `public-api.ts`.
  */
 export interface StepperPieceContext {
+  /**
+   * Records that the trigger hosted by `host` received focus. The roving tracker owns the tab stop
+   * until the selection next changes, and a selectable trigger becomes its pointer; a focused
+   * trigger that is not selectable makes every trigger yield the stop instead.
+   */
+  focusTrigger(host: HTMLElement, selectable: boolean): void;
+  /**
+   * True while a trigger has been focused since the last selection change. Otherwise the current
+   * step's trigger owns the tab stop.
+   */
+  rovingOwnsTabStop(): boolean;
   /**
    * Returns true when step `index` is marked completed, whatever its resolved
    * `data-state` (current, error, or a custom `state`).

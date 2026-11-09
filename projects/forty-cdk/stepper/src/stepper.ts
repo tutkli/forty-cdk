@@ -5,6 +5,7 @@ import {
   effect,
   inject,
   input,
+  linkedSignal,
   model,
   output,
 } from '@angular/core';
@@ -151,6 +152,57 @@ export class ForStepper implements ForStepperContext {
 
   readonly #firstSelectableTriggerHost = computed(() => firstEnabledHost(this.#triggers.items()));
 
+  /**
+   * Whether a trigger has been focused since the selection last changed. While it holds, the roving
+   * pointer owns the tab stop; every selection change resets it, so the tab stop returns to the
+   * current step however the selection moved.
+   */
+  readonly #triggerFocusedSinceSelection = linkedSignal({
+    source: this.selectedIndex,
+    computation: () => false,
+  });
+
+  /**
+   * Index of the last step every preceding step admits: the first step that is neither completed
+   * nor optional in linear mode, `count()` when there is none, unbounded outside linear mode.
+   */
+  readonly #reachableLimit = computed(() => {
+    if (!this.linear()) {
+      return Infinity;
+    }
+    const items = this.#items.items();
+    const blocking = items.findIndex((item) => !item.completed() && !item.optional());
+    return blocking === -1 ? items.length : blocking;
+  });
+
+  /** The nearest index after the current one that Next may land on, or `null` when none exists. */
+  readonly #nextStop = computed<number | null>(() => {
+    if (this.disabled()) {
+      return null;
+    }
+    const count = this.count();
+    for (let i = this.selectedIndex() + 1; i <= count && this.isReachable(i); i++) {
+      if (this.#canLandOn(i)) {
+        return i;
+      }
+    }
+    return null;
+  });
+
+  /** The nearest earlier step that is not disabled, or `null` when none exists. */
+  readonly #previousStop = computed<number | null>(() => {
+    if (this.disabled()) {
+      return null;
+    }
+    const items = this.#items.items();
+    for (let i = Math.min(this.selectedIndex(), items.length) - 1; i >= 0; i--) {
+      if (items[i]?.effectiveDisabled() === false) {
+        return i;
+      }
+    }
+    return null;
+  });
+
   constructor() {
     injectRovingFocusRestore(this.roving);
     let previous: { completed: boolean; index: number } | null = null;
@@ -177,24 +229,22 @@ export class ForStepper implements ForStepperContext {
   }
 
   isReachable(index: number): boolean {
-    if (!this.linear()) {
-      return true;
-    }
-    if (index === 0) {
-      return true;
-    }
-    const items = this.#items.items();
-    for (let i = 0; i < index; i++) {
-      const item = items[i];
-      if (!item || (!item.completed() && !item.optional())) {
-        return false;
-      }
-    }
-    return true;
+    return index <= this.#reachableLimit();
   }
 
   resolvedStateFor(index: number): string {
     return this.#items.items()[index]?.resolvedState() ?? 'pending';
+  }
+
+  private focusTrigger(host: HTMLElement, selectable: boolean): void {
+    if (selectable) {
+      this.roving.setActive(host);
+    }
+    this.#triggerFocusedSinceSelection.set(true);
+  }
+
+  private rovingOwnsTabStop(): boolean {
+    return this.#triggerFocusedSinceSelection();
   }
 
   private completedFor(index: number): boolean {
@@ -210,39 +260,46 @@ export class ForStepper implements ForStepperContext {
       return;
     }
     const clamped = Math.max(0, Math.min(index, count));
-    if (!this.isReachable(clamped)) {
+    if (!this.#canLandOn(clamped)) {
       return;
     }
     this.selectedIndex.set(clamped);
   }
 
   next(): void {
-    if (!this.canAdvance()) {
-      return;
+    const target = this.#nextStop();
+    if (target !== null) {
+      this.selectedIndex.set(target);
     }
-    this.selectedIndex.set(this.selectedIndex() + 1);
   }
 
   previous(): void {
-    if (this.disabled() || this.selectedIndex() <= 0) {
-      return;
+    const target = this.#previousStop();
+    if (target !== null) {
+      this.selectedIndex.set(target);
     }
-    this.selectedIndex.set(this.selectedIndex() - 1);
   }
 
   canAdvance(): boolean {
-    if (this.disabled() || this.selectedIndex() >= this.count()) {
-      return false;
-    }
-    if (!this.linear()) {
-      return true;
-    }
-    const current = this.#items.items()[this.selectedIndex()];
-    return (current?.completed() ?? false) || (current?.optional() ?? false);
+    return this.#nextStop() !== null;
   }
 
   canRetreat(): boolean {
-    return this.selectedIndex() > 0 && !this.disabled();
+    return this.#previousStop() !== null;
+  }
+
+  /**
+   * Whether the selection may land on `index`: the terminal `count()` once every step admits it,
+   * otherwise a registered step that is reachable and not effectively disabled.
+   */
+  #canLandOn(index: number): boolean {
+    if (!this.isReachable(index)) {
+      return false;
+    }
+    if (index === this.count()) {
+      return true;
+    }
+    return this.#items.items()[index]?.effectiveDisabled() === false;
   }
 
   navigate(currentTrigger: HTMLElement, action: ListNavigationAction): void {
