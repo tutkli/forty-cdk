@@ -3,6 +3,10 @@ import { computed, Directive, input } from '@angular/core';
 import { clamp, hostAriaLabel } from 'forty-cdk/core';
 import { FOR_METER_CONTEXT, type ForMeterContext, type ForMeterQuality } from './meter-context';
 
+function finiteOrNull(value: number | null): number | null {
+  return value !== null && Number.isFinite(value) ? value : null;
+}
+
 /**
  * Headless implementation of the
  * [WAI-ARIA Meter pattern](https://www.w3.org/WAI/ARIA/apg/patterns/meter/),
@@ -46,32 +50,37 @@ export class ForMeter implements ForMeterContext {
    * Current measurement. One-way `[value]` input: a meter is a display-only
    * readout with no interactive value, so it exposes no two-way binding.
    * Clamped to `[min, max]` for everything reflected on the host; the input
-   * retains the raw value so a consumer reading it back is not surprised.
+   * retains the raw value so a consumer reading it back is not surprised. A
+   * non-finite value (`NaN`, `±Infinity`) is reflected as `0` clamped into the
+   * range, as the HTML `<meter>` element does.
    */
   readonly value = input<number>(0);
 
-  /** Lower bound. Defaults to `0`. */
+  /** Lower bound. Defaults to `0`, which also replaces a non-finite `min`. */
   readonly min = input<number>(0);
 
-  /** Upper bound. Defaults to `100`. */
+  /** Upper bound. Defaults to `100`, which also replaces a non-finite `max`. */
   readonly max = input<number>(100);
 
   /**
    * Optional lower boundary of the "OK" range. Values below `low` are
-   * treated as below the comfortable region. `null` means no lower band.
+   * treated as below the comfortable region. `null` or a non-finite number
+   * means no lower band.
    */
   readonly low = input<number | null>(null);
 
   /**
    * Optional upper boundary of the "OK" range. Values above `high` are
-   * treated as above the comfortable region. `null` means no upper band.
+   * treated as above the comfortable region. `null` or a non-finite number
+   * means no upper band.
    */
   readonly high = input<number | null>(null);
 
   /**
    * Optional point at which the value is considered ideal. Falls back to
-   * the midpoint of `[min, max]`. Determines which region is `optimum`,
-   * which is `sub-optimum`, and which is `even-less-good` (see HTML5 spec).
+   * the midpoint of `[min, max]` when `null` or non-finite. Determines which
+   * region is `optimum`, which is `sub-optimum`, and which is
+   * `even-less-good` (see HTML5 spec).
    */
   readonly optimum = input<number | null>(null);
 
@@ -93,8 +102,8 @@ export class ForMeter implements ForMeterContext {
   private readonly resolvedAriaLabel = hostAriaLabel(() => this.ariaLabel() || null);
 
   readonly #range = computed(() => {
-    const min = this.min();
-    const max = Math.max(this.max(), min);
+    const min = finiteOrNull(this.min()) ?? 0;
+    const max = Math.max(finiteOrNull(this.max()) ?? 100, min);
     return { min, max };
   });
 
@@ -106,7 +115,7 @@ export class ForMeter implements ForMeterContext {
 
   readonly clampedValue = computed<number>(() => {
     const { min, max } = this.#range();
-    return clamp(this.value(), min, max);
+    return clamp(finiteOrNull(this.value()) ?? 0, min, max);
   });
 
   readonly percentage = computed<number>(() => {
@@ -117,9 +126,9 @@ export class ForMeter implements ForMeterContext {
 
   readonly quality = computed<ForMeterQuality>(() => {
     const { min, max } = this.#range();
-    const low = clamp(this.low() ?? min, min, max);
-    const high = clamp(this.high() ?? max, low, max);
-    let optimum = this.optimum() ?? (min + max) / 2;
+    const low = clamp(finiteOrNull(this.low()) ?? min, min, max);
+    const high = clamp(finiteOrNull(this.high()) ?? max, low, max);
+    let optimum = finiteOrNull(this.optimum()) ?? (min + max) / 2;
     if (optimum < min) optimum = min;
     if (optimum > max) optimum = max;
     const v = this.clampedValue();

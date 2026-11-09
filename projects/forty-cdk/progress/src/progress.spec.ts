@@ -131,6 +131,27 @@ describe('ForProgress', () => {
       expect(el.getAttribute('data-percentage')).toBe('50');
     });
 
+    it.each([Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY])(
+      'reflects a non-finite value (%s) as indeterminate on root and indicator',
+      async (value) => {
+        const { fixture, query, flush } = renderHost(ProgressHost);
+        fixture.componentInstance.value.set(value);
+        await flush();
+
+        const el = query<HTMLElement>('[forProgress]')!;
+        expect(el.hasAttribute('aria-valuenow')).toBe(false);
+        expect(el.hasAttribute('data-value')).toBe(false);
+        expect(el.hasAttribute('data-percentage')).toBe(false);
+        expect(el.getAttribute('data-state')).toBe('indeterminate');
+
+        const indicator = query<HTMLElement>('[forProgressIndicator]')!;
+        expect(indicator.hasAttribute('data-value')).toBe(false);
+        expect(indicator.hasAttribute('data-percentage')).toBe(false);
+        expect(indicator.getAttribute('data-state')).toBe('indeterminate');
+        expect(indicator.style.getPropertyValue('--for-progress-percentage')).toBe('');
+      },
+    );
+
     it('reflects data-percentage / data-min / data-max on the root, matching meter', async () => {
       const { fixture, query, flush } = renderHost(ProgressHost);
       fixture.componentInstance.value.set(25);

@@ -67,7 +67,7 @@ export class ProgressDefaultExample {
 
 ### Indeterminate
 
-A `null` value puts the bar in indeterminate mode, for loading states whose duration cannot be predicted. In that mode `aria-valuenow` is omitted and `data-state` reflects `indeterminate`.
+A `null` value puts the bar in indeterminate mode, for loading states whose duration cannot be predicted. A non-finite value does the same, as on `<progress>`, so a ratio such as `loaded() / total() * 100` read while `total()` is still `0` shows a busy bar rather than `NaN`. In that mode `aria-valuenow` is omitted and `data-state` reflects `indeterminate`.
 
 ### Custom value label
 
@@ -79,7 +79,7 @@ A `null` value puts the bar in indeterminate mode, for loading states whose dura
 
 | Property             | Type                                      | Description                                                                                                                                                                                                                                                        |
 | -------------------- | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `value`              | `input<number \| null>`                   | Current progress in `[0, max]` (one-way; display-only). `null` = indeterminate.<br>**Default:** `null`                                                                                                                                                             |
+| `value`              | `input<number \| null>`                   | Current progress in `[0, max]` (one-way; display-only). `null` or a non-finite number (`NaN`, `±Infinity`) = indeterminate.<br>**Default:** `null`                                                                                                                 |
 | `max`                | `input<number>`                           | Upper bound. A non-positive or non-finite `max` falls back to `1` for ARIA so `aria-valuemax` always exceeds `aria-valuemin` (`0`).<br>**Default:** `100`                                                                                                          |
 | `getValueLabel`      | `input<((value, max) => string) \| null>` | Override for `aria-valuetext` (e.g. "Step 3 of 5").<br>**Default:** —                                                                                                                                                                                              |
 | `announceCompletion` | `input<boolean>`                          | Announce once via `aria-live` on the loading→complete transition: the `aria-valuetext` when `getValueLabel` is set, else the scope's [`completeAnnouncement`](#scoped-defaults) text (English fallback `Complete`).<br>**Default:** `false` (or the scope default) |

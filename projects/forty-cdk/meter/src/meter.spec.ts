@@ -109,6 +109,65 @@ describe('ForMeter', () => {
       expect(el.getAttribute('aria-valuenow')).toBe('40');
     });
 
+    it.each([Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY])(
+      'reflects a non-finite value (%s) as 0 clamped into the range',
+      async (value) => {
+        const { fixture, query, flush } = renderHost(MeterHost);
+        fixture.componentInstance.value.set(value);
+        await flush();
+
+        const el = query<HTMLElement>('[forMeter]')!;
+        expect(el.getAttribute('aria-valuenow')).toBe('0');
+        expect(el.getAttribute('data-value')).toBe('0');
+        expect(el.getAttribute('data-percentage')).toBe('0');
+
+        fixture.componentInstance.min.set(10);
+        await flush();
+        expect(el.getAttribute('aria-valuenow')).toBe('10');
+        expect(el.getAttribute('data-value')).toBe('10');
+        expect(el.getAttribute('data-percentage')).toBe('0');
+      },
+    );
+
+    it.each([Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY])(
+      'falls back to a max of 100 when max is not a finite number (%s)',
+      async (max) => {
+        const { fixture, query, flush } = renderHost(MeterHost);
+        fixture.componentInstance.value.set(5);
+        fixture.componentInstance.max.set(max);
+        await flush();
+
+        const el = query<HTMLElement>('[forMeter]')!;
+        expect(el.getAttribute('aria-valuemax')).toBe('100');
+        expect(el.getAttribute('data-max')).toBe('100');
+        expect(el.getAttribute('aria-valuenow')).toBe('5');
+        expect(el.getAttribute('data-percentage')).toBe('5');
+
+        const indicator = query<HTMLElement>('[forMeterIndicator]')!;
+        expect(indicator.getAttribute('data-max')).toBe('100');
+      },
+    );
+
+    it.each([Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY])(
+      'falls back to a min of 0 when min is not a finite number (%s)',
+      async (min) => {
+        const { fixture, query, flush } = renderHost(MeterHost);
+        fixture.componentInstance.value.set(25);
+        fixture.componentInstance.min.set(min);
+        await flush();
+
+        const el = query<HTMLElement>('[forMeter]')!;
+        expect(el.getAttribute('aria-valuemin')).toBe('0');
+        expect(el.getAttribute('data-min')).toBe('0');
+        expect(el.getAttribute('aria-valuemax')).toBe('100');
+        expect(el.getAttribute('aria-valuenow')).toBe('25');
+        expect(el.getAttribute('data-percentage')).toBe('25');
+
+        const indicator = query<HTMLElement>('[forMeterIndicator]')!;
+        expect(indicator.getAttribute('data-min')).toBe('0');
+      },
+    );
+
     it('omits aria-label by default, reflects a set label, and drops an empty one', async () => {
       const { fixture, query, flush } = renderHost(MeterHost);
       fixture.componentInstance.value.set(40);
@@ -130,6 +189,14 @@ describe('ForMeter', () => {
   describe('quality algorithm (HTML5 §<meter>)', () => {
     it('treats whole range as optimum when low/high/optimum are unset', async () => {
       const { fixture, query, flush } = renderHost(MeterHost);
+      fixture.componentInstance.value.set(50);
+      await flush();
+      expect(query<HTMLElement>('[forMeter]')!.getAttribute('data-quality')).toBe('optimum');
+    });
+
+    it.each(['low', 'high', 'optimum'] as const)('treats a non-finite %s as unset', async (key) => {
+      const { fixture, query, flush } = renderHost(MeterHost);
+      fixture.componentInstance[key].set(Number.NaN);
       fixture.componentInstance.value.set(50);
       await flush();
       expect(query<HTMLElement>('[forMeter]')!.getAttribute('data-quality')).toBe('optimum');
