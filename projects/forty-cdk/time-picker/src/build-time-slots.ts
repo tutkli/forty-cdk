@@ -101,6 +101,63 @@ export function selectedSlotSeconds<D>(
 }
 
 /**
+ * A generated slot before selection is applied, keyed by its time of day in seconds. Its `value`
+ * object is the one every {@link ForTimeSlot} built from it carries.
+ */
+export interface BaseTimeSlot<D> {
+  readonly seconds: number;
+  readonly id: string;
+  readonly value: D;
+  readonly label: string;
+  readonly disabled: boolean;
+}
+
+/** Generates the full-day slot list without the selection, so a value change leaves it alone. */
+export function buildBaseTimeSlots<D>(
+  config: Omit<BuildTimeSlotsConfig<D>, 'selected' | 'granularity'>,
+): readonly BaseTimeSlot<D>[] {
+  const { adapter, minTime, maxTime, step, formatOptions, locale } = config;
+  const anchor = timeSentinel(adapter);
+  const stepSeconds = stepSecondsOf(step);
+  const minSec = minTime !== null ? timeOfDaySeconds(adapter, minTime, 'second') : null;
+  const maxSec = maxTime !== null ? timeOfDaySeconds(adapter, maxTime, 'second') : null;
+
+  const slots: BaseTimeSlot<D>[] = [];
+  for (let t = 0; t < 86400; t += stepSeconds) {
+    const h = Math.floor(t / 3600);
+    const m = Math.floor((t % 3600) / 60);
+    const s = t % 60;
+    const value = adapter.setTime(anchor, h, m, s);
+    const label = adapter.format(value, formatOptions, locale);
+    const disabled = (minSec !== null && t < minSec) || (maxSec !== null && t > maxSec);
+    slots.push({ seconds: t, id: `slot-${t}`, value, label, disabled });
+  }
+  return slots;
+}
+
+/**
+ * Applies the selection to a base slot list. A slot of `previous` whose `selected` flag is
+ * unchanged is returned as is, so only the slots the selection left or reached are new objects.
+ *
+ * @param previous The list this function returned for the same `base`, if any.
+ */
+export function applySlotSelection<D>(
+  base: readonly BaseTimeSlot<D>[],
+  selectedSeconds: number | null,
+  previous?: readonly ForTimeSlot<D>[],
+): readonly ForTimeSlot<D>[] {
+  return base.map((slot, index) => {
+    const selected = slot.seconds === selectedSeconds;
+    const prior = previous?.[index];
+    if (prior !== undefined && prior.selected === selected) {
+      return prior;
+    }
+    const { id, value, label, disabled } = slot;
+    return { id, value, label, selected, disabled };
+  });
+}
+
+/**
  * Generates the full-day slot list for a {@link ForTimePicker}.
  *
  * Slots span the full 24-hour day (00:00:00 up to but not past 24:00). Each slot's
@@ -115,23 +172,8 @@ export function selectedSlotSeconds<D>(
  * Pure function: no signals, no DOM, no side effects.
  */
 export function buildTimeSlots<D>(config: BuildTimeSlotsConfig<D>): readonly ForTimeSlot<D>[] {
-  const { adapter, selected, minTime, maxTime, step, granularity, formatOptions, locale } = config;
-  const anchor = timeSentinel(adapter);
-  const stepSeconds = stepSecondsOf(step);
+  const { adapter, selected, step, granularity } = config;
   const selectedSec =
     selected !== null ? selectedSlotSeconds(adapter, selected, step, granularity) : null;
-  const minSec = minTime !== null ? timeOfDaySeconds(adapter, minTime, 'second') : null;
-  const maxSec = maxTime !== null ? timeOfDaySeconds(adapter, maxTime, 'second') : null;
-
-  const slots: ForTimeSlot<D>[] = [];
-  for (let t = 0; t < 86400; t += stepSeconds) {
-    const h = Math.floor(t / 3600);
-    const m = Math.floor((t % 3600) / 60);
-    const s = t % 60;
-    const value = adapter.setTime(anchor, h, m, s);
-    const label = adapter.format(value, formatOptions, locale);
-    const disabled = (minSec !== null && t < minSec) || (maxSec !== null && t > maxSec);
-    slots.push({ id: `slot-${t}`, value, label, selected: t === selectedSec, disabled });
-  }
-  return slots;
+  return applySlotSelection(buildBaseTimeSlots(config), selectedSec);
 }

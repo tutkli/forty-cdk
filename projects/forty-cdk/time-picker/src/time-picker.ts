@@ -5,6 +5,7 @@ import {
   ElementRef,
   inject,
   input,
+  linkedSignal,
   model,
   numberAttribute,
   output,
@@ -46,8 +47,10 @@ import { type TimeCapableDateAdapter } from 'forty-cdk/date-adapter';
 import { warnIfOpenWithoutContent } from 'forty-cdk/core-overlay';
 import { AnchoredFormValueControlBase, ListboxOverlayController } from 'forty-cdk/core-anchored';
 import {
-  buildTimeSlots,
+  applySlotSelection,
+  buildBaseTimeSlots,
   selectedSlotSeconds,
+  type BaseTimeSlot,
   type ForTimeSlot,
   type TimePickerGranularity,
 } from './build-time-slots';
@@ -392,26 +395,38 @@ export class ForTimePicker<D>
     };
   });
 
+  readonly #baseSlots = computed(() =>
+    buildBaseTimeSlots({
+      adapter: this.adapter,
+      minTime: this.minTime(),
+      maxTime: this.maxTime(),
+      step: this.step(),
+      formatOptions: this.#effectiveFormatOptions(),
+      locale: this.locale() ?? undefined,
+    }),
+  );
+
   /**
    * The generated list of time slots for the full day. Each slot's `value` is
    * anchored to a fixed DST-stable sentinel date; `activate` grafts the picked
    * wall-clock onto the current `value()` date, so selecting a slot preserves
    * the calendar date when used inside a date-time picker.
    *
-   * Pure derivation — never written from inside an `effect()`.
+   * A value change keeps every slot's `value` object and replaces only the slots whose
+   * `selected` flag changed.
    */
-  readonly slots = computed<readonly ForTimeSlot<D>[]>(() => {
-    return buildTimeSlots({
-      adapter: this.adapter,
-      selected: this.value(),
-      minTime: this.minTime(),
-      maxTime: this.maxTime(),
-      step: this.step(),
-      granularity: this.granularity(),
-      formatOptions: this.#effectiveFormatOptions(),
-      locale: this.locale() ?? undefined,
-    });
-  });
+  readonly slots: Signal<readonly ForTimeSlot<D>[]> = linkedSignal<
+    { base: readonly BaseTimeSlot<D>[]; selected: number | null },
+    readonly ForTimeSlot<D>[]
+  >({
+    source: () => ({ base: this.#baseSlots(), selected: this.#selectedSlotSeconds() }),
+    computation: ({ base, selected }, previous) =>
+      applySlotSelection(
+        base,
+        selected,
+        previous?.source.base === base ? previous.value : undefined,
+      ),
+  }).asReadonly();
 
   readonly #selectedSlotSeconds = computed(() => {
     const current = this.value();
