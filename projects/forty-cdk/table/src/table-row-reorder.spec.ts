@@ -2300,6 +2300,114 @@ describe('ForTableRowReorder — a keyboard lift keeps unmapped keys from the gr
   });
 });
 
+@Component({
+  imports: [ForTable, ForTableRow, ForTableCell, ForTableRowReorder, ForDraggable],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `
+    <div
+      forTable
+      mode="grid"
+      ariaLabel="Reorderable rows with a pinned row"
+      selectionMode="multiple"
+      [(value)]="selected"
+      (cellActivate)="cellActivations.push($event.row)"
+    >
+      <div role="rowgroup" forTableRowReorder>
+        @for (row of rows; track row) {
+          <div
+            forTableRow
+            forDraggable
+            [value]="row"
+            [dragData]="row"
+            [dragDisabled]="row === 1"
+            (activate)="rowActivations.push($event.value)"
+          >
+            <div forTableCell name="a" [attr.data-testid]="'cell-' + row">{{ row }}</div>
+            <div forTableCell name="b">
+              <input [attr.data-testid]="'input-' + row" aria-label="Note" />
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  `,
+})
+class PinnedRowReorderHost {
+  readonly rows = [0, 1, 2];
+  readonly selected = signal<readonly unknown[]>([]);
+  readonly cellActivations: unknown[] = [];
+  readonly rowActivations: unknown[] = [];
+}
+
+describe('ForTableRowReorder — the lift chord on a row that cannot lift', () => {
+  afterEach(() => {
+    document.querySelectorAll('[aria-live]').forEach((n) => n.remove());
+  });
+
+  function keydown(el: Element, key: string, init: KeyboardEventInit = {}): KeyboardEvent {
+    const event = new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true, ...init });
+    el.dispatchEvent(event);
+    return event;
+  }
+
+  it('Shift+Enter on a dragDisabled row neither lifts nor activates the cell or the row', async () => {
+    const { instance, settle, cell, query } = await render(PinnedRowReorderHost);
+    const pinned = cell(1);
+    pinned.focus();
+    const event = keydown(pinned, 'Enter', { shiftKey: true });
+    await settle();
+
+    expect(event.defaultPrevented).toBe(true);
+    expect(instance.cellActivations).toEqual([]);
+    expect(instance.rowActivations).toEqual([]);
+    expect(query('[forTableRowReorder]').hasAttribute('data-dragging')).toBe(false);
+    expect(document.activeElement).toBe(pinned);
+  });
+
+  it('Ctrl+Space on a dragDisabled row leaves its selection unchanged', async () => {
+    const { instance, settle, cell } = await render(PinnedRowReorderHost);
+    const pinned = cell(1);
+    pinned.focus();
+    keydown(pinned, ' ', { ctrlKey: true });
+    await settle();
+
+    expect(instance.selected()).toEqual([]);
+    expect(pinned.closest('[forTableRow]')!.getAttribute('aria-selected')).toBe('false');
+  });
+
+  it('a plain Enter and Space on the same row still activate and select', async () => {
+    const { instance, settle, cell } = await render(PinnedRowReorderHost);
+    const pinned = cell(1);
+    pinned.focus();
+    keydown(pinned, 'Enter');
+    keydown(pinned, ' ');
+    await settle();
+
+    expect(instance.cellActivations).toEqual([1]);
+    expect(instance.selected()).toEqual([1]);
+  });
+
+  it('Shift+Enter inside an interactive descendant of that row still reaches the descendant', async () => {
+    const { settle, query } = await render(PinnedRowReorderHost);
+    const input = query('[data-testid="input-1"]');
+    const seen: KeyboardEvent[] = [];
+    const record = (event: Event): void => {
+      seen.push(event as KeyboardEvent);
+    };
+    input.addEventListener('keydown', record);
+    try {
+      input.focus();
+      const event = keydown(input, 'Enter', { shiftKey: true });
+      await settle();
+
+      expect(seen).toEqual([event]);
+      expect(event.defaultPrevented).toBe(false);
+    } finally {
+      input.removeEventListener('keydown', record);
+    }
+  });
+});
+
 describe('ForTableRowReorder — native drag', () => {
   it('cancels the native dragstart a press on a row cell raises', async () => {
     const { cell } = await mount();

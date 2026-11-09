@@ -10,7 +10,7 @@ import {
 import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 
-import { dragStartFromPress, renderHost } from '../../src/test-utils';
+import { dragStartFromPress, renderHost, TestStackedLayer } from '../../src/test-utils';
 import { assertRovingRemovalContract } from '../../src/test-utils/contract';
 import {
   FOR_DRAGGABLE_CONTEXT,
@@ -661,6 +661,29 @@ class GridWithHeaderHost {
 })
 class CellEntryGridHost {
   readonly rows = signal([{ id: 0 }, { id: 1 }]);
+}
+
+@Component({
+  imports: [ForTable, ForTableRow, ForTableCell, TestStackedLayer],
+  template: `
+    <div testStackedLayer #around>
+      <table forTable mode="grid">
+        <tbody>
+          <tr forTableRow>
+            <td forTableCell name="a" data-testid="c-a-0">
+              <button type="button" data-testid="btn-0">edit</button>
+            </td>
+            <td forTableCell name="b">0</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div testStackedLayer #above>tip</div>
+  `,
+})
+class CellEntryUnderLayerHost {
+  readonly around = viewChild.required('around', { read: TestStackedLayer });
+  readonly above = viewChild.required('above', { read: TestStackedLayer });
 }
 
 @Component({
@@ -1444,7 +1467,8 @@ const TREEGRID_DATA: readonly TreegridRow[] = [
               }
               {{ row.id }}
             </div>
-            <div forTableCell name="val">v</div>
+            <div forTableCell name="val" [attr.data-testid]="'val-' + row.id">v</div>
+            <div forTableCell name="mod" [attr.data-testid]="'mod-' + row.id">m</div>
           </div>
         }
       </div>
@@ -2827,6 +2851,57 @@ describe('ForTable', () => {
       press(btn, 'ArrowRight');
       await flush();
       expect(otherCell.getAttribute('data-highlighted')).toBe(null);
+    });
+
+    describe('Escape with a dismissible layer stacked over the grid', () => {
+      async function enterCell() {
+        const rendered = renderHost(CellEntryUnderLayerHost);
+        const cell = rendered.el.querySelector<HTMLElement>('[data-testid="c-a-0"]')!;
+        const btn = rendered.el.querySelector<HTMLElement>('[data-testid="btn-0"]')!;
+        cell.focus();
+        press(cell, 'Enter');
+        await rendered.flush();
+        expect(document.activeElement).toBe(btn);
+        return { ...rendered, cell, btn };
+      }
+
+      it('lets a layer above the entered cell take Escape, and focus stays in the cell widget', async () => {
+        const { instance, btn, flush } = await enterCell();
+        instance.above().stack([]);
+
+        const esc = press(btn, 'Escape');
+        await flush();
+        expect(instance.above().escapes()).toBe(1);
+        expect(document.activeElement).toBe(btn);
+        expect(esc.defaultPrevented).toBe(false);
+        instance.above().unstack();
+      });
+
+      it('takes the Escape itself when the only active layer contains the grid, which stays open', async () => {
+        const { instance, btn, cell, flush } = await enterCell();
+        instance.around().stack(['pointer', 'focus']);
+
+        const esc = press(btn, 'Escape');
+        await flush();
+        expect(esc.defaultPrevented).toBe(true);
+        expect(document.activeElement).toBe(cell);
+        expect(instance.around().escapes()).toBe(0);
+        instance.around().unstack();
+      });
+
+      it('gives Escape to the layer above, not to the layer containing the grid', async () => {
+        const { instance, btn, flush } = await enterCell();
+        instance.around().stack(['pointer', 'focus']);
+        instance.above().stack([]);
+
+        press(btn, 'Escape');
+        await flush();
+        expect(instance.above().escapes()).toBe(1);
+        expect(instance.around().escapes()).toBe(0);
+        expect(document.activeElement).toBe(btn);
+        instance.above().unstack();
+        instance.around().unstack();
+      });
     });
 
     it('Enter skips a CSS-hidden widget and enters the next visible one', async () => {
@@ -5689,6 +5764,56 @@ describe('ForTable', () => {
       await flush();
       expect(e2.defaultPrevented).toBe(true);
       expect(instance.expanded()).not.toContain('a');
+    });
+
+    it('ArrowLeft on a non-first cell of an expanded parent moves to the previous cell and leaves it expanded', async () => {
+      const { el, instance, flush } = renderHost(TreegridTableHost);
+      instance.expanded.set(['a']);
+      await flush();
+      const rowA = el.querySelector<HTMLElement>('[data-testid="row-a"]')!;
+      const val = el.querySelector<HTMLElement>('[data-testid="val-a"]')!;
+      val.focus();
+      const e = press(val, 'ArrowLeft');
+      await flush();
+      expect(e.defaultPrevented).toBe(true);
+      expect(instance.expanded()).toEqual(['a']);
+      expect(rowA.getAttribute('aria-expanded')).toBe('true');
+      expect(document.activeElement).toBe(el.querySelector('[data-testid="cell-a"]'));
+    });
+
+    it('ArrowRight on a non-first cell of a collapsed parent moves to the next cell and leaves it collapsed', async () => {
+      const { el, instance, flush } = renderHost(TreegridTableHost);
+      const rowA = el.querySelector<HTMLElement>('[data-testid="row-a"]')!;
+      const val = el.querySelector<HTMLElement>('[data-testid="val-a"]')!;
+      val.focus();
+      const e = press(val, 'ArrowRight');
+      await flush();
+      expect(e.defaultPrevented).toBe(true);
+      expect(instance.expanded()).toEqual([]);
+      expect(rowA.getAttribute('aria-expanded')).toBe('false');
+      expect(document.activeElement).toBe(el.querySelector('[data-testid="mod-a"]'));
+    });
+
+    it('RTL: the mirrored arrows on a non-first parent cell navigate without expanding or collapsing', async () => {
+      const { el, instance, flush } = renderHost(TreegridTableHost);
+      instance.dir.set('rtl');
+      instance.expanded.set(['a']);
+      await flush();
+      const val = el.querySelector<HTMLElement>('[data-testid="val-a"]')!;
+      val.focus();
+      press(val, 'ArrowRight');
+      await flush();
+      expect(instance.expanded()).toEqual(['a']);
+      expect(document.activeElement).toBe(el.querySelector('[data-testid="cell-a"]'));
+
+      instance.expanded.set([]);
+      await flush();
+      const collapsedVal = el.querySelector<HTMLElement>('[data-testid="val-a"]')!;
+      collapsedVal.focus();
+      press(collapsedVal, 'ArrowLeft');
+      await flush();
+      expect(instance.expanded()).toEqual([]);
+      expect(document.activeElement).toBe(el.querySelector('[data-testid="mod-a"]'));
     });
 
     it('ArrowRight on an expandable row with no [value] falls through to cell navigation', async () => {

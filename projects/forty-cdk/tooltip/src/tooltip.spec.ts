@@ -13,6 +13,7 @@ import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 
 import { ForDialog } from 'forty-cdk/dialog';
+import { ForTable, ForTableCell, ForTableRow } from 'forty-cdk/table';
 import { type VetoableNativeEvent } from 'forty-cdk/core';
 import { installObserverPolyfills, pressKey, withReducedMotion } from 'forty-cdk/testing';
 import { afterEachOverlayCleanup, flush, flushPositioning, renderHost } from '../../src/test-utils';
@@ -992,6 +993,77 @@ describe('ForTooltip', () => {
 
       // Second Escape: the dialog is now topmost and closes.
       pressKey(document, 'Escape');
+      await flush(r.fixture);
+      expect(r.instance.dialogOpen()).toBe(false);
+    });
+
+    @Component({
+      imports: [
+        ForDialog,
+        ForTable,
+        ForTableRow,
+        ForTableCell,
+        ForTooltip,
+        ForTooltipTrigger,
+        ForTooltipContent,
+      ],
+      template: `
+        @if (dialogOpen()) {
+          <div forDialog ariaLabel="Outer dialog" (dismiss)="dialogOpen.set(false)">
+            <table forTable mode="grid">
+              <tbody>
+                <tr forTableRow>
+                  <td forTableCell name="a" data-testid="cell">
+                    <span
+                      forTooltip
+                      #tip="forTooltip"
+                      [(open)]="tooltipOpen"
+                      [openDelay]="0"
+                      [closeDelay]="0"
+                    >
+                      <button type="button" forTooltipTrigger data-testid="edit">Edit</button>
+                      @if (tip.open()) {
+                        <div forTooltipContent>Edit the row</div>
+                      }
+                    </span>
+                  </td>
+                  <td forTableCell name="b">b</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        }
+      `,
+    })
+    class TooltipInGridCellHost {
+      readonly dialogOpen = signal(true);
+      readonly tooltipOpen = signal(false);
+    }
+
+    it('in an entered grid cell, Escape closes the tooltip first, then leaves the cell, then closes the dialog', async () => {
+      const r = renderHost(TooltipInGridCellHost);
+      await flush(r.fixture);
+      const cell = document.querySelector<HTMLElement>('[data-testid="cell"]')!;
+      const edit = document.querySelector<HTMLButtonElement>('[data-testid="edit"]')!;
+      cell.focus();
+      pressKey(cell, 'Enter');
+      await flush(r.fixture);
+      expect(document.activeElement).toBe(edit);
+      r.instance.tooltipOpen.set(true);
+      await flush(r.fixture);
+
+      pressKey(edit, 'Escape');
+      await flush(r.fixture);
+      expect(r.instance.tooltipOpen()).toBe(false);
+      expect(document.activeElement).toBe(edit);
+      expect(r.instance.dialogOpen()).toBe(true);
+
+      pressKey(edit, 'Escape');
+      await flush(r.fixture);
+      expect(document.activeElement).toBe(cell);
+      expect(r.instance.dialogOpen()).toBe(true);
+
+      pressKey(cell, 'Escape');
       await flush(r.fixture);
       expect(r.instance.dialogOpen()).toBe(false);
     });

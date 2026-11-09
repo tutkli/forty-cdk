@@ -6,6 +6,7 @@ import {
   Component,
   computed,
   DestroyRef,
+  effect,
   type ElementRef,
   inject,
   input,
@@ -402,6 +403,7 @@ export class ForTableBody<T = unknown> {
     assertInputBound(this.rows, 'table', '<for-table-body>', 'rows');
     this.#registration.registerBodyRowCount(bodyRowCount);
     inject(DestroyRef).onDestroy(() => this.#registration.registerBodyRowCount(null));
+    this.#publishColumnWidths();
 
     afterEveryRender(() => {
       const window = this.#registration.virtualWindow();
@@ -503,14 +505,15 @@ export class ForTableBody<T = unknown> {
   readonly columnReorder = output<TableColumnReorderDescriptor>();
 
   /**
-   * Two-way map of column widths (px), keyed by column `name`. It seeds each
-   * `resizable` column's stamped handle `[width]` — so the `role="separator"`
-   * handle exposes `aria-valuenow` from the first render and the column's grid
-   * track picks up the seeded width immediately — and is updated immutably on
-   * every live width change the handle reports (pointer drag, keyboard resize,
+   * Two-way map of column widths (px), keyed by column `name`. A width in the map
+   * sizes its displayed column's grid track whether or not the column is
+   * `resizable`, and a column whose `resizable` turns off keeps it. It also seeds
+   * each `resizable` column's stamped handle `[width]`, so the `role="separator"`
+   * handle exposes `aria-valuenow` from the first render, and is updated immutably
+   * on every live width change the handle reports (pointer drag, keyboard resize,
    * auto-fit), including the pre-drag revert of a handle destroyed mid-drag. A
    * cancelled gesture on a column the map held no width for removes the key again.
-   * Only `resizable` columns participate; other names are ignored.
+   * Names that match no displayed column are ignored.
    *
    * The map is JSON-serializable, so persisting a user's column layout is
    * `[(columnWidths)]` plus one storage write. Together with `[displayedColumns]`
@@ -776,6 +779,38 @@ export class ForTableBody<T = unknown> {
   /** Resolves the `rowAttrs` hook for a stamped row, or `undefined` when unset. */
   private rowAttrsFor(row: RenderRow<T>): Record<string, string | null> | undefined {
     return this.rowAttrs()?.(row.datum, row.index);
+  }
+
+  /**
+   * Publishes `--for-table-col-<name>-width` for every displayed column the `[(columnWidths)]` map
+   * holds a width for, whether or not the column is `resizable`, and removes the var of a column
+   * that leaves the map or the displayed set, or when the body unmounts. The map owns the width:
+   * a stamped handle only reports changes into it, so turning `resizable` off keeps the track.
+   */
+  #publishColumnWidths(): void {
+    let published = new Set<string>();
+    effect(() => {
+      const widths = this.columnWidths();
+      const next = new Set<string>();
+      for (const { name } of this.orderedColumns()) {
+        const width = widths[name];
+        if (width != null) {
+          this.#registration.setColumnWidth(name, width);
+          next.add(name);
+        }
+      }
+      for (const name of published) {
+        if (!next.has(name)) {
+          this.#registration.removeColumnWidth(name);
+        }
+      }
+      published = next;
+    });
+    inject(DestroyRef).onDestroy(() => {
+      for (const name of published) {
+        this.#registration.removeColumnWidth(name);
+      }
+    });
   }
 
   /**

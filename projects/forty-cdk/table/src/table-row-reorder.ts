@@ -266,13 +266,16 @@ export class ForTableRowReorder {
     if (!lift) {
       return;
     }
-    const rowHost = this.#resolveRow(event.target);
-    if (rowHost === null) {
+    const resolved = this.#resolveRow(event.target);
+    if (resolved === null || (!resolved.liftable && !this.#gridMode())) {
       return;
     }
     event.preventDefault();
+    if (!resolved.liftable) {
+      return;
+    }
     event.stopPropagation();
-    this.#lift(rowHost);
+    this.#lift(resolved.host);
   }
 
   #onLiftedKeydown(event: KeyboardEvent): void {
@@ -298,7 +301,13 @@ export class ForTableRowReorder {
     this.#moveActive(event.key);
   }
 
-  #resolveRow(target: EventTarget | null): HTMLElement | null {
+  /**
+   * The registered row a lift key targets, or `null` when it targets no row or an interactive
+   * descendant of one, which keeps the key. `liftable` is `false` for a row with no draggable or
+   * a disabled one: the grid then consumes the chord without lifting, so it never falls through
+   * to the cell's activation or selection.
+   */
+  #resolveRow(target: EventTarget | null): { host: HTMLElement; liftable: boolean } | null {
     if (!(target instanceof Node)) {
       return null;
     }
@@ -307,10 +316,7 @@ export class ForTableRowReorder {
       return null;
     }
     const draggable = this.#list.items().find((h) => h.host === row.host);
-    if (draggable === undefined || draggable.disabled()) {
-      return null;
-    }
-    return row.host;
+    return { host: row.host, liftable: draggable !== undefined && !draggable.disabled() };
   }
 
   #lift(rowHost: HTMLElement): void {
