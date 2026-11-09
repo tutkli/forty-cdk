@@ -489,10 +489,12 @@ always provided by the consumer via CSS; the library imposes none.
 }
 ```
 
-With no such CSS, `animateReorder` is a graceful no-op: transforms clear instantly and the
-preview is destroyed promptly. Otherwise the preview is destroyed when its `transform` transition
-ends, and never before that transition's `transition-delay` plus duration have elapsed, wherever
-`transform` sits in a multi-property `transition` list.
+With no such CSS, `animateReorder` is a graceful no-op: `data-drag-animating` clears instantly
+and the preview is destroyed promptly. Otherwise a displaced item keeps `data-drag-animating`, and
+the preview stays mounted, until its own `transform` transition ends, and never before that
+transition's `transition-delay` plus duration have elapsed, wherever `transform` sits in a
+multi-property `transition` list. A transition of another property, or one running on a
+descendant, ends neither.
 
 ## Orientation
 

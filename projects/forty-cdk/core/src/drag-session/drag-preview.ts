@@ -1,4 +1,5 @@
 import { stampAmbientDirection } from '../text-direction/text-direction';
+import { awaitTransformTransition } from './transform-transition';
 
 /** A floating clone of the dragged element that follows the pointer. */
 export interface DragPreview {
@@ -10,9 +11,10 @@ export interface DragPreview {
   /** Position the preview's top-left at `(x, y)` in viewport coordinates. */
   moveTo(x: number, y: number): void;
   /**
-   * Transition the preview's top-left to `(x, y)`, then `destroy()` it once the transform
-   * transition ends. Marks the element `data-settling` so a consumer CSS rule keyed on it
-   * governs duration / easing. A fallback timeout covers a `transitionend` that never arrives:
+   * Transition the preview's top-left to `(x, y)`, then `destroy()` it once its own `transform`
+   * transition ends; a transition of another property, or of a descendant, does not end it.
+   * Marks the element `data-settling` so a consumer CSS rule keyed on it governs duration /
+   * easing. A fallback timeout covers a `transitionend` that never arrives:
    * it waits for the delay plus duration of the computed transition on `transform` (or `all`),
    * or of the longest configured transition when none animates `transform`, plus a small safety
    * margin. If no transition is configured, destroys immediately. Caller must pass the browser
@@ -23,72 +25,11 @@ export interface DragPreview {
   destroy(): void;
 }
 
-const SETTLE_TIMEOUT_SAFETY_MS = 50;
-
-function parseTimeMs(segment: string): number {
-  const value = parseFloat(segment);
-  if (!Number.isFinite(value)) {
-    return 0;
-  }
-  return segment.endsWith('ms') ? value : value * 1000;
-}
-
-function splitList(value: string | undefined): string[] {
-  return value ? value.split(',').map((segment) => segment.trim()) : [];
-}
-
-function settleEndMs(style: CSSStyleDeclaration): number {
-  const durations = splitList(style.transitionDuration);
-  if (durations.length === 0) {
-    return 0;
-  }
-  const delays = splitList(style.transitionDelay);
-  const properties = splitList(style.transitionProperty);
-  let transformEnd = 0;
-  let longestEnd = 0;
-  (properties.length > 0 ? properties : ['all']).forEach((property, i) => {
-    if (property === 'none') {
-      return;
-    }
-    const duration = parseTimeMs(durations[i % durations.length] ?? '');
-    const delay = delays.length > 0 ? parseTimeMs(delays[i % delays.length] ?? '') : 0;
-    const end = duration > 0 ? Math.max(0, duration + delay) : 0;
-    longestEnd = Math.max(longestEnd, end);
-    if (property === 'transform' || property === 'all') {
-      transformEnd = end;
-    }
-  });
-  return transformEnd || longestEnd;
-}
-
 function attachSettle(target: HTMLElement, destroyFn: () => void): DragPreview['settle'] {
   return (x: number, y: number, win: Window): void => {
     target.setAttribute('data-settling', '');
     void target.offsetWidth;
-    const endMs = settleEndMs(win.getComputedStyle(target));
-    if (endMs === 0) {
-      target.style.transform = `translate(${x}px, ${y}px)`;
-      destroyFn();
-      return;
-    }
-    let finished = false;
-    const controller = new AbortController();
-    const finish = (): void => {
-      if (finished) {
-        return;
-      }
-      finished = true;
-      controller.abort();
-      destroyFn();
-    };
-    const onEnd = (event: TransitionEvent): void => {
-      if (event.propertyName && event.propertyName !== 'transform') {
-        return;
-      }
-      finish();
-    };
-    target.addEventListener('transitionend', onEnd, { once: true, signal: controller.signal });
-    win.setTimeout(finish, endMs + SETTLE_TIMEOUT_SAFETY_MS);
+    awaitTransformTransition(target, win, destroyFn);
     target.style.transform = `translate(${x}px, ${y}px)`;
   };
 }

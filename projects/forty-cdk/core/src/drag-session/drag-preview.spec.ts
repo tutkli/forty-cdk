@@ -1,4 +1,4 @@
-import { createDragPreview, createTemplatePreview } from './drag-preview';
+import { createDragPreview, createTemplatePreview, type DragPreview } from './drag-preview';
 
 describe('createTemplatePreview', () => {
   afterEach(() => {
@@ -444,5 +444,89 @@ describe('template preview writing direction', () => {
     createTemplatePreview([document.createElement('span')], source, document, () => undefined);
 
     expect(wrapper().hasAttribute('dir')).toBe(false);
+  });
+});
+
+describe('settle waits for the transform transition of the preview itself', () => {
+  afterEach(() => {
+    document.querySelectorAll('[data-for-drag-preview]').forEach((n) => n.remove());
+  });
+
+  function fakeWin(): Window {
+    return {
+      getComputedStyle: () =>
+        ({
+          transitionDuration: '120ms, 300ms',
+          transitionProperty: 'opacity, transform',
+          transitionDelay: '0s, 0s',
+        }) as CSSStyleDeclaration,
+      setTimeout: ((): number => 1) as Window['setTimeout'],
+    } as unknown as Window;
+  }
+
+  function transitionEnd(target: Element, propertyName: string): void {
+    const event = new Event('transitionend', { bubbles: true });
+    Object.defineProperty(event, 'propertyName', { value: propertyName });
+    target.dispatchEvent(event);
+  }
+
+  function templatePreview(child: Element): DragPreview {
+    return createTemplatePreview([child], document.body, document, () => undefined);
+  }
+
+  function clonePreview(child: Element): DragPreview {
+    const source = document.createElement('div');
+    source.appendChild(child);
+    return createDragPreview(source, document);
+  }
+
+  describe.each([
+    { kind: 'template', create: templatePreview },
+    { kind: 'clone', create: clonePreview },
+  ])('$kind preview', ({ create }) => {
+    it('is destroyed on the transform transitionend that follows an opacity transitionend', () => {
+      const preview = create(document.createElement('span'));
+      preview.settle(10, 20, fakeWin());
+      const element = preview.element!;
+
+      transitionEnd(element, 'opacity');
+      expect(element.isConnected, 'an opacity end must not destroy').toBe(true);
+
+      transitionEnd(element, 'transform');
+      expect(
+        element.isConnected,
+        'the transform end after an opacity end was not heard: the opacity end spent the listener',
+      ).toBe(false);
+    });
+
+    it('ignores a transform transitionend bubbling up from a descendant', () => {
+      const preview = create(document.createElement('span'));
+      preview.settle(10, 20, fakeWin());
+      const element = preview.element!;
+      transitionEnd(element.firstElementChild!, 'transform');
+      expect(
+        element.isConnected,
+        'a descendant transform end destroyed the preview before its own transition ended',
+      ).toBe(true);
+    });
+  });
+
+  it('runs onDestroy exactly once on the transform end of the template wrapper', () => {
+    const onDestroy = vi.fn();
+    const preview = createTemplatePreview(
+      [document.createElement('span')],
+      document.body,
+      document,
+      onDestroy,
+    );
+    preview.settle(10, 20, fakeWin());
+    const wrapper = preview.element!;
+
+    transitionEnd(wrapper, 'opacity');
+    expect(onDestroy).toHaveBeenCalledTimes(0);
+
+    transitionEnd(wrapper, 'transform');
+    transitionEnd(wrapper, 'transform');
+    expect(onDestroy).toHaveBeenCalledTimes(1);
   });
 });

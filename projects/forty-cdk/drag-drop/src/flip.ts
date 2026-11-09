@@ -1,3 +1,5 @@
+import { awaitTransformTransition } from 'forty-cdk/core';
+
 /** A minimal positioned rect — only the top-left corner is needed for a FLIP translate. */
 export interface FlipRect {
   readonly left: number;
@@ -26,8 +28,6 @@ export interface PlayFlipConfig {
   readonly win: Window | null;
   /** An element to leave untouched (the dragged host handled by drop-settle). */
   readonly exclude?: HTMLElement | null;
-  /** Safety timeout (ms) after which the animating attribute is force-cleared. */
-  readonly fallbackMs?: number;
 }
 
 /**
@@ -37,14 +37,15 @@ export interface PlayFlipConfig {
  * resting inline transform while `data-drag-animating` is present so a consumer CSS rule keyed on
  * it governs duration / easing. An inline `transform` the element already carries, such as a
  * windowed row's positioning offset, is kept: the inverted translate is prepended to it and the
- * transition ends on it. No-op when `win` is `null`. The library imposes no duration of its own.
+ * transition ends on it. `data-drag-animating` is removed when the element's own `transform`
+ * transition ends, or at once when no transition is configured. No-op when `win` is `null`. The
+ * library imposes no duration of its own.
  */
 export function playFlip(config: PlayFlipConfig): void {
-  const { first, win, exclude, fallbackMs: fallbackMsInput } = config;
+  const { first, win, exclude } = config;
   if (!win) {
     return;
   }
-  const fallbackMs = fallbackMsInput ?? 500;
 
   const workList: { el: HTMLElement; d: FlipDelta; rest: string }[] = [];
   for (const [el, firstRect] of first) {
@@ -78,27 +79,12 @@ export function playFlip(config: PlayFlipConfig): void {
     el.setAttribute(FLIP_ANIMATING_ATTR, '');
     el.style.transition = '';
     el.style.transform = rest;
+  }
 
-    let done = false;
-    const controller = new AbortController();
-    const clear = (): void => {
-      if (done) {
-        return;
-      }
-      done = true;
+  for (const { el } of workList) {
+    awaitTransformTransition(el, win, () => {
       el.removeAttribute(FLIP_ANIMATING_ATTR);
       el.style.transition = '';
-      controller.abort();
-    };
-
-    const onEnd = (event: TransitionEvent): void => {
-      if (event.propertyName && event.propertyName !== 'transform') {
-        return;
-      }
-      clear();
-    };
-
-    el.addEventListener('transitionend', onEnd, { once: true, signal: controller.signal });
-    win.setTimeout(clear, fallbackMs);
+    });
   }
 }

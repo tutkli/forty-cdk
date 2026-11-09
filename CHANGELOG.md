@@ -51,6 +51,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   it with, although the README said it showed only with both scrollbars. A fade keyed off
   `[data-state='hidden']` now covers the corner too; it is still mounted whenever both axes
   overflow.
+- **Drag and drop** — with `[animateReorder]`, `data-drag-animating` and the settling preview now
+  last exactly as long as the item's or the preview's own `transform` transition
+  ([#2748](https://github.com/tutkli/forty-cdk/issues/2748)). The first `transitionend` of any
+  property, or one bubbling up from a descendant, used to end the wait or use it up, so a row with
+  a second transition (a hover background, a fade, an animated child icon) lost the hook mid-flight
+  or kept it past its transition, and `data-drag-animating` was removed after a fixed 500 ms
+  whatever the CSS said. The fallback for a `transitionend` that never arrives is now timed from
+  the computed transition, and with no transition configured `data-drag-animating` clears at once.
 
 ### Changed
 
