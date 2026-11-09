@@ -35,4 +35,27 @@ test.describe('required control in a native form', () => {
 
     await expect(el(page, 'checkbox-submits')).toHaveText('1');
   });
+
+  test('a required control below the fold of an unpositioned scroller leaves the document unscrollable', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'form-required-scroller');
+    await expect(el(page, 'checkbox')).toBeAttached();
+    expect(await page.locator('[data-testid="form"] input[required]').count()).toBe(1);
+
+    const overflow = await page.evaluate(() => ({
+      scrollHeight: document.documentElement.scrollHeight,
+      clientHeight: document.documentElement.clientHeight,
+    }));
+    expect(overflow.scrollHeight).toBe(overflow.clientHeight);
+
+    await expect(el(page, 'checkbox')).not.toBeInViewport();
+    expect(await el(page, 'form').evaluate((form: HTMLFormElement) => form.reportValidity())).toBe(
+      false,
+    );
+
+    await expect(el(page, 'checkbox')).toBeFocused();
+    await expect(el(page, 'checkbox')).toBeInViewport();
+    await expect(el(page, 'submits')).toHaveText('0');
+  });
 });

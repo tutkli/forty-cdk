@@ -258,6 +258,18 @@ describe('injectHiddenInput', () => {
       expect(inputs[0]!.name).toBe('');
     });
 
+    it('positions the validation input as fixed, keeping the visually hidden clip', () => {
+      const { fixture, host, form } = setup();
+      host.required.set(true);
+      fixture.detectChanges();
+
+      const style = validationInputs(form)[0]!.style;
+      expect(style.position).toBe('fixed');
+      expect(style.width).toBe('1px');
+      expect(style.height).toBe('1px');
+      expect(style.overflow).toBe('hidden');
+    });
+
     it('does not block while disabled', () => {
       const { fixture, host, form } = setup();
       host.required.set(true);

@@ -157,6 +157,13 @@ export const routes: Routes = [
       import('./fixtures/form-required.fixture').then((m) => m.FormRequiredFixture),
   },
   {
+    path: 'form-required-scroller',
+    loadComponent: () =>
+      import('./fixtures/form-required-scroller.fixture').then(
+        (m) => m.FormRequiredScrollerFixture,
+      ),
+  },
+  {
     path: 'form-touch-pointer',
     loadComponent: () =>
       import('./fixtures/form-touch-pointer.fixture').then((m) => m.FormTouchPointerFixture),

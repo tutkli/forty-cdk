@@ -11,6 +11,13 @@ import {
 
 import { VISUALLY_HIDDEN_STYLE } from '../visually-hidden/visually-hidden';
 
+/**
+ * The visually hidden clip with `position:fixed`, so the validation input never
+ * extends the scrollable overflow of the document or of an unpositioned
+ * scroller it sits in.
+ */
+const VALIDATION_INPUT_STYLE = `${VISUALLY_HIDDEN_STYLE}position:fixed;`;
+
 export interface HiddenInputConfig<T = string> {
   /**
    * Form name. While empty, no hidden inputs are mounted — set a non-empty
@@ -82,9 +89,10 @@ export interface HiddenInputConfig<T = string> {
  * ordering, move the initial mount into `afterNextRender`.
  *
  * A hidden input is barred from constraint validation, so a `required` control
- * also gets one validation input: a visually hidden, unnamed
+ * also gets one validation input: a visually hidden, fixed-positioned, unnamed
  * `<input required tabindex="-1" aria-hidden="true">` mounted after the host,
- * filled while `values` is non-empty. It submits nothing, and focusing it, which
+ * filled while `values` is non-empty. Being fixed, it never makes the document
+ * or a scroll container taller, whatever the host's ancestors are. It submits nothing, and focusing it, which
  * the browser does when it reports the form, moves focus into the control.
  *
  * Returns a function that writes the current values into the hidden inputs
@@ -123,7 +131,7 @@ export function injectHiddenInput<T = string>(config: HiddenInputConfig<T>): () 
       validation.tabIndex = -1;
       validation.autocomplete = 'off';
       validation.setAttribute('aria-hidden', 'true');
-      validation.setAttribute('style', VISUALLY_HIDDEN_STYLE);
+      validation.setAttribute('style', VALIDATION_INPUT_STYLE);
       validation.addEventListener('focus', focusControl);
       host.nativeElement.insertAdjacentElement('afterend', validation);
     }
