@@ -12,6 +12,7 @@ import {
   type FormControlMountResult,
   type NativeSubmissionHost,
 } from '../../src/test-utils/contract';
+import { ForField, ForFieldDescription, ForFieldError, ForLabel } from 'forty-cdk/field';
 import { ForFieldset } from 'forty-cdk/fieldset';
 import { ForSlider } from './slider';
 import { ForSliderRange } from './slider-range';
@@ -230,10 +231,28 @@ describe('ForSlider', () => {
       return result;
     },
     {
-      flags: ['readonly', 'required', 'invalid', 'pending', 'touched', 'dirty'],
+      flags: ['readonly', 'required', 'pending', 'touched', 'dirty'],
       roleSupportsAriaReadonly: false,
       roleSupportsAriaRequired: false,
     },
+  );
+
+  assertFormControlContract(
+    () => {
+      const r = renderHost(SliderFormControlHost);
+      const result: FormControlMountResult = {
+        control: root(r.el).querySelector<HTMLElement>('[role="slider"]')!,
+        stateHost: root(r.el),
+        flush: r.flush,
+        setFlag: (flag, value) => {
+          if (flag === 'invalid') {
+            r.instance.isInvalid.set(value);
+          }
+        },
+      };
+      return result;
+    },
+    { flags: ['invalid'], label: 'invalid on the role=slider thumb' },
   );
 
   describe('static accessibility', () => {
@@ -1350,6 +1369,94 @@ describe('ForSlider', () => {
 
     // "drag end marks touched" requires laid-out track geometry to drive a
     // pointer drag through `pointerToValue`, so it lives in `slider.e2e.ts`.
+  });
+
+  describe('invalid state', () => {
+    it('reflects aria-invalid on every thumb and keeps it off the role=group root', async () => {
+      const { el, instance, flush } = renderHost(SliderFormControlHost);
+      instance.picked.set([20, 80]);
+      instance.isInvalid.set(true);
+      await flush();
+      const thumbs = Array.from(root(el).querySelectorAll('[role="slider"]'));
+
+      expect(thumbs).toHaveLength(2);
+      expect(thumbs.map((t) => t.getAttribute('aria-invalid'))).toEqual(['true', 'true']);
+      expect(root(el).hasAttribute('aria-invalid')).toBe(false);
+      expect(root(el).getAttribute('data-invalid')).toBe('');
+
+      instance.isInvalid.set(false);
+      await flush();
+      expect(thumbs.map((t) => t.hasAttribute('aria-invalid'))).toEqual([false, false]);
+    });
+  });
+
+  describe('field association', () => {
+    @Component({
+      imports: [...SLIDER_IMPORTS, ForField, ForLabel, ForFieldDescription, ForFieldError],
+      template: `
+        <div forField>
+          <label forLabel data-test-id="label">Volume</label>
+          <div forSlider [(value)]="picked" [invalid]="invalid()" data-test-id="root">
+            <span forSliderTrack>
+              @for (v of picked(); let i = $index; track i) {
+                <span forSliderThumb [index]="i" [attr.data-test-id]="'thumb-' + i"></span>
+              }
+            </span>
+          </div>
+          <p forFieldDescription data-test-id="desc">0 to 100</p>
+          <p forFieldError data-test-id="error">Too loud</p>
+        </div>
+      `,
+    })
+    class FieldHost {
+      readonly picked = signal<readonly number[]>([50]);
+      readonly invalid = signal(false);
+    }
+
+    const label = (host: HTMLElement) => host.querySelector<HTMLElement>('[data-test-id="label"]')!;
+    const desc = (host: HTMLElement) => host.querySelector<HTMLElement>('[data-test-id="desc"]')!;
+    const error = (host: HTMLElement) => host.querySelector<HTMLElement>('[data-test-id="error"]')!;
+    const FIELD_ATTRIBUTES = ['id', 'aria-labelledby', 'aria-describedby', 'aria-errormessage'];
+
+    it('wires the label and description onto the single thumb, not the group', async () => {
+      const { el, flush } = renderHost(FieldHost);
+      await flush();
+      const t = thumb(el, 0);
+
+      expect(t.id).toBeTruthy();
+      expect(label(el).getAttribute('for')).toBe(t.id);
+      expect(t.getAttribute('aria-labelledby')).toBe(label(el).id);
+      expect(t.getAttribute('aria-describedby')).toBe(desc(el).id);
+      expect(FIELD_ATTRIBUTES.filter((name) => root(el).hasAttribute(name))).toEqual([]);
+    });
+
+    it('wires the error and the invalid state onto the single thumb when invalid', async () => {
+      const { el, instance, flush } = renderHost(FieldHost);
+      instance.invalid.set(true);
+      await flush();
+      const t = thumb(el, 0);
+
+      expect(t.getAttribute('aria-invalid')).toBe('true');
+      expect(t.getAttribute('aria-errormessage')).toBe(error(el).id);
+      expect(t.getAttribute('aria-describedby')?.split(' ')).toEqual([desc(el).id, error(el).id]);
+      expect(root(el).hasAttribute('aria-invalid')).toBe(false);
+      expect(FIELD_ATTRIBUTES.filter((name) => root(el).hasAttribute(name))).toEqual([]);
+    });
+
+    it('keeps the group as the field target of a multi-thumb slider', async () => {
+      const { el, instance, flush } = renderHost(FieldHost);
+      await flush();
+      instance.picked.set([20, 80]);
+      await flush();
+
+      expect(root(el).id).toBeTruthy();
+      expect(label(el).getAttribute('for')).toBe(root(el).id);
+      expect(root(el).getAttribute('aria-labelledby')).toBe(label(el).id);
+      expect(root(el).getAttribute('aria-describedby')).toBe(desc(el).id);
+      for (const t of [thumb(el, 0), thumb(el, 1)]) {
+        expect(FIELD_ATTRIBUTES.filter((name) => t.hasAttribute(name))).toEqual([]);
+      }
+    });
   });
 
   describe('focus()', () => {

@@ -59,6 +59,7 @@ import {
     '[attr.aria-label]': 'resolvedAriaLabel()',
     '[attr.aria-disabled]': 'ctx.effectiveDisabled() ? "true" : null',
     '[attr.aria-readonly]': 'ctx.readonly() ? "true" : null',
+    '[attr.aria-invalid]': 'ctx.invalid() ? "true" : null',
     '[attr.data-orientation]': 'ctx.orientation()',
     '[attr.data-disabled]': 'ctx.effectiveDisabled() ? "" : null',
     '[attr.data-readonly]': 'ctx.readonly() ? "" : null',

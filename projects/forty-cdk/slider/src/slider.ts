@@ -71,7 +71,14 @@ import { FOR_SLIDER_DEFAULTS } from 'forty-cdk/defaults';
  * A read-only slider is reflected on this `role="group"` root as the boolean
  * `data-readonly` styling hook only. `aria-readonly` is not a supported
  * property of `role="group"`, so the ARIA announcement lives on each
- * `[forSliderThumb]` — `role="slider"` does support it.
+ * `[forSliderThumb]` — `role="slider"` does support it. An invalid slider
+ * follows the same split: the root reflects `data-invalid`, and every thumb
+ * carries `aria-invalid="true"`.
+ *
+ * Inside a `[forField]`, a single-thumb slider hands the field its thumb, so
+ * the label, description and error wire onto the `role="slider"` element.
+ * With two or more thumbs the field targets this `role="group"` root, since
+ * one label cannot name both ends of a range.
  *
  * A required slider carries the boolean `data-required` hook on this same
  * root. `aria-required` is supported on neither `role="group"` nor
@@ -83,7 +90,6 @@ import { FOR_SLIDER_DEFAULTS } from 'forty-cdk/defaults';
   host: {
     role: 'group',
     '[attr.aria-disabled]': 'effectiveDisabled() ? "true" : null',
-    '[attr.aria-invalid]': 'invalid() ? "true" : null',
     '[attr.aria-busy]': 'pending() ? "true" : null',
     '[attr.data-orientation]': 'orientation()',
     '[attr.data-disabled]': 'effectiveDisabled() ? "" : null',
@@ -548,6 +554,14 @@ export class ForSlider
       return;
     }
     this.#thumbs.items()[0]?.host.focus(options);
+  }
+
+  protected override fieldLabelledElement(): HTMLElement | null {
+    const thumbs = this.#thumbs.items();
+    if (thumbs.length === 0) {
+      return null;
+    }
+    return thumbs.length === 1 ? thumbs[0]!.host : this.#host.nativeElement;
   }
 
   registerThumb(handle: ForSliderThumbHandle): void {
