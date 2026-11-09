@@ -1,4 +1,5 @@
 import {
+  afterNextRender,
   computed,
   DestroyRef,
   DOCUMENT,
@@ -14,7 +15,10 @@ import {
   injectScrollAreaContext,
   type ForScrollAreaContext,
   type ForScrollbarOrientation,
+  type ScrollAreaContext,
+  type ScrollAreaScrollbarHandle,
 } from './scroll-area-context';
+import { axisOverflows, resolveScrollbarState } from './scrollbar-state';
 import { jumpPosition, pagePosition, trackPressDirection } from './track-press';
 
 const MIN_THUMB_SIZE = 8;
@@ -51,7 +55,8 @@ export class ForScrollAreaScrollbar {
    * Axis this scrollbar controls.
    */
   readonly orientation = input.required<ForScrollbarOrientation>();
-  readonly ctx: ForScrollAreaContext = injectScrollAreaContext('ForScrollAreaScrollbar');
+  readonly #registration: ScrollAreaContext = injectScrollAreaContext('ForScrollAreaScrollbar');
+  readonly ctx: ForScrollAreaContext = this.#registration;
   readonly host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
   readonly #document = inject(DOCUMENT);
 
@@ -177,8 +182,18 @@ export class ForScrollAreaScrollbar {
   #repeatTimer: ReturnType<typeof setTimeout> | null = null;
   #gesture: AbortController | null = null;
 
+  readonly #pinned = computed<boolean>(() => this.dragging() || this.pressing());
+
   constructor() {
-    inject(DestroyRef).onDestroy(() => this.#endPress());
+    const handle: ScrollAreaScrollbarHandle = {
+      orientation: this.orientation,
+      pinned: this.#pinned,
+    };
+    afterNextRender(() => this.#registration.registerScrollbar(handle));
+    inject(DestroyRef).onDestroy(() => {
+      this.#registration.unregisterScrollbar(handle);
+      this.#endPress();
+    });
   }
 
   /**
@@ -187,7 +202,7 @@ export class ForScrollAreaScrollbar {
    * or a consumer `display:none` on `data-state="hidden"`). Called by the thumb
    * on pointer-down / drag-end.
    */
-  setDragging(dragging: boolean): void {
+  private setDragging(dragging: boolean): void {
     this.#dragging.set(dragging);
   }
 
@@ -196,7 +211,7 @@ export class ForScrollAreaScrollbar {
    * originated on the thumb (the thumb owns that gesture) from a bare-track
    * press. Called by `[forScrollAreaThumb]` on construction.
    */
-  registerThumb(el: HTMLElement): void {
+  private registerThumb(el: HTMLElement): void {
     this.#thumb.set(el);
   }
 
@@ -204,18 +219,13 @@ export class ForScrollAreaScrollbar {
    * Clears the registered thumb, guarded on identity so a late teardown of an
    * old thumb doesn't blow away a freshly registered replacement.
    */
-  unregisterThumb(el: HTMLElement): void {
+  private unregisterThumb(el: HTMLElement): void {
     if (this.#thumb() === el) {
       this.#thumb.set(null);
     }
   }
 
-  readonly hasOverflow = computed<boolean>(() => {
-    if (this.orientation() === 'horizontal') {
-      return this.ctx.scrollWidth() - this.ctx.clientWidth() > 1;
-    }
-    return this.ctx.scrollHeight() - this.ctx.clientHeight() > 1;
-  });
+  readonly hasOverflow = computed<boolean>(() => axisOverflows(this.ctx, this.orientation()));
 
   /**
    * Whether the track is rendered at all. `'always'` keeps it painted
@@ -238,21 +248,9 @@ export class ForScrollAreaScrollbar {
    * signals. A non-overflowing axis is `'hidden'` for every mode except
    * `'always'`.
    */
-  readonly state = computed<'visible' | 'hidden'>(() => {
-    if (this.dragging() || this.pressing()) return 'visible';
-    switch (this.ctx.type()) {
-      case 'always':
-        return 'visible';
-      case 'auto':
-        return this.hasOverflow() ? 'visible' : 'hidden';
-      case 'hover':
-        return this.hasOverflow() && (this.ctx.hovering() || this.ctx.scrolling())
-          ? 'visible'
-          : 'hidden';
-      case 'scroll':
-        return this.hasOverflow() && this.ctx.scrolling() ? 'visible' : 'hidden';
-    }
-  });
+  readonly state = computed<'visible' | 'hidden'>(() =>
+    resolveScrollbarState(this.ctx, this.orientation(), this.#pinned()),
+  );
 
   /**
    * Scrolls the viewport so this axis rests at `position`, given in the

@@ -10,6 +10,8 @@ import {
   type ForScrollAreaContext,
   type ForScrollAreaTrackPress,
   type ForScrollAreaType,
+  type ForScrollbarOrientation,
+  type ScrollAreaScrollbarHandle,
 } from './scroll-area-context';
 import { FOR_SCROLL_AREA_DEFAULTS } from 'forty-cdk/defaults';
 
@@ -194,6 +196,20 @@ export class ForScrollArea implements ForScrollAreaContext {
       },
       Math.max(0, this.scrollHideDelay()),
     );
+  }
+
+  readonly #scrollbars = signal<readonly ScrollAreaScrollbarHandle[]>([]);
+
+  private registerScrollbar(handle: ScrollAreaScrollbarHandle): void {
+    this.#scrollbars.update((list) => [...list, handle]);
+  }
+
+  private unregisterScrollbar(handle: ScrollAreaScrollbarHandle): void {
+    this.#scrollbars.update((list) => list.filter((h) => h !== handle));
+  }
+
+  private scrollbarPinned(orientation: ForScrollbarOrientation): boolean {
+    return this.#scrollbars().some((h) => h.pinned() && h.orientation() === orientation);
   }
 
   private onPointerEnter(): void {
