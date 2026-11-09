@@ -1,9 +1,11 @@
 import {
+  afterNextRender,
   booleanAttribute,
   computed,
   Directive,
   effect,
   inject,
+  Injector,
   input,
   model,
   output,
@@ -108,6 +110,7 @@ export class ForCombobox<T = string>
   implements FormValueControl<readonly T[]>, ForComboboxContext<T>
 {
   readonly #defaults = inject(FOR_COMBOBOX_DEFAULTS);
+  readonly #injector = inject(Injector);
   readonly #items = new Collection<ForComboboxOptionHandle<T>>();
   readonly #chips = new Collection<ForComboboxChipHandle<T>>();
   readonly #actions = new Collection<ForComboboxActionHandle>();
@@ -945,6 +948,29 @@ export class ForCombobox<T = string>
     disabled: boolean;
   }[] {
     return this.#completionEntriesMemo();
+  }
+
+  /**
+   * Discards typed text and redisplays the value: the selected label in the
+   * editable single-select anatomy with `commitOnSelect`, an empty input
+   * otherwise. Implements `FormUiControl.reset`, so a Signal Forms reset clears
+   * the input even when the value it writes is the one already held. The query
+   * follows on the next render, once the reset value has reached `value`.
+   */
+  override reset(): void {
+    this.#activeId.set(null);
+    this.#virtualization()?.resume.clear();
+    afterNextRender(
+      () => {
+        const label =
+          this.trigger() === null && !this.multiple() && this.commitOnSelect()
+            ? (this.selected()[0]?.label ?? '')
+            : '';
+        this.query.set(label);
+        this.#syncInputValue(label);
+      },
+      { injector: this.#injector },
+    );
   }
 
   clear(clearQuery: boolean = true): void {

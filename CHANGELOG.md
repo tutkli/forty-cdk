@@ -17,6 +17,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `<html>` down to the lowest required control, and scrolling the document moved the whole shell,
   header included. The input is now `position: fixed`, which never adds to a scrollable overflow.
   Reporting the form still focuses the control and scrolls it into view.
+- **Combobox** — a Signal Forms reset (`form().reset()`, or `reset()` on the bound field) no
+  longer leaves the picked label or typed text in the input
+  ([#2742](https://github.com/tutkli/forty-cdk/issues/2742)). The reset reached `value` only, so a
+  pristine, untouched field could read "Spain" while holding nothing. `[forCombobox]` now
+  implements `FormUiControl.reset`: the editable single-select input shows the label of the
+  selection the reset leaves, and is empty when there is none, in multi mode, in the picker anatomy
+  and without `commitOnSelect`.
 
 ## [0.42.0] - 2026-11-08
 

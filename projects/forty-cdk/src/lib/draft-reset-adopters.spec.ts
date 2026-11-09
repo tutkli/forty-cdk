@@ -5,6 +5,8 @@ const FORM_VALUE_CONTROL = /\bexport\s+class\s+\w+[^{]*\bimplements\b[^{]*\bForm
 const DRAFT_HOLDER =
   /\bnew\s+(?:DateFieldEngine|TimeFieldEngine|RangeFieldComposer)\b|\bprovide:\s*FOR_(?:DATE|TIME)_FIELD_HOST\b/;
 
+const DISPLAY_MODEL = /\breadonly\s+(?!value\b)(\w+)\s*=\s*model<string\b/;
+
 const RESET_IMPLEMENTATION = /\boverride\s+reset\(\):\s*void\s*\{/;
 
 const TIME_SOURCE_QUERY = /\b(\w+)\s*=\s*contentChild\(\s*FOR_TIME_VALUE_SOURCE\b/;
@@ -14,6 +16,21 @@ function draftHoldingControls(): string[] {
     .filter(([, code]) => FORM_VALUE_CONTROL.test(code) && DRAFT_HOLDER.test(code))
     .map(([path]) => path)
     .sort();
+}
+
+interface DisplayModelHolder {
+  readonly path: string;
+  readonly code: string;
+  readonly model: string;
+}
+
+function displayModelHolders(): DisplayModelHolder[] {
+  return [...LIBRARY_CODE]
+    .flatMap(([path, code]) => {
+      const model = FORM_VALUE_CONTROL.test(code) ? DISPLAY_MODEL.exec(code)?.[1] : undefined;
+      return model ? [{ path, code, model }] : [];
+    })
+    .sort((a, b) => a.path.localeCompare(b.path));
 }
 
 function balancedBody(source: string, open: number): string {
@@ -78,6 +95,22 @@ describe('draft reset adoption (meta-guard, #2232)', () => {
     const missing = draftHoldingControls().filter(
       (path) => !RESET_IMPLEMENTATION.test(LIBRARY_CODE.get(path)!),
     );
+    expect(missing).toEqual([]);
+  });
+});
+
+describe('display model reset adoption (meta-guard, #2742)', () => {
+  it('finds every form value control that keeps a text model beside its value', () => {
+    expect(displayModelHolders().map(({ path }) => path)).toContain('combobox/src/combobox.ts');
+  });
+
+  it('rewrites that text model from FormUiControl.reset on every one of them', () => {
+    const missing = displayModelHolders()
+      .filter(({ code, model }) => {
+        const reset = bodyAfter(code, RESET_IMPLEMENTATION);
+        return reset === null || !new RegExp(`\\bthis\\.${model}\\.set\\(`).test(reset);
+      })
+      .map(({ path }) => path);
     expect(missing).toEqual([]);
   });
 });
