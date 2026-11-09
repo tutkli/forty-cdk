@@ -69,16 +69,16 @@ export class MeterDefaultExample {
 
 ### `ForMeter`
 
-| Property        | Type                                       | Description                                                                                                                                          |
-| --------------- | ------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `value`         | `input<number>`                            | Current measurement (one-way; display-only). Clamped to `[min, max]` for ARIA / data-\* output; the input retains the raw value.<br>**Default:** `0` |
-| `min`           | `input<number>`                            | Lower bound.<br>**Default:** `0`                                                                                                                     |
-| `max`           | `input<number>`                            | Upper bound.<br>**Default:** `100`                                                                                                                   |
-| `low`           | `input<number \| null>`                    | Lower boundary of the "comfortable" range.<br>**Default:** `null` (= `min`)                                                                          |
-| `high`          | `input<number \| null>`                    | Upper boundary of the "comfortable" range.<br>**Default:** `null` (= `max`)                                                                          |
-| `optimum`       | `input<number \| null>`                    | Ideal point. Drives the quality classification.<br>**Default:** `null` (= midpoint)                                                                  |
-| `getValueLabel` | `input<((v, min, max) => string) \| null>` | Override for `aria-valuetext`.<br>**Default:** —                                                                                                     |
-| `ariaLabel`     | `input<string \| null>`                    | Accessible name for the meter. Prefer a visible label referenced via `aria-labelledby` when one exists.<br>**Default:** `null`                       |
+| Property        | Type                                       | Description                                                                                                                                                                                                                                 |
+| --------------- | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `value`         | `input<number>`                            | Current measurement (one-way; display-only). Clamped to `[min, max]` for ARIA / data-\* output; the input retains the raw value. A non-finite value (`NaN`, `±Infinity`) reads as `0` before clamping, as on `<meter>`.<br>**Default:** `0` |
+| `min`           | `input<number>`                            | Lower bound. A non-finite `min` falls back to `0`.<br>**Default:** `0`                                                                                                                                                                      |
+| `max`           | `input<number>`                            | Upper bound. A non-finite `max` falls back to `100`.<br>**Default:** `100`                                                                                                                                                                  |
+| `low`           | `input<number \| null>`                    | Lower boundary of the "comfortable" range.<br>**Default:** `null` (= `min`)                                                                                                                                                                 |
+| `high`          | `input<number \| null>`                    | Upper boundary of the "comfortable" range.<br>**Default:** `null` (= `max`)                                                                                                                                                                 |
+| `optimum`       | `input<number \| null>`                    | Ideal point. Drives the quality classification.<br>**Default:** `null` (= midpoint)                                                                                                                                                         |
+| `getValueLabel` | `input<((v, min, max) => string) \| null>` | Override for `aria-valuetext`.<br>**Default:** —                                                                                                                                                                                            |
+| `ariaLabel`     | `input<string \| null>`                    | Accessible name for the meter. Prefer a visible label referenced via `aria-labelledby` when one exists.<br>**Default:** `null`                                                                                                              |
 
 | Data attribute    | Values                                         |
 | ----------------- | ---------------------------------------------- |
@@ -102,7 +102,7 @@ Visual fill paired with `[forMeter]`. Mirrors the root's `data-*` reflections an
 
 ## Quality algorithm
 
-The `data-quality` reflection follows the [HTML `<meter>` algorithm](https://html.spec.whatwg.org/multipage/form-elements.html#the-meter-element). Before the table below applies, the bounds are normalized in the same order: `low` (default `min`) is clamped into `[min, max]`, `high` (default `max`) is raised to `low` when below it and capped at `max`, and `optimum` (default the midpoint) is clamped into `[min, max]`. So `[low]="60" [high]="40"` resolves to a single boundary at `60`, not `40`.
+The `data-quality` reflection follows the [HTML `<meter>` algorithm](https://html.spec.whatwg.org/multipage/form-elements.html#the-meter-element). Before the table below applies, a non-finite `low`, `high` or `optimum` is treated as unset, and the bounds are normalized in the same order: `low` (default `min`) is clamped into `[min, max]`, `high` (default `max`) is raised to `low` when below it and capped at `max`, and `optimum` (default the midpoint) is clamped into `[min, max]`. So `[low]="60" [high]="40"` resolves to a single boundary at `60`, not `40`.
 
 | Optimum sits in | `value` in            | Quality          |
 | --------------- | --------------------- | ---------------- |

@@ -65,7 +65,9 @@ export class ForProgress implements ForProgressContext {
    * Current progress in `[0, max]`, or `null` for the indeterminate state.
    * One-way `[value]` input: a progress bar is display-only and reports no
    * interactive value, so it exposes no two-way binding. Values outside the
-   * range are clamped for ARIA; the input retains the raw value.
+   * range are clamped for ARIA; the input retains the raw value. A non-finite
+   * value (`NaN`, `±Infinity`) is reflected as indeterminate, as the HTML
+   * `<progress>` element does.
    */
   readonly value = input<number | null>(null);
 
@@ -113,7 +115,7 @@ export class ForProgress implements ForProgressContext {
 
   readonly clampedValue = computed<number | null>(() => {
     const v = this.value();
-    if (v === null) {
+    if (v === null || !Number.isFinite(v)) {
       return null;
     }
     return clamp(v, 0, this.effectiveMax());
