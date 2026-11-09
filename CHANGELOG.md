@@ -44,6 +44,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   teardown called `ForToastManager.dismissAll()`, so pasting one into a routed page dismissed the
   app's other toasts, an Undo toast among them, on every navigation away. Each example now keeps
   the refs `show()` returns and dismisses only those.
+- **Scroll area** — `[forScrollAreaCorner]` now reflects `data-state` (`visible` / `hidden`) and
+  reads `visible` only while both scrollbars do
+  ([#2746](https://github.com/tutkli/forty-cdk/issues/2746)). Under `type="hover"` and
+  `type="scroll"` the corner stayed painted while both bars faded and carried no attribute to fade
+  it with, although the README said it showed only with both scrollbars. A fade keyed off
+  `[data-state='hidden']` now covers the corner too; it is still mounted whenever both axes
+  overflow.
+
+### Changed
+
+- **Scroll area — BREAKING.** `setDragging`, `registerThumb` and `unregisterThumb` are no longer
+  public on `ForScrollAreaScrollbar`, and `ForScrollAreaThumb.scrollbar` is no longer public
+  ([#2746](https://github.com/tutkli/forty-cdk/issues/2746)). They were the wiring between the thumb
+  and its track: calling `setDragging(true)` through `#bar="forScrollAreaScrollbar"` pinned the
+  track visible until something reset it. The geometry signals and the `scrollToTrackPoint` /
+  `pageBy` / `scrollToPosition` commands a hand-rolled track gesture uses stay public. **Migrate**
+  by reaching the scrollbar through its own template reference instead of the thumb's.
 
 ## [0.42.0] - 2026-11-08
 

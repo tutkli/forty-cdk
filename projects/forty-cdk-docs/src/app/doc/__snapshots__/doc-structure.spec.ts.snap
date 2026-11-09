@@ -6559,6 +6559,14 @@ exports[`document structure > projects/forty-cdk/scroll-area/README.md declares 
         "role": "plain",
         "rows": 2,
       },
+      {
+        "columns": [
+          "Data attribute",
+          "Values",
+        ],
+        "role": "plain",
+        "rows": 1,
+      },
     ],
     "title": "API",
   },
