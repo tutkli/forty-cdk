@@ -9,6 +9,7 @@ import {
   computed,
   inject,
   input,
+  linkedSignal,
   output,
   runInInjectionContext,
   signal,
@@ -39,6 +40,18 @@ const DEFAULT_ESTIMATE_SIZE = 50;
 
 /** Default number of items rendered beyond the visible window on each side. */
 const DEFAULT_OVERSCAN = 5;
+
+/** The row the viewport keeps mounted while it holds focus. */
+interface FocusedRow {
+  readonly key: string | number;
+  readonly index: number;
+}
+
+/** What the focused row's index is re-resolved against. */
+interface FocusSource {
+  readonly count: number;
+  readonly keys: unknown;
+}
 
 /**
  * Scroll viewport for the ergonomic virtualization layer. Decorate a fixed-size
@@ -139,22 +152,41 @@ export class ForVirtualViewport implements ForVirtualViewportContext, OnInit {
   readonly #reorderingIndex = signal<number | null>(null);
 
   /**
+   * The key of the row holding focus and the index it was last resolved at, or `null`. Written
+   * by the row's own `focusin` / `focusout`; reset when the data or the count changes, to the
+   * key's new index or to `null` once the key is gone.
+   */
+  readonly #focused = linkedSignal<FocusSource, FocusedRow | null>({
+    source: () => ({ count: this.count(), keys: this.#keyVersion() }),
+    computation: (source, previous) =>
+      previous?.value ? this.#resolveFocused(previous.value, source.count) : null,
+  });
+
+  /**
    * The items in the currently visible window plus overscan, augmented to always
-   * include the row pinned via {@link setReorderingIndex} even when it is scrolled
-   * out of view, so a drag-reorder's lifted row is never recycled out from under
-   * the gesture. Pinning never widens {@link range} (sourced from the underlying
-   * virtualizer), so it leaves infinite-scroll untouched.
+   * include the row pinned via {@link setReorderingIndex} and the row holding focus, even
+   * when either is scrolled out of view, so a drag-reorder's lifted row and a focused row are
+   * never recycled out from under the user. Neither widens {@link range} (sourced from the
+   * underlying virtualizer), so both leave infinite-scroll untouched.
    */
   readonly virtualItems: Signal<readonly VirtualItem[]> = computed(() => {
     const items = this.#virtualizer()?.virtualItems() ?? [];
-    const retain = this.#reorderingIndex();
-    if (retain === null || retain < 0 || retain >= this.count()) {
+    const count = this.count();
+    const retained = new Set<number>();
+    for (const index of [this.#reorderingIndex(), this.#focused()?.index ?? null]) {
+      if (index !== null && index >= 0 && index < count) {
+        retained.add(index);
+      }
+    }
+    for (const item of items) {
+      retained.delete(item.index);
+    }
+    if (retained.size === 0) {
       return items;
     }
-    if (items.some((item) => item.index === retain)) {
-      return items;
-    }
-    return [...items, this.#retainedItem(retain)].sort((a, b) => a.index - b.index);
+    return [...items, ...[...retained].map((index) => this.#retainedItem(index))].sort(
+      (a, b) => a.index - b.index,
+    );
   });
 
   /** Total scroll size of all items, in pixels (drives the sizer). */
@@ -253,6 +285,28 @@ export class ForVirtualViewport implements ForVirtualViewportContext, OnInit {
     if (untracked(this.#data) === data) {
       this.#data.set(null);
     }
+  }
+
+  private retainFocusedRow(key: string | number, index: number): void {
+    this.#focused.set({ key, index });
+  }
+
+  private releaseFocusedRow(key: string | number): void {
+    if (untracked(this.#focused)?.key === key) {
+      this.#focused.set(null);
+    }
+  }
+
+  #resolveFocused(row: FocusedRow, count: number): FocusedRow | null {
+    if (row.index < count && this.#keyOf(row.index) === row.key) {
+      return row;
+    }
+    for (let index = 0; index < count; index++) {
+      if (this.#keyOf(index) === row.key) {
+        return { key: row.key, index };
+      }
+    }
+    return null;
   }
 
   #retainedItem(index: number): VirtualItem {

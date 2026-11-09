@@ -1642,6 +1642,65 @@ describe('ForVirtualReorder — idle Home / End reach the dataset ends (#2118)',
     expect(document.activeElement).toBe(row);
   });
 
+  it('PageDown moves focus one window down the dataset and keeps it off <body>', async () => {
+    const harness = await mount();
+    const row = harness.query('[data-testid="row-3"]')!;
+    row.focus();
+    const page = harness.indices().length;
+
+    const event = dispatchKey(row, 'PageDown');
+    await settle(harness);
+
+    expect(event.defaultPrevented).toBe(true);
+    expect((document.activeElement as HTMLElement).getAttribute('data-index')).toBe(
+      String(3 + page),
+    );
+    expect(harness.instance.events()).toBe(0);
+  });
+
+  it('PageUp moves focus one window up the dataset', async () => {
+    const harness = await mount();
+    const row = await focusMiddleRow(harness);
+    const from = Number(row.getAttribute('data-index'));
+    const page = harness.indices().length;
+
+    const event = dispatchKey(row, 'PageUp');
+    await settle(harness);
+
+    expect(event.defaultPrevented).toBe(true);
+    expect((document.activeElement as HTMLElement).getAttribute('data-index')).toBe(
+      String(from - page),
+    );
+  });
+
+  it('PageDown and PageUp stop at the dataset ends', async () => {
+    const harness = await mount();
+    const row = harness.query('[data-testid="row-2"]')!;
+    row.focus();
+
+    dispatchKey(row, 'PageUp');
+    await settle(harness);
+    expect((document.activeElement as HTMLElement).getAttribute('data-index')).toBe('0');
+
+    dispatchKey(document.activeElement as HTMLElement, 'End');
+    await settle(harness);
+    dispatchKey(document.activeElement as HTMLElement, 'PageDown');
+    await settle(harness);
+    expect((document.activeElement as HTMLElement).getAttribute('data-index')).toBe('999');
+  });
+
+  it('leaves PageUp / PageDown to the rows of a disabled list', async () => {
+    const harness = await render(DisabledHost);
+    const row = harness.query('[data-testid="row-2"]')!;
+    row.focus();
+
+    const event = dispatchKey(row, 'PageDown');
+    await settle(harness);
+
+    expect(event.defaultPrevented).toBe(false);
+    expect(document.activeElement).toBe(row);
+  });
+
   it('a lifted End still moves the target, not the focus', async () => {
     const harness = await mount();
     const row = harness.query('[data-testid="row-2"]')!;

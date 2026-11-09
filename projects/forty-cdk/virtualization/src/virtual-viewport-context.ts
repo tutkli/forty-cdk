@@ -31,7 +31,8 @@ export interface ForVirtualViewportContext {
  * The viewport's internal coordination surface: everything
  * {@link ForVirtualViewportContext} publishes plus the data channel
  * `*forVirtualFor` hands its array through, so a same-length rewrite of that
- * array recomputes the item keys.
+ * array recomputes the item keys, and the focus channel its rows report through,
+ * so the row holding focus stays in `virtualItems()` after it leaves the window.
  *
  * Never exported from `public-api.ts`. `ForVirtualViewport` declares these
  * members TS-`private`, which keeps them out of the emitted `.d.ts` while
@@ -40,6 +41,10 @@ export interface ForVirtualViewportContext {
 export interface VirtualViewportContext extends ForVirtualViewportContext {
   registerData(data: Signal<readonly unknown[] | Unset>): void;
   unregisterData(data: Signal<readonly unknown[] | Unset>): void;
+  /** Keep the row with `key`, last rendered at `index`, mounted while it holds focus. */
+  retainFocusedRow(key: string | number, index: number): void;
+  /** Stop keeping the row with `key` mounted; a no-op when another row is kept. */
+  releaseFocusedRow(key: string | number): void;
 }
 
 /**

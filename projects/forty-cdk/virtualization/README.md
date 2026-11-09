@@ -482,8 +482,10 @@ The scroll container needs a Tab stop when the rows hold nothing focusable. Safa
 not make a scroll container focusable on its own, so without `tabindex="0"` a keyboard
 user there cannot scroll the list at all. Pair the Tab stop with a `:focus-visible` style.
 
-A keyed row (`[getItemKey]` on `[forVirtualViewport]`) keeps its focus when a reorder moves
-it: the directive never takes a focused row's node out of the document.
+The directive never takes a focused row's node out of the document. A row that holds focus
+stays mounted when a scroll or a reorder takes it out of the rendered window, and is recycled
+once focus moves out of it. A keyed row (`[getItemKey]` on `[forVirtualViewport]`) is kept
+with its item, so it follows the item a reorder moves; an index-keyed row is kept at its index.
 
 ## Wrapping in a design system
 

@@ -75,7 +75,7 @@ A row's `[forDragPlaceholder]` renders in the lifted row's own slot for the whol
 | `Space` / `Enter`       | Lift the focused row, or drop the lifted row. Focus follows the dropped row to its new index            |
 | `ArrowUp` / `ArrowDown` | Step the target one position                                                                            |
 | `Home` / `End`          | Focus the first / last item of the dataset, scrolling it into view. While lifted, move the target there |
-| `PageUp` / `PageDown`   | Step the target by one window                                                                           |
+| `PageUp` / `PageDown`   | Move focus by one window, scrolling the row into view. While lifted, step the target by one window      |
 | `Escape` / `Tab`        | Cancel the gesture, scroll the origin back into view and keep focus on it                               |
 | Any other key           | Ignored while a row is lifted. Ctrl / Cmd / Alt chords and function keys keep their browser meaning     |
 

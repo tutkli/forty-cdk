@@ -433,3 +433,52 @@ test.describe('Virtualized list reorder: focus follows the keyboard (#2118)', ()
     await expect(el(page, 'last-reorder')).toHaveText('none');
   });
 });
+
+test.describe('Virtualized list reorder: a focused row survives leaving the window (#2736)', () => {
+  test.beforeEach(async ({ page }) => {
+    await gotoFixture(page, 'virtual-reorder');
+  });
+
+  test('a focused row stays mounted and focused when the list scrolls past it', async ({
+    page,
+  }) => {
+    const row = el(page, 'row-3');
+    await row.focus();
+    await expect(row).toBeFocused();
+
+    await el(page, 'root').evaluate((node) => {
+      node.scrollTop = 200 * 44;
+    });
+    await expect.poll(async () => (await renderedIndices(page)).at(-1) ?? -1).toBeGreaterThan(200);
+
+    await expect(row).toBeFocused();
+    expect(await renderedIndices(page)).toContain(3);
+  });
+
+  test('idle PageDown moves focus one window down and never drops it to <body>', async ({
+    page,
+  }) => {
+    await el(page, 'row-3').focus();
+    let previous = 3;
+
+    for (let press = 0; press < 3; press++) {
+      await page.keyboard.press('PageDown');
+      await expect
+        .poll(() =>
+          page.evaluate(() => Number(document.activeElement?.getAttribute('data-index') ?? -1)),
+        )
+        .toBeGreaterThan(previous);
+      previous = await page.evaluate(() =>
+        Number(document.activeElement?.getAttribute('data-index') ?? -1),
+      );
+    }
+
+    await page.keyboard.press('PageUp');
+    await expect
+      .poll(() =>
+        page.evaluate(() => Number(document.activeElement?.getAttribute('data-index') ?? -1)),
+      )
+      .toBeLessThan(previous);
+    await expect(el(page, 'last-reorder')).toHaveText('none');
+  });
+});
