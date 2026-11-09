@@ -127,22 +127,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- **Input, Textarea, Search, Number input, OTP input** — these controls no longer emit
+- **Input, Textarea, Search, Number input, OTP input — BREAKING.** These controls no longer emit
   `aria-required` ([#2731](https://github.com/tutkli/forty-cdk/issues/2731)). The native `required`
   attribute they now carry (see Fixed) already exposes the field as required to assistive
   technology, the same single channel `disabled` uses. Styles keyed on `[aria-required]` on these
   hosts move to `:required` or `[required]`. On the OTP input the attribute lands on the injected
   `<input>`.
 
-- **Select, Time picker, Date picker, Date range picker** — Escape no longer marks the control
-  touched ([#2732](https://github.com/tutkli/forty-cdk/issues/2732)). It leaves focus in the
+- **Select, Time picker, Date picker, Date range picker — BREAKING.** Escape no longer marks the
+  control touched ([#2732](https://github.com/tutkli/forty-cdk/issues/2732)). It leaves focus in the
   control, so it now matches the Combobox: an outside press, outside focus, a pick and focus leaving
   the control touch it, Escape does not. On the date pickers `close()` no longer marks the control
   touched, and `ForDatePickerContext.requestClose` takes the dismissal channel
-  (`'escape' | 'pointerDownOutside' | 'focusOutside'`).
+  (`'escape' | 'pointerDownOutside' | 'focusOutside'`). **Code that calls `requestClose()` through
+  `FOR_DATE_PICKER_CONTEXT` must pass the channel.**
 
-- **Every primitive with a `dir` input** — the root host carries a `dir` attribute only when a
-  direction is set through `[dir]` or declared by an ancestor or `<html dir>`
+- **Every primitive with a `dir` input — BREAKING.** The root host carries a `dir` attribute only
+  when a direction is set through `[dir]` or declared by an ancestor or `<html dir>`
   ([#2725](https://github.com/tutkli/forty-cdk/issues/2725)). Before, a root with nothing declared
   above it wrote `dir="ltr"` on itself, which overrode a CSS `direction: rtl` inside the root.
   Keyboard semantics are unchanged: with nothing declared they still resolve left to right. Styles
@@ -163,7 +164,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Before, it showed the highlight while focus stayed on the item focused earlier, so Enter or
   ArrowDown acted on that item. A hover-open still never moves focus into the submenu.
 
-- **Menubar — a vertical bar opens its menus beside the trigger**
+- **Menubar — BREAKING.** A vertical bar opens its menus beside the trigger
   ([#2728](https://github.com/tutkli/forty-cdk/issues/2728)). Before, every menu opened below its
   trigger. `ForMenubarDefaults.side` is now `FloatingSide | null` with a `null` fallback that
   follows the bar's layout: `'bottom'` on a horizontal bar, `'right'` on a vertical one in LTR and
@@ -172,7 +173,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   returns focus to its trigger, from a top-level item and from a sub-trigger's close-parent key;
   before, it opened the neighbouring menu, wrapping with `loop`. The away arrow does nothing on a
   plain item and still opens a sub-trigger's submenu. `MenuSiblingNavigator` (`forty-cdk/shared`)
-  gains `orientation`.
+  gains `orientation`. **Code that reads the resolved `side` from `FOR_MENUBAR_DEFAULTS` must handle
+  `null`, and an implementation of `MenuSiblingNavigator` must add `orientation`.**
 
 - **Dialog, Drawer — a managed dialog or drawer stops being modal at `close()`**
   ([#2722](https://github.com/tutkli/forty-cdk/issues/2722)). With `animateLeave`,
@@ -450,6 +452,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   instead, as an unbound `[forListboxOption]` value already does. Rebinding the input to another
   listbox moves the controller there.
 
+- **Calendar — BREAKING.** `headingId` names the grids only through `[forCalendarHeading]`
+  ([#2681](https://github.com/tutkli/forty-cdk/issues/2681)). A heading of your own that took its
+  `id` from `ForCalendarContext.headingId`, such as `<h2 [id]="cal.headingId()">`, used to name the
+  day, month and year grids, which pointed at that id unconditionally. They now point at it only
+  while a `[forCalendarHeading]` is mounted, so such a heading leaves them unnamed. **Put
+  `[forCalendarHeading]` on that heading, or write a static `aria-labelledby` pointing at it on each
+  grid.**
+
 ### Fixed
 
 - **Popover, Tooltip, Hover card, Date picker** — a root with two triggers keeps the one still
@@ -466,11 +476,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `aria-labelledby` on its grids ([#2681](https://github.com/tutkli/forty-cdk/issues/2681)). The
   day, month and year grids pointed at a heading id `[forCalendar]` mints whether or not a heading
   exists, so on the server and in the browser they referenced a missing element and stayed unnamed.
-  They now emit `aria-labelledby` only while a heading is mounted, and pair with one declared after
-  the grid or mounted later; the heading reports itself through the new `hasHeading`,
-  `registerHeading` and `unregisterHeading` members of `ForCalendarContext`. **Without a heading,
-  name each grid yourself** with a static `aria-labelledby` pointing at your own title or an
-  `aria-label`, as the README now says.
+  They now emit `aria-labelledby` only while a `[forCalendarHeading]` is mounted, the only piece
+  that registers a heading, and pair with one declared after the grid or mounted later. **Without a
+  heading, name each grid yourself** with a static `aria-labelledby` pointing at your own title or
+  an `aria-label`, as the README now says.
 
 ### Performance
 
@@ -577,7 +586,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `'End date'`. **Rename the keys** in `provideForDateRangeFieldDefaults` /
   `provideForTimeRangeFieldDefaults`.
 
-- **Internationalized Date — formatting ignores the runtime time zone**
+- **Internationalized Date — BREAKING.** Formatting ignores the runtime time zone
   ([#2375](https://github.com/tutkli/forty-cdk/issues/2375)). `InternationalizedDateAdapter` and
   `InternationalizedDateTimeAdapter` format the wall-clock fields the value holds, so a `timeZone`
   passed in `format()`'s `options` is now ignored. **Convert the value with
@@ -690,15 +699,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `FOR_<PRIMITIVE>_VIRTUALIZED_HOST_DIRECTIVE_INPUTS` / `_OUTPUTS` tuples (Listbox, Select,
   Combobox). `ForTreeContext` no longer publishes `visibleRange`.
 
-- **Combobox** — `[forComboboxTrigger]` carries `role="combobox"` and reflects `aria-required`,
-  `aria-invalid`, `aria-busy` and `aria-readonly`, plus the `data-readonly` hook
+- **Combobox — BREAKING.** `[forComboboxTrigger]` carries `role="combobox"` and reflects
+  `aria-required`, `aria-invalid`, `aria-busy` and `aria-readonly`, plus the `data-readonly` hook
   ([#2602](https://github.com/tutkli/forty-cdk/issues/2602)). In the picker anatomy the input that
   carries that state is mounted inside the panel, so a closed picker announced a required, invalid
   or validating field exactly like a valid optional one. A combobox is not named by its text:
   **label the trigger** (`aria-labelledby`, `aria-label` or a surrounding `[forField]`) if it relied
   on its content for its accessible name.
 
-- **Navigation menu — indicator geometry follows scroll and survives the close**
+- **Navigation menu — BREAKING.** Indicator geometry follows scroll and survives the close
   ([#2388](https://github.com/tutkli/forty-cdk/issues/2388)). The
   `--for-navigation-menu-indicator-x|y|width|height` properties were measured from the border box of
   `[forNavigationMenuList]` without its scroll, so the indicator drifted off its trigger while an
@@ -769,7 +778,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- **Navigation menu** — `[forNavigationMenuContent]` no longer names the panel, and
+- **Navigation menu — BREAKING.** `[forNavigationMenuContent]` no longer names the panel, and
   `ForNavigationMenuContext.triggerIdFor` is removed
   ([#2319](https://github.com/tutkli/forty-cdk/issues/2319)). The panel carries no role, so the
   `aria-labelledby` it pointed at its trigger fell on a `generic` element, where ARIA prohibits a
@@ -780,20 +789,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   from or out to, opposite the previous or next trigger), that the viewport's `data-state` follows
   `value`, and that `openDelay` applies to hover only.
 
-- **Field**, **Stepper** — entry points outside the form controls no longer need `@angular/forms` to
-  type-check ([#2322](https://github.com/tutkli/forty-cdk/issues/2322)). The declarations of
-  `forty-cdk/field`, `forty-cdk/stepper` and the shared internal tier imported
+- **Field, Stepper — BREAKING.** Entry points outside the form controls no longer need
+  `@angular/forms` to type-check ([#2322](https://github.com/tutkli/forty-cdk/issues/2322)). The
+  declarations of `forty-cdk/field`, `forty-cdk/stepper` and the shared internal tier imported
   `@angular/forms/signals`, so a project without the optional peer failed with `TS2307`; only the 16
   entry points the package README lists import it now. `ForFieldError.errors()` and
   `FieldControlHandle.errors` are typed `readonly FieldValidationError[]` (a `kind` and an optional
   `message`), published from `forty-cdk/field`, as is the `errors` input every form control
-  inherits, and `[field]` on `[forStepperItem]` takes
-  `StepperField | null`, published from `forty-cdk/stepper`, which every `FieldTree` satisfies. The
-  error objects are unchanged at runtime, but `fieldTree` is no longer in their declared type:
-  **read it from the Signal Forms field's own `errors()` where you need it**.
+  inherits, and `[field]` on `[forStepperItem]` takes `StepperField | null`, published from
+  `forty-cdk/stepper`, which every `FieldTree` satisfies. The error objects are unchanged at
+  runtime, but `fieldTree` is no longer in their declared type: **read it from the Signal Forms
+  field's own `errors()` where you need it**.
 
-- **Number input** — the increment and decrement buttons stay focusable when they cannot step
-  ([#2311](https://github.com/tutkli/forty-cdk/issues/2311)). `[forNumberInputIncrement]` /
+- **Number input — BREAKING.** The increment and decrement buttons stay focusable when they cannot
+  step ([#2311](https://github.com/tutkli/forty-cdk/issues/2311)). `[forNumberInputIncrement]` /
   `[forNumberInputDecrement]` set native `disabled` at `max` / `min` and while the spinbutton was
   disabled or read-only, so a click or `Enter` that reached the bound dropped focus to `<body>`.
   They now reflect `aria-disabled="true"` and `data-disabled` and ignore activation, as the
@@ -982,7 +991,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- **Table** — `[widthRevert]` on `[forTableColumnResizer]` receives the new
+- **Table — BREAKING.** `[widthRevert]` on `[forTableColumnResizer]` receives the new
   `TableResizeRevertDescriptor`, whose `width` is `number | undefined`
   ([#2336](https://github.com/tutkli/forty-cdk/issues/2336)). A cancelled resize (`Escape`,
   `pointercancel`, or a teardown mid-drag) of a column that had no width now reports `undefined` and
@@ -991,12 +1000,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `TableResizeRevertDescriptor`, and drop the column's stored width when `width` is `undefined`**,
   as the README's snippet does.
 
-- **Listbox** — `[forListbox]` carries a generated `id` only while a `[forListboxController]` drives
-  it, and `ForListbox.id` is removed ([#2326](https://github.com/tutkli/forty-cdk/issues/2326)).
-  Every listbox host used to be bound to a generated id, which also overwrote an `[id]` the consumer
-  bound. A static or bound id is now kept, and the controller's `aria-controls` follows it; a
-  listbox with no controller and no id of its own carries none. **Give the host its own `id` if
-  anything references it, and read the host element's `id` instead of `ForListbox.id`.**
+- **Listbox — BREAKING.** `[forListbox]` carries a generated `id` only while a
+  `[forListboxController]` drives it, and `ForListbox.id` is removed
+  ([#2326](https://github.com/tutkli/forty-cdk/issues/2326)). Every listbox host used to be bound to
+  a generated id, which also overwrote an `[id]` the consumer bound. A static or bound id is now
+  kept, and the controller's `aria-controls` follows it; a listbox with no controller and no id of
+  its own carries none. **Give the host its own `id` if anything references it, and read the host
+  element's `id` instead of `ForListbox.id`.**
 
 - **Tooltip** — keyboard focus opens the tooltip at once, and a keyboard activation dismisses it
   ([#2307](https://github.com/tutkli/forty-cdk/issues/2307)). Focus used to wait out `openDelay`
@@ -1293,17 +1303,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   abstract base member, stays `protected`. **Read the public input, signal or context member
   instead, and rename a subclass member that collides.**
 
-- **Calendar**, **Combobox**, **Listbox**, **Menubar**, **Navigation menu**, **Radio group**,
-  **Select**, **Slider**, **Tabs**, **Time picker**, **Toggle group**, **Tree**, **Virtualization**
-  — item handles and contexts type an unbound value as `T | Unset`
-  ([#2505](https://github.com/tutkli/forty-cdk/issues/2505)). An item piece registers with its root
-  before Angular writes its `[value]` binding, so for one change-detection pass its value is a
-  sentinel, which the handles and contexts these primitives publish typed as plain `T`. Members such
-  as `ForListboxOptionHandle.value`, `ForTreeItemContext.value` and the navigation menu context's
-  `isOpen(value)` now say `T | Unset`, and `forty-cdk/shared` exports `Unset` and the `isUnset` type
-  guard. **Code that implements or reads these contexts through their tokens narrows the value with
-  `isUnset` before it reaches anything that expects a `T`**, as the Shared README's "Narrowing an
-  item's unbound value" section shows.
+- **Calendar, Combobox, Listbox, Menubar, Navigation menu, Radio group, Select, Slider, Tabs, Time
+  picker, Toggle group, Tree, Virtualization — BREAKING.** Item handles and contexts type an unbound
+  value as `T | Unset` ([#2505](https://github.com/tutkli/forty-cdk/issues/2505)). An item piece
+  registers with its root before Angular writes its `[value]` binding, so for one change-detection
+  pass its value is a sentinel, which the handles and contexts these primitives publish typed as
+  plain `T`. Members such as `ForListboxOptionHandle.value`, `ForTreeItemContext.value` and the
+  navigation menu context's `isOpen(value)` now say `T | Unset`, and `forty-cdk/shared` exports
+  `Unset` and the `isUnset` type guard. **Code that implements or reads these contexts through their
+  tokens narrows the value with `isUnset` before it reaches anything that expects a `T`**, as the
+  Shared README's "Narrowing an item's unbound value" section shows.
 
 - **Tree — BREAKING.** `ForTreeDefaults.dragAnnounceMove` and `dragAnnounceDrop` receive
   `total: number | null` ([#2401](https://github.com/tutkli/forty-cdk/issues/2401)). A drop into a
@@ -1502,8 +1511,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- **Date picker**, **Time picker**, **Time field** — a subclassed root moves to its provider helper
-  ([#2260](https://github.com/tutkli/forty-cdk/issues/2260),
+- **Date picker, Time picker, Time field — BREAKING.** A subclassed root moves to its provider
+  helper ([#2260](https://github.com/tutkli/forty-cdk/issues/2260),
   [#2226](https://github.com/tutkli/forty-cdk/issues/2226)). `forty-cdk/core` no longer exports
   `FOR_CALENDAR_HOST` / `CalendarHost`, which the 0.32.0 and 0.33.0 wrapping guide told a
   date-picker wrapper to import, so that wrapper no longer compiles. A wrapper written before 0.32.0
@@ -1512,7 +1521,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   wrapper's `providers` with `provideForDatePicker(MyDatePicker)`, and do the same with the matching
   helper on a subclassed range picker, time picker or time field.**
 
-- **Menubar** — only one `@if` per trigger mounts a menu
+- **Menubar — BREAKING.** Only one `@if` per trigger mounts a menu
   ([#2210](https://github.com/tutkli/forty-cdk/issues/2210)). A surface shared by one
   `@if (open() !== null)`, or a `[forMenuContent]` mounted unconditionally, outlived the open state:
   it took focus on load, never moved or returned focus on a switch, and swallowed Escape while the
@@ -1523,8 +1532,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `@if (open() === '<value>')`, as the README's "Mounting the menus" section shows, and drop any
   read of `sharedContentId`.**
 
-- **Field**, **Dialog**, **Drawer**, **Tooltip**, **Hover card**, **Menu** — five context and
-  directive members change shape ([#2217](https://github.com/tutkli/forty-cdk/issues/2217),
+- **Field, Dialog, Drawer, Tooltip, Hover card, Menu — BREAKING.** Five context and directive
+  members change shape ([#2217](https://github.com/tutkli/forty-cdk/issues/2217),
   [#2248](https://github.com/tutkli/forty-cdk/issues/2248),
   [#2428](https://github.com/tutkli/forty-cdk/issues/2428),
   [#2257](https://github.com/tutkli/forty-cdk/issues/2257)). `ForFieldContext.registerDescription`
@@ -1535,8 +1544,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   state, its own `[disabled]` or a disabled parent menu. **Code that implements or calls these
   contexts through their tokens must follow the new members.**
 
-- **Popover**, **Dialog**, **Drawer**, **Tooltip**, **Select**, **Drag and drop** — direction
-  follows a `dir` above a shadow host, and a portaled surface inherits when none is declared
+- **Shared — BREAKING.** `RovingTabindex.hasActive` (`forty-cdk/shared`) is a method returning
+  `boolean` instead of a `Signal<boolean>`
+  ([#2239](https://github.com/tutkli/forty-cdk/issues/2239)). It discounts a stale active element at
+  the time of each call, so a `computed` or host binding that calls `hasActive()` reads as before.
+  Code typed against `Signal<boolean>` no longer compiles, and a reference stored or passed without
+  the instance, such as `const gate = roving.hasActive`, throws when called. **Call it bound: pass
+  `() => roving.hasActive()` where you passed the signal.**
+
+- **Drawer, Carousel, Toast — BREAKING.** `SwipeEventDetail` (`forty-cdk/shared`) gains a required
+  `target`, the pressed element ([#2233](https://github.com/tutkli/forty-cdk/issues/2233)), which
+  the toast's swipe outputs carry. **A hand-built `SwipeEventDetail` must add `target`.**
+
+- **Popover, Dialog, Drawer, Tooltip, Select, Drag and drop — BREAKING.** Direction follows a `dir`
+  above a shadow host, and a portaled surface inherits when none is declared
   ([#2235](https://github.com/tutkli/forty-cdk/issues/2235)). A primitive inside a
   `ViewEncapsulation.ShadowDom` component resolved ltr whatever `dir` sat above its host; it now
   follows it. Every portaled surface, backdrop and toast viewport was stamped `dir="ltr"` when
@@ -1639,10 +1660,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   with two sibling `@if` blocks threw in production and aborted the render. The newest registration
   now wins, a swapped-out wrapper gets its inline styles back, and a duplicate still mounted once
   the render settles warns `FORCDK-CORE-005` in dev mode. `FORCDK-CORE-001`, `FORCDK-DRAWER-005` and
-  `FORCDK-DRAWER-006` are retired. `FORCDK-TABLE-005` is now dev-only, and in production a row def
-  with both or neither of a cell template and `placeholderCells` renders placeholder cells. The date
-  picker's adapter and range-mode errors (`FORCDK-DATE-PICKER-001`, `-005`, `-006`) throw on a pick
-  instead of at mount.
+  `FORCDK-DRAWER-006` are retired. `FORCDK-TABLE-005` is now dev-only: in production a row def with
+  both a cell template and `placeholderCells` renders placeholder cells, and one with neither
+  renders an empty cell spanning the row. The date picker's adapter and range-mode errors
+  (`FORCDK-DATE-PICKER-001`, `-005`, `-006`) throw on a pick instead of at mount.
 
 - **Tooltip**, **Hover card** — scroll suppression is scoped to the overlay's own trigger, and a pen
   or a mouse leaving the window closes the surface
@@ -1822,8 +1843,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   writing direction with 1 px of tolerance, and cross open shadow roots. The surface or track
   follows the finger from the press instead of trailing it by the arming distance. A drawer release
   that ends behind the press point now resolves a snap and emits `(swipeEnd)` instead of
-  `(swipeCancel)`. `SwipeEventDetail` gains `target`, the pressed element, which the toast's swipe
-  outputs carry. **A hand-built `SwipeEventDetail` must add `target`.**
+  `(swipeCancel)`. `SwipeEventDetail` gains `target`, as the Changed entry above records.
 
 - **Stepper**, **Table** — button pieces never submit a form, and `(complete)` follows
   `selectedIndex` ([#2259](https://github.com/tutkli/forty-cdk/issues/2259)). `[forStepperTrigger]`,
