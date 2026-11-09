@@ -290,7 +290,9 @@ Set `selectionMode="range"` and bind `[(range)]` to get date-range selection. In
 }
 ```
 
-**`aria-selected`** in range mode is `"true"` across every committed-range cell (inclusive), and the grid carries `aria-multiselectable="true"`. While a new anchor is pending, `aria-selected` is `"false"` everywhere, but `range` keeps the previously committed range until the second click replaces it.
+**`aria-selected`** in range mode is `"true"` across every committed-range cell (inclusive), and the grid carries `aria-multiselectable="true"`. While a new anchor is pending, the committed cells keep `aria-selected="true"`, matching `range`, which holds the previously committed range until the second click replaces it, and the anchor cell is selected too. The preview band is never selected; it is exposed only through `data-range-preview`.
+
+**Announcements.** Setting the anchor and committing a range are each announced politely, with the dates formatted as day, month and year in the calendar's `locale`: `"Start date June 20, 2026. Choose the end date."` and `"Selected June 20, 2026 to June 24, 2026."`. A click the length limits reject announces nothing. Both strings are localizable through `provideForCalendarDefaults` (see [Scoped defaults](#scoped-defaults)).
 
 **Scope.** Range mode is day-granular only: `granularity` / time is orthogonal and not supported alongside it.
 
@@ -403,7 +405,7 @@ The lower-level hooks (`visibleMonthNumber()`, `visibleYear()`, `monthOptions()`
 
 `ForCalendar` supports two additional views (**month grid** and **year grid**) so users can jump quickly to a different month or year without paging one at a time. All three views share a single `[(view)]` model and the same `focusedDate` cursor.
 
-The heading's `label()` follows the active view, with the same text as the view trigger: the month and year in day view, the year in month view, the block of years in year view. Every grid is named by the heading, so each one is named after the period it shows. A keyboard move or a prev / next press that changes that period announces it. Drilling down changes no value, so a `readonly` calendar still drills from a year to its months and from a month to its days.
+The heading's `label()` follows the active view, with the same text as the view trigger: the month and year in day view, the year in month view, the block of years in year view. Every grid is named by the heading, so each one is named after the period it shows. A keyboard move or a prev / next press that changes that period announces it. Drilling down changes no value, so a `readonly` calendar still drills from a year to its months and from a month to its days. The view trigger and a drill-down move DOM focus to the active cell of the new grid; a consumer write to `[(view)]` switches the grid and leaves focus where it is.
 
 ### Pieces
 
@@ -417,10 +419,10 @@ The heading's `label()` follows the active view, with the same text as the view 
 
 ### `view` model — `ForCalendar`
 
-| API             | Type                                                 | Description                                                                        |
-| --------------- | ---------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| `view`          | `model<CalendarView>` (`'day' \| 'month' \| 'year'`) | Active view. Default `'day'`. `[(view)]` for two-way binding or read `cal.view()`. |
-| `yearBlockSize` | `input<number>`                                      | Years per year-grid page (must be a multiple of 3). Default `12`.                  |
+| API             | Type                                                 | Description                                                                                                                       |
+| --------------- | ---------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `view`          | `model<CalendarView>` (`'day' \| 'month' \| 'year'`) | Active view. Default `'day'`. `[(view)]` for two-way binding or read `cal.view()`. A consumer write leaves DOM focus where it is. |
+| `yearBlockSize` | `input<number>`                                      | Years per year-grid page (must be a multiple of 3). Default `12`.                                                                 |
 
 ### Usage
 
@@ -561,6 +563,8 @@ providers: [
 `firstDayOfWeek` sets the first column's weekday as a **0-6** index (`0` = Sunday, `1` = Monday) for calendars that don't bind `[firstDayOfWeek]`. Its fallback `null` takes the week start from the date adapter's `getFirstDayOfWeek()`, and a calendar's own `[firstDayOfWeek]` input always wins over the scope default.
 
 `outsideMonthLabel` builds the `aria-label` of a padding day outside the visible month from its formatted full date (default `"<date> (outside month)"`), so assistive tech can tell it apart from the month on screen. A calendar bound to its own `[dateLabel]` formatter ignores it.
+
+`rangeStartAnnouncement` and `rangeSelectedAnnouncement` build the polite announcements a range calendar makes when it sets its anchor and when it commits a range, from the dates already formatted as day, month and year (defaults `"Start date <start>. Choose the end date."` and `"Selected <start> to <end>."`).
 
 ## Keyboard
 

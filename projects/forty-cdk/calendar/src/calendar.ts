@@ -3,7 +3,6 @@ import {
   booleanAttribute,
   computed,
   Directive,
-  effect,
   inject,
   Injector,
   input,
@@ -44,7 +43,7 @@ import { CalendarDayNavigator } from './calendar-day-navigator';
 import { FOR_CALENDAR_DEFAULTS } from 'forty-cdk/defaults';
 import { CalendarMonthNavigator } from './calendar-month-navigator';
 import { CalendarNavigation } from './calendar-navigation';
-import { CalendarRangeSelection } from './calendar-range-selection';
+import { CalendarRangeSelection, type CalendarRangeStep } from './calendar-range-selection';
 import {
   type CalendarSubGridHost,
   type CalendarViewStrategy,
@@ -192,7 +191,10 @@ export class ForCalendar<D> implements ForCalendarContext<D> {
    * Active calendar view. `'day'` (default) shows the date grid; `'month'` and
    * `'year'` show the month / year picker grids. Two-way bindable; the `model()`
    * change emitter (`(viewChange)`) fires only when the calendar itself cycles
-   * or drills the view, never on consumer writes via `[(view)]`.
+   * or drills the view, never on consumer writes via `[(view)]`. Only a switch
+   * the calendar makes ({@link cycleView}, {@link selectMonth},
+   * {@link selectYear}) moves DOM focus into the new grid; a consumer write
+   * leaves focus where it is.
    */
   readonly view = model<CalendarView>('day');
 
@@ -311,6 +313,7 @@ export class ForCalendar<D> implements ForCalendarContext<D> {
       bounds: this.#bounds,
       range: this.#range,
       announce: (label) => this.#announcer.announce(label, 'polite'),
+      announceRangeStep: (step) => this.#announceRangeStep(step),
       scheduleFocus: (fn) => this.#scheduleFocus(fn),
       focusDayCell: (target) => this.#focusDayCell(target),
     },
@@ -384,29 +387,25 @@ export class ForCalendar<D> implements ForCalendarContext<D> {
     };
   }
 
-  #viewSwitched = false;
-  readonly #viewFocusEffect = effect(() => {
-    const view = this.view();
-    if (!this.#viewSwitched) {
-      this.#viewSwitched = true;
-      return;
-    }
-    afterNextRender(() => this.#strategyFor(view).focusActive(), { injector: this.#injector });
-  });
-
   readonly #resolvedFirstDayOfWeek = computed(
     () => this.firstDayOfWeek() ?? this.adapter.getFirstDayOfWeek(),
   );
 
-  /** First day of the visible month, derived from {@link focusedDate}. */
-  readonly visibleMonth = computed(() => {
-    const focused = this.focusedDate();
-    return this.adapter.createDate(
-      this.adapter.getYear(focused),
-      this.adapter.getMonth(focused),
-      1,
-    );
-  });
+  /**
+   * First day of the visible month, derived from {@link focusedDate}. A move of
+   * the focused date inside the month keeps the same object.
+   */
+  readonly visibleMonth = computed(
+    () => {
+      const focused = this.focusedDate();
+      return this.adapter.createDate(
+        this.adapter.getYear(focused),
+        this.adapter.getMonth(focused),
+        1,
+      );
+    },
+    { equal: (a, b) => this.adapter.isSameDay(a, b) },
+  );
 
   readonly #headingId = signal(this.#idGen.next('for-calendar-heading'));
   readonly headingId = this.#headingId.asReadonly();
@@ -558,8 +557,23 @@ export class ForCalendar<D> implements ForCalendarContext<D> {
     this.#range.setHovered(date);
   }
 
+  /**
+   * Today, sampled from the adapter again whenever the focused date, the value
+   * or the range changes, so `aria-current` follows the clock across a
+   * re-render while the day cells read one shared sample instead of the clock.
+   */
+  readonly #today = computed(
+    () => {
+      this.focusedDate();
+      this.value();
+      this.range();
+      return this.adapter.today();
+    },
+    { equal: (a, b) => this.adapter.isSameDay(a, b) },
+  );
+
   isToday(date: D): boolean {
-    return this.adapter.isSameDay(date, this.adapter.today());
+    return this.adapter.isSameDay(date, this.#today());
   }
 
   isFocused(date: D): boolean {
@@ -629,8 +643,9 @@ export class ForCalendar<D> implements ForCalendarContext<D> {
   }
 
   /**
-   * Cycle the view one step coarser: `day → month → year`, clamped at `'year'`.
-   * No-op when the whole calendar is disabled.
+   * Cycle the view one step coarser: `day → month → year`, clamped at `'year'`,
+   * and move DOM focus to the active cell of the new grid. No-op when the whole
+   * calendar is disabled.
    */
   cycleView(): void {
     if (this.disabled()) {
@@ -639,14 +654,14 @@ export class ForCalendar<D> implements ForCalendarContext<D> {
     const order: readonly CalendarView[] = ['day', 'month', 'year'];
     const next = order[order.indexOf(this.view()) + 1];
     if (next) {
-      this.view.set(next);
+      this.#switchView(next);
     }
   }
 
   /**
    * Select a whole month (1-12): navigate to it within the current visible year
-   * and switch the view to `'day'`. It changes no value, so a read-only calendar
-   * drills down too. No-op when the calendar is disabled or the month is out of
+   * and switch the view to `'day'`, moving DOM focus into the day grid. It
+   * changes no value, so a read-only calendar drills down too. No-op when the calendar is disabled or the month is out of
    * `[min, max]`.
    */
   selectMonth(month: number): void {
@@ -654,12 +669,12 @@ export class ForCalendar<D> implements ForCalendarContext<D> {
       return;
     }
     this.goToMonth(month);
-    this.view.set('day');
+    this.#switchView('day');
   }
 
   /**
-   * Select a whole year: navigate to it and switch the view to `'month'`. It
-   * changes no value, so a read-only calendar drills down too. No-op when the
+   * Select a whole year: navigate to it and switch the view to `'month'`, moving
+   * DOM focus into the month grid. It changes no value, so a read-only calendar drills down too. No-op when the
    * calendar is disabled or the year is out of `[min, max]`.
    */
   selectYear(year: number): void {
@@ -667,7 +682,15 @@ export class ForCalendar<D> implements ForCalendarContext<D> {
       return;
     }
     this.goToYear(year);
-    this.view.set('month');
+    this.#switchView('month');
+  }
+
+  #switchView(next: CalendarView): void {
+    if (this.view() === next) {
+      return;
+    }
+    this.view.set(next);
+    this.#scheduleFocus(() => this.#strategyFor(next).focusActive());
   }
 
   /** Page backward by one month / year / block depending on the active view. */
@@ -742,5 +765,24 @@ export class ForCalendar<D> implements ForCalendarContext<D> {
 
   #focusDayCell(target: D): void {
     afterNextRender(() => this.#dayNav.focusCell(target), { injector: this.#injector });
+  }
+
+  #announceRangeStep(step: CalendarRangeStep<D>): void {
+    const message =
+      step.kind === 'anchored'
+        ? this.#defaults.rangeStartAnnouncement(this.#formatAnnouncedDate(step.anchor))
+        : this.#defaults.rangeSelectedAnnouncement(
+            this.#formatAnnouncedDate(step.range.start),
+            this.#formatAnnouncedDate(step.range.end),
+          );
+    this.#announcer.announce(message, 'polite');
+  }
+
+  #formatAnnouncedDate(date: D): string {
+    return this.adapter.format(
+      date,
+      { day: 'numeric', month: 'long', year: 'numeric' },
+      this.locale() ?? undefined,
+    );
   }
 }
