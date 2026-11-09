@@ -1711,7 +1711,7 @@ describe('ForTree', () => {
           [(expanded)]="open"
           aria-label="Groups"
         >
-          <li forTreeItem value="g" data-test-id="g">
+          <li forTreeItem value="g" data-test-id="g" [disabled]="disabledIds().includes('g')">
             <div forTreeItemLabel>
               <span forTreeItemToggle data-test-toggle="g">▸</span>
               <span forTreeItemCheckbox data-test-checkbox="g">
@@ -1721,7 +1721,12 @@ describe('ForTree', () => {
             </div>
             @if (open().includes('g')) {
               <ul forTreeGroup>
-                <li forTreeItem value="g1" data-test-id="g1">
+                <li
+                  forTreeItem
+                  value="g1"
+                  data-test-id="g1"
+                  [disabled]="disabledIds().includes('g1')"
+                >
                   <div forTreeItemLabel>
                     <span forTreeItemCheckbox data-test-checkbox="g1">
                       <span forTreeItemCheckboxIndicator data-test-indicator="g1">✓</span>
@@ -1729,7 +1734,12 @@ describe('ForTree', () => {
                     G1
                   </div>
                 </li>
-                <li forTreeItem value="g2" data-test-id="g2">
+                <li
+                  forTreeItem
+                  value="g2"
+                  data-test-id="g2"
+                  [disabled]="disabledIds().includes('g2')"
+                >
                   <div forTreeItemLabel>
                     <span forTreeItemToggle data-test-toggle="g2">▸</span>
                     <span forTreeItemCheckbox data-test-checkbox="g2">
@@ -1739,7 +1749,12 @@ describe('ForTree', () => {
                   </div>
                   @if (open().includes('g2')) {
                     <ul forTreeGroup>
-                      <li forTreeItem value="g2a" data-test-id="g2a">
+                      <li
+                        forTreeItem
+                        value="g2a"
+                        data-test-id="g2a"
+                        [disabled]="disabledIds().includes('g2a')"
+                      >
                         <div forTreeItemLabel>
                           <span forTreeItemCheckbox data-test-checkbox="g2a">
                             <span forTreeItemCheckboxIndicator data-test-indicator="g2a">✓</span>
@@ -1747,7 +1762,12 @@ describe('ForTree', () => {
                           G2A
                         </div>
                       </li>
-                      <li forTreeItem value="g2b" data-test-id="g2b">
+                      <li
+                        forTreeItem
+                        value="g2b"
+                        data-test-id="g2b"
+                        [disabled]="disabledIds().includes('g2b')"
+                      >
                         <div forTreeItemLabel>
                           <span forTreeItemCheckbox data-test-checkbox="g2b">
                             <span forTreeItemCheckboxIndicator data-test-indicator="g2b">✓</span>
@@ -1767,6 +1787,7 @@ describe('ForTree', () => {
     class CascadeHost {
       readonly picked = signal<readonly string[]>([]);
       readonly open = signal<readonly string[]>([]);
+      readonly disabledIds = signal<readonly string[]>([]);
       readonly descendantsFn = (v: string): readonly string[] => DESCENDANTS[v] ?? [];
     }
 
@@ -1916,6 +1937,75 @@ describe('ForTree', () => {
       expect(cascadeItemOf(el, 'g').getAttribute('aria-checked')).toBe('true');
     });
 
+    describe('disabled descendants', () => {
+      it('clearing a parent leaves a checked disabled child checked', async () => {
+        const { el, fixture } = await setupCascade((i) => {
+          i.disabledIds.set(['g1']);
+          i.open.set(['g']);
+          i.picked.set(['g', 'g1', 'g2', 'g2a', 'g2b']);
+        });
+
+        cascadeCheckboxOf(el, 'g').click();
+        await flush(fixture);
+
+        expect(fixture.componentInstance.picked()).toEqual(['g1']);
+        expect(cascadeItemOf(el, 'g1').getAttribute('aria-checked')).toBe('true');
+        expect(cascadeItemOf(el, 'g').getAttribute('aria-checked')).toBe('mixed');
+      });
+
+      it('checking a parent leaves an unchecked disabled child unchecked, and the next click clears what it checked', async () => {
+        const { el, fixture } = await setupCascade((i) => {
+          i.disabledIds.set(['g1']);
+          i.open.set(['g']);
+        });
+
+        cascadeCheckboxOf(el, 'g').click();
+        await flush(fixture);
+
+        expect([...fixture.componentInstance.picked()].sort()).toEqual(['g2', 'g2a', 'g2b']);
+        expect(cascadeItemOf(el, 'g1').getAttribute('aria-checked')).toBe('false');
+        expect(cascadeItemOf(el, 'g').getAttribute('aria-checked')).toBe('mixed');
+
+        cascadeCheckboxOf(el, 'g').click();
+        await flush(fixture);
+
+        expect(fixture.componentInstance.picked()).toEqual([]);
+        expect(cascadeItemOf(el, 'g').getAttribute('aria-checked')).toBe('false');
+      });
+
+      it('checking a parent keeps an intermediate parent with a disabled unchecked child out of the value', async () => {
+        const { el, fixture } = await setupCascade((i) => {
+          i.disabledIds.set(['g2a']);
+          i.open.set(['g', 'g2']);
+        });
+
+        cascadeCheckboxOf(el, 'g').click();
+        await flush(fixture);
+
+        expect([...fixture.componentInstance.picked()].sort()).toEqual(['g1', 'g2b']);
+        expect(cascadeItemOf(el, 'g2').getAttribute('aria-checked')).toBe('mixed');
+
+        cascadeCheckboxOf(el, 'g').click();
+        await flush(fixture);
+
+        expect(fixture.componentInstance.picked()).toEqual([]);
+      });
+
+      it('unchecking a child leaves the entry of a disabled parent as it is', async () => {
+        const { el, fixture } = await setupCascade((i) => {
+          i.disabledIds.set(['g']);
+          i.open.set(['g']);
+          i.picked.set(['g', 'g1', 'g2', 'g2a', 'g2b']);
+        });
+
+        cascadeCheckboxOf(el, 'g1').click();
+        await flush(fixture);
+
+        expect(fixture.componentInstance.picked()).toEqual(['g', 'g2', 'g2a', 'g2b']);
+        expect(cascadeItemOf(el, 'g').getAttribute('aria-checked')).toBe('mixed');
+      });
+    });
+
     it('cascade without descendantsOf throws a prefixed error on detectChanges', () => {
       @Component({
         imports: [ForTree, ForTreeItem, ForTreeItemLabel, ForTreeItemCheckbox],
@@ -2042,33 +2132,63 @@ describe('ForTree', () => {
           [(expanded)]="open"
           aria-label="Food"
         >
-          <li forTreeItem value="readme" data-test-id="readme">
+          <li
+            forTreeItem
+            value="readme"
+            data-test-id="readme"
+            [disabled]="disabledIds().includes('readme')"
+          >
             <div forTreeItemLabel data-test-label="readme">Readme</div>
           </li>
-          <li forTreeItem value="fruits" data-test-id="fruits">
+          <li
+            forTreeItem
+            value="fruits"
+            data-test-id="fruits"
+            [disabled]="disabledIds().includes('fruits')"
+          >
             <div forTreeItemLabel data-test-label="fruits">
               <span forTreeItemToggle>▸</span>
               Fruits
             </div>
             @if (open().includes('fruits')) {
               <ul forTreeGroup>
-                <li forTreeItem value="apple" data-test-id="apple">
+                <li
+                  forTreeItem
+                  value="apple"
+                  data-test-id="apple"
+                  [disabled]="disabledIds().includes('apple')"
+                >
                   <div forTreeItemLabel data-test-label="apple">Apple</div>
                 </li>
-                <li forTreeItem value="pear" data-test-id="pear">
+                <li
+                  forTreeItem
+                  value="pear"
+                  data-test-id="pear"
+                  [disabled]="disabledIds().includes('pear')"
+                >
                   <div forTreeItemLabel data-test-label="pear">Pear</div>
                 </li>
               </ul>
             }
           </li>
-          <li forTreeItem value="veggies" data-test-id="veggies">
+          <li
+            forTreeItem
+            value="veggies"
+            data-test-id="veggies"
+            [disabled]="disabledIds().includes('veggies')"
+          >
             <div forTreeItemLabel data-test-label="veggies">
               <span forTreeItemToggle>▸</span>
               Veggies
             </div>
             @if (open().includes('veggies')) {
               <ul forTreeGroup>
-                <li forTreeItem value="carrot" data-test-id="carrot">
+                <li
+                  forTreeItem
+                  value="carrot"
+                  data-test-id="carrot"
+                  [disabled]="disabledIds().includes('carrot')"
+                >
                   <div forTreeItemLabel data-test-label="carrot">Carrot</div>
                 </li>
               </ul>
@@ -2083,6 +2203,7 @@ describe('ForTree', () => {
       readonly cascade = signal(true);
       readonly isMulti = signal(false);
       readonly follow = signal(false);
+      readonly disabledIds = signal<readonly string[]>([]);
       readonly descendantsFn = (v: string): readonly string[] => DESCENDANTS[v] ?? [];
     }
 
@@ -2254,6 +2375,77 @@ describe('ForTree', () => {
           'readme',
           'veggies',
         ]);
+      });
+
+      it('Shift+ArrowDown onto a parent leaves its disabled child unchecked', async () => {
+        const { el, fixture, instance } = await setupKeyboard((i) => {
+          i.isMulti.set(true);
+          i.open.set(['fruits']);
+          i.disabledIds.set(['apple']);
+        });
+
+        pressKey(itemOf(el, 'readme'), 'ArrowDown', { shiftKey: true });
+        await flush(fixture);
+
+        expect(instance.picked()).toEqual(['pear']);
+        expect(itemOf(el, 'fruits').getAttribute('aria-checked')).toBe('mixed');
+      });
+
+      it('Shift+Space over a parent leaves its disabled child unchecked', async () => {
+        const { el, fixture, instance } = await setupKeyboard((i) => {
+          i.isMulti.set(true);
+          i.open.set(['fruits']);
+          i.disabledIds.set(['apple']);
+        });
+        labelOf(el, 'readme').click();
+        await flush(fixture);
+
+        pressKey(itemOf(el, 'veggies'), ' ', { shiftKey: true });
+        await flush(fixture);
+
+        expect(sorted(instance.picked())).toEqual(['carrot', 'pear', 'readme', 'veggies']);
+        expect(itemOf(el, 'fruits').getAttribute('aria-checked')).toBe('mixed');
+      });
+
+      it('Ctrl+A twice leaves a checked disabled child checked', async () => {
+        const { el, fixture, instance } = await setupKeyboard((i) => {
+          i.isMulti.set(true);
+          i.open.set(['fruits']);
+          i.disabledIds.set(['apple']);
+          i.picked.set(['apple']);
+        });
+
+        pressKey(itemOf(el, 'readme'), 'a', { ctrlKey: true });
+        await flush(fixture);
+        expect(sorted(instance.picked())).toEqual([
+          'apple',
+          'carrot',
+          'fruits',
+          'pear',
+          'readme',
+          'veggies',
+        ]);
+
+        pressKey(itemOf(el, 'readme'), 'a', { ctrlKey: true });
+        await flush(fixture);
+        expect(instance.picked()).toEqual(['apple']);
+        expect(itemOf(el, 'fruits').getAttribute('aria-checked')).toBe('mixed');
+      });
+
+      it('Ctrl+A twice leaves an unchecked disabled child unchecked and clears on the second press', async () => {
+        const { el, fixture, instance } = await setupKeyboard((i) => {
+          i.isMulti.set(true);
+          i.open.set(['fruits']);
+          i.disabledIds.set(['apple']);
+        });
+
+        pressKey(itemOf(el, 'readme'), 'a', { ctrlKey: true });
+        await flush(fixture);
+        expect(sorted(instance.picked())).toEqual(['carrot', 'pear', 'readme', 'veggies']);
+
+        pressKey(itemOf(el, 'readme'), 'a', { ctrlKey: true });
+        await flush(fixture);
+        expect(instance.picked()).toEqual([]);
       });
     });
   });

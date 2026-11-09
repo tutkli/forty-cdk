@@ -163,14 +163,15 @@ export class ForTree<T = string> implements ForTreeContext<T>, ForTreeContainerC
   /**
    * Enables cascade selection in `selectionMode="checkbox"`: checking or
    * unchecking a node propagates to all its descendants, and a parent derives
-   * `aria-checked="mixed"` when only some descendants are checked. A toggle
-   * follows that derived state: a parent reading `'true'` unchecks its subtree,
-   * any other state checks it. Toggling a node also keeps each mounted ancestor's
+   * `aria-checked="mixed"` when only some descendants are checked. A cascade
+   * never checks or unchecks a mounted disabled node, and a toggle follows the
+   * descendants it can write: when all of them are checked it unchecks them,
+   * otherwise it checks them. Toggling a node also keeps each mounted ancestor's
    * own entry in `value` in step, so an ancestor is present exactly when all its
-   * descendants are; an ancestor outside a virtualized window is left as it is.
-   * The `multiple` shortcuts (Shift+Arrow, Shift+Space, Ctrl/Cmd+A) cascade the
-   * same way. Ignored in `'highlight'` mode. Requires {@link ForTree.descendantsOf}.
-   * Default `false`.
+   * descendants are, disabled ones included; a disabled ancestor, or one outside
+   * a virtualized window, is left as it is. The `multiple` shortcuts
+   * (Shift+Arrow, Shift+Space, Ctrl/Cmd+A) cascade the same way. Ignored in
+   * `'highlight'` mode. Requires {@link ForTree.descendantsOf}. Default `false`.
    */
   readonly cascade = input(false, { transform: booleanAttribute });
 
@@ -183,6 +184,11 @@ export class ForTree<T = string> implements ForTreeContext<T>, ForTreeContainerC
    * Leave out the values of any `[selectable]="false"` node: a mounted one is
    * dropped here anyway, but an unmounted one the tree cannot see would hold
    * its ancestors at `'mixed'` forever.
+   *
+   * Keep a disabled descendant in the list: it counts toward its ancestors'
+   * state, and a cascade leaves it as it is while it is mounted. A disabled node
+   * in a collapsed subtree is unknown to the tree and is checked or unchecked
+   * with it, unless it is left out here, which also stops it counting.
    */
   readonly descendantsOf = input<(value: T) => readonly T[]>();
 
