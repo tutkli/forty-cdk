@@ -85,7 +85,8 @@ function injectViewport(): ForVirtualViewport {
  *   for the whole gesture.
  * - **Dataset-wide keyboard reorder** — keyboard stepping runs over the true total count,
  *   scrolling unmounted target rows into view, rather than being confined to the window. An
- *   idle `Home` / `End` likewise focuses the first / last item of the dataset.
+ *   idle `Home` / `End` likewise focuses the first / last item of the dataset, and an idle
+ *   `PageUp` / `PageDown` moves focus by one rendered window.
  *
  * Every lift, move and drop announcement, pointer and keyboard alike, counts dataset positions
  * against the dataset size, and each row's `[forDraggable]` emits `dragStart` / `dragEnd` for a
@@ -240,6 +241,10 @@ export class ForVirtualReorder {
       this.#jumpToEdge(event, key === 'Home' ? 'first' : 'last');
       return;
     }
+    if (key === 'PageUp' || key === 'PageDown') {
+      this.#jumpByPage(event, key === 'PageUp' ? -1 : 1);
+      return;
+    }
     if (key !== ' ' && key !== 'Enter') {
       return;
     }
@@ -294,17 +299,31 @@ export class ForVirtualReorder {
   }
 
   #jumpToEdge(event: KeyboardEvent, edge: 'first' | 'last'): void {
+    this.#jumpFocus(event, (_, count) => (edge === 'first' ? 0 : count - 1));
+  }
+
+  #jumpByPage(event: KeyboardEvent, direction: 1 | -1): void {
+    this.#jumpFocus(event, (from, count) =>
+      Math.min(count - 1, Math.max(0, from + direction * this.#page())),
+    );
+  }
+
+  #jumpFocus(event: KeyboardEvent, resolve: (from: number, count: number) => number): void {
     const draggable = this.#list.items().find((h) => h.host === event.target);
     const count = this.count();
     if (draggable === undefined || this.#list.effectiveDisabled() || count === 0) {
       return;
     }
+    const from = this.#absoluteIndex(draggable.host);
+    if (from === null) {
+      return;
+    }
     event.preventDefault();
     event.stopPropagation();
-    const index = edge === 'first' ? 0 : count - 1;
+    const index = resolve(from, count);
     this.#followFocus(draggable.host, {
       reveal: () => this.#viewport.scrollToIndex(index),
-      target: () => this.#edgeRow(index, edge === 'first' ? 1 : -1),
+      target: () => this.#edgeRow(index, index > from ? -1 : 1),
     });
   }
 

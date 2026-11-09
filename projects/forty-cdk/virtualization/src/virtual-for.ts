@@ -56,7 +56,9 @@ export interface ForVirtualForContext<T> {
  * A rendered row's DOM node never leaves the document while it holds focus. A row that stays
  * in the window across a window jump keeps its node in place, and a keyed row that a reorder
  * moves earlier in the window stays put while the rows between its old and new slot move past
- * it, so focus and an input's caret and selection survive both a scroll and a reorder.
+ * it. A focused row that a scroll or a keyed reorder takes out of the window stays mounted at
+ * its item's offset until focus moves out of it or its item leaves the data, without widening
+ * the viewport's `range()`. Focus and an input's caret and selection survive all of these.
  */
 @Directive({
   selector: '[forVirtualFor][forVirtualForOf]',
@@ -119,6 +121,7 @@ export class ForVirtualFor<T> {
           position,
         );
         this.#views.set(item.key, view);
+        this.#trackFocus(view, item.key);
       } else {
         const current = this.#viewContainer.indexOf(view);
         if (current !== position) {
@@ -142,6 +145,26 @@ export class ForVirtualFor<T> {
       return;
     }
     this.#viewContainer.move(view, to);
+  }
+
+  #trackFocus(view: EmbeddedViewRef<ForVirtualForContext<T>>, key: string | number): void {
+    const onFocusIn = (): void => this.#viewport.retainFocusedRow(key, view.context.index);
+    const onFocusOut = (event: FocusEvent): void => {
+      const next = event.relatedTarget;
+      if (
+        next instanceof Node &&
+        view.rootNodes.some((node: Node) => composedContains(node, next))
+      ) {
+        return;
+      }
+      this.#viewport.releaseFocusedRow(key);
+    };
+    for (const node of view.rootNodes as unknown[]) {
+      if (node instanceof HTMLElement) {
+        node.addEventListener('focusin', onFocusIn);
+        node.addEventListener('focusout', onFocusOut);
+      }
+    }
   }
 
   #holdsFocus(view: EmbeddedViewRef<ForVirtualForContext<T>>): boolean {

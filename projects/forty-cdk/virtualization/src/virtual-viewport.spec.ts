@@ -842,6 +842,204 @@ describe('ForVirtualFor — a keyed reorder keeps focus on the row it moves (#23
   });
 });
 
+describe('ForVirtualFor — a focused row that leaves the window stays mounted (#2736)', () => {
+  interface KeyedRow {
+    readonly id: string;
+  }
+
+  @Component({
+    host: { 'data-fixture': 'focus-retention-host' },
+    imports: [ForVirtualViewport, ForVirtualFor],
+    template: `
+      <button type="button" data-testid="outside">Outside</button>
+      <div
+        forVirtualViewport
+        [virtualCount]="rows().length"
+        [estimateSize]="40"
+        [getItemKey]="keyed() ? keyOf : undefined"
+        style="height: 200px; width: 200px"
+      >
+        <div *forVirtualFor="let row of rows()" tabindex="0" [attr.data-id]="row.id">
+          <input [attr.aria-label]="row.id" value="abcdef" />
+        </div>
+      </div>
+    `,
+  })
+  class FocusRetentionHost {
+    readonly keyed = signal(true);
+    readonly rows = signal<readonly KeyedRow[]>(
+      Array.from({ length: 100 }, (_, i) => ({ id: `row-${i}` })),
+    );
+    readonly keyOf = (index: number): string => this.rows()[index]!.id;
+    readonly viewport = viewChild.required(ForVirtualViewport);
+
+    move(from: number, to: number): void {
+      this.rows.update((rows) => {
+        const next = [...rows];
+        const [row] = next.splice(from, 1);
+        next.splice(to, 0, row!);
+        return next;
+      });
+    }
+  }
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+  });
+
+  async function mount(keyed = true): Promise<ComponentFixture<FocusRetentionHost>> {
+    const fixture = TestBed.createComponent(FocusRetentionHost);
+    fixture.componentInstance.keyed.set(keyed);
+    const host = viewportEl(fixture);
+    fakeLayout(host, 200);
+    installFakeScroll(host);
+    fixture.detectChanges();
+    await flush(fixture);
+    return fixture;
+  }
+
+  async function scrollTo(fixture: ComponentFixture<FocusRetentionHost>, offset: number) {
+    fixture.componentInstance.viewport().scrollToOffset(offset);
+    await flush(fixture);
+    await flush(fixture);
+  }
+
+  function rowById(fixture: ComponentFixture<FocusRetentionHost>, id: string) {
+    return rowEls(fixture).find((el) => el.getAttribute('data-id') === id);
+  }
+
+  it('keeps a focused row mounted and focused when the window scrolls past it', async () => {
+    const fixture = await mount();
+    const captured = rowById(fixture, 'row-3')!;
+    captured.focus();
+
+    await scrollTo(fixture, 40 * 60);
+
+    expect(rowById(fixture, 'row-60')).toBeDefined();
+    expect(captured.isConnected).toBe(true);
+    expect(rowById(fixture, 'row-3')).toBe(captured);
+    expect(document.activeElement).toBe(captured);
+  });
+
+  it('keeps an index-keyed focused row mounted and focused when the window scrolls past it', async () => {
+    const fixture = await mount(false);
+    const captured = rowById(fixture, 'row-3')!;
+    captured.focus();
+
+    await scrollTo(fixture, 40 * 60);
+
+    expect(captured.isConnected).toBe(true);
+    expect(captured.getAttribute('data-index')).toBe('3');
+    expect(document.activeElement).toBe(captured);
+  });
+
+  it('keeps the focus and the caret of an input inside a row the window scrolls past', async () => {
+    const fixture = await mount();
+    const input = rowById(fixture, 'row-3')!.querySelector('input')!;
+    input.focus();
+    input.setSelectionRange(2, 4);
+
+    await scrollTo(fixture, 40 * 60);
+
+    expect(input.isConnected).toBe(true);
+    expect(document.activeElement).toBe(input);
+    expect([input.selectionStart, input.selectionEnd]).toEqual([2, 4]);
+  });
+
+  it('keeps a focused row mounted and focused when a keyed reorder moves it out of the window', async () => {
+    const fixture = await mount();
+    const captured = rowById(fixture, 'row-3')!;
+    captured.focus();
+
+    fixture.componentInstance.move(3, 99);
+    await flush(fixture);
+
+    expect(captured.isConnected).toBe(true);
+    expect(captured.getAttribute('data-index')).toBe('99');
+    expect(captured.style.transform).toBe('translateY(3960px)');
+    expect(document.activeElement).toBe(captured);
+    const rendered = rowEls(fixture).map((el) => Number(el.getAttribute('data-index')));
+    expect([...rendered].sort((a, b) => a - b)).toEqual(rendered);
+  });
+
+  it('leaves range() to the scrolled window while a focused row is kept outside it', async () => {
+    const fixture = await mount();
+    rowById(fixture, 'row-3')!.focus();
+
+    await scrollTo(fixture, 40 * 60);
+
+    const [start] = fixture.componentInstance.viewport().range();
+    expect(start).toBeGreaterThan(3);
+    expect(rowById(fixture, 'row-3')).toBeDefined();
+  });
+
+  it('unmounts the kept row once focus moves out of it', async () => {
+    const fixture = await mount();
+    const captured = rowById(fixture, 'row-3')!;
+    captured.focus();
+    await scrollTo(fixture, 40 * 60);
+
+    (fixture.nativeElement as HTMLElement)
+      .querySelector<HTMLElement>('[data-testid="outside"]')!
+      .focus();
+    await flush(fixture);
+
+    expect(captured.isConnected).toBe(false);
+    expect(rowById(fixture, 'row-3')).toBeUndefined();
+  });
+
+  it('keeps the row when focus moves between elements inside it', async () => {
+    const fixture = await mount();
+    const captured = rowById(fixture, 'row-3')!;
+    captured.focus();
+    await scrollTo(fixture, 40 * 60);
+
+    captured.querySelector('input')!.focus();
+    await flush(fixture);
+
+    expect(captured.isConnected).toBe(true);
+    expect(document.activeElement).toBe(captured.querySelector('input'));
+  });
+
+  it('forgets the kept row when its item leaves the data, so a returning item is not remounted', async () => {
+    const fixture = await mount();
+    rowById(fixture, 'row-3')!.focus();
+    await scrollTo(fixture, 40 * 60);
+    const removed = fixture.componentInstance.rows()[3]!;
+
+    fixture.componentInstance.rows.update((rows) => rows.filter((row) => row !== removed));
+    await flush(fixture);
+    expect(rowById(fixture, 'row-3')).toBeUndefined();
+
+    fixture.componentInstance.rows.update((rows) => [
+      ...rows.slice(0, 3),
+      removed,
+      ...rows.slice(3),
+    ]);
+    await flush(fixture);
+
+    expect(rowById(fixture, 'row-3')).toBeUndefined();
+  });
+
+  it('keeps the reorder pin and the focused row mounted side by side', async () => {
+    const fixture = await mount();
+    const focused = rowById(fixture, 'row-3')!;
+    focused.focus();
+    fixture.componentInstance.viewport().setReorderingIndex(40);
+    await scrollTo(fixture, 40 * 80);
+
+    expect(rowById(fixture, 'row-3')).toBe(focused);
+    expect(rowById(fixture, 'row-40')).toBeDefined();
+
+    fixture.componentInstance.viewport().setReorderingIndex(null);
+    await flush(fixture);
+
+    expect(rowById(fixture, 'row-40')).toBeUndefined();
+    expect(rowById(fixture, 'row-3')).toBe(focused);
+    expect(document.activeElement).toBe(focused);
+  });
+});
+
 describe('ForVirtualViewport — [estimateSize] changes after the first render', () => {
   @Component({
     host: { 'data-fixture': 'estimate-host' },
