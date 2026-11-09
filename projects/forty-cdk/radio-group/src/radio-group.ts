@@ -25,6 +25,7 @@ import {
   injectRovingFocusRestore,
   RovingFocusYield,
   leavesControl,
+  hostAriaLabel,
 } from 'forty-cdk/core';
 import {
   FOR_RADIO_GROUP_CONTEXT,
@@ -57,6 +58,7 @@ import { FOR_RADIO_GROUP_DEFAULTS } from 'forty-cdk/defaults';
   exportAs: 'forRadioGroup',
   host: {
     role: 'radiogroup',
+    '[attr.aria-label]': 'resolvedAriaLabel()',
     '[attr.aria-orientation]': 'orientation()',
     '[attr.aria-disabled]': 'effectiveDisabled() ? "true" : null',
     '[attr.aria-readonly]': 'readonly() ? "true" : null',
@@ -80,6 +82,16 @@ export class ForRadioGroup
 
   /** Two-way bindable. Selected radio's value; `null` = none selected. */
   readonly value = model<string | null>(null);
+
+  /**
+   * Manual `aria-label` for the group. Use this when no visible label element
+   * exists; otherwise prefer pointing `aria-labelledby` at one. A `null`
+   * (default) or empty value emits no attribute, and a static `aria-label` on
+   * the host wins over it. Matches the uniform labelling input on `ForToolbar` / `ForListbox`.
+   */
+  readonly ariaLabel = input<string | null>(null);
+
+  private readonly resolvedAriaLabel = hostAriaLabel(() => this.ariaLabel() || null);
 
   /**
    * Layout hint reflected as `aria-orientation` and `data-orientation`. It

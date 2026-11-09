@@ -26,6 +26,7 @@
  */
 export const FOR_RADIO_GROUP_HOST_DIRECTIVE_INPUTS = [
   'value',
+  'ariaLabel',
   'dir',
   'dirty',
   'disabled',
