@@ -33,6 +33,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and a parent still toggles in both directions. A disabled ancestor's own entry no longer follows
   its children either. A disabled node in a collapsed subtree is unknown to the tree and is still
   written; leave it out of `descendantsOf` to protect it there.
+- **Toast** — `[forToastClose]` on a toast shown with `dismissible: false` now carries
+  `aria-disabled="true"` and `data-disabled` ([#2747](https://github.com/tutkli/forty-cdk/issues/2747)).
+  In a custom template that renders it unconditionally, the button was enabled and announced while
+  pressing it did nothing. It stays focusable and still does nothing. The README's custom-template
+  examples now leave it out of such a toast with `@if (toast.config.dismissible !== false)`, as the
+  built-in shape does.
+- **Toast docs** — the hero and the other toast examples no longer close every toast in the app
+  when they are destroyed ([#2747](https://github.com/tutkli/forty-cdk/issues/2747)). Their
+  teardown called `ForToastManager.dismissAll()`, so pasting one into a routed page dismissed the
+  app's other toasts, an Undo toast among them, on every navigation away. Each example now keeps
+  the refs `show()` returns and dismisses only those.
+- **Scroll area** — `[forScrollAreaCorner]` now reflects `data-state` (`visible` / `hidden`) and
+  reads `visible` only while both scrollbars do
+  ([#2746](https://github.com/tutkli/forty-cdk/issues/2746)). Under `type="hover"` and
+  `type="scroll"` the corner stayed painted while both bars faded and carried no attribute to fade
+  it with, although the README said it showed only with both scrollbars. A fade keyed off
+  `[data-state='hidden']` now covers the corner too; it is still mounted whenever both axes
+  overflow.
 - **Drag and drop** — with `[animateReorder]`, `data-drag-animating` and the settling preview now
   last exactly as long as the item's or the preview's own `transform` transition
   ([#2748](https://github.com/tutkli/forty-cdk/issues/2748)). The first `transitionend` of any
@@ -41,6 +59,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   or kept it past its transition, and `data-drag-animating` was removed after a fixed 500 ms
   whatever the CSS said. The fallback for a `transitionend` that never arrives is now timed from
   the computed transition, and with no transition configured `data-drag-animating` clears at once.
+
+### Changed
+
+- **Scroll area — BREAKING.** `setDragging`, `registerThumb` and `unregisterThumb` are no longer
+  public on `ForScrollAreaScrollbar`, and `ForScrollAreaThumb.scrollbar` is no longer public
+  ([#2746](https://github.com/tutkli/forty-cdk/issues/2746)). They were the wiring between the thumb
+  and its track: calling `setDragging(true)` through `#bar="forScrollAreaScrollbar"` pinned the
+  track visible until something reset it. The geometry signals and the `scrollToTrackPoint` /
+  `pageBy` / `scrollToPosition` commands a hand-rolled track gesture uses stay public. **Migrate**
+  by reaching the scrollbar through its own template reference instead of the thumb's.
 
 ## [0.42.0] - 2026-11-08
 

@@ -1914,6 +1914,33 @@ describe('ForToastViewport [template] / [toastClass]', () => {
     );
   });
 
+  it('[forToastClose] reports itself disabled on a non-dismissible toast and leaves it mounted', async () => {
+    const r = renderHost(ViewportDefaultsHost);
+    await r.flush();
+    r.instance.toasts.show({ title: 'Update available', dismissible: false });
+    await r.flush();
+
+    const close = r.query('[data-test-id="viewport-close"]')!;
+    expect(close.getAttribute('aria-disabled')).toBe('true');
+    expect(close.getAttribute('data-disabled')).toBe('');
+    expect(close.hasAttribute('disabled')).toBe(false);
+
+    close.click();
+    await r.flush();
+    expect(r.instance.toasts.count()).toBe(1);
+  });
+
+  it('[forToastClose] carries neither disabled attribute on a dismissible toast', async () => {
+    const r = renderHost(ViewportDefaultsHost);
+    await r.flush();
+    r.instance.toasts.show({ title: 'Saved' });
+    await r.flush();
+
+    const close = r.query('[data-test-id="viewport-close"]')!;
+    expect(close.hasAttribute('aria-disabled')).toBe(false);
+    expect(close.hasAttribute('data-disabled')).toBe(false);
+  });
+
   it('a per-toast template still wins over the viewport [template]', async () => {
     const r = renderHost(ViewportDefaultsHost);
     await r.flush();

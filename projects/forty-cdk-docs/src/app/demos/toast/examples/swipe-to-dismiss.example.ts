@@ -5,7 +5,7 @@ import {
   inject,
   ViewEncapsulation,
 } from '@angular/core';
-import { ForToastManager, ForToastViewport } from 'forty-cdk/toast';
+import { ForToastManager, type ForToastRef, ForToastViewport } from 'forty-cdk/toast';
 
 @Component({
   selector: 'app-toast-swipe-example',
@@ -161,18 +161,30 @@ import { ForToastManager, ForToastViewport } from 'forty-cdk/toast';
 })
 export class ToastSwipeExample {
   protected readonly manager = inject(ForToastManager);
+  readonly #opened = new Set<ForToastRef>();
 
   constructor() {
-    inject(DestroyRef).onDestroy(() => this.manager.dismissAll());
+    inject(DestroyRef).onDestroy(() => {
+      for (const ref of this.#opened) {
+        ref.dismiss();
+      }
+    });
   }
 
   protected notify(): void {
-    this.manager.show({
-      variant: 'info',
-      title: 'Swipe me away',
-      description: 'Drag the toast to the right to dismiss it.',
-      region: 'toast-swipe',
-      duration: 0,
-    });
+    this.#track(
+      this.manager.show({
+        variant: 'info',
+        title: 'Swipe me away',
+        description: 'Drag the toast to the right to dismiss it.',
+        region: 'toast-swipe',
+        duration: 0,
+      }),
+    );
+  }
+
+  #track(ref: ForToastRef): void {
+    this.#opened.add(ref);
+    void ref.closed.then(() => this.#opened.delete(ref));
   }
 }

@@ -79,7 +79,7 @@ Fire a toast and leave it alone: hovering pauses it, and the stack reflects `dat
 
 ```ts
 import { ChangeDetectionStrategy, Component, DestroyRef, inject } from '@angular/core';
-import { ForToastManager, ForToastViewport } from 'forty-cdk/toast';
+import { ForToastManager, type ForToastRef, ForToastViewport } from 'forty-cdk/toast';
 
 type Variant = 'info' | 'success' | 'warning' | 'error';
 
@@ -105,9 +105,14 @@ type Variant = 'info' | 'success' | 'warning' | 'error';
 })
 export class ToastDefaultExample {
   protected readonly manager = inject(ForToastManager);
+  readonly #opened = new Set<ForToastRef>();
 
   constructor() {
-    inject(DestroyRef).onDestroy(() => this.manager.dismissAll());
+    inject(DestroyRef).onDestroy(() => {
+      for (const ref of this.#opened) {
+        ref.dismiss();
+      }
+    });
   }
 
   protected notify(variant: Variant): void {
@@ -117,7 +122,12 @@ export class ToastDefaultExample {
       warning: { title: 'Storage almost full', description: 'You have used 90% of your quota.' },
       error: { title: 'Upload failed', description: 'The file could not be uploaded.' },
     }[variant];
-    this.manager.show({ variant, duration: 5000, region: 'toast-variants', ...copy });
+    this.#track(this.manager.show({ variant, duration: 5000, region: 'toast-variants', ...copy }));
+  }
+
+  #track(ref: ForToastRef): void {
+    this.#opened.add(ref);
+    void ref.closed.then(() => this.#opened.delete(ref));
   }
 }
 ```
@@ -374,11 +384,15 @@ The template context is `{ $implicit: ForToastInstance, data: T }`. Use `toast.d
   <div forToastTitle class="toast__title">{{ data.title }}</div>
   <div forToastDescription class="toast__desc">{{ data.body }}</div>
   <button forToastAction altText="Undo (Cmd+Z)" (click)="restore(data.item)">Undo</button>
+  @if (toast.config.dismissible !== false) {
   <button forToastClose class="toast__close" aria-label="Dismiss">×</button>
+  }
 </ng-template>
 ```
 
 `[forToastAction]` / `[forToastClose]` emit `(dismiss)` (reason `'action'` / `'manual'`) through the same context as the default shape, so there is no need to call `toast.dismiss()` manually for those. (`toast.dismiss()` from `$implicit` is still available for arbitrary buttons that aren't action / close.) This combines with per-toast `class`: add a `class` for the root and your own classes on the helper elements.
+
+The `@if` leaves the close button out of a toast shown with `dismissible: false`, as the built-in shape does. A template that renders it unconditionally gets a button carrying `aria-disabled="true"` and `data-disabled` on such a toast, and pressing it does nothing.
 
 ### Viewport-wide defaults
 
@@ -396,7 +410,9 @@ An app with one toast design sets it once on the viewport instead of on every `s
 
 <ng-template #toastTpl let-toast>
   <div forToastTitle>{{ toast.config.title }}</div>
+  @if (toast.config.dismissible !== false) {
   <button forToastClose aria-label="Dismiss">×</button>
+  }
 </ng-template>
 ```
 

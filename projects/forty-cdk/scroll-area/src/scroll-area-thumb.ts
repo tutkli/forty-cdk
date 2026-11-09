@@ -1,9 +1,10 @@
 import { DestroyRef, DOCUMENT, Directive, ElementRef, inject, signal } from '@angular/core';
 
 import { orphanContextError } from 'forty-cdk/core';
+import { type ScrollbarThumbProtocol } from './scroll-area-context';
 import { ForScrollAreaScrollbar } from './scroll-area-scrollbar';
 
-function injectRequiredScrollbar(): ForScrollAreaScrollbar {
+function injectRequiredScrollbar(): ScrollbarThumbProtocol {
   const scrollbar = inject(ForScrollAreaScrollbar, { optional: true });
   if (!scrollbar) {
     throw orphanContextError({
@@ -13,7 +14,7 @@ function injectRequiredScrollbar(): ForScrollAreaScrollbar {
       token: 'ForScrollAreaScrollbar',
     });
   }
-  return scrollbar;
+  return scrollbar as unknown as ScrollbarThumbProtocol;
 }
 
 /**
@@ -40,7 +41,7 @@ function injectRequiredScrollbar(): ForScrollAreaScrollbar {
   },
 })
 export class ForScrollAreaThumb {
-  readonly scrollbar = injectRequiredScrollbar();
+  private readonly scrollbar = injectRequiredScrollbar();
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
   readonly #document = inject(DOCUMENT);
 

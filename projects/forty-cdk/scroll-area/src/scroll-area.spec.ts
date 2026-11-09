@@ -132,6 +132,33 @@ class ScrollAreaTrackPressHost {
 }
 
 @Component({
+  imports: [
+    ForScrollArea,
+    ForScrollAreaViewport,
+    ForScrollAreaScrollbar,
+    ForScrollAreaThumb,
+    ForScrollAreaCorner,
+  ],
+  template: `
+    <div forScrollArea [type]="type()" trackPress="jump" data-testid="root">
+      <div forScrollAreaViewport></div>
+      <div forScrollAreaScrollbar orientation="vertical" data-testid="vbar">
+        <div forScrollAreaThumb data-testid="vthumb"></div>
+      </div>
+      <div forScrollAreaScrollbar orientation="horizontal" data-testid="hbar">
+        <div forScrollAreaThumb data-testid="hthumb"></div>
+      </div>
+      <div forScrollAreaCorner data-testid="corner"></div>
+    </div>
+  `,
+})
+class ScrollAreaCornerHost {
+  readonly type = signal<ForScrollAreaType>('always');
+  private readonly ctx = viewChild.required(ForScrollArea, { read: FOR_SCROLL_AREA_CONTEXT });
+  readonly root = (): ScrollAreaContext => this.ctx() as ScrollAreaContext;
+}
+
+@Component({
   selector: 'ds-scroll-viewport',
   hostDirectives: [ForScrollAreaViewport],
   template: '<ng-content />',
@@ -297,6 +324,97 @@ describe('ForScrollArea', () => {
       expect(vbar.getAttribute('data-state')).toBe('hidden');
       expect(vbar.hasAttribute('hidden')).toBe(true);
       expect(vbar.style.display).toBe('none');
+    });
+  });
+
+  describe('corner data-state follows both scrollbars', () => {
+    const pointer = (type: string, init: PointerEventInit = {}): PointerEvent =>
+      new PointerEvent(type, { bubbles: true, cancelable: true, pointerId: 1, ...init });
+
+    const stubPointerCapture = (el: HTMLElement): void => {
+      el.setPointerCapture = (): void => {};
+      el.hasPointerCapture = (): boolean => false;
+      el.releasePointerCapture = (): void => {};
+    };
+
+    async function renderOverflowing(type: ForScrollAreaType) {
+      const rendered = renderHost(ScrollAreaCornerHost);
+      rendered.fixture.componentInstance.type.set(type);
+      await rendered.flush();
+      rendered.instance.root().reportSize(100, 100, 1000, 1000);
+      await rendered.flush();
+      const state = (testid: string): string | null =>
+        rendered.query<HTMLElement>(`[data-testid="${testid}"]`)!.getAttribute('data-state');
+      return { ...rendered, state };
+    }
+
+    it('keeps the corner mounted with data-state="hidden" while both type="hover" scrollbars fade, and shows it while hovered', async () => {
+      const { query, flush, state } = await renderOverflowing('hover');
+      const corner = query<HTMLElement>('[data-testid="corner"]')!;
+
+      expect(state('vbar')).toBe('hidden');
+      expect(state('hbar')).toBe('hidden');
+      expect(state('corner')).toBe('hidden');
+      expect(corner.hasAttribute('hidden')).toBe(false);
+      expect(corner.style.display).not.toBe('none');
+
+      query<HTMLElement>('[data-testid="root"]')!.dispatchEvent(new PointerEvent('pointerenter'));
+      await flush();
+      expect(state('vbar')).toBe('visible');
+      expect(state('hbar')).toBe('visible');
+      expect(state('corner')).toBe('visible');
+
+      query<HTMLElement>('[data-testid="root"]')!.dispatchEvent(new PointerEvent('pointerleave'));
+      await flush();
+      expect(state('corner')).toBe('hidden');
+    });
+
+    it('shows the type="scroll" corner only inside the scrolling window', async () => {
+      const { instance, flush, state } = await renderOverflowing('scroll');
+      expect(state('corner')).toBe('hidden');
+
+      instance.root().noteUserScroll();
+      await flush();
+      expect(state('vbar')).toBe('visible');
+      expect(state('hbar')).toBe('visible');
+      expect(state('corner')).toBe('visible');
+    });
+
+    it('shows the corner under type="auto" whenever both axes overflow', async () => {
+      const { state } = await renderOverflowing('auto');
+      expect(state('corner')).toBe('visible');
+    });
+
+    it('shows the corner under type="always" with no overflow', async () => {
+      const { query, flush } = renderHost(ScrollAreaCornerHost);
+      await flush();
+      expect(query('[data-testid="corner"]')!.getAttribute('data-state')).toBe('visible');
+    });
+
+    it('stays hidden while a gesture pins one track, and follows both tracks once a second gesture pins the other', async () => {
+      const { query, flush, state } = await renderOverflowing('scroll');
+      const vthumb = query<HTMLElement>('[data-testid="vthumb"]')!;
+      const hbar = query<HTMLElement>('[data-testid="hbar"]')!;
+      stubPointerCapture(vthumb);
+      stubPointerCapture(hbar);
+
+      vthumb.dispatchEvent(pointer('pointerdown'));
+      await flush();
+      expect(state('vbar')).toBe('visible');
+      expect(state('hbar')).toBe('hidden');
+      expect(state('corner')).toBe('hidden');
+
+      hbar.dispatchEvent(pointer('pointerdown', { pointerId: 2 }));
+      await flush();
+      expect(state('vbar')).toBe('visible');
+      expect(state('hbar')).toBe('visible');
+      expect(state('corner')).toBe('visible');
+
+      document.dispatchEvent(pointer('pointerup'));
+      await flush();
+      expect(state('vbar')).toBe('hidden');
+      expect(state('hbar')).toBe('hidden');
+      expect(state('corner')).toBe('hidden');
     });
   });
 

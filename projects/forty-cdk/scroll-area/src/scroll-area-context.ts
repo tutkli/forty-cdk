@@ -40,12 +40,12 @@ export interface ForScrollAreaContext {
 }
 
 /**
- * The viewport / content registration protocol and the geometry reports the
- * viewport pushes into the root.
+ * The viewport / content / scrollbar registration protocol and the geometry
+ * reports the viewport pushes into the root.
  *
  * **Not** part of {@link ForScrollAreaContext} and never exported from
- * `public-api.ts` — only `[forScrollAreaViewport]` and `[forScrollAreaContent]`
- * call these members.
+ * `public-api.ts` — only `[forScrollAreaViewport]`, `[forScrollAreaContent]`
+ * and `[forScrollAreaScrollbar]` call these members.
  */
 export interface ScrollAreaRegistrationContext {
   registerViewport(el: HTMLElement): void;
@@ -55,6 +55,47 @@ export interface ScrollAreaRegistrationContext {
   reportScroll(left: number, top: number): void;
   reportSize(clientW: number, clientH: number, scrollW: number, scrollH: number): void;
   noteUserScroll(): void;
+  registerScrollbar(handle: ScrollAreaScrollbarHandle): void;
+  unregisterScrollbar(handle: ScrollAreaScrollbarHandle): void;
+}
+
+/** What a mounted `[forScrollAreaScrollbar]` registers with its root. */
+export interface ScrollAreaScrollbarHandle {
+  readonly orientation: Signal<ForScrollbarOrientation>;
+  /** True while a thumb drag or track press pins the track visible. */
+  readonly pinned: Signal<boolean>;
+}
+
+/**
+ * What a piece reads off the root beyond {@link ForScrollAreaContext}.
+ *
+ * **Not** part of {@link ForScrollAreaContext} and never exported from
+ * `public-api.ts` — only `[forScrollAreaCorner]` reads it.
+ */
+export interface ScrollAreaPieceContext {
+  /** Whether a registered scrollbar of `orientation` is pinned by a gesture. */
+  scrollbarPinned(orientation: ForScrollbarOrientation): boolean;
+}
+
+/**
+ * The members `[forScrollAreaThumb]` reaches on its `[forScrollAreaScrollbar]`.
+ *
+ * Never exported from `public-api.ts`. The thumb reads the scrollbar at this
+ * type, so `setDragging` / `registerThumb` / `unregisterThumb` stay TS-`private`
+ * on `ForScrollAreaScrollbar` and out of its emitted `.d.ts`.
+ */
+export interface ScrollbarThumbProtocol {
+  readonly orientation: Signal<ForScrollbarOrientation>;
+  readonly state: Signal<'visible' | 'hidden'>;
+  readonly thumbSize: Signal<number>;
+  readonly thumbOffset: Signal<number>;
+  readonly usableTrack: Signal<number>;
+  readonly maxScroll: Signal<number>;
+  readonly scrollPosition: Signal<number>;
+  scrollToPosition(position: number): void;
+  setDragging(dragging: boolean): void;
+  registerThumb(el: HTMLElement): void;
+  unregisterThumb(el: HTMLElement): void;
 }
 
 /**
@@ -75,7 +116,8 @@ export const FOR_SCROLL_AREA_CONTEXT = new InjectionToken<ForScrollAreaContext>(
 /**
  * The scroll area's internal coordination surface: everything
  * {@link ForScrollAreaContext} publishes plus the
- * {@link ScrollAreaRegistrationContext} protocol.
+ * {@link ScrollAreaRegistrationContext} protocol and the
+ * {@link ScrollAreaPieceContext} reads.
  *
  * Never exported from `public-api.ts`. It is the type the pieces read
  * {@link FOR_SCROLL_AREA_CONTEXT} at, so a consumer who injects that token gets
@@ -83,7 +125,8 @@ export const FOR_SCROLL_AREA_CONTEXT = new InjectionToken<ForScrollAreaContext>(
  * declares the protocol members TS-`private`, which keeps them out of the
  * emitted `.d.ts` while `useExisting` still satisfies this contract at runtime.
  */
-export interface ScrollAreaContext extends ForScrollAreaContext, ScrollAreaRegistrationContext {}
+export interface ScrollAreaContext
+  extends ForScrollAreaContext, ScrollAreaRegistrationContext, ScrollAreaPieceContext {}
 
 export function injectScrollAreaContext(piece: string): ScrollAreaContext {
   const ctx = inject(FOR_SCROLL_AREA_CONTEXT, { optional: true }) as ScrollAreaContext | null;

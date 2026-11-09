@@ -194,7 +194,11 @@ Draggable thumb, sized and translated automatically. Mirrors its scrollbar's ori
 
 ### `ForScrollAreaCorner`
 
-Filler in the corner where horizontal and vertical scrollbars meet. Shows only when both scrollbars are visible (or always, under `type="always"`), self-removing via the `hidden` attribute plus an inline `display: none` otherwise. Carries no `data-*` attributes.
+Filler in the corner where horizontal and vertical scrollbars meet. It is mounted whenever both axes overflow (or always, under `type="always"`), self-removing via the `hidden` attribute plus an inline `display: none` otherwise. While mounted, its `data-state` follows the scrollbars: `visible` only while both of them are `visible`, so a fade keyed off `[data-state='hidden']` covers the corner together with the bars.
+
+| Data attribute | Values                |
+| -------------- | --------------------- |
+| `data-state`   | `visible` \| `hidden` |
 
 ## Scoped defaults
 
@@ -237,7 +241,8 @@ The label may instead point at a visible heading with `aria-labelledby`. The lib
 forty-cdk ships no styles: put your own class on each piece and key your CSS off the `data-*` attributes listed under [API](#api), not off the `for*` selectors ([Styling forty-cdk](../../../docs/styling.md) explains why).
 
 ```css
-.sa-scrollbar[data-state='hidden'] {
+.sa-scrollbar[data-state='hidden'],
+.sa-corner[data-state='hidden'] {
   opacity: 0;
   pointer-events: none;
 }
@@ -312,7 +317,7 @@ forty-cdk ships no styles: put your own class on each piece and key your CSS off
   ```
 
 - **For reliable touch track presses and thumb drags, give the scrollbar `touch-action: none`.** The library adds no inline `touch-action` (on the track or the thumb), so on a page that scrolls the browser can claim a finger's drag on the track or the thumb as a page pan, and the gesture ends early with `pointercancel`. Add the rule in your own CSS on `[forScrollAreaScrollbar]` when you want the gesture to belong to the scrollbar.
-- **The corner only shows when both scrollbars are visible** (or always, under `type="always"`, where both tracks are permanently present). Otherwise the directive hides it with an inline `display: none` in addition to the `hidden` attribute that removes it from the accessibility tree (the only place the rule "primitives never apply `[hidden]`" doesn't apply, because the corner has no logical presence without two scrollbars). Because the inline style beats any author selector rule, you can give `[forScrollAreaCorner]` a custom `display` without a `.x[hidden] { display: none }` workaround. The directive's `display: none` still wins while the corner is hidden, and your `display` applies once both scrollbars show.
+- **The corner is mounted only when both axes overflow** (or always, under `type="always"`, where both tracks are permanently present), and its `data-state` is `visible` only while both scrollbars are: under `type="hover"` / `"scroll"` it reads `hidden` whenever the bars fade, and a thumb drag or track press counts for the axis it pins. When an axis does not overflow the directive hides it with an inline `display: none` in addition to the `hidden` attribute that removes it from the accessibility tree (the only place the rule "primitives never apply `[hidden]`" doesn't apply, because the corner has no logical presence without two scrollbars). Because the inline style beats any author selector rule, you can give `[forScrollAreaCorner]` a custom `display` without a `.x[hidden] { display: none }` workaround. The directive's `display: none` still wins while the corner is hidden, and your `display` applies once both axes overflow.
 - **Content observation is opt-in**: the viewport observes its own size automatically, but only observes the content element when the consumer tags it with `[forScrollAreaContent]`. Skipping the directive is allowed (the viewport still scrolls and the scrollbars still render); the scrollbars just won't react to content reflows. The library never guesses `firstElementChild`, since that silently breaks when content is wrapped in a layer or split across siblings.
 
 ## Wrapping in a design system

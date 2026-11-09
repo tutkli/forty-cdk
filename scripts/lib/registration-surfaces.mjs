@@ -90,7 +90,13 @@ export const REGISTRATION_SURFACES = {
     'POPOVER_TRIGGERS',
   ],
   'radio-group': ['RadioGroupContext', 'ForRadioHandle'],
-  'scroll-area': ['ScrollAreaContext', 'ScrollAreaRegistrationContext'],
+  'scroll-area': [
+    'ScrollAreaContext',
+    'ScrollAreaPieceContext',
+    'ScrollAreaRegistrationContext',
+    'ScrollAreaScrollbarHandle',
+    'ScrollbarThumbProtocol',
+  ],
   select: [
     'SelectContext',
     'SelectPieceContext',

@@ -5,7 +5,7 @@ import {
   inject,
   ViewEncapsulation,
 } from '@angular/core';
-import { ForToastManager, ForToastViewport } from 'forty-cdk/toast';
+import { ForToastManager, type ForToastRef, ForToastViewport } from 'forty-cdk/toast';
 
 type Variant = 'info' | 'success' | 'warning' | 'error';
 
@@ -159,9 +159,14 @@ type Variant = 'info' | 'success' | 'warning' | 'error';
 })
 export class ToastDefaultExample {
   protected readonly manager = inject(ForToastManager);
+  readonly #opened = new Set<ForToastRef>();
 
   constructor() {
-    inject(DestroyRef).onDestroy(() => this.manager.dismissAll());
+    inject(DestroyRef).onDestroy(() => {
+      for (const ref of this.#opened) {
+        ref.dismiss();
+      }
+    });
   }
 
   protected notify(variant: Variant): void {
@@ -171,6 +176,11 @@ export class ToastDefaultExample {
       warning: { title: 'Storage almost full', description: 'You have used 90% of your quota.' },
       error: { title: 'Upload failed', description: 'The file could not be uploaded.' },
     }[variant];
-    this.manager.show({ variant, duration: 5000, region: 'toast-variants', ...copy });
+    this.#track(this.manager.show({ variant, duration: 5000, region: 'toast-variants', ...copy }));
+  }
+
+  #track(ref: ForToastRef): void {
+    this.#opened.add(ref);
+    void ref.closed.then(() => this.#opened.delete(ref));
   }
 }
