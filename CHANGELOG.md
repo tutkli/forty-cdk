@@ -33,6 +33,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and a parent still toggles in both directions. A disabled ancestor's own entry no longer follows
   its children either. A disabled node in a collapsed subtree is unknown to the tree and is still
   written; leave it out of `descendantsOf` to protect it there.
+- **Drag and drop** — with `[animateReorder]`, `data-drag-animating` and the settling preview now
+  last exactly as long as the item's or the preview's own `transform` transition
+  ([#2748](https://github.com/tutkli/forty-cdk/issues/2748)). The first `transitionend` of any
+  property, or one bubbling up from a descendant, used to end the wait or use it up, so a row with
+  a second transition (a hover background, a fade, an animated child icon) lost the hook mid-flight
+  or kept it past its transition, and `data-drag-animating` was removed after a fixed 500 ms
+  whatever the CSS said. The fallback for a `transitionend` that never arrives is now timed from
+  the computed transition, and with no transition configured `data-drag-animating` clears at once.
 
 ## [0.42.0] - 2026-11-08
 

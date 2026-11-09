@@ -187,6 +187,7 @@ export {
   type DragPreview,
 } from './drag-session/drag-preview';
 export { focusWhenMounted, type FocusWhenMountedRef } from './drag-session/focus-when-mounted';
+export { awaitTransformTransition } from './drag-session/transform-transition';
 export { isDragLiftKey, resolveLiftedDragControl } from './drag-session/keyboard-drag-keys';
 export { createKeyboardDragMediator } from './drag-session/keyboard-drag-mediator';
 export {
