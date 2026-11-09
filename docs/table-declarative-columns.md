@@ -132,9 +132,9 @@ row styling (varying by the row's data, not just the column) is covered by
 
 Instead of maintaining a widths signal, per-column seed / update handlers, and a hand-built
 `grid-template-columns` string, let `<for-table-body>` own the width **state**: bind `[(columnWidths)]`
-to a plain map keyed by column `name`. It seeds each `resizable` column's handle `[width]`, so the
-`role="separator"` handle exposes `aria-valuenow` from the first render and the column's track picks up
-the seeded width immediately. It also folds every live change (pointer drag, keyboard resize, auto-fit)
+to a plain map keyed by column `name`. The body publishes each displayed column's width from the map,
+so the column's track picks up a seeded width immediately, and it seeds each `resizable` column's handle
+`[width]`, so the `role="separator"` handle exposes `aria-valuenow` from the first render. It also folds every live change (pointer drag, keyboard resize, auto-fit)
 back into the map immutably. The map is JSON-serializable, so persisting a user's column layout is one
 two-way binding plus one storage write:
 
@@ -179,7 +179,9 @@ A gesture that ends without a commit leaves the map as it was: `Escape`, a `poin
 handle unmounting mid-drag puts back the column's pre-drag width, and for a column the map held no
 width for, removes the key again, so the column keeps following its `fallbackWidth`.
 
-Only `resizable` columns participate; unknown names are ignored. Together with `[displayedColumns]` and
+A width in the map applies whether or not the column is `resizable`, so a fixed-layout column can be
+sized from the same map, and a column whose `resizable` turns off keeps the width it had instead of
+snapping back to its `fallbackWidth`. Names that match no displayed column are ignored. Together with `[displayedColumns]` and
 `[sort]`, `[(columnWidths)]` makes the full user-configurable table state three bindings. Prefer
 `(resizeCommit)` when you only need the gesture-end event (e.g. to write a single column to a server)
 rather than the whole width map.

@@ -1,4 +1,4 @@
-import { el, expect, gotoFixture, test } from './_helpers';
+import { el, expect, expectStays, gotoFixture, test } from './_helpers';
 
 test.describe('Table treegrid', () => {
   test.beforeEach(async ({ page }) => {
@@ -38,6 +38,25 @@ test.describe('Table treegrid', () => {
     await page.keyboard.press('ArrowLeft');
     await expect(el(page, 'row-a')).toHaveAttribute('aria-expanded', 'false');
     await expect(el(page, 'row-a1')).not.toBeVisible();
+  });
+
+  test('ArrowLeft / ArrowRight on a non-first cell of a parent row navigate without changing its state', async ({
+    page,
+  }) => {
+    await el(page, 'toggle-a').click();
+    await expect(el(page, 'row-a')).toHaveAttribute('aria-expanded', 'true');
+    await el(page, 'level-a').focus();
+    await page.keyboard.press('ArrowLeft');
+    await expect(el(page, 'cell-a')).toBeFocused();
+    await expect(el(page, 'row-a')).toHaveAttribute('aria-expanded', 'true');
+    await expect(el(page, 'row-a1')).toBeVisible();
+
+    await el(page, 'level-b').focus();
+    await page.keyboard.press('ArrowRight');
+    await expectStays(page, async () => {
+      await expect(el(page, 'level-b')).toBeFocused();
+      await expect(el(page, 'row-b')).toHaveAttribute('aria-expanded', 'false');
+    });
   });
 
   test('pointer-click the toggle button expands the row', async ({ page }) => {

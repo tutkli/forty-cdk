@@ -3,6 +3,7 @@ import { isPlatformBrowser } from '@angular/common';
 
 import {
   composedContains,
+  EscapeArbiter,
   isImeComposing,
   resolveActiveElement,
   resolveEventTarget,
@@ -242,7 +243,11 @@ export class DismissibleLayerStack {
   };
 
   constructor() {
+    const unregisterEscapeQuery = inject(EscapeArbiter).register((node) =>
+      this.#hasEscapeLayerAbove(node),
+    );
     inject(DestroyRef).onDestroy(() => {
+      unregisterEscapeQuery();
       this.#removeListeners();
       this.#stack.length = 0;
       this.#suppressDepth = 0;
@@ -334,6 +339,30 @@ export class DismissibleLayerStack {
     } finally {
       this.#suppressDepth--;
     }
+  }
+
+  /**
+   * Whether an `Escape` pressed inside `node` reaches an active layer before any layer containing
+   * `node`: walking down from the top, an active layer comes first. Answers `false` while the
+   * dispatcher is suppressed, since it would then dispatch to no layer.
+   */
+  #hasEscapeLayerAbove(node: Node): boolean {
+    if (this.#suppressDepth > 0) {
+      return false;
+    }
+    for (let i = this.#stack.length - 1; i >= 0; i--) {
+      const layer = this.#stack[i];
+      if (!layer) {
+        continue;
+      }
+      if (layer.contains(node)) {
+        return false;
+      }
+      if (layer.isActive) {
+        return true;
+      }
+    }
+    return false;
   }
 
   #installListeners(): void {

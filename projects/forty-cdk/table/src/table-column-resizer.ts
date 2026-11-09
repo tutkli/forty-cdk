@@ -25,6 +25,7 @@ import {
   isHistoryChord,
 } from 'forty-cdk/core';
 import { injectTableCellTabIndex } from './cell-tab-index';
+import { FOR_TABLE_DEF_REGISTRY } from './def-registry';
 import { assertColumnName, injectTableContext, injectTableRegistration } from './table-context';
 import { ForTableHeaderCell } from './table-header-cell';
 
@@ -60,6 +61,8 @@ export interface TableResizeRevertDescriptor {
  * to their layout (`grid-template-columns` in `<div>` mode, a `<col>` / cell width
  * in native `<table>` mode). **It never lays out columns itself and never resizes
  * data** — it owns the affordance, accessibility, and the published width only.
+ * For a column a `<for-table-body>` declares, the body publishes that var from its
+ * `[(columnWidths)]` map instead, and the handle only reports width changes.
  *
  * Reflects `data-resizing` (empty string) while a pointer drag is active. Carries
  * `role="separator"` with `aria-orientation="vertical"` and live `aria-value*`,
@@ -241,6 +244,9 @@ export class ForTableColumnResizer {
 
   constructor() {
     const destroyRef = inject(DestroyRef);
+    const defs = inject(FOR_TABLE_DEF_REGISTRY, { optional: true });
+    const bodyOwnsWidth = (column: string): boolean =>
+      defs?.columnNames().includes(column) ?? false;
     effect(() => {
       const column = this.column();
       assertColumnName(column, 'ForTableColumnResizer');
@@ -248,7 +254,9 @@ export class ForTableColumnResizer {
       if (this.#publishedColumn !== null && this.#publishedColumn !== column) {
         this.#registration.removeColumnWidth(this.#publishedColumn);
       }
-      if (w != null) {
+      if (bodyOwnsWidth(column)) {
+        this.#publishedColumn = null;
+      } else if (w != null) {
         this.#registration.setColumnWidth(column, w);
         this.#publishedColumn = column;
       } else {
@@ -256,7 +264,12 @@ export class ForTableColumnResizer {
         this.#publishedColumn = null;
       }
     });
-    destroyRef.onDestroy(() => this.#registration.removeColumnWidth(this.column()));
+    destroyRef.onDestroy(() => {
+      const column = this.column();
+      if (!bodyOwnsWidth(column)) {
+        this.#registration.removeColumnWidth(column);
+      }
+    });
     if (this.#isBrowser) {
       afterNextRender(() => this.#measuredWidth.set(this.#measureBaseWidth()));
       this.#pointerSession = createPointerDragSession({

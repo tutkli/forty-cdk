@@ -1,6 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { provideZonelessChangeDetection } from '@angular/core';
 
+import { EscapeArbiter } from 'forty-cdk/core';
 import { pressKey } from 'forty-cdk/testing';
 
 import { DismissibleLayer, DismissibleLayerStack } from './dismissible-layer';
@@ -1320,6 +1321,52 @@ describe('DismissibleLayer', () => {
       pressKey(document, 'Escape');
 
       expect(calls).toEqual(['above-escape']);
+    });
+  });
+
+  describe('the Escape query it answers through EscapeArbiter', () => {
+    const above = (node: Node): boolean => TestBed.inject(EscapeArbiter).hasEscapeLayerAbove(node);
+
+    it('answers false with no active layer', () => {
+      TestBed.inject(DismissibleLayerStack);
+      expect(above(host.querySelector('#inside')!)).toBe(false);
+    });
+
+    it('answers true for a node outside the only active layer', () => {
+      layer = makeLayer(outside);
+      layer.activate({ channels: [] });
+
+      expect(above(host.querySelector('#inside')!)).toBe(true);
+    });
+
+    it('answers false for a node inside the topmost active layer', () => {
+      layer = makeLayer(host);
+      layer.activate({ channels: ['pointer', 'focus'] });
+
+      expect(above(host.querySelector('#inside')!)).toBe(false);
+    });
+
+    it('answers true when a layer is stacked above the layer containing the node', () => {
+      layer = makeLayer(host);
+      layer.activate({ channels: ['pointer', 'focus'] });
+      const tip = makeLayer(outside);
+      tip.activate({ channels: [] });
+
+      try {
+        expect(above(host.querySelector('#inside')!)).toBe(true);
+        tip.deactivate();
+        expect(above(host.querySelector('#inside')!)).toBe(false);
+      } finally {
+        tip.deactivate();
+      }
+    });
+
+    it('answers false while the dispatcher is suppressed', () => {
+      layer = makeLayer(outside);
+      layer.activate({ channels: [] });
+      const stack = TestBed.inject(DismissibleLayerStack);
+
+      expect(stack.suppress(() => above(host.querySelector('#inside')!))).toBe(false);
     });
   });
 

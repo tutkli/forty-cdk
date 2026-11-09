@@ -17,6 +17,7 @@ import {
   composedContains,
   createPointerHighlight,
   defaultCompareWith,
+  EscapeArbiter,
   findFirstFocusable,
   stepFocusableCycle,
   firstEnabledHost,
@@ -265,6 +266,7 @@ export class ForTable<T = unknown> implements ForTableContext {
   readonly #roving = new RovingTabindex(() => this.#flatCells());
   readonly #pointer = createPointerHighlight({ items: () => this.#flatCells() });
   readonly #enteredCell = signal<HTMLElement | null>(null);
+  readonly #escapeArbiter = inject(EscapeArbiter);
   readonly #activations = new WeakSet<Event>();
 
   /**
@@ -679,7 +681,7 @@ export class ForTable<T = unknown> implements ForTableContext {
   }
 
   private handleCellKeydown(event: KeyboardEvent, host: HTMLElement, column?: string): void {
-    if (this.mode() === 'table') {
+    if (this.mode() === 'table' || (event.defaultPrevented && event.target === host)) {
       return;
     }
     this.#resolveCellKeydown(event, host, { rowActions: true, enterEntersCell: true, column });
@@ -769,6 +771,10 @@ export class ForTable<T = unknown> implements ForTableContext {
    * enters, so a widget the grid gives `tabindex="-1"` (`[forTableColumnResizer]`,
    * `[forTableSelectAll]`) is reached rather than skipped. A cell holding a single widget
    * cycles back to it. Tab targeted at the cell host itself keeps its document-wide meaning.
+   *
+   * Escape is left to the dismissible-layer stack while an active layer sits above every
+   * layer containing the cell (a tooltip on the cell's widget), so that overlay closes and
+   * interaction mode is kept; a layer around the grid (a dialog) never takes it from here.
    */
   #handleCellEntryKeydown(event: KeyboardEvent, host: HTMLElement): boolean {
     if ((event.key === 'Enter' || event.key === 'F2') && event.target === host) {
@@ -798,7 +804,8 @@ export class ForTable<T = unknown> implements ForTableContext {
       event.key === 'Escape' &&
       !isImeComposing(event) &&
       this.#enteredCell() === host &&
-      event.target !== host
+      event.target !== host &&
+      !this.#escapeArbiter.hasEscapeLayerAbove(host)
     ) {
       event.preventDefault();
       this.#enteredCell.set(null);
@@ -841,6 +848,11 @@ export class ForTable<T = unknown> implements ForTableContext {
     return true;
   }
 
+  /**
+   * Treegrid expand / collapse, answered only on the first cell of an expandable row: on every
+   * other cell the arrows navigate, so moving across a parent row's columns never changes its
+   * state.
+   */
   #handleExpansionKeydown(event: KeyboardEvent, host: HTMLElement): boolean {
     if (this.mode() !== 'treegrid') {
       return false;
@@ -850,7 +862,7 @@ export class ForTable<T = unknown> implements ForTableContext {
       return false;
     }
     const row = this.#rowOfCell(host);
-    if (!row?.expandable() || row.value() === undefined) {
+    if (!row?.expandable() || row.value() === undefined || row.cells()[0]?.host !== host) {
       return false;
     }
     const value = row.value() as T;

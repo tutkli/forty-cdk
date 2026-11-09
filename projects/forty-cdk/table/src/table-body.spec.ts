@@ -2536,6 +2536,40 @@ describe('ForTableBody', () => {
     });
   });
 
+  describe('columnWidths publishes every displayed column, resizable or not', () => {
+    const widthVar = (root: HTMLElement, column: string): string =>
+      root.style.getPropertyValue(`--for-table-col-${column}-width`);
+
+    it('publishes the width the map holds for a non-resizable column, and drops it with the key', async () => {
+      const { instance, query, flush } = renderHost(FallbackWidthHost);
+      instance.widths.set({ role: 200 });
+      await flush();
+      const root = query('[forTable]') as HTMLElement;
+      expect(widthVar(root, 'role')).toBe('200px');
+
+      instance.widths.set({});
+      await flush();
+      expect(widthVar(root, 'role')).toBe('');
+    });
+
+    it('keeps the track a resizable column had when resizable turns off', async () => {
+      const { instance, query, flush } = renderHost(ResizeOptionsHost);
+      await flush();
+      const root = query('[forTable]') as HTMLElement;
+      expect(widthVar(root, 'name')).toBe('150px');
+
+      instance.resizable.set(false);
+      await flush();
+      expect(query('[forTableColumnResizer]')).toBeNull();
+      expect(instance.widths()).toEqual({ name: 150 });
+      expect(widthVar(root, 'name')).toBe('150px');
+
+      instance.resizable.set(true);
+      await flush();
+      expect(widthVar(root, 'name')).toBe('150px');
+    });
+  });
+
   describe('per-column resize options + columnWidths (#1351)', () => {
     it('forwards resizeMin / resizeMax to the stamped handle as aria-value bounds', () => {
       const { instance, query, fixture } = renderHost(ResizeOptionsHost);
