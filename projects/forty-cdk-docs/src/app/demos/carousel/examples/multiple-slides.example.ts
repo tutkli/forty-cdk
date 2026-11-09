@@ -34,7 +34,7 @@ interface Slide {
       forCarousel
       class="mcar"
       [(activeIndex)]="activeIndex"
-      loop
+      containScroll
       [slidesPerView]="3"
       align="start"
       ariaLabel="Product gallery"
