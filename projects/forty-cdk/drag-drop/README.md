@@ -651,10 +651,13 @@ onReorder({ from, to }: ForVirtualReorderEvent): void {
 ```
 
 A custom integration that cannot use either companion must supply the same three
-mechanisms itself: map window-relative to absolute indices with the reusable
-`translateWindowReorder` helper (`forty-cdk/core`), keep the lifted row mounted
-for the duration of the drag, and step the keyboard target over the true total
-count. Miss any one of the three and the failure is silent: an index that
+mechanisms itself: map window-relative to absolute indices, keep the lifted row
+mounted for the duration of the drag, and step the keyboard target over the true
+total count. The mapping reads the absolute index of every rendered row, in DOM
+order. `previousIndex` is the lifted row's position in that list. `currentIndex`
+is a position in the same list with the lifted row taken out: the target is the
+absolute index found there (one past the last entry when the row lands at the
+end), minus one when it is greater than the lifted row's own. Miss any one of the three and the failure is silent: an index that
 addresses the wrong row, a lifted row recycled mid-drag, or a keyboard move that
 stops at the window edge.
 

@@ -2151,6 +2151,44 @@ describe('ForTimePicker', () => {
       await r.flush();
     }
 
+    @Component({
+      imports: [ForTimePicker, ForTimePickerTrigger, ForTimeField, ForTimeFieldSegment],
+      providers: [...provideNativeDateAdapter()],
+      template: `
+        <div forTimePicker anatomy="field" [pending]="pending()" data-testid="picker">
+          <div forTimeField data-testid="group" #field="forTimeField">
+            @for (s of field.segments(); track s.id) {
+              @if (!s.isLiteral) {
+                <span forTimeFieldSegment [segment]="s.type!">{{ s.text }}</span>
+              }
+            }
+          </div>
+          <button forTimePickerTrigger data-testid="trigger" aria-label="Choose a time">
+            Slots
+          </button>
+        </div>
+      `,
+    })
+    class PendingFieldAnatomyHost {
+      readonly pending = signal(false);
+    }
+
+    it('carries aria-busy once, on the adopted field, while the picker is pending', async () => {
+      const r = renderHost(PendingFieldAnatomyHost);
+      const busy = () =>
+        r.queryAll('[aria-busy="true"]').map((el) => el.getAttribute('data-testid'));
+      expect(busy()).toEqual([]);
+
+      r.instance.pending.set(true);
+      await r.flush();
+      expect(busy()).toEqual(['group']);
+      expect(r.query('[data-testid="picker"]')!.getAttribute('data-pending')).toBe('');
+
+      r.instance.pending.set(false);
+      await r.flush();
+      expect(busy()).toEqual([]);
+    });
+
     it('writes a typed time into the form bound on the picker, dirty then touched on blur', async () => {
       const r = renderHost(TimeFieldAnatomyHost);
       await typeInto(r, 'hour', '09');

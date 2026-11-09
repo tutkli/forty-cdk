@@ -338,7 +338,10 @@ Add two parts:
 
 ```html
 <div forCombobox #combobox="forCombobox" [(value)]="value" [(query)]="query" [(open)]="open">
-  <button forComboboxTrigger>{{ selectedLabel() }}</button>
+  <span id="country-label">Country</span>
+  <button forComboboxTrigger aria-labelledby="country-label country-value">
+    <span id="country-value">{{ selectedLabel() }}</span>
+  </button>
   @if (combobox.open()) {
   <div forComboboxContent>
     <input forComboboxInput placeholder="Search…" />
@@ -378,7 +381,10 @@ Why the list part is required, not optional: a `role="listbox"` may only own `op
 </div>
 
 <ng-template #trig let-root="root">
-  <button [forComboboxTrigger]="root">{{ selectedLabel() }}</button>
+  <span id="country-label">Country</span>
+  <button [forComboboxTrigger]="root" aria-labelledby="country-label country-value">
+    <span id="country-value">{{ selectedLabel() }}</span>
+  </button>
 </ng-template>
 ```
 

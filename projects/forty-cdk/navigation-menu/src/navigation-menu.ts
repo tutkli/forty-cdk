@@ -54,9 +54,10 @@ interface NavigationMenuTransition {
  * [WAI-ARIA Disclosure Navigation Menu pattern](https://www.w3.org/WAI/ARIA/apg/patterns/disclosure/examples/disclosure-navigation/).
  *
  * Despite the name, this is a `<nav>` of disclosures — NOT an ARIA `menu`.
- * Triggers are buttons with `aria-expanded`, content is regular landmarks
- * with links inside; Tab moves through links; Escape closes the open item
- * and returns focus to its trigger.
+ * Triggers are buttons with `aria-expanded`, and each content panel is the
+ * region its trigger discloses, carrying no role and no accessible name of its
+ * own; Tab moves through the links inside; Escape closes the open item and
+ * returns focus to its trigger.
  *
  * One item is open at a time. Selection is exposed as `value` (the open
  * item's id, or `null` when nothing is open). The `model()` change emitter

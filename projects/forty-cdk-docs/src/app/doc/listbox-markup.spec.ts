@@ -98,6 +98,27 @@ function listSemanticsInside(site: ListboxSite): readonly string[] {
   return offenders;
 }
 
+const LIST_ITEM = /<li(?=[\s/>])/g;
+
+const OPTION_HOST = /\sforListboxOption(?=[\s=/>])/;
+
+function optionsInsideListItems(): readonly string[] {
+  const offenders: string[] = [];
+  for (const { path, text } of SOURCES) {
+    for (const match of text.matchAll(LIST_ITEM)) {
+      const end = closingBracket(text, match.index);
+      const markup = text.slice(match.index, end + 1);
+      if (PRESENTATIONAL.test(markup) || GROUP_HOST.test(markup)) {
+        continue;
+      }
+      if (OPTION_HOST.test(text.slice(match.index, elementEnd(text, 'li', match.index)))) {
+        offenders.push(`${path}: ${markup.replace(/\s+/g, ' ')}`);
+      }
+    }
+  }
+  return offenders;
+}
+
 describe('listbox markup the site and the harness teach (#2310)', () => {
   const sites = listboxSites();
 
@@ -111,5 +132,9 @@ describe('listbox markup the site and the harness teach (#2310)', () => {
 
   it('puts no list semantics between a listbox and its options', () => {
     expect(sites.flatMap(listSemanticsInside)).toEqual([]);
+  });
+
+  it('puts no [forListboxOption] inside a list item, whatever its listbox host is named', () => {
+    expect(optionsInsideListItems()).toEqual([]);
   });
 });

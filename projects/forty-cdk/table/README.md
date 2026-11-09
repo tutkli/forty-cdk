@@ -345,7 +345,7 @@ Implements the [WAI-ARIA Table pattern](https://www.w3.org/WAI/ARIA/apg/patterns
 - **Full-span rows** (group separators, section headers, summaries) use `[forTableVariantCell]`, which emits `aria-colindex="1"` and an `aria-colspan` over the grid's columns and registers no cell handle. Arrow navigation steps over the row onto the next data row, and the grid's column count and header participation are unaffected by it. The failure a hand-written `[forTableCell]` produces instead is silent and only surfaces from the keyboard.
 - **Sortable headers** emit `aria-sort="ascending"|"descending"` while sorted; the attribute is absent (not `"none"`) when unsorted, per APG.
 - **Column resizers** must be focusable elements with an `aria-label` naming the column (e.g. `aria-label="Resize Name column"`).
-- **Disabled cells** use `aria-disabled="true"` + `data-disabled`; they are skipped during grid navigation but remain focusable, consistent with the APG disabled pattern.
+- **Disabled cells** use `aria-disabled="true"` + `data-disabled`. This is the library's policy rather than an APG requirement: arrow navigation skips them and they never own the tab stop, so a keyboard user moving through the grid never lands on one and a screen reader never announces its content that way. A click still focuses one (`tabindex="-1"`). When a cell's content must stay reachable from the keyboard, leave the cell enabled and disable the control inside it instead.
 - All horizontal keyboard navigation is RTL-mirrored when the resolved writing direction is `rtl`.
 
 ## Styling

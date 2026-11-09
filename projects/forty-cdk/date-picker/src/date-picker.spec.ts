@@ -3221,6 +3221,44 @@ describe('ForDatePicker', () => {
       await r.flush();
     }
 
+    @Component({
+      imports: [ForDatePicker, ForDatePickerTrigger, ForDateField, ForDateFieldSegment],
+      providers: [...provideNativeDateAdapter()],
+      template: `
+        <div forDatePicker anatomy="field" [pending]="pending()" data-testid="picker">
+          <div forDateField data-testid="group" #field="forDateField">
+            @for (s of field.segments(); track s.id) {
+              @if (!s.isLiteral) {
+                <span forDateFieldSegment [segment]="s.type!">{{ s.text }}</span>
+              }
+            }
+          </div>
+          <button forDatePickerTrigger data-testid="trigger" aria-label="Open calendar">
+            Calendar
+          </button>
+        </div>
+      `,
+    })
+    class PendingFieldAnatomyHost {
+      readonly pending = signal(false);
+    }
+
+    it('carries aria-busy once, on the adopted field, while the picker is pending', async () => {
+      const r = renderHost(PendingFieldAnatomyHost);
+      const busy = () =>
+        r.queryAll('[aria-busy="true"]').map((el) => el.getAttribute('data-testid'));
+      expect(busy()).toEqual([]);
+
+      r.instance.pending.set(true);
+      await r.flush();
+      expect(busy()).toEqual(['group']);
+      expect(r.query('[data-testid="picker"]')!.getAttribute('data-pending')).toBe('');
+
+      r.instance.pending.set(false);
+      await r.flush();
+      expect(busy()).toEqual([]);
+    });
+
     it('writes a typed date into the form bound on the picker, dirty then touched on blur', async () => {
       const r = renderHost(FieldAnatomyHost);
       await typeDate(r, '06', '20', '2026');

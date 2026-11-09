@@ -50,6 +50,8 @@ export interface SegmentedFieldHost<D> {
   readonly required: Signal<boolean>;
   /** The picker's invalid state. */
   readonly invalid: Signal<boolean>;
+  /** The picker's pending state, which the adopted field reflects as `aria-busy`. */
+  readonly pending: Signal<boolean>;
   /** The picker's hour cycle after its scope defaults, or `null` to let the field resolve its own. */
   readonly resolvedHourCycle: Signal<12 | 24 | null>;
   /** The picker's locale, or `null` to let the field resolve its own. */

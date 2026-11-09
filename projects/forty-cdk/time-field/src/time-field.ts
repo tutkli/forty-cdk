@@ -107,6 +107,7 @@ import { FOR_TIME_FIELD_DEFAULTS } from 'forty-cdk/defaults';
     '[attr.aria-label]': 'resolvedAriaLabel()',
     '[attr.aria-disabled]': 'resolvedDisabled() ? "true" : null',
     '[attr.aria-invalid]': 'effectiveInvalid() ? "true" : null',
+    '[attr.aria-busy]': 'resolvedPending() ? "true" : null',
     '[attr.data-disabled]': 'resolvedDisabled() ? "" : null',
     '[attr.data-required]': 'resolvedRequired() ? "" : null',
     '[attr.data-readonly]': 'resolvedReadonly() ? "" : null',
@@ -135,6 +136,9 @@ export class ForTimeField<D>
   );
   private readonly resolvedRequired = computed(
     () => this.required() || (this.#adopter()?.required() ?? false),
+  );
+  private readonly resolvedPending = computed(
+    () => this.pending() || (this.#adopter()?.pending() ?? false),
   );
 
   /**

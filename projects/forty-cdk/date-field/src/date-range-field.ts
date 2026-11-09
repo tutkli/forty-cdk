@@ -88,6 +88,7 @@ import { FOR_DATE_RANGE_FIELD_DEFAULTS } from 'forty-cdk/defaults';
     '[attr.aria-label]': 'resolvedAriaLabel()',
     '[attr.aria-disabled]': 'effectiveDisabled() ? "true" : null',
     '[attr.aria-invalid]': 'ariaInvalid() ? "true" : null',
+    '[attr.aria-busy]': 'pending() ? "true" : null',
     '[attr.data-disabled]': 'effectiveDisabled() ? "" : null',
     '[attr.data-required]': 'required() ? "" : null',
     '[attr.data-readonly]': 'readonly() ? "" : null',
