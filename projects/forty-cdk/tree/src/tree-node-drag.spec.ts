@@ -17,6 +17,7 @@ import { ForTreeItemLabel } from './tree-item-label';
 import { ForTreeItemToggle } from './tree-item-toggle';
 import { ForTreeNodeDrag } from './tree-node-drag';
 import { ForTreeNodeDragHandle } from './tree-node-drag-handle';
+import { ForTreeVirtualized } from './tree-virtualized';
 import type { ForTreeDragDropEvent } from './tree-drag-drop-event';
 import { moveTreeNode } from './move-tree-node';
 
@@ -2072,4 +2073,174 @@ describe('ForTreeNodeDrag — native drag', () => {
       expect(dragStartFromPress(target).defaultPrevented).toBe(true);
     });
   }
+});
+
+@Component({
+  host: { 'data-fixture': 'virtualized-drag' },
+  imports: [
+    ForTree,
+    ForTreeVirtualized,
+    ForTreeNodeDrag,
+    ForTreeItem,
+    ForTreeItemLabel,
+    ForTreeNodeDragHandle,
+  ],
+  template: `
+    <ul
+      forTree
+      forTreeVirtualized
+      forTreeNodeDrag
+      [(value)]="picked"
+      [totalCount]="300"
+      [visibleRange]="range"
+      (nodeDrop)="dropped.set($event)"
+      aria-label="Files"
+    >
+      @for (row of rows; track row.index) {
+        <li
+          forTreeItem
+          [value]="row.value"
+          [itemIndex]="row.index"
+          [level]="2"
+          [setSize]="200"
+          [posInSet]="row.index"
+          [attr.data-testid]="row.value"
+        >
+          <span forTreeNodeDragHandle [attr.data-testid]="row.value + '-handle'" aria-hidden="true"
+            >⠿</span
+          >
+          <div forTreeItemLabel>{{ row.value }}</div>
+        </li>
+      }
+    </ul>
+  `,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+class VirtualizedDragHost {
+  readonly picked = signal<readonly string[]>([]);
+  readonly range: readonly [number, number] = [100, 103];
+  readonly rows = [100, 101, 102].map((index) => ({ index, value: `child-${index}` }));
+  readonly dropped = signal<ForTreeDragDropEvent | null>(null);
+}
+
+describe('ForTreeNodeDrag — a virtualized tree starts no drag (#2735)', () => {
+  let warned: string[];
+
+  beforeEach(() => {
+    warned = [];
+    vi.spyOn(console, 'warn').mockImplementation((...args: unknown[]) => {
+      warned.push(args.map(String).join(' '));
+    });
+  });
+
+  afterEach(() => {
+    document.querySelectorAll('[aria-live]').forEach((n) => n.remove());
+  });
+
+  async function pointerDrag(
+    query: <E extends Element = Element>(selector: string) => E | null,
+    f: () => Promise<void>,
+  ): Promise<void> {
+    const handle = query<HTMLElement>('[data-testid="child-101-handle"]')!;
+    firePointer(handle, 'pointerdown', 100, 100);
+    firePointer(document, 'pointermove', 100, 140);
+    await f();
+    firePointer(document, 'pointerup', 100, 140);
+    await f();
+  }
+
+  it('a pointer drag under an off-window parent emits no (nodeDrop) and never marks the tree as dragging', async () => {
+    const { instance, query, flush: f } = renderHost(VirtualizedDragHost);
+    await f();
+    const tree = query<HTMLElement>('[forTree]')!;
+
+    const handle = query<HTMLElement>('[data-testid="child-101-handle"]')!;
+    firePointer(handle, 'pointerdown', 100, 100);
+    firePointer(document, 'pointermove', 100, 140);
+    await f();
+    expect(tree.hasAttribute('data-dragging')).toBe(false);
+    firePointer(document, 'pointerup', 100, 140);
+    await f();
+
+    expect(instance.dropped()).toBeNull();
+    expect(liveRegion('assertive')?.textContent ?? '').toBe('');
+  });
+
+  it('leaves Shift+Enter to the tree, which selects the active node instead of a lift', async () => {
+    const { instance, query, flush: f } = renderHost(VirtualizedDragHost);
+    await f();
+    const tree = query<HTMLElement>('[forTree]')!;
+    tree.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
+    await f();
+    const active = tree.getAttribute('aria-activedescendant');
+    expect(active).toBe(query<HTMLElement>('[data-testid="child-100"]')!.id);
+
+    const event = new KeyboardEvent('keydown', {
+      key: 'Enter',
+      shiftKey: true,
+      bubbles: true,
+      cancelable: true,
+    });
+    tree.dispatchEvent(event);
+    await f();
+
+    expect(tree.hasAttribute('data-dragging')).toBe(false);
+    expect(liveRegion('assertive')?.textContent ?? '').toBe('');
+    expect(instance.picked()).toEqual(['child-100']);
+    expect(instance.dropped()).toBeNull();
+  });
+
+  it('warns FORCDK-TREE-007 once per instance on the first blocked lift, by pointer or by key', async () => {
+    const { query, flush: f } = renderHost(VirtualizedDragHost);
+    await f();
+    expect(warned).toEqual([]);
+
+    await pointerDrag(query, f);
+    expect(warned).toHaveLength(1);
+    expect(warned[0]).toContain(
+      '[forty-cdk/tree] FORCDK-TREE-007: [forTreeNodeDrag] is applied to a virtualized tree',
+    );
+    expect(warned[0]).toContain('Fix: Remove [forTreeNodeDrag]');
+
+    const tree = query<HTMLElement>('[forTree]')!;
+    tree.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
+    dispatchKey(tree, 'Enter', { shiftKey: true });
+    await pointerDrag(query, f);
+    expect(warned).toHaveLength(1);
+  });
+
+  it('warns FORCDK-TREE-007 on a blocked lift by key alone', async () => {
+    const { query, flush: f } = renderHost(VirtualizedDragHost);
+    await f();
+    const tree = query<HTMLElement>('[forTree]')!;
+    tree.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
+    await f();
+
+    dispatchKey(tree, 'Enter');
+    await f();
+    expect(warned).toEqual([]);
+
+    dispatchKey(tree, 'Enter', { shiftKey: true });
+    await f();
+    expect(warned).toHaveLength(1);
+    expect(warned[0]).toContain('FORCDK-TREE-007');
+  });
+
+  it('stays silent once ngDevMode is cleared, as a production build does', async () => {
+    vi.stubGlobal('ngDevMode', false);
+    const { instance, query, flush: f } = renderHost(VirtualizedDragHost);
+    await f();
+
+    await pointerDrag(query, f);
+
+    expect(warned).toEqual([]);
+    expect(instance.dropped()).toBeNull();
+  });
+
+  it('drops touch-action: none from a handle, since its node cannot be dragged', async () => {
+    const { query, flush: f } = renderHost(VirtualizedDragHost);
+    await f();
+
+    expect(query<HTMLElement>('[data-testid="child-101-handle"]')!.style.touchAction).toBe('');
+  });
 });

@@ -21,6 +21,7 @@ import {
   createDragPreview,
   focusWhenMounted,
   type FocusWhenMountedRef,
+  fortyWarn,
   LiveAnnouncer,
   type PreviewPoint,
   PreviewController,
@@ -110,6 +111,10 @@ type DragMode = 'idle' | 'keyboard' | 'pointer';
  * The `(nodeDrop)` output fires once per committed move. Apply `moveTreeNode` in the handler to
  * update the consumer's data. Provide a `[canDrop]` function to veto specific moves.
  *
+ * A virtualized tree (`[forTreeVirtualized]` with `[totalCount]` set) is left untouched: no drag
+ * starts by pointer or by key, the lift key keeps its meaning in the tree, and dev mode warns once
+ * on the first attempt.
+ *
  * Generic over the tree's node value type `T`, which defaults to `string` like `ForTree`'s own.
  * Unlike `ForTree`, this directive has no input that carries `T` on its own, so **a tree whose
  * node values are not `string` must bind `[canDrop]` typed at the node value** — that is the one
@@ -191,6 +196,8 @@ export class ForTreeNodeDrag<T = string> implements ForTreeNodeDragContext {
 
   #pointerSession: PointerDragSession | null = null;
   #pendingFocus: FocusWhenMountedRef | null = null;
+  /** Set once the unsupported-virtualization warning has been reported by this instance. */
+  #warnedVirtualized = false;
 
   constructor() {
     if (!this.#isBrowser) {
@@ -241,7 +248,7 @@ export class ForTreeNodeDrag<T = string> implements ForTreeNodeDragContext {
     if (this.#mode !== 'idle' || !isDragLiftKey(event, this.#dragDefaults.liftKey)) {
       return;
     }
-    if (this.disabled() || this.#ctx.disabled()) {
+    if (this.disabled() || this.#ctx.disabled() || this.#blockedByVirtualization()) {
       return;
     }
     const target = event.target;
@@ -315,11 +322,36 @@ export class ForTreeNodeDrag<T = string> implements ForTreeNodeDragContext {
       return false;
     }
     const itemHost = entry.handle.host;
-    if (!isInsideGrabArea(itemHost, target, this.#handles)) {
+    if (!isInsideGrabArea(itemHost, target, this.#handles) || this.#blockedByVirtualization()) {
       return false;
     }
     this.#liftedHost = itemHost;
     this.#pointerOriginX = event.clientX;
+    return true;
+  }
+
+  /**
+   * Whether the tree is virtualized, which no drag supports: the rendered window holds neither a
+   * scrolled-away parent nor the siblings outside it, so a drop cannot resolve its parent or index.
+   * Called from a lift attempt, and warns on the first one.
+   */
+  #blockedByVirtualization(): boolean {
+    if (this.#ctx.totalCount() === undefined) {
+      return false;
+    }
+    if (!this.#warnedVirtualized) {
+      this.#warnedVirtualized = true;
+      fortyWarn({
+        code: 'FORCDK-TREE-007',
+        message:
+          '[forTreeNodeDrag] is applied to a virtualized tree ([forTreeVirtualized] with ' +
+          '[totalCount] set), so it starts no drag by pointer or by key.',
+        cause:
+          'A virtualized tree renders only a window of its nodes, so a drop cannot resolve a ' +
+          'parent scrolled out of the window or a position among the siblings outside it.',
+        fix: 'Remove [forTreeNodeDrag], or render the tree without [forTreeVirtualized].',
+      });
+    }
     return true;
   }
 
