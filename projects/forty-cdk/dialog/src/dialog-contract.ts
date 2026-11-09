@@ -6,12 +6,16 @@
  * class ConfirmDialog {
  *   declare readonly [FOR_DIALOG_CONTRACT]: ForDialogContract<ConfirmData, ConfirmResult>;
  *   readonly data = injectDialogData<ConfirmDialog>();
+ *   readonly ref = injectDialogRef<ConfirmDialog>();
  * }
  * ```
  *
  * `ForDialogManager.open(ConfirmDialog, { data })` then rejects a `data` that is not a
- * `ConfirmData` and returns a `ForDialogRef<ConfirmResult>`. The member must be public. A
- * component that declares none keeps an unchecked `data` and an `unknown` result.
+ * `ConfirmData` and returns a `ForDialogRef<ConfirmResult>`, and the component's `ref.close()`
+ * accepts only a `ConfirmResult`. The member must be public. A component that declares none
+ * keeps an unchecked `data` and an `unknown` result. A `[forDialogClose]` button's `[closeWith]`
+ * is not checked against the contract: close through `injectDialogRef()` where the result type
+ * matters.
  */
 export const FOR_DIALOG_CONTRACT: unique symbol = Symbol('forty-cdk/dialog:contract');
 

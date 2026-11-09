@@ -347,6 +347,7 @@ export {
   type SwipeDirection,
   type SwipeEventDetail,
 } from './swipe-dismiss/swipe-dismiss';
+export { injectSwipeMotion, type SwipeMotion } from './swipe-dismiss/swipe-motion';
 export {
   type DisabledClickGuardConfig,
   injectDisabledClickGuard,

@@ -43,11 +43,12 @@ import { ForDrawerScopeTuning } from './drawer-scope-tuning';
  *
  * Apply `[forDrawer]` on the drawer surface itself — not on a wrapper. The
  * directive moves the host to `document.body` (portal), traps focus, locks
- * body scroll and listens for Escape. Unless the user prefers reduced motion,
- * the surface follows a pointer swipe whenever the swipe has somewhere to go:
- * toward the anchored edge to dismiss (`swipeToDismiss` and `dismissible`),
- * and between `snapPoints` when they are set. A release resolves to a snap
- * point or a dismiss. `aria-labelledby` and `aria-describedby` wire
+ * body scroll and listens for Escape. The surface follows a pointer swipe
+ * whenever the swipe has somewhere to go: toward the anchored edge to dismiss
+ * (`swipeToDismiss` and `dismissible`), and between `snapPoints` when they
+ * are set. A release resolves to a snap point or a dismiss. Under
+ * `prefers-reduced-motion: reduce` the swipe still resolves on release, but
+ * the surface does not follow the finger. `aria-labelledby` and `aria-describedby` wire
  * automatically via `[forDrawerTitle]` / `[forDrawerDescription]`; pass
  * `ariaLabel` instead if you don't render a visible title.
  *
@@ -304,8 +305,8 @@ export class ForDrawer extends ModalSurfaceBase<ForDrawerCloseReason> implements
   readonly dragging = this.#drag.dragging;
 
   /**
-   * Progress of the current swipe toward the anchored edge, `∈ [0, 1]`.
-   * Surfaced through `ForDrawerContext` so the backdrop can publish it as the
+   * Progress of the current swipe toward the anchored edge, `∈ [0, 1]`, and
+   * `0` throughout under `prefers-reduced-motion: reduce`. Surfaced through `ForDrawerContext` so the backdrop can publish it as the
    * `--for-drawer-swipe-progress` custom property.
    */
   readonly swipeProgress = this.#drag.swipeProgress;
@@ -313,8 +314,9 @@ export class ForDrawer extends ModalSurfaceBase<ForDrawerCloseReason> implements
   /**
    * Live swipe displacement along the x axis in CSS px, published on the host
    * as the `--for-drawer-swipe-movement-x` custom property by the gesture
-   * engine. `0` at rest, and always `0` when the drawer is anchored to a
-   * horizontal edge (`side` `'top'` / `'bottom'`).
+   * engine. `0` at rest, under `prefers-reduced-motion: reduce`, and always
+   * when the drawer is anchored to a horizontal edge (`side` `'top'` /
+   * `'bottom'`).
    *
    * Custom properties are used — rather than the directive writing `translate`
    * / `transform` directly — because `transform` is reserved for

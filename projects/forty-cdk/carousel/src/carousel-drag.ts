@@ -16,7 +16,7 @@ import {
   type SwipeDirection,
   type SwipeEventDetail,
   isScrollableAtEdge,
-  injectPrefersReducedMotion,
+  injectSwipeMotion,
   flickVelocity,
   FLICK_STALE_VELOCITY_MS,
   FLICK_VELOCITY_PX_PER_MS,
@@ -57,7 +57,7 @@ export class ForCarouselDrag {
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
   readonly #destroyRef = inject(DestroyRef);
   readonly #isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
-  readonly #prefersReducedMotion = injectPrefersReducedMotion();
+  readonly #motion = injectSwipeMotion();
 
   readonly #dragging = signal(false);
   readonly #dragPx = signal(0);
@@ -73,8 +73,7 @@ export class ForCarouselDrag {
 
   /** Live px displacement along the primary axis; `null` at rest and under reduced motion (D3). */
   readonly #swipeMovement = computed<string | null>(() => {
-    if (this.#prefersReducedMotion()) return null;
-    const px = this.#dragPx();
+    const px = this.#motion.follow(this.#dragPx());
     return this.#dragging() && px !== 0 ? `${px}px` : null;
   });
 

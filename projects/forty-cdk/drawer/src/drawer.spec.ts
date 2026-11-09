@@ -52,6 +52,7 @@ import { ForDrawerWrapper } from './drawer-wrapper';
         [side]="side()"
         [dismissible]="dismissible()"
         [alert]="alert()"
+        (swipeMove)="swipeMoves.push($event)"
         (dismiss)="onClose($event)"
       >
         <div forDrawerBackdrop></div>
@@ -70,6 +71,7 @@ class DrawerHost {
   readonly dismissible = signal(true);
   readonly alert = signal(false);
   readonly reasons: ForDrawerCloseReason[] = [];
+  readonly swipeMoves: ForDrawerSwipeEvent[] = [];
   onClose(reason: ForDrawerCloseReason): void {
     this.reasons.push(reason);
     this.open.set(false);
@@ -1150,10 +1152,10 @@ describe('ForDrawer (declarative)', () => {
       expect(drawer.style.touchAction).toBe('pan-x');
     });
 
-    it('sets nothing under prefers-reduced-motion, where the swipe never arms', async () => {
+    it('keeps the axis under prefers-reduced-motion, where the swipe still arms', async () => {
       const restoreReducedMotion = withReducedMotion();
       try {
-        expect((await mountSurface()).style.touchAction).toBe('');
+        expect((await mountSurface()).style.touchAction).toBe('pan-x');
       } finally {
         restoreReducedMotion();
       }
@@ -2148,13 +2150,12 @@ describe('ForDrawer (declarative)', () => {
       restoreReducedMotion();
     });
 
-    it('does not register a swipe listener (no pointerdown listener wires drag state)', async () => {
+    it('arms the swipe but publishes no movement or progress', async () => {
       const r = renderHost(DrawerHost);
       r.instance.open.set(true);
       await flush(r.fixture);
 
       const drawer = document.querySelector<HTMLElement>('[forDrawer]')!;
-      // Dispatch a swipe — without the listener, no data-dragging gets set.
       drawer.dispatchEvent(
         new PointerEvent('pointerdown', {
           bubbles: true,
@@ -2177,7 +2178,41 @@ describe('ForDrawer (declarative)', () => {
       );
       await flush(r.fixture);
 
-      expect(drawer.hasAttribute('data-dragging')).toBe(false);
+      expect(drawer.getAttribute('data-dragging')).toBe('');
+      expect(drawer.style.getPropertyValue('--for-drawer-swipe-movement-y')).toBe('0px');
+      expect(r.instance.swipeMoves.length).toBeGreaterThan(0);
+      expect(r.instance.swipeMoves.every((event) => event.progress === 0)).toBe(true);
+      const backdrop = document.querySelector<HTMLElement>('[forDrawerBackdrop]')!;
+      expect(backdrop.style.getPropertyValue('--for-drawer-swipe-progress')).toBe('0');
+    });
+
+    it('still dismisses on a swipe past the threshold', async () => {
+      const r = renderHost(DrawerHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const drawer = document.querySelector<HTMLElement>('[forDrawer]')!;
+      for (const [type, y] of [
+        ['pointerdown', 0],
+        ['pointermove', 10],
+        ['pointermove', 300],
+        ['pointerup', 300],
+      ] as const) {
+        drawer.dispatchEvent(
+          new PointerEvent(type, {
+            bubbles: true,
+            cancelable: true,
+            clientX: 0,
+            clientY: y,
+            pointerId: 1,
+            pointerType: 'touch',
+            button: 0,
+          }),
+        );
+      }
+      await flush(r.fixture);
+
+      expect(r.instance.reasons).toEqual(['swipe']);
     });
 
     it('Escape and close button still work under reduced-motion', async () => {
@@ -3043,33 +3078,31 @@ describe('ForDrawer runtime prefers-reduced-motion flip', () => {
     );
   }
 
-  it('disarms the swipe gesture when reduced-motion flips on at runtime', async () => {
+  it('keeps the swipe armed and stops publishing movement when reduced-motion flips on', async () => {
     const r = renderHost(DrawerHost);
     r.instance.open.set(true);
     await flush(r.fixture);
 
     const drawer = document.querySelector<HTMLElement>('[forDrawer]')!;
-    // Baseline: swipe is armed (motion not reduced), so a drag flips dragging.
     dispatchPointer(drawer, 'pointerdown', 0, 0);
     dispatchPointer(drawer, 'pointermove', 0, 20);
     await flush(r.fixture);
-    expect(drawer.getAttribute('data-dragging')).toBe('');
+    expect(drawer.style.getPropertyValue('--for-drawer-swipe-movement-y')).toBe('20px');
     dispatchPointer(drawer, 'pointermove', 0, 0);
     dispatchPointer(drawer, 'pointerup', 0, 0);
     await flush(r.fixture);
-    expect(drawer.isConnected).toBe(true);
 
-    // Flip reduced-motion on at runtime — the gesture must disarm.
     mql.dispatch(true);
     await flush(r.fixture);
 
     dispatchPointer(drawer, 'pointerdown', 0, 0);
     dispatchPointer(drawer, 'pointermove', 0, 20);
     await flush(r.fixture);
-    expect(drawer.hasAttribute('data-dragging')).toBe(false);
+    expect(drawer.getAttribute('data-dragging')).toBe('');
+    expect(drawer.style.getPropertyValue('--for-drawer-swipe-movement-y')).toBe('0px');
   });
 
-  it('a reduced-motion flip mid-drag clears data-dragging and the displacement', async () => {
+  it('a reduced-motion flip mid-drag zeroes the displacement and keeps the gesture', async () => {
     const r = renderHost(DrawerHost);
     r.instance.open.set(true);
     await flush(r.fixture);
@@ -3079,35 +3112,42 @@ describe('ForDrawer runtime prefers-reduced-motion flip', () => {
     dispatchPointer(drawer, 'pointermove', 0, 20);
     dispatchPointer(drawer, 'pointermove', 0, 60);
     await flush(r.fixture);
-    expect(drawer.getAttribute('data-dragging')).toBe('');
+    expect(drawer.style.getPropertyValue('--for-drawer-swipe-movement-y')).toBe('60px');
 
     mql.dispatch(true);
     await flush(r.fixture);
 
-    expect(drawer.hasAttribute('data-dragging')).toBe(false);
+    expect(drawer.getAttribute('data-dragging')).toBe('');
     expect(drawer.style.getPropertyValue('--for-drawer-swipe-movement-y')).toBe('0px');
+
+    mql.dispatch(false);
+    await flush(r.fixture);
+
+    expect(drawer.style.getPropertyValue('--for-drawer-swipe-movement-y')).toBe('60px');
   });
 
-  it('arms the swipe gesture when reduced-motion flips off at runtime', async () => {
+  it('publishes the displacement once reduced-motion flips off at runtime', async () => {
     mql.matches = true;
     const r = renderHost(DrawerHost);
     r.instance.open.set(true);
     await flush(r.fixture);
 
     const drawer = document.querySelector<HTMLElement>('[forDrawer]')!;
-    // Baseline: motion reduced at mount, so no swipe listener is armed.
     dispatchPointer(drawer, 'pointerdown', 0, 0);
     dispatchPointer(drawer, 'pointermove', 0, 20);
     await flush(r.fixture);
-    expect(drawer.hasAttribute('data-dragging')).toBe(false);
+    expect(drawer.getAttribute('data-dragging')).toBe('');
+    expect(drawer.style.getPropertyValue('--for-drawer-swipe-movement-y')).toBe('0px');
+    dispatchPointer(drawer, 'pointermove', 0, 0);
+    dispatchPointer(drawer, 'pointerup', 0, 0);
+    await flush(r.fixture);
 
-    // Flip reduced-motion off at runtime — the gesture must arm.
     mql.dispatch(false);
     await flush(r.fixture);
 
     dispatchPointer(drawer, 'pointerdown', 0, 0);
     dispatchPointer(drawer, 'pointermove', 0, 20);
     await flush(r.fixture);
-    expect(drawer.getAttribute('data-dragging')).toBe('');
+    expect(drawer.style.getPropertyValue('--for-drawer-swipe-movement-y')).toBe('20px');
   });
 });

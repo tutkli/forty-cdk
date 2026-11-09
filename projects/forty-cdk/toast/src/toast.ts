@@ -27,6 +27,7 @@ import {
   isImeComposing,
   type PauseController,
   attachSwipeDismiss,
+  injectSwipeMotion,
   swipeTouchAction,
   type SwipeDirection,
   type SwipeEventDetail,
@@ -168,7 +169,9 @@ export class ForToast implements ForToastContext {
    * swiping, the host reflects `data-swipe="start" | "move" | "cancel" | "end"`
    * and `data-swipe-direction` plus the CSS custom properties
    * `--for-toast-swipe-movement-x` / `--for-toast-swipe-movement-y` so the
-   * consumer can drive a transform-based animation entirely from CSS.
+   * consumer can drive a transform-based animation entirely from CSS. Under
+   * `prefers-reduced-motion: reduce` the swipe still dismisses past the
+   * threshold, but both movement properties stay at `0px`.
    */
   readonly swipeDirection = input<ForToastSwipeDirection>(null);
 
@@ -197,6 +200,7 @@ export class ForToast implements ForToastContext {
   readonly #swipeActiveDirection = signal<SwipeDirection | null>(null);
   readonly #swipeMovementX = signal(0);
   readonly #swipeMovementY = signal(0);
+  readonly #motion = injectSwipeMotion();
   #swipeArming = false;
   readonly #namespacer = inject(CssVarNamespacer);
   readonly #swipeMovementXVar = this.#namespacer.namespace('--for-toast-swipe-movement-x');
@@ -204,8 +208,8 @@ export class ForToast implements ForToastContext {
 
   private readonly swipeState = this.#swipeState.asReadonly();
   private readonly swipeActiveDirection = this.#swipeActiveDirection.asReadonly();
-  private readonly swipeMovementX = this.#swipeMovementX.asReadonly();
-  private readonly swipeMovementY = this.#swipeMovementY.asReadonly();
+  private readonly swipeMovementX = computed(() => this.#motion.follow(this.#swipeMovementX()));
+  private readonly swipeMovementY = computed(() => this.#motion.follow(this.#swipeMovementY()));
 
   readonly #normalizedSwipeDirections = computed<readonly SwipeDirection[]>(() => {
     // A non-dismissible toast forbids user-initiated dismissal of any kind —
@@ -440,8 +444,8 @@ export class ForToast implements ForToastContext {
   #paintSwipeEnd({ delta }: SwipeEventDetail): void {
     const host = this.#host.nativeElement;
     host.setAttribute('data-swipe', 'end');
-    host.style.setProperty(this.#swipeMovementXVar, `${delta.x}px`);
-    host.style.setProperty(this.#swipeMovementYVar, `${delta.y}px`);
+    host.style.setProperty(this.#swipeMovementXVar, `${this.#motion.follow(delta.x)}px`);
+    host.style.setProperty(this.#swipeMovementYVar, `${this.#motion.follow(delta.y)}px`);
   }
 
   #resetSwipeState(): void {

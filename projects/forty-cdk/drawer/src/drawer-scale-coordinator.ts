@@ -56,6 +56,17 @@ interface BodySnapshot {
 const TRANSITION_DURATION_S = 0.5;
 const TRANSITION_TIMING = 'cubic-bezier(0.32, 0.72, 0, 1)';
 
+function runningTransformTransition(element: HTMLElement): Animation | null {
+  if (typeof element.getAnimations !== 'function') {
+    return null;
+  }
+  return (
+    element
+      .getAnimations()
+      .find((animation) => (animation as CSSTransition).transitionProperty === 'transform') ?? null
+  );
+}
+
 /**
  * App-scoped coordinator that synchronises a registered
  * `[forDrawerWrapper]` element with the LIFO stack of active drawers
@@ -70,7 +81,10 @@ const TRANSITION_TIMING = 'cubic-bezier(0.32, 0.72, 0, 1)';
  * when it unregisters or turns `scaleBackground` off, the next one down takes
  * over. Reverts to inline-style snapshots only when no registered drawer wants
  * the effect, the wrapper itself is torn down, or the application that
- * provides the coordinator is destroyed.
+ * provides the coordinator is destroyed. When the last drawer stops wanting
+ * the effect the wrapper animates back with the coordinator's own transition,
+ * and its remaining inline styles and the body colour are restored once that
+ * transition settles; every other revert is immediate.
  *
  * `prefers-reduced-motion: reduce` is treated as a hard kill switch:
  * while it is `true` the effect is suppressed entirely, the wrapper /
@@ -100,6 +114,13 @@ export class ForDrawerScaleCoordinator {
   readonly #drawers = signal<readonly Signal<ForDrawerScaleConfig | null>[]>([]);
 
   #wrapperSnapshot: WrapperSnapshot | null = null;
+  /**
+   * Snapshot of a wrapper animating back after a close, whose transition,
+   * transform origin and overflow are restored once the transform transition
+   * settles. A re-apply in that window adopts it as the live snapshot, so the
+   * coordinator's own transition is never recorded as the consumer's.
+   */
+  #pendingRestore: WrapperSnapshot | null = null;
   #bodySnapshot: BodySnapshot | null = null;
   /**
    * Hosts whose inline `style.transform` the nested-state pass wrote, so it
@@ -141,6 +162,8 @@ export class ForDrawerScaleCoordinator {
 
       if (wrapper && config && !reducedMotion) {
         this.#apply(wrapper, config);
+      } else if (wrapper && !reducedMotion) {
+        this.#revertAnimated();
       } else {
         this.#revert();
       }
@@ -227,6 +250,15 @@ export class ForDrawerScaleCoordinator {
   }
 
   #apply(wrapper: HTMLElement, config: ForDrawerScaleConfig): void {
+    const pending = this.#pendingRestore;
+    if (pending) {
+      this.#pendingRestore = null;
+      if (pending.element === wrapper && !this.#wrapperSnapshot) {
+        this.#wrapperSnapshot = pending;
+      } else {
+        this.#restoreWrapper(pending);
+      }
+    }
     if (this.#wrapperSnapshot && this.#wrapperSnapshot.element !== wrapper) {
       this.#restoreWrapper(this.#wrapperSnapshot);
       this.#wrapperSnapshot = null;
@@ -277,11 +309,50 @@ export class ForDrawerScaleCoordinator {
     wrapper.style.transitionTimingFunction = snapshot.transitionTimingFunction;
   }
 
+  #revertAnimated(): void {
+    const snapshot = this.#wrapperSnapshot;
+    if (!snapshot) {
+      if (!this.#pendingRestore) {
+        this.#restoreBody();
+      }
+      return;
+    }
+    this.#wrapperSnapshot = null;
+    const wrapper = snapshot.element;
+    wrapper.style.transform = snapshot.transform;
+    wrapper.style.borderRadius = snapshot.borderRadius;
+    const transition = runningTransformTransition(wrapper);
+    if (!transition) {
+      this.#restoreWrapper(snapshot);
+      this.#restoreBody();
+      return;
+    }
+    this.#pendingRestore = snapshot;
+    const settle = (): void => {
+      if (this.#pendingRestore !== snapshot) {
+        return;
+      }
+      this.#pendingRestore = null;
+      this.#restoreWrapper(snapshot);
+      this.#restoreBody();
+    };
+    transition.finished.then(settle, settle);
+  }
+
   #revert(): void {
+    const pending = this.#pendingRestore;
+    if (pending) {
+      this.#pendingRestore = null;
+      this.#restoreWrapper(pending);
+    }
     if (this.#wrapperSnapshot) {
       this.#restoreWrapper(this.#wrapperSnapshot);
       this.#wrapperSnapshot = null;
     }
+    this.#restoreBody();
+  }
+
+  #restoreBody(): void {
     if (this.#bodySnapshot) {
       this.#document.body.style.backgroundColor = this.#bodySnapshot.backgroundColor;
       this.#bodySnapshot = null;
