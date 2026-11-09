@@ -1,4 +1,4 @@
-import type { Locator, Page } from '@playwright/test';
+import type { CDPSession, Locator, Page } from '@playwright/test';
 
 import { boxOf, el, expect, expectFocused, expectStays, gotoFixture, test } from './_helpers';
 
@@ -193,5 +193,64 @@ test.describe('drag inside a modal dialog — tree node drag (#2265)', () => {
     await expect(el(page, 'dialog')).toBeVisible();
     await expectStays(page, () => expect(el(page, 'tree-last-drop')).toHaveText(''));
     await expect.poll(() => activeElementInsideDialog(page)).toBe(true);
+  });
+});
+
+interface AxNode {
+  readonly nodeId: string;
+  readonly ignored: boolean;
+  readonly parentId?: string;
+  readonly backendDOMNodeId?: number;
+}
+
+async function backendNodeId(cdp: CDPSession, selector: string): Promise<number> {
+  const { root } = await cdp.send('DOM.getDocument', { depth: 0 });
+  const { nodeId } = await cdp.send('DOM.querySelector', { nodeId: root.nodeId, selector });
+  const { node } = await cdp.send('DOM.describeNode', { nodeId });
+  return node.backendNodeId;
+}
+
+/**
+ * Where the polite announcer region sits in Chromium's accessibility tree: `missing` when it has no
+ * node, `ignored` when it is pruned, and otherwise whether the dialog is one of its ancestors.
+ */
+async function politeRegionAxState(
+  cdp: CDPSession,
+): Promise<'missing' | 'ignored' | 'outside-dialog' | 'owned-by-dialog'> {
+  const region = await backendNodeId(cdp, 'body > div[aria-live="polite"]');
+  const dialog = await backendNodeId(cdp, '[data-testid="dialog"]');
+  const { nodes } = (await cdp.send('Accessibility.getFullAXTree')) as { nodes: AxNode[] };
+  const byId = new Map(nodes.map((node) => [node.nodeId, node]));
+  const node = nodes.find((candidate) => candidate.backendDOMNodeId === region);
+  if (node === undefined) {
+    return 'missing';
+  }
+  if (node.ignored) {
+    return 'ignored';
+  }
+  for (let parent = node.parentId; parent !== undefined; parent = byId.get(parent)?.parentId) {
+    if (byId.get(parent)?.backendDOMNodeId === dialog) {
+      return 'owned-by-dialog';
+    }
+  }
+  return 'outside-dialog';
+}
+
+test.describe('announcements over a modal dialog', () => {
+  test.skip(({ browserName }) => browserName !== 'chromium', 'reads the AX tree through CDP');
+
+  test('the announcer live region stays exposed, owned by the open dialog', async ({ page }) => {
+    const cdp = await page.context().newCDPSession(page);
+    await cdp.send('DOM.enable');
+    await cdp.send('Accessibility.enable');
+    await openDialog(page);
+    await expect(el(page, 'dialog')).toHaveAttribute('aria-modal', 'true');
+
+    await el(page, 'item-0').focus();
+    await page.keyboard.press('Space');
+    await page.keyboard.press('ArrowDown');
+
+    await expect(page.locator('body > div[aria-live="polite"]')).not.toHaveText('');
+    await expect.poll(() => politeRegionAxState(cdp)).toBe('owned-by-dialog');
   });
 });

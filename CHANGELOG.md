@@ -17,6 +17,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `<html>` down to the lowest required control, and scrolling the document moved the whole shell,
   header included. The input is now `position: fixed`, which never adds to a scrollable overflow.
   Reporting the form still focuses the control and scrolls it into view.
+- **Dialog, Alert dialog, Drawer, Date picker, Toast** — announcements made while a modal is open
+  are no longer outside it in the accessibility tree
+  ([#2749](https://github.com/tutkli/forty-cdk/issues/2749)). The `LiveAnnouncer` regions and the
+  toast viewport sit in `<body>`, outside every `aria-modal="true"` surface, so a screen reader that
+  hides everything outside the modal could drop a drag-and-drop reorder, a calendar month change or
+  a toast shown over a dialog. The topmost open modal surface
+  now lists them in its `aria-owns`, merged with any `aria-owns` you set, hands them to a modal
+  stacked above it and takes them back, and removes them when it closes. A toast viewport set to
+  `overModal: 'inert'` is left out.
 - **Combobox** — a Signal Forms reset (`form().reset()`, or `reset()` on the bound field) no
   longer leaves the picked label or typed text in the input
   ([#2742](https://github.com/tutkli/forty-cdk/issues/2742)). The reset reached `value` only, so a

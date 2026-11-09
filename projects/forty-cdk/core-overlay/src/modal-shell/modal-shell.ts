@@ -19,6 +19,7 @@ import {
   injectPortal,
   isInitialFocusTarget,
   MODAL_EXEMPT_ATTRIBUTE,
+  ModalOwnedRegions,
   resolveActiveElement,
   ReturnFocusResolver,
   type VetoableEvent,
@@ -191,7 +192,9 @@ export function resolveModalExemptOverlays(doc: Document): readonly Element[] {
  * The shell captures the return-focus target, portals the host to `document.body` (or to
  * `config.container`), and activates the dismissible layer. In modal mode it additionally inerts
  * the siblings, activates the focus trap and locks scroll, all scoped to `config.container` when
- * one is supplied; in non-modal mode it only performs the initial focus move.
+ * one is supplied; in non-modal mode it only performs the initial focus move. A modal host carrying
+ * `aria-modal="true"` also claims `ModalOwnedRegions` until it releases, so the live regions and
+ * exempt toast viewports outside it stay in its accessibility subtree.
  *
  * Teardown reverses that order on destroy, deactivating inert siblings before focus returns so the
  * target is not blocked by an inert ancestor.
@@ -207,6 +210,7 @@ export function injectModalShell(config: ModalShellConfig): ModalShellHandle {
   const inertStack = inject(InertSiblingsStack);
   const scrollLock = inject(BodyScrollLock);
   const returnFocus = inject(ReturnFocusResolver);
+  const modalOwnedRegions = inject(ModalOwnedRegions);
 
   // 1. Capture the return-focus target SYNCHRONOUSLY, before any side effect
   //    runs. WebKit (#136) blurs the previously-focused element as soon as
@@ -251,6 +255,7 @@ export function injectModalShell(config: ModalShellConfig): ModalShellHandle {
   const activatedMode = signal<boolean | null>(null);
   let inertHandle: InertSiblingsHandle | null = null;
   let activatedContainer: HTMLElement | null = null;
+  let releaseOwnedRegions: (() => void) | null = null;
 
   const resolveMarkedTarget = (): HTMLElement | null => {
     const target = config.initialFocusTarget?.() ?? null;
@@ -347,6 +352,9 @@ export function injectModalShell(config: ModalShellConfig): ModalShellHandle {
       const containerEl = config.container?.() ?? null;
       inertHandle = inertStack.activate(host.nativeElement, containerEl ?? undefined);
       activatedContainer = containerEl;
+      if (host.nativeElement.getAttribute('aria-modal') === 'true') {
+        releaseOwnedRegions = modalOwnedRegions.claim(host.nativeElement);
+      }
       if (moveCfg) {
         // The primitive owns the focus move. Set up Tab cycling + return
         // capture WITHOUT the trap's own imperative focus, then run the
@@ -435,6 +443,8 @@ export function injectModalShell(config: ModalShellConfig): ModalShellHandle {
       // needs to be live again first.
       inertHandle?.deactivate();
       inertHandle = null;
+      releaseOwnedRegions?.();
+      releaseOwnedRegions = null;
       const shouldReturnFocus = config.returnFocus() && !skipReturnFocus;
       const overrideTarget = target === undefined ? (config.returnFocusTarget?.() ?? null) : target;
       // Suppress the dismissible-layer dispatcher across focus-return so the

@@ -23,6 +23,7 @@ import {
   hostAriaLabel,
   injectPortal,
   injectPrefersReducedMotion,
+  ModalOwnedRegions,
   resolveActiveElement,
   resolveConfigClass,
   resolveTextInput,
@@ -113,7 +114,9 @@ import { ForToastTitle } from './toast-title';
  * Over a modal: the host carries `data-for-modal-exempt` by default, so an open `ForDialog` /
  * `ForDrawer` leaves the viewport out of its inert pass and treats a click on a toast as inside
  * rather than as `pointerDownOutside`. A toast shown from a flow inside a modal therefore stays
- * interactive, and clicking it does not dismiss the modal. Opt out with
+ * interactive, and clicking it does not dismiss the modal. The topmost modal also lists the viewport
+ * in its `aria-owns`, so a screen reader that hides everything outside an `aria-modal` surface still
+ * reads its toasts. Opt out with
  * `provideForToastDefaults({ overModal: 'inert' })`, which drops the marker so the viewport is
  * inerted and a click on a toast dismisses the modal like any other background sibling.
  */
@@ -369,6 +372,9 @@ export class ForToastViewport {
     const unregister = this.#manager.registerViewport(registration);
     const destroyRef = inject(DestroyRef);
     destroyRef.onDestroy(unregister);
+    if (this.overModal === 'peer') {
+      destroyRef.onDestroy(inject(ModalOwnedRegions).register(this.#host.nativeElement));
+    }
 
     if (isPlatformBrowser(inject(PLATFORM_ID))) {
       const shifter = createToastStackShifter({
