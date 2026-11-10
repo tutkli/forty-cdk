@@ -560,4 +560,93 @@ describe('Collection', () => {
       expect(col.items().map((h) => h.id)).toEqual(['second', 'first']);
     });
   });
+
+  describe('document-position comparisons per recomputation (#2809)', () => {
+    function appendHosts(count: number): HTMLElement[] {
+      const hosts: HTMLElement[] = [];
+      for (let i = 0; i < count; i++) {
+        const el = document.createElement('div');
+        el.id = `n${i}`;
+        host.appendChild(el);
+        hosts.push(el);
+      }
+      return hosts;
+    }
+
+    function idsOf(hosts: readonly HTMLElement[]): string[] {
+      return hosts.map((el) => el.id);
+    }
+
+    function countComparisons(): { readonly calls: number } {
+      const spy = vi.spyOn(Node.prototype, 'compareDocumentPosition');
+      return {
+        get calls() {
+          return spy.mock.calls.length;
+        },
+      };
+    }
+
+    it('orders a set registered in DOM order with N − 1 comparisons', () => {
+      const hosts = appendHosts(1000);
+      const col = createCollection();
+      for (const el of hosts) {
+        col.register(handle(el.id, el));
+      }
+      const comparisons = countComparisons();
+
+      expect(col.items().map((h) => h.id)).toEqual(idsOf(hosts));
+      expect(comparisons.calls).toBe(hosts.length - 1);
+    });
+
+    it('re-orders the members a filter keeps with N − 1 comparisons', () => {
+      const hosts = appendHosts(1000);
+      const col = createCollection();
+      const handles = hosts.map((el) => handle(el.id, el));
+      for (const h of handles) {
+        col.register(h);
+      }
+      expect(col.items()).toHaveLength(hosts.length);
+      const kept = hosts.filter((_, i) => i % 4 === 0);
+      for (const [i, h] of handles.entries()) {
+        if (i % 4 !== 0) {
+          col.unregister(h);
+        }
+      }
+      const comparisons = countComparisons();
+
+      expect(col.items().map((h) => h.id)).toEqual(idsOf(kept));
+      expect(comparisons.calls).toBe(kept.length - 1);
+    });
+
+    it('orders members re-mounted after the ones a filter kept in linear comparisons', () => {
+      const hosts = appendHosts(1000);
+      const col = createCollection();
+      const kept = hosts.filter((_, i) => i % 4 === 0);
+      const remounted = hosts.filter((_, i) => i % 4 !== 0);
+      for (const el of [...kept, ...remounted]) {
+        col.register(handle(el.id, el));
+      }
+      const comparisons = countComparisons();
+
+      expect(col.items().map((h) => h.id)).toEqual(idsOf(hosts));
+      expect(comparisons.calls).toBeLessThan(3 * hosts.length);
+    });
+
+    it('orders a structural swap whose replacement registers after its later siblings', () => {
+      const col = createCollection();
+      const outgoing = handle('b', b);
+      col.register(handle('a', a));
+      col.register(outgoing);
+      col.register(handle('c', c));
+      expect(col.items().map((h) => h.id)).toEqual(['a', 'b', 'c']);
+
+      const replacement = document.createElement('div');
+      host.insertBefore(replacement, b);
+      col.register(handle('b2', replacement));
+      col.unregister(outgoing);
+      b.remove();
+
+      expect(col.items().map((h) => h.id)).toEqual(['a', 'b2', 'c']);
+    });
+  });
 });
