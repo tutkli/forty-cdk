@@ -696,11 +696,10 @@ export class ForTree<T = string> implements ForTreeContext<T>, ForTreeContainerC
   }
 
   private isItemHighlighted(host: HTMLElement): boolean {
-    const pointed = this.#pointer.pointed();
-    if (pointed !== null) {
-      return pointed === host;
+    if (this.#pointer.hasPointed()) {
+      return this.#pointer.isPointed(host);
     }
-    return this.roving.active() === host;
+    return this.roving.isActive(host);
   }
 
   private notifyItemFocus(host: HTMLElement): void {

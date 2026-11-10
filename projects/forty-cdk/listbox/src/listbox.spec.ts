@@ -898,6 +898,79 @@ describe('ForListbox', () => {
     });
   });
 
+  describe('per-move cost (issue #2808)', () => {
+    interface MoveReads {
+      readonly highlight: number;
+      readonly tabindex: number;
+    }
+
+    const mount = async (size: number) => {
+      const r = renderHost(ListboxHost);
+      r.fixture.componentInstance.options.set(
+        Array.from({ length: size }, (_, i) => ({
+          value: `o${i}`,
+          label: `Option ${i}`,
+          disabled: false,
+        })),
+      );
+      await r.flush();
+      const listbox = r.fixture.debugElement
+        .query(By.directive(ForListbox))
+        .injector.get(ForListbox);
+      const highlight = vi.spyOn(listbox, 'isOptionHighlighted');
+      const tabindex = vi.spyOn(listbox, 'optionTabindex');
+      const measure = async (act: () => void): Promise<MoveReads> => {
+        highlight.mockClear();
+        tabindex.mockClear();
+        act();
+        await r.flush();
+        return { highlight: highlight.mock.calls.length, tabindex: tabindex.mock.calls.length };
+      };
+      return { ...r, measure };
+    };
+
+    const arrowDownCost = async (size: number): Promise<MoveReads> => {
+      const { el, flush, measure } = await mount(size);
+      optOf(el, 'o2').focus();
+      await flush();
+      const reads = await measure(() => pressKey(optOf(el, 'o2'), 'ArrowDown'));
+      expect(document.activeElement).toBe(optOf(el, 'o3'));
+      expect(optOf(el, 'o3').getAttribute('tabindex')).toBe('0');
+      expect(optOf(el, 'o2').getAttribute('tabindex')).toBe('-1');
+      expect(listboxItems(el).filter((o) => o.hasAttribute('data-highlighted'))).toEqual([
+        optOf(el, 'o3'),
+      ]);
+      return reads;
+    };
+
+    const hoverCost = async (size: number): Promise<MoveReads> => {
+      const { el, flush, measure } = await mount(size);
+      optOf(el, 'o2').dispatchEvent(new PointerEvent('pointermove', { bubbles: true }));
+      await flush();
+      const reads = await measure(() =>
+        optOf(el, 'o3').dispatchEvent(new PointerEvent('pointermove', { bubbles: true })),
+      );
+      expect(listboxItems(el).filter((o) => o.hasAttribute('data-highlighted'))).toEqual([
+        optOf(el, 'o3'),
+      ]);
+      return reads;
+    };
+
+    it.each([8, 64])(
+      're-evaluates only the two options an ArrowDown touches, with %i options',
+      async (size) => {
+        expect(await arrowDownCost(size)).toEqual({ highlight: 2, tabindex: 2 });
+      },
+    );
+
+    it.each([8, 64])(
+      're-evaluates only the two options a pointer move crosses, with %i options',
+      async (size) => {
+        expect(await hoverCost(size)).toEqual({ highlight: 2, tabindex: 0 });
+      },
+    );
+  });
+
   describe('typeahead', () => {
     it('focuses the first option matching the typed prefix', async () => {
       const { el, flush } = renderHost(ListboxHost);

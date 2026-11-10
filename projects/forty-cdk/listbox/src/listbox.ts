@@ -519,11 +519,10 @@ export class ForListbox<T = string>
     if (this.#controlled()) {
       return false;
     }
-    const pointed = this.#pointer.pointed();
-    if (pointed !== null) {
-      return pointed === el;
+    if (this.#pointer.hasPointed()) {
+      return this.#pointer.isPointed(el);
     }
-    return this.roving.active() === el;
+    return this.roving.isActive(el);
   }
 
   private highlightFromPointer(host: HTMLElement, id: string): void {

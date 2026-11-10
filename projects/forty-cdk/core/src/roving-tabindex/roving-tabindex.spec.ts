@@ -388,6 +388,112 @@ describe('RovingTabindex', () => {
       });
     });
 
+    describe('keyed reads (issue #2808)', () => {
+      const mountGroup = (n: number, fallback: 'none' | 'nearest') => {
+        const hosts = Array.from({ length: n }, () => document.createElement('button'));
+        document.body.append(...hosts);
+        const disabled = hosts.map(() => signal(false));
+        const items = signal<readonly HostRovingItemHandle[]>(
+          hosts.map((host, i) => ({ host, disabled: disabled[i]! })),
+        );
+        const r = new RovingTabindex(() => items(), { fallback });
+        let evaluations = 0;
+        const stops = hosts.map((host) =>
+          computed(() => {
+            evaluations++;
+            return r.hasActive() ? r.tabindexFor(host) : null;
+          }),
+        );
+        const active = hosts.map((host) => computed(() => r.isActive(host)));
+        const read = () => ({
+          stops: stops.map((stop) => stop()),
+          active: active.map((flag) => flag()),
+        });
+        const countMove = (move: () => void): number => {
+          read();
+          evaluations = 0;
+          move();
+          read();
+          return evaluations;
+        };
+        return {
+          hosts,
+          disabled,
+          r,
+          read,
+          countMove,
+          cleanup: () => hosts.forEach((host) => host.remove()),
+        };
+      };
+
+      it('re-evaluates only the two items a move touches, whatever the group size', () => {
+        const small = mountGroup(4, 'nearest');
+        const large = mountGroup(64, 'nearest');
+        try {
+          small.r.setActive(small.hosts[1]!);
+          large.r.setActive(large.hosts[1]!);
+
+          const smallCost = small.countMove(() => small.r.setActive(small.hosts[2]!));
+          const largeCost = large.countMove(() => large.r.setActive(large.hosts[2]!));
+
+          expect(largeCost).toBe(2);
+          expect(smallCost).toBe(largeCost);
+          expect(large.read().stops.indexOf(0)).toBe(2);
+          expect(large.read().stops.filter((stop) => stop === 0)).toHaveLength(1);
+        } finally {
+          small.cleanup();
+          large.cleanup();
+        }
+      });
+
+      it('hands the tab stop to the stand-in when the active item is disabled in place', () => {
+        const group = mountGroup(4, 'nearest');
+        try {
+          group.r.setActive(group.hosts[2]!);
+          expect(group.read().active).toEqual([false, false, true, false]);
+
+          group.disabled[2]!.set(true);
+
+          expect(group.read().active).toEqual([false, true, false, false]);
+          expect(group.read().stops).toEqual([-1, 0, -1, -1]);
+        } finally {
+          group.cleanup();
+        }
+      });
+
+      it('takes the tab stop back from a stand-in when focus moves elsewhere', () => {
+        const group = mountGroup(4, 'nearest');
+        try {
+          group.r.setActive(group.hosts[2]!);
+          group.disabled[2]!.set(true);
+          expect(group.read().active).toEqual([false, true, false, false]);
+
+          group.r.setActive(group.hosts[3]!);
+
+          expect(group.read().active).toEqual([false, false, false, true]);
+          expect(group.read().stops).toEqual([-1, -1, -1, 0]);
+        } finally {
+          group.cleanup();
+        }
+      });
+
+      it('owns the tab stop once an element named while disabled is re-enabled', () => {
+        const group = mountGroup(3, 'none');
+        try {
+          group.disabled[1]!.set(true);
+          group.r.setActive(group.hosts[1]!);
+          expect(group.read().stops).toEqual([null, null, null]);
+
+          group.disabled[1]!.set(false);
+
+          expect(group.read().stops).toEqual([-1, 0, -1]);
+          expect(group.read().active).toEqual([false, true, false]);
+        } finally {
+          group.cleanup();
+        }
+      });
+    });
+
     it('never reads the item list while nothing is active', () => {
       const a = document.createElement('button');
       document.body.append(a);

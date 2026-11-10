@@ -482,7 +482,7 @@ export class ForTable<T = unknown> implements ForTableContext {
    * Roving tab-stop value for a cell: the active cell owns `0`, and before anything is
    * active the first enabled cell does.
    *
-   * The gate is `active()` rather than `hasActive()` on purpose. `#roving` is built over
+   * The gate is `holdsActive()` rather than `hasActive()` on purpose. `#roving` is built over
    * `#flatCells()`, so it already reconciles an active host away from a cell whose
    * **handle** reports disabled; `hasActive()` additionally discounts a host carrying
    * `aria-disabled`, which on a `[forTableColumnReorder]` header cell is owned by the
@@ -492,9 +492,8 @@ export class ForTable<T = unknown> implements ForTableContext {
    * ([#1840](https://github.com/tutkli/forty-cdk/issues/1840)).
    */
   private cellTabIndex(host: HTMLElement): 0 | -1 {
-    const active = this.#roving.active();
-    if (active !== null) {
-      return active === host ? 0 : -1;
+    if (this.#roving.holdsActive()) {
+      return this.#roving.isActive(host) ? 0 : -1;
     }
     return this.#firstEnabledCell() === host ? 0 : -1;
   }
@@ -511,11 +510,10 @@ export class ForTable<T = unknown> implements ForTableContext {
   }
 
   private isCellHighlighted(host: HTMLElement): boolean {
-    const pointed = this.#pointer.pointed();
-    if (pointed !== null) {
-      return pointed === host;
+    if (this.#pointer.hasPointed()) {
+      return this.#pointer.isPointed(host);
     }
-    return this.#roving.active() === host;
+    return this.#roving.isActive(host);
   }
 
   private activateCell(host: HTMLElement): void {
