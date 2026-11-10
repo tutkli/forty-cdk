@@ -17,7 +17,7 @@ const INTERACTIVE_ROLES = [
   'treeitem',
 ];
 
-const INTERACTIVE_DESCENDANT_SELECTOR = [
+const INTERACTIVE_DESCENDANT_SELECTOR = /* @__PURE__ */ [
   'button',
   'a[href]',
   'input',

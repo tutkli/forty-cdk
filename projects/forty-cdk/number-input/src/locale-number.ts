@@ -19,23 +19,17 @@ function escapeRegExp(value: string): string {
 }
 
 /**
- * The space variants a locale may emit as a group separator, or that a user
- * may type in their place: ASCII space (U+0020), no-break space (U+00A0),
- * narrow no-break space (U+202F, fr-FR), and thin space (U+2009). Normalized to
- * the locale's canonical group separator before grouping validation so a
- * user-typed ASCII space still parses against an NBSP-emitting locale.
- */
-const SPACE_GROUP_VARIANTS = /[    ]/g;
-
-/**
  * Matches a group-separator space variant only when it sits between two digits.
+ * The variants are the ones a locale may emit as a group separator, or that a
+ * user may type in their place: ASCII space (U+0020), no-break space (U+00A0),
+ * narrow no-break space (U+202F, fr-FR), and thin space (U+2009).
  * `Intl` emits a space variant both between digit groups (a real group
  * separator) and between the number and a trailing literal (the `%` / unit /
  * currency symbol in fr-style locales); normalizing only the digit-flanked
  * spaces leaves that literal-separating space for the noise strip instead of
  * promoting it to a group separator that fails grouping validation.
  */
-const DIGIT_GROUPED_SPACE = new RegExp(`(?<=\\d)${SPACE_GROUP_VARIANTS.source}(?=\\d)`, 'g');
+const DIGIT_GROUPED_SPACE = /(?<=\d)[    ](?=\d)/g;
 
 /** Whether `separator` is one of the whitespace group-separator variants. */
 function isSpaceSeparator(separator: string): boolean {

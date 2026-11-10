@@ -1,6 +1,3 @@
-const AM_TIME = new Date(2000, 0, 1, 1);
-const PM_TIME = new Date(2000, 0, 1, 13);
-
 /**
  * Resolves the effective hour cycle. An explicit `12` / `24` always wins;
  * otherwise the runtime locale's preference is read from
@@ -68,7 +65,10 @@ export function dayPeriodNames(locale: string | undefined): { am: string; pm: st
   });
   const read = (date: Date): string =>
     fmt.formatToParts(date).find((part) => part.type === 'dayPeriod')?.value ?? '';
-  return { am: read(AM_TIME) || 'AM', pm: read(PM_TIME) || 'PM' };
+  return {
+    am: read(new Date(2000, 0, 1, 1)) || 'AM',
+    pm: read(new Date(2000, 0, 1, 13)) || 'PM',
+  };
 }
 
 function firstDifferingIndex(a: string, b: string): number {

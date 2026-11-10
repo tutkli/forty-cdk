@@ -11,10 +11,14 @@ const DIGITS: Record<TimeSegmentType, number> = {
   dayPeriod: 0,
 };
 
-// 1:23:45 PM — distinct hour / minute / second values and a PM reference so the
-// `dayPeriod` part is present to read back. Only each part's `type` (and the
-// separators) are used; the concrete value never surfaces.
-const REFERENCE_TIME = new Date(2000, 0, 1, 13, 23, 45);
+/**
+ * 1:23:45 PM: distinct hour / minute / second values, in the afternoon so the
+ * `dayPeriod` part is present to read back. Only each part's `type` and the
+ * separators are read.
+ */
+function referenceTime(): Date {
+  return new Date(2000, 0, 1, 13, 23, 45);
+}
 
 /**
  * Derives the ordered segment list for a time field from the runtime locale,
@@ -47,7 +51,7 @@ export function buildTimeSegments(
     options.second = '2-digit';
   }
 
-  const parts = new Intl.DateTimeFormat(locale, options).formatToParts(REFERENCE_TIME);
+  const parts = new Intl.DateTimeFormat(locale, options).formatToParts(referenceTime());
   const segments: FieldSpec[] = [];
   for (const part of parts) {
     switch (part.type) {

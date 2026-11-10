@@ -27,11 +27,11 @@ if (problems.length > 0) {
   );
   for (const problem of problems) console.error(`  ${problem}`);
   console.error(
-    'Each one keeps its FESM, and every class it names, in any bundle importing that entry point. A self-referencing `instanceof` inside a class emits a class alias; use a `#field in value` brand check instead.',
+    'Each one keeps its FESM, and every class it names, in any bundle importing that entry point. A self-referencing `instanceof` inside a class emits a class alias; use a `#field in value` brand check instead. A variable whose initializer calls or constructs something is kept too: create the value inside the function that reads it, or annotate the call `/* @__PURE__ */` with side-effect-free arguments.',
   );
   process.exit(1);
 }
 
 console.log(
-  `[check-fesm-top-level] OK — ${bundles.length} FESMs carry only declarations, imports / exports and class metadata at the top level.`,
+  `[check-fesm-top-level] OK — ${bundles.length} FESMs carry only declarations with droppable initializers, imports / exports and class metadata at the top level.`,
 );

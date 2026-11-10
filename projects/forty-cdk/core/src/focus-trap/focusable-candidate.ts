@@ -58,19 +58,24 @@ const OPEN_ATTRIBUTE = 'open';
  * structural. `focusable-candidate.spec.ts` pins the derived clause set
  * against the literal it replaced.
  */
-export const FOCUSABLE_SELECTOR = [
+export const FOCUSABLE_SELECTOR = /* @__PURE__ */ [
   ...Object.entries(FOCUSABLE_LOCAL_NAME_QUALIFIERS).map(([name, qualifier]) => name + qualifier),
   ...FOCUSABLE_ATTRIBUTE_CLAUSES,
 ].join(',');
 
-export const FOCUSABILITY_ATTRIBUTES: readonly string[] = [
-  ...new Set([
-    ...[...FOCUSABLE_SELECTOR.matchAll(/\[([\w-]+)/g)].map((match) => match[1]!),
-    HIDDEN_ATTRIBUTE,
-    INERT_ATTRIBUTE,
-    OPEN_ATTRIBUTE,
-  ]),
-];
+function focusabilityAttributes(selector: string): string[] {
+  return [
+    ...new Set([
+      ...[...selector.matchAll(/\[([\w-]+)/g)].map((match) => match[1]!),
+      HIDDEN_ATTRIBUTE,
+      INERT_ATTRIBUTE,
+      OPEN_ATTRIBUTE,
+    ]),
+  ];
+}
+
+export const FOCUSABILITY_ATTRIBUTES: readonly string[] =
+  /* @__PURE__ */ focusabilityAttributes(FOCUSABLE_SELECTOR);
 
 /**
  * Every element under `container` matching {@link FOCUSABLE_SELECTOR}, in
@@ -358,7 +363,9 @@ function indexOfInnermostContaining(candidates: readonly HTMLElement[], from: El
   return -1;
 }
 
-const FOCUSABLE_LOCAL_NAMES = new Set(Object.keys(FOCUSABLE_LOCAL_NAME_QUALIFIERS));
+const FOCUSABLE_LOCAL_NAMES = /* @__PURE__ */ new Set(
+  /* @__PURE__ */ Object.keys(FOCUSABLE_LOCAL_NAME_QUALIFIERS),
+);
 
 /**
  * Whether `el` could possibly match {@link FOCUSABLE_SELECTOR} — a deliberate superset, so `false`
