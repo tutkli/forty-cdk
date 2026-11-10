@@ -39,12 +39,11 @@ export function inputModeForType(type: OtpInputType): 'numeric' | 'text' {
   return type === 'numeric' ? 'numeric' : 'text';
 }
 
-const PRINTABLE_ASCII = Array.from({ length: 0x7f - 0x20 }, (_, i) =>
-  String.fromCharCode(0x20 + i),
-);
-
 export function inputModeForPattern(pattern: RegExp): 'numeric' | 'text' {
-  const accepted = PRINTABLE_ASCII.filter((ch) => {
+  const printableAscii = Array.from({ length: 0x7f - 0x20 }, (_, i) =>
+    String.fromCharCode(0x20 + i),
+  );
+  const accepted = printableAscii.filter((ch) => {
     pattern.lastIndex = 0;
     return pattern.test(ch);
   });

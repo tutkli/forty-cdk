@@ -13,14 +13,21 @@ const DIGITS: Record<SegmentType, number> = {
   dayPeriod: 0,
 };
 
-// 1 Feb is deliberately distinct in day vs month so a locale that reuses a
-// digit can't mask the part ordering. The year (2000) is irrelevant — only the
-// `type` of each formatted part is read.
-const REFERENCE_DATE = new Date(2000, 1, 1);
+/**
+ * 1 Feb 2000: distinct day and month, so a locale that reuses a digit cannot
+ * mask the part order. Only the `type` of each formatted part is read.
+ */
+function referenceDate(): Date {
+  return new Date(2000, 1, 1);
+}
 
-// 1 Feb 2000, 1:23:45 PM — distinct day / month and hour / minute / second, in
-// the afternoon so the `dayPeriod` part is present to read back.
-const REFERENCE_DATE_TIME = new Date(2000, 1, 1, 13, 23, 45);
+/**
+ * 1 Feb 2000, 1:23:45 PM: distinct day / month and hour / minute / second, in
+ * the afternoon so the `dayPeriod` part is present to read back.
+ */
+function referenceDateTime(): Date {
+  return new Date(2000, 1, 1, 13, 23, 45);
+}
 
 /**
  * Derives the ordered segment list for a day-granularity date field from the
@@ -43,7 +50,7 @@ export function buildSegments(locale: string | undefined): readonly FieldSpec[] 
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
-  }).formatToParts(REFERENCE_DATE);
+  }).formatToParts(referenceDate());
 
   const segments: FieldSpec[] = [];
   for (const part of parts) {
@@ -101,7 +108,7 @@ export function buildDateTimeSegments(
     options.second = '2-digit';
   }
 
-  const parts = new Intl.DateTimeFormat(locale, options).formatToParts(REFERENCE_DATE_TIME);
+  const parts = new Intl.DateTimeFormat(locale, options).formatToParts(referenceDateTime());
   const segments: FieldSpec[] = [];
   for (const part of parts) {
     switch (part.type) {
