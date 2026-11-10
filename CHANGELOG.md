@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.44.0] - 2026-11-10
+
+### Added
+
+- **Shared** — `RovingTabindex` (`forty-cdk/shared`) gains the per-element reads `isActive(el)` and
+  `holdsActive()` ([#2808](https://github.com/tutkli/forty-cdk/issues/2808)). `isActive(el)` reports
+  whether `el` is the active element, and a move notifies only the reads for the element losing the
+  tab stop and the element gaining it, so a composite widget built on the tracker can bind each
+  item's state without re-evaluating every item per arrow key. `holdsActive()` reports whether
+  `active()` is non-null without `hasActive()`'s discount of a stale element, and notifies only when
+  that answer changes. `tabindexFor(el)` and `hasActive()` get the same per-element cost with no
+  change on the consumer's side.
+
+### Performance
+
+- **Listbox, Tree, Table, Tabs, Toolbar, Toggle group, Stepper, Menubar, Drag & drop, Date field,
+  Time field** — an arrow key or a pointer move re-evaluates only the two items it touches, instead
+  of every item's `tabindex` and highlight
+  ([#2808](https://github.com/tutkli/forty-cdk/issues/2808)). On a 1000-option listbox under a 4×
+  CPU throttle, an ArrowDown drops from about 54 ms to 38 ms, and its script time from about 30 ms
+  to 12 ms. What still grows with the item count is Angular's own refresh of the consumer's `@for`
+  views.
+
+- **Every primitive** — a production build no longer keeps five `new Date(…)` reference dates from
+  `forty-cdk/core` when it never builds date or time segments
+  ([#2810](https://github.com/tutkli/forty-cdk/issues/2810)). They were module-level constants a
+  bundler cannot prove free of side effects, so every application importing any primitive kept them,
+  about 110 B raw. Six more top-level initializers, in the focus-trap helpers, `forty-cdk/table`,
+  `forty-cdk/number-input` and `forty-cdk/otp-input`, can now be dropped too.
+
 ## [0.43.0] - 2026-11-09
 
 ### Added
@@ -5722,7 +5752,8 @@ primitives.
 - **Display** — avatar, progress, meter, tree.
 - `forty-cdk/internationalized-date` secondary entry point exposing the `@internationalized/date` adapters for the date and time primitives.
 
-[Unreleased]: https://github.com/tutkli/forty-cdk/compare/v0.43.0...HEAD
+[Unreleased]: https://github.com/tutkli/forty-cdk/compare/v0.44.0...HEAD
+[0.44.0]: https://github.com/tutkli/forty-cdk/compare/v0.43.0...v0.44.0
 [0.43.0]: https://github.com/tutkli/forty-cdk/compare/v0.42.0...v0.43.0
 [0.42.0]: https://github.com/tutkli/forty-cdk/compare/v0.41.1...v0.42.0
 [0.41.1]: https://github.com/tutkli/forty-cdk/compare/v0.41.0...v0.41.1
