@@ -34,6 +34,7 @@ import {
   injectTextDirection,
   RovingTabindex,
   hostAriaLabel,
+  injectRovingFocusRestore,
 } from 'forty-cdk/core';
 import { computeFlatHierarchy } from './flat-hierarchy';
 import {
@@ -76,6 +77,12 @@ export interface TableCellActivateEvent<T> {
   readonly column: string;
   /** The originating `Enter` keydown, already `preventDefault`ed. */
   readonly event: KeyboardEvent;
+}
+
+/** A cell position in the composite grid: its row, the header row first when it joins, and its column. */
+interface GridPosition {
+  readonly row: number;
+  readonly column: number;
 }
 
 /** Grid actions whose target may lie on a row outside the rendered virtualized window. */
@@ -452,8 +459,88 @@ export class ForTable<T = unknown> implements ForTableContext {
     return rendered === 0 ? UNKNOWN_COUNT : rendered;
   });
 
+  /**
+   * The position of the cell that last took DOM focus, or of the cell holding the element that
+   * did, recorded when focus arrives so {@link #focusRestoreTarget} can place a cell that has
+   * already left the grid. Plain state: nothing derives from it.
+   */
+  #focusedPosition: GridPosition | null = null;
+
   constructor() {
     this.#registry.registerHeaderCellFocus((column) => this.#focusHeaderCell(column));
+    injectRovingFocusRestore(
+      {
+        active: () => this.#focusRestoreTarget(),
+        noteFocus: (el) => this.#noteFocusedPosition(el),
+      },
+      { skip: () => this.#windowed() },
+    );
+  }
+
+  /** The rows of the composite grid: the header cells when they join it, then each data row. */
+  #gridRows(): readonly (readonly ForTableCellHandle[])[] {
+    const body = this.#registry.rows().map((row) => row.cells());
+    return this.#headerParticipates() ? [this.#headerCellHosts(), ...body] : body;
+  }
+
+  #noteFocusedPosition(el: Element | null): void {
+    if (el === null) {
+      return;
+    }
+    this.#focusedPosition = null;
+    if (this.mode() === 'table') {
+      return;
+    }
+    const rows = this.#gridRows();
+    for (let row = 0; row < rows.length; row++) {
+      const column = rows[row]!.findIndex(
+        (cell) => cell.host === el || composedContains(cell.host, el),
+      );
+      if (column >= 0) {
+        this.#focusedPosition = { row, column };
+        return;
+      }
+    }
+  }
+
+  /**
+   * The cell that owns the tab stop once the focused cell has left the grid, made the roving
+   * owner so focus and the tab stop land together: the enabled cell nearest the departed one's
+   * position, in the same row for a removed column and in the same column for a removed row,
+   * else the first enabled cell.
+   */
+  #focusRestoreTarget(): HTMLElement | null {
+    if (this.mode() === 'table') {
+      return null;
+    }
+    const current = this.#roving.active();
+    if (current !== null && current.isConnected) {
+      return current;
+    }
+    const target = this.#cellNear(this.#focusedPosition) ?? this.#firstEnabledCell();
+    if (target !== null) {
+      this.#roving.setActive(target);
+    }
+    return target;
+  }
+
+  /** The enabled cell nearest `position`, clamped into the grid, scanning outwards along its row. */
+  #cellNear(position: GridPosition | null): HTMLElement | null {
+    if (position === null) {
+      return null;
+    }
+    const rows = this.#gridRows();
+    const cells = rows[Math.min(position.row, rows.length - 1)] ?? [];
+    const column = Math.min(position.column, cells.length - 1);
+    for (let distance = 0; distance < cells.length; distance++) {
+      for (const index of [column - distance, column + distance]) {
+        const cell = cells[index];
+        if (cell !== undefined && !cell.disabled()) {
+          return cell.host;
+        }
+      }
+    }
+    return null;
   }
 
   isRowExpanded(value: T): boolean {

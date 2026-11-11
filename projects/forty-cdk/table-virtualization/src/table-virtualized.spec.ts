@@ -1259,3 +1259,25 @@ describe('ForTableVirtualized — the scroll margin inside an ancestor scroller 
     expect(rectReads).toHaveBeenCalled();
   });
 });
+
+describe('ForTableVirtualized — a focused row that leaves the window moves no focus', () => {
+  let restoreObservers: () => void;
+  beforeAll(() => {
+    restoreObservers = installObserverPolyfills();
+  });
+  afterAll(() => restoreObservers());
+
+  it('leaves focus where the window put it when the focused row unmounts', async () => {
+    const { el, instance, flush } = renderHost(VariantAboveDataHost);
+    const start = el.querySelector<HTMLElement>('[data-testid="cell-3-b"]')!;
+    start.focus();
+    await flush();
+    expect(document.activeElement).toBe(start);
+
+    instance.windowIndices.set([0, 1, 2]);
+    await flush();
+
+    expect(start.isConnected).toBe(false);
+    expect(document.activeElement).toBe(document.body);
+  });
+});

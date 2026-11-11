@@ -58,7 +58,8 @@
  *   - **Focus follows an item that leaves only if the item held it** — for
  *     the groups pairing with `injectRovingFocusRestore`: a removal moves the
  *     focus it held, including after a disable in place, and moves nothing once
- *     focus has left the group (#2239).
+ *     focus has left the group (#2239). An excluded tracker that pairs with it
+ *     hands the same mount to {@link assertRovingRemovalContract}.
  *
  * The consumer provides `mount` factories per variant they want to
  * exercise. Only the `mount` factory is required; everything else is
@@ -188,6 +189,8 @@ export interface RovingFocusRestoreMount extends RovingRemovalMount {
 export interface RovingRemovalContractSetup {
   /** See {@link RovingTabindexContractSetup.mountWithRemoval}. */
   mountWithRemoval: () => RovingRemovalMount | Promise<RovingRemovalMount>;
+  /** See {@link RovingTabindexContractSetup.mountWithFocusRestore}. */
+  mountWithFocusRestore?: () => RovingFocusRestoreMount | Promise<RovingFocusRestoreMount>;
 }
 
 export interface RovingTabindexContractOptions {
@@ -269,7 +272,8 @@ const focusRemovable = async (r: RovingRemovalMount): Promise<HTMLElement> => {
  * `describe('roving-tabindex removal contract', …)` block: after the item
  * holding the tab stop leaves, exactly one surviving item owns it.
  * {@link assertRovingTabindexContract} runs it for `mountWithRemoval`; a
- * tracker excluded from that contract calls it directly.
+ * tracker excluded from that contract calls it directly, and adds
+ * `mountWithFocusRestore` when it pairs with `injectRovingFocusRestore`.
  */
 export function assertRovingRemovalContract(setup: RovingRemovalContractSetup): void {
   describe('roving-tabindex removal contract', () => {
@@ -284,6 +288,55 @@ export function assertRovingRemovalContract(setup: RovingRemovalContractSetup): 
       expect(r.items.some((item) => item.isConnected)).toBe(true);
       expect(survivingTabStops(r)).toHaveLength(1);
     });
+
+    if (setup.mountWithFocusRestore) {
+      focusRestoreCases(setup.mountWithFocusRestore);
+    }
+  });
+}
+
+function focusRestoreCases(
+  mount: () => RovingFocusRestoreMount | Promise<RovingFocusRestoreMount>,
+): void {
+  it('moves focus to the new tab stop when the focused item leaves', async () => {
+    const r = await mount();
+    await focusRemovable(r);
+
+    r.remove();
+    await r.flush();
+
+    const stops = survivingTabStops(r);
+    expect(stops).toHaveLength(1);
+    expect(document.activeElement).toBe(stops[0]);
+  });
+
+  it('moves focus to the new tab stop when an item disabled while focused leaves', async () => {
+    const r = await mount();
+    const target = await focusRemovable(r);
+    r.disable();
+    await r.flush();
+    expect(reflectsDisabled(target)).toBe(true);
+    expect(document.activeElement).toBe(target);
+
+    r.remove();
+    await r.flush();
+
+    const stops = survivingTabStops(r);
+    expect(stops).toHaveLength(1);
+    expect(document.activeElement).toBe(stops[0]);
+  });
+
+  it('moves no focus when the item leaves after focus left the group', async () => {
+    const r = await mount();
+    const target = await focusRemovable(r);
+    target.blur();
+    await r.flush();
+    expect(document.activeElement).toBe(document.body);
+
+    r.remove();
+    await r.flush();
+
+    expect(document.activeElement).toBe(document.body);
   });
 }
 
@@ -457,46 +510,7 @@ export function assertRovingTabindexContract(
     }
 
     if (setup.mountWithFocusRestore) {
-      it('moves focus to the new tab stop when the focused item leaves', async () => {
-        const r = await setup.mountWithFocusRestore!();
-        await focusRemovable(r);
-
-        r.remove();
-        await r.flush();
-
-        const stops = survivingTabStops(r);
-        expect(stops).toHaveLength(1);
-        expect(document.activeElement).toBe(stops[0]);
-      });
-
-      it('moves focus to the new tab stop when an item disabled while focused leaves', async () => {
-        const r = await setup.mountWithFocusRestore!();
-        const target = await focusRemovable(r);
-        r.disable();
-        await r.flush();
-        expect(reflectsDisabled(target)).toBe(true);
-        expect(document.activeElement).toBe(target);
-
-        r.remove();
-        await r.flush();
-
-        const stops = survivingTabStops(r);
-        expect(stops).toHaveLength(1);
-        expect(document.activeElement).toBe(stops[0]);
-      });
-
-      it('moves no focus when the item leaves after focus left the group', async () => {
-        const r = await setup.mountWithFocusRestore!();
-        const target = await focusRemovable(r);
-        target.blur();
-        await r.flush();
-        expect(document.activeElement).toBe(document.body);
-
-        r.remove();
-        await r.flush();
-
-        expect(document.activeElement).toBe(document.body);
-      });
+      focusRestoreCases(setup.mountWithFocusRestore);
     }
 
     if (setup.mountWithDisabledFirst) {

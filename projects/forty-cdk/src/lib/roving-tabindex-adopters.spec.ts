@@ -79,9 +79,9 @@ import { entryPointOf, LIBRARY_CODE, SPEC_CODE } from '../test-utils/source-scan
  * **DOM focus follows an item that leaves while it is focused, in every group
  * whose items can unmount** (#2719 revisiting #2140). Every tracker built over
  * an items producer re-seeds to the nearest survivor and pairs with
- * `injectRovingFocusRestore`, unless `FOCUS_RESTORE_EXCLUSIONS` names why not,
- * and each declared member pairs with it through the owner its selection
- * resolves.
+ * `injectRovingFocusRestore`, a grid through the two-axis re-seed
+ * `GRID_RESEEDS` names (#2820), and each declared member pairs with it through
+ * the owner its selection resolves.
  *
  * **It also owns the removal rule of [#2239](https://github.com/tutkli/forty-cdk/issues/2239),
  * and that one has no exclusion.** An item leaving while it holds the tab stop
@@ -257,16 +257,14 @@ const PER_CLAIM_MOUNTS = [
 const FOCUS_RESTORE = 'injectRovingFocusRestore(';
 
 /**
- * Trackers that own an items producer and restore no focus, each with the
- * reason. The condition the last of the focus-restore cases checks is the grid
- * resolver the reason rests on.
+ * Trackers whose survivor is re-seeded by a two-axis rule of their own rather
+ * than by `fallback: 'nearest'`, with the call resolving it. The one-axis
+ * re-seed over a grid's flattened cells answers a removed row with the last
+ * cell of the previous row, where the nearest survivor is the same column in
+ * an adjacent row ([#2820](https://github.com/tutkli/forty-cdk/issues/2820)).
  */
-const FOCUS_RESTORE_EXCLUSIONS: readonly { readonly tracker: string; readonly reason: string }[] = [
-  {
-    tracker: 'table/src/table.ts::#roving',
-    reason:
-      "[forTable]'s nearest survivor is a two-axis question, the same column in an adjacent row, which the one-axis re-seed of `fallback: 'nearest'` over the flattened cells answers with the last cell of the previous row; and its virtualized body unmounts the focused row on every scroll that moves it out of the window, where moving focus would scroll it back",
-  },
+const GRID_RESEEDS: readonly { readonly tracker: string; readonly reseed: string }[] = [
+  { tracker: 'table/src/table.ts::#roving', reseed: 'this.#cellNear(' },
 ];
 
 /** The contract mount every tracker supplies for the removal rung. */
@@ -479,12 +477,13 @@ describe('roving-tabindex contract adoption (meta-guard)', () => {
         callers
           .map((path) => ({
             path,
-            claim: ADOPTERS.find(
-              (adopter) =>
-                adopter.trackers.some((tracker) => tracker.startsWith(`${path}::`)) ||
-                (adopter.handWrittenLadder !== undefined &&
-                  entryPointOf(adopter.handWrittenLadder) === entryPointOf(path)),
-            ),
+            claim:
+              ADOPTERS.find(
+                (adopter) =>
+                  adopter.trackers.some((tracker) => tracker.startsWith(`${path}::`)) ||
+                  (adopter.handWrittenLadder !== undefined &&
+                    entryPointOf(adopter.handWrittenLadder) === entryPointOf(path)),
+              ) ?? EXCLUSIONS.find((exclusion) => exclusion.tracker.startsWith(`${path}::`)),
           }))
           .filter(({ claim }) => !claim || occurrences(claim.spec, FOCUS_RESTORE_MOUNT) < 1)
           .map(({ path, claim }) => `${path}: ${claim ? claim.spec : 'no claim'}`),
@@ -555,11 +554,11 @@ describe('roving-tabindex contract adoption (meta-guard)', () => {
       const nearest = [
         ...source.matchAll(/(#?[A-Za-z_$][\w$]*)\s*=\s*new RovingTabindex\(([^;]*)\);/g),
       ].some((match) => match[1] === member && /fallback:\s*'nearest'/.test(match[2]!));
+      const gridReseed = GRID_RESEEDS.some(
+        (entry) => entry.tracker === site.id && source.includes(entry.reseed),
+      );
       const restores = source.includes(FOCUS_RESTORE);
-      if (FOCUS_RESTORE_EXCLUSIONS.some((exclusion) => exclusion.tracker === site.id)) {
-        return restores ? [`${site.id}: excluded, yet restores focus`] : [];
-      }
-      return nearest && restores
+      return (nearest || gridReseed) && restores
         ? []
         : [`${site.id}: fallback 'nearest' ${nearest}, restores ${restores}`];
     });
@@ -583,12 +582,13 @@ describe('roving-tabindex contract adoption (meta-guard)', () => {
     expect(sorted(missing.map((adopter) => adopter.root))).toEqual([]);
   });
 
-  it('excludes no tracker from focus restore whose reason stopped holding', () => {
-    const stale = FOCUS_RESTORE_EXCLUSIONS.filter((exclusion) => {
-      const source = sourceOf(exclusion.tracker.split('::')[0]!);
-      return !source.includes('resolveGridNavigation(');
-    }).map((exclusion) => exclusion.tracker);
+  it('declares a grid re-seed only for a tracker that roves a two-axis grid', () => {
+    const stale = GRID_RESEEDS.filter((entry) => {
+      const source = sourceOf(entry.tracker.split('::')[0]!);
+      return !source.includes('resolveGridNavigation(') || !source.includes(entry.reseed);
+    }).map((entry) => entry.tracker);
 
+    expect(GRID_RESEEDS.length).toBeGreaterThanOrEqual(1);
     expect(sorted(stale)).toEqual([]);
   });
 
