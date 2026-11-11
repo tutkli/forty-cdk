@@ -1,5 +1,6 @@
 import { computed, DestroyRef, effect, ElementRef, inject, type Signal } from '@angular/core';
 
+import { fortyWarn } from '../errors/errors';
 import { composeIds, contributeDescribedBy } from './described-by-owner';
 import { claimReplacedAttribute } from './replaced-attribute-owner';
 
@@ -42,7 +43,9 @@ export function hostLabelledBy(fallback: () => string | null): Signal<string | n
  * rather than on the raw input, since `aria-labelledby` outranks `aria-label` in ARIA and a
  * generated fallback would otherwise beat the consumer's adopted name.
  *
- * Only **static** values are adopted; see {@link hostLabelledBy} for the boundary.
+ * Only **static** values are adopted; see {@link hostLabelledBy} for the boundary. In dev mode a
+ * consumer `[attr.aria-label]` binding that the host binding is about to remove warns
+ * `FORCDK-CORE-015`, once per host.
  *
  * Must be invoked in an injection context.
  *
@@ -50,8 +53,47 @@ export function hostLabelledBy(fallback: () => string | null): Signal<string | n
  *   host carries no static `aria-label`.
  */
 export function hostAriaLabel(fallback: () => string | null): Signal<string | null> {
-  const consumer = staticHostAttribute('aria-label');
-  return computed(() => consumer ?? fallback());
+  const host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
+  const consumer = host.getAttribute('aria-label') || null;
+  const resolved = computed(() => consumer ?? fallback());
+  if (typeof ngDevMode === 'undefined' || ngDevMode) {
+    return warnOnRemovedBoundLabel(host, resolved);
+  }
+  return resolved;
+}
+
+/**
+ * Passes `resolved` through, warning once when it resolves `null` while the host carries an
+ * `aria-label` the library did not write: a consumer binding the host binding is about to remove.
+ */
+function warnOnRemovedBoundLabel(
+  host: HTMLElement,
+  resolved: Signal<string | null>,
+): Signal<string | null> {
+  let written: string | null = null;
+  let warned = false;
+  return computed(() => {
+    const value = resolved();
+    const current = host.getAttribute('aria-label');
+    if (value === null && !warned && current && current !== written) {
+      warned = true;
+      fortyWarn({
+        code: 'FORCDK-CORE-015',
+        message: `The bound \`aria-label\` of <${describeHost(host)}> is removed by the library's \`aria-label\` host binding.`,
+        cause:
+          'Only a static `aria-label` attribute is adopted. An `[attr.aria-label]` binding is ' +
+          'written before the host binding, which resolves no name and removes the attribute.',
+        fix: 'Bind the name through the `[ariaLabel]` input, or write a static `aria-label` attribute.',
+      });
+    }
+    written = value;
+    return value;
+  });
+}
+
+function describeHost(host: HTMLElement): string {
+  const role = host.getAttribute('role');
+  return role ? `${host.localName} role="${role}"` : host.localName;
 }
 
 /**
@@ -79,9 +121,4 @@ export function hostDescribedBy(fallback: () => string | null): Signal<string | 
   effect(() => contribution.write());
   inject(DestroyRef).onDestroy(() => contribution.release());
   return computed(() => composeIds(contribution.consumer, fallback()));
-}
-
-function staticHostAttribute(name: string): string | null {
-  const host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
-  return host.getAttribute(name) || null;
 }

@@ -342,6 +342,30 @@ describe('ForToggleGroup', () => {
       expect(group.hasAttribute('aria-label')).toBe(false);
     });
 
+    it('warns FORCDK-CORE-015 naming [ariaLabel] when a bound [attr.aria-label] is removed', () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+      @Component({
+        imports: [ForToggleGroup, ForToggleGroupItem],
+        template: `
+          <div forToggleGroup data-test-id="bound" [attr.aria-label]="label()" [(value)]="modes">
+            <button forToggleGroupItem value="list">List</button>
+          </div>
+        `,
+      })
+      class BoundLabelHost {
+        readonly label = signal('View');
+        readonly modes = signal<readonly string[]>(['list']);
+      }
+
+      const { el } = renderHost(BoundLabelHost);
+      expect(el.querySelector('[data-test-id="bound"]')!.hasAttribute('aria-label')).toBe(false);
+      expect(warn).toHaveBeenCalledOnce();
+      const message = String(warn.mock.calls[0]?.[0]);
+      expect(message).toContain('FORCDK-CORE-015');
+      expect(message).toContain('<div role="group">');
+      expect(message).toContain('`[ariaLabel]`');
+    });
+
     it('reflects orientation changes', async () => {
       const r = renderHost(ToggleGroupHost);
       r.instance.orientation.set('vertical');

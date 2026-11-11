@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Core** — every piece with an `ariaLabel` input warns `FORCDK-CORE-015` in dev mode when its
+  `aria-label` host binding removes a name the consumer bound with `[attr.aria-label]`
+  ([#2818](https://github.com/tutkli/forty-cdk/issues/2818)). Only a static `aria-label` is
+  adopted, so a bound one is written and then removed when the piece has no name of its own. The
+  warning names the element and says to bind the name through `[ariaLabel]` instead.
+
 ### Changed
 
 - **Combobox — BREAKING.** `restoreQueryOnClose` now applies in multi mode too
@@ -69,7 +77,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `aria-label=""`. It is now reflected as `aria-label` only when non-empty, a static `aria-label` on
   the host wins over it, and `FOR_RADIO_GROUP_HOST_DIRECTIVE_INPUTS` /
   `FOR_TOGGLE_GROUP_HOST_DIRECTIVE_INPUTS` list it, so a wrapper composing the root through
-  `hostDirectives` forwards it.
+  `hostDirectives` forwards it. **Migration:** a group named with a bound `[attr.aria-label]` loses
+  its name, because the new host binding removes it; name the group with `[ariaLabel]` or a static
+  `aria-label` ([#2818](https://github.com/tutkli/forty-cdk/issues/2818)).
 
 - **Calendar** — a range calendar announces its anchor and the range it commits
   ([#2741](https://github.com/tutkli/forty-cdk/issues/2741)). Both are polite, with the dates

@@ -4,9 +4,11 @@ import {
   Directive,
   input,
   provideZonelessChangeDetection,
+  signal,
 } from '@angular/core';
 import { TestBed, type ComponentFixture } from '@angular/core/testing';
 
+import { flush } from '../../../src/test-utils';
 import { hostAriaLabel, hostDescribedBy, hostLabelledBy } from './host-aria';
 
 @Directive({
@@ -153,5 +155,84 @@ describe('host-aria', () => {
     it('does NOT adopt a consumer [attr.aria-label] binding (static-only boundary)', () => {
       expect(probe(fixture, 'bound-name').getAttribute('aria-label')).toBe('Library');
     });
+  });
+});
+
+@Directive({
+  selector: '[nameProbe]',
+  host: { '[attr.aria-label]': 'ariaLabel()' },
+})
+class NameProbeDir {
+  readonly nameFallback = input<string | null>(null);
+
+  protected readonly ariaLabel = hostAriaLabel(() => this.nameFallback());
+}
+
+@Component({
+  selector: 'bound-name-host',
+  imports: [NameProbeDir],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `
+    <section data-testid="target" nameProbe role="group" [attr.aria-label]="label()"></section>
+  `,
+})
+class BoundNameHost {
+  readonly label = signal<string | null>('Toppings');
+}
+
+@Component({
+  selector: 'quiet-name-host',
+  imports: [NameProbeDir],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `
+    <div nameProbe aria-label="Static"></div>
+    <div nameProbe [attr.aria-label]="'Bound'" nameFallback="Library"></div>
+    <div nameProbe [attr.aria-label]="noName()"></div>
+    <div nameProbe [nameFallback]="fallback()"></div>
+  `,
+})
+class QuietNameHost {
+  readonly fallback = signal<string | null>('Library');
+  readonly noName = signal<string | null>(null);
+}
+
+describe('hostAriaLabel bound-name diagnostic', () => {
+  beforeEach(() => {
+    TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+  });
+
+  it('warns FORCDK-CORE-015 once, naming the host, when the binding removes a bound aria-label', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const fixture = TestBed.createComponent(BoundNameHost);
+    fixture.detectChanges();
+    const target = fixture.nativeElement.querySelector('[data-testid="target"]') as HTMLElement;
+    expect(target.hasAttribute('aria-label')).toBe(false);
+    expect(warn).toHaveBeenCalledOnce();
+    const message = String(warn.mock.calls[0]?.[0]);
+    expect(message).toContain('FORCDK-CORE-015');
+    expect(message).toContain('<section role="group">');
+    expect(message).toContain('`[ariaLabel]`');
+
+    fixture.componentInstance.label.set('Sauces');
+    await flush(fixture);
+    expect(warn).toHaveBeenCalledOnce();
+  });
+
+  it('stays silent for a static name, a named fallback, a null binding and its own write', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const fixture = TestBed.createComponent(QuietNameHost);
+    fixture.detectChanges();
+
+    fixture.componentInstance.fallback.set(null);
+    await flush(fixture);
+    expect(warn).not.toHaveBeenCalled();
+  });
+
+  it('does not warn when dev mode is off', () => {
+    vi.stubGlobal('ngDevMode', false);
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const fixture = TestBed.createComponent(BoundNameHost);
+    fixture.detectChanges();
+    expect(warn).not.toHaveBeenCalled();
   });
 });
