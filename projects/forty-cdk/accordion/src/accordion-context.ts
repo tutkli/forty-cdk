@@ -94,6 +94,10 @@ export const FOR_ACCORDION_ITEM_CONTEXT = new InjectionToken<ForAccordionItemCon
 export interface AccordionContext extends ForAccordionContext {
   registerTrigger(handle: ForAccordionTriggerHandle): void;
   unregisterTrigger(handle: ForAccordionTriggerHandle): void;
+  registerContent(item: ForAccordionItemContext): void;
+  unregisterContent(item: ForAccordionItemContext): void;
+  /** Whether a `[forAccordionContent]` is mounted for the item, so its trigger can reference it. */
+  hasContent(item: ForAccordionItemContext): boolean;
 }
 
 export function injectAccordionContext(piece: string): AccordionContext {

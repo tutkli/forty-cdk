@@ -50,6 +50,8 @@ export class ForDisclosure implements ForDisclosureContext {
   readonly triggerId = this.#triggerId.asReadonly();
   readonly contentId = this.#contentId.asReadonly();
 
+  readonly #contents = signal<readonly HTMLElement[]>([]);
+
   /**
    * Adopts a consumer-set static `id` on the `[forDisclosureTrigger]` host into
    * `triggerId` (preserving anchors / external `aria-labelledby` references /
@@ -69,5 +71,20 @@ export class ForDisclosure implements ForDisclosureContext {
       return;
     }
     this.open.set(!this.open());
+  }
+
+  private registerContent(el: HTMLElement): void {
+    this.#contents.update((contents) => [...contents, el]);
+  }
+
+  private unregisterContent(el: HTMLElement): void {
+    this.#contents.update((contents) => {
+      const index = contents.lastIndexOf(el);
+      return index < 0 ? contents : [...contents.slice(0, index), ...contents.slice(index + 1)];
+    });
+  }
+
+  private hasContent(): boolean {
+    return this.#contents().length > 0;
   }
 }

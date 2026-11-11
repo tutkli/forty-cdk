@@ -90,7 +90,7 @@ One class and one directive, two states. `disabled` drops the trigger from the t
 
 Reflects on its host: `id`, `aria-expanded`, `aria-controls`, `disabled`, `data-state`. Toggles the state on click. The disabled reflection and the click guard follow the effective state, which is the trigger's own `disabled` OR the root's. That reflection is the native `disabled` attribute plus `data-disabled`, with no `aria-disabled`: one channel only.
 
-`aria-controls` is emitted only while open (mirroring the overlay triggers' open-only gating), so the reference never dangles at an unmounted panel under the recommended `@if (open())` mount pattern.
+`aria-controls` references the content whenever it is mounted, open or closed. Under `@if (open())` the closed content is not in the DOM, so the trigger drops `aria-controls` until it mounts: a reference to a missing id is worse than none.
 
 Use a native `<button type="button">` so Enter / Space activation come for free. Other elements lose keyboard accessibility, and that is on you.
 

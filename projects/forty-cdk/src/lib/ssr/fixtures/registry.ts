@@ -233,7 +233,8 @@ export const SSR_FIXTURES: readonly SsrFixture[] = [
     markup: [
       {
         select: '[forDisclosureTrigger]',
-        attributes: { 'aria-expanded': 'false', 'aria-controls': null },
+        attributes: { 'aria-expanded': 'false' },
+        pairs: { 'aria-controls': '[forDisclosureContent]' },
       },
       { select: '[forDisclosureContent]', present: ['id'] },
     ],
@@ -243,8 +244,9 @@ export const SSR_FIXTURES: readonly SsrFixture[] = [
     markup: [
       {
         select: '[forAccordionTrigger]',
-        attributes: { 'aria-expanded': 'false', 'aria-controls': null },
+        attributes: { 'aria-expanded': 'false' },
         present: ['id'],
+        pairs: { 'aria-controls': '[forAccordionContent]' },
       },
       {
         select: '[forAccordionContent]',
@@ -257,6 +259,7 @@ export const SSR_FIXTURES: readonly SsrFixture[] = [
     component: AccordionRtlFixture,
     markup: [
       { select: '[forAccordion]', attributes: { dir: 'rtl' } },
+      { select: '[forAccordionTrigger]', pairs: { 'aria-controls': '[forAccordionContent]' } },
       { select: '[forAccordionContent]', pairs: { 'aria-labelledby': '[forAccordionTrigger]' } },
     ],
   },

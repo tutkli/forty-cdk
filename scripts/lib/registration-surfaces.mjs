@@ -60,6 +60,7 @@ export const REGISTRATION_SURFACES = {
   'context-menu': ['ContextMenuContext', 'ContextMenuPieceContext'],
   'date-picker': ['DatePickerContext', 'DATE_PICKER_TRIGGERS'],
   dialog: ['DialogContext', 'DialogRegistrationContext'],
+  disclosure: ['DisclosureContext'],
   'drag-drop': ['DraggableContext', 'DraggablePieceContext'],
   drawer: ['DrawerContext', 'DrawerRegistrationContext'],
   'hover-card': [
