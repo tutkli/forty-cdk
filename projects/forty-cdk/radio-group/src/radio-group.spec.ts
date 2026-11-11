@@ -341,6 +341,30 @@ describe('ForRadioGroup', () => {
       expect(group.hasAttribute('aria-label')).toBe(false);
     });
 
+    it('warns FORCDK-CORE-015 naming [ariaLabel] when a bound [attr.aria-label] is removed', () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+      @Component({
+        imports: [ForRadioGroup, ForRadio],
+        template: `
+          <div forRadioGroup data-test-id="bound" [attr.aria-label]="label()" [(value)]="color">
+            <button type="button" forRadio value="red">Red</button>
+          </div>
+        `,
+      })
+      class BoundLabelHost {
+        readonly label = signal('Shipping');
+        readonly color = signal<string | null>('red');
+      }
+
+      const { el } = renderHost(BoundLabelHost);
+      expect(el.querySelector('[data-test-id="bound"]')!.hasAttribute('aria-label')).toBe(false);
+      expect(warn).toHaveBeenCalledOnce();
+      const message = String(warn.mock.calls[0]?.[0]);
+      expect(message).toContain('FORCDK-CORE-015');
+      expect(message).toContain('<div role="radiogroup">');
+      expect(message).toContain('`[ariaLabel]`');
+    });
+
     it('starts with unique ids per radio', () => {
       const { el } = renderHost(RadioGroupHost);
       const ids = ['red', 'green', 'blue'].map((v) => radioOf(el, v).id);
