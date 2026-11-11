@@ -7,13 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.45.0] - 2026-11-11
+
 ### Added
+
+- **Accordion**, **Disclosure** — `[forAccordionContent]` and `[forDisclosureContent]` gain an
+  opt-in `hiddenUntilFound` input (default `false`) that makes a closed, mounted panel searchable by
+  find-in-page ([#2824](https://github.com/tutkli/forty-cdk/issues/2824)). With it set, the closed
+  panel carries `hidden="until-found"` in place of `aria-hidden="true"` + `inert`, so the browser
+  hides it with no consumer CSS, and a find-in-page match or a fragment link to an id inside it
+  opens the panel exactly as a trigger click would (collapsing the open item in a single-mode
+  accordion). A disabled item or root stays closed and the panel stays hidden. Closing is instant,
+  so the opt-in rules out an exit animation, and the host's own padding and border still render: put
+  them on an inner element. Under a `@if` mount the input has nothing to act on. The recipe is in
+  each README's **Searchable closed panels with `hiddenUntilFound`** section.
 
 - **Core** — every piece with an `ariaLabel` input warns `FORCDK-CORE-015` in dev mode when its
   `aria-label` host binding removes a name the consumer bound with `[attr.aria-label]`
-  ([#2818](https://github.com/tutkli/forty-cdk/issues/2818)). Only a static `aria-label` is
-  adopted, so a bound one is written and then removed when the piece has no name of its own. The
-  warning names the element and says to bind the name through `[ariaLabel]` instead.
+  ([#2818](https://github.com/tutkli/forty-cdk/issues/2818)). Only a static `aria-label` is adopted,
+  so a bound one is written and then removed when the piece has no name of its own. The warning
+  names the element and says to bind the name through `[ariaLabel]` instead.
 
 ### Changed
 
@@ -25,6 +38,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   picker anatomy are unchanged. A multi-select combobox that sets the input, or inherits it from
   `provideForComboboxDefaults({ restoreQueryOnClose: true })`, used to keep the typed query on
   close; bind `[restoreQueryOnClose]="false"` on it to keep that.
+
+- **Disclosure — BREAKING.** `FOR_DISCLOSURE_CONTEXT` must now resolve to the `[forDisclosure]` root
+  ([#2823](https://github.com/tutkli/forty-cdk/issues/2823)). The pieces read the token at an
+  internal type that adds a content-registration protocol, the same split Accordion, Dialog, Tabs
+  and the other roots already have. A wrapper that re-provides the token with a hand-built object
+  satisfying `ForDisclosureContext` used to work; the first piece to reach it now throws
+  `FORCDK-CORE-007` in dev mode, and fails in production. **Alias the token to the root instead:
+  `{ provide: FOR_DISCLOSURE_CONTEXT, useExisting: MyDisclosure }`, where `MyDisclosure` is
+  `ForDisclosure` or a subclass of it.** See
+  [docs/wrapping-non-form-roots.md](docs/wrapping-non-form-roots.md).
+
+### Fixed
+
+- **Accordion**, **Disclosure** — a collapsed panel that stays mounted is now referenced from its
+  trigger's `aria-controls` ([#2823](https://github.com/tutkli/forty-cdk/issues/2823)). The trigger
+  used to emit `aria-controls` only while open, so a closed panel left in the DOM had no
+  programmatic link to the button that controls it. It is now emitted whenever a
+  `[forAccordionContent]` / `[forDisclosureContent]` is mounted, open or closed, and still dropped
+  while a `@if` mount keeps the panel out of the DOM, so the reference never points at a missing id.
+  The Disclosure half carries the break described under **Changed**.
+
+- **Table** — in `grid` / `treegrid` mode, removing the row or column of the focused cell no longer
+  drops focus to `<body>` ([#2820](https://github.com/tutkli/forty-cdk/issues/2820)). Focus moves to
+  the cell that takes over the tab stop: the same row in the next column (or the previous one when
+  the last column was removed) for a removed column, and the same column in the next row (or the
+  previous one) for a removed row, handing over to the nearest enabled cell of that row when the
+  target is disabled. It also applies when focus was on a widget inside the cell. Nothing moves when
+  focus had already left the grid, and under `[forTableVirtualized]` a focused row leaving the
+  rendered window is left alone, since moving focus would scroll it back.
 
 ## [0.44.0] - 2026-11-10
 
@@ -5773,7 +5815,8 @@ primitives.
 - **Display** — avatar, progress, meter, tree.
 - `forty-cdk/internationalized-date` secondary entry point exposing the `@internationalized/date` adapters for the date and time primitives.
 
-[Unreleased]: https://github.com/tutkli/forty-cdk/compare/v0.44.0...HEAD
+[Unreleased]: https://github.com/tutkli/forty-cdk/compare/v0.45.0...HEAD
+[0.45.0]: https://github.com/tutkli/forty-cdk/compare/v0.44.0...v0.45.0
 [0.44.0]: https://github.com/tutkli/forty-cdk/compare/v0.43.0...v0.44.0
 [0.43.0]: https://github.com/tutkli/forty-cdk/compare/v0.42.0...v0.43.0
 [0.42.0]: https://github.com/tutkli/forty-cdk/compare/v0.41.1...v0.42.0
