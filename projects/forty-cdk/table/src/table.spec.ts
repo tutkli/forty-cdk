@@ -571,6 +571,41 @@ class GridTableHost {
 }
 
 @Component({
+  imports: [ForTable, ForTableHeaderRow, ForTableHeaderCell, ForTableRow, ForTableCell],
+  template: `
+    <div forTable mode="grid" ariaLabel="People" data-testid="grid">
+      <div role="rowgroup">
+        <div forTableHeaderRow>
+          @for (column of columns(); track column) {
+            <div forTableHeaderCell [name]="column" [attr.data-testid]="'h-' + column">
+              {{ column }}
+            </div>
+          }
+        </div>
+      </div>
+      <div role="rowgroup">
+        @for (row of rows(); track row.id) {
+          <div forTableRow [value]="row.id">
+            @for (column of columns(); track column) {
+              <div forTableCell [name]="column" [attr.data-testid]="column + '-' + row.id">
+                <button type="button" [attr.data-testid]="'btn-' + column + '-' + row.id">
+                  {{ column }}
+                </button>
+              </div>
+            }
+          </div>
+        }
+      </div>
+    </div>
+    <button type="button" data-testid="outside">Outside</button>
+  `,
+})
+class GridColumnsHost {
+  readonly columns = signal<readonly string[]>(['name', 'role', 'team']);
+  readonly rows = signal([{ id: 1 }, { id: 2 }, { id: 3 }]);
+}
+
+@Component({
   imports: [ForTable, ForTableRow, ForTableCell],
   template: `
     <table forTable mode="grid">
@@ -1958,6 +1993,20 @@ describe('ForTable', () => {
           flush: r.flush,
           removedIndex: 4,
           remove: () => r.instance.rows.update((rows) => rows.filter((row) => row.id !== 1)),
+        };
+      },
+      mountWithFocusRestore: async () => {
+        const r = renderHost(GridTableHost);
+        await r.flush();
+        return {
+          items: r.queryAll('[forTableCell]'),
+          flush: r.flush,
+          removedIndex: 4,
+          remove: () => r.instance.rows.update((rows) => rows.filter((row) => row.id !== 1)),
+          disable: () => {
+            r.instance.disabledRow.set(1);
+            r.instance.disabledCol.set('b');
+          },
         };
       },
     });
@@ -6611,5 +6660,127 @@ describe('ForTableColumnResizer — native drag', () => {
 
     const resizer = el.querySelector<HTMLElement>('[data-testid="resizer"]')!;
     expect(dragStartFromPress(resizer).defaultPrevented).toBe(true);
+  });
+});
+
+describe('ForTable — focus follows a removed focused cell in grid mode', () => {
+  let restoreObservers: () => void;
+  beforeAll(() => {
+    restoreObservers = installObserverPolyfills();
+  });
+  afterAll(() => restoreObservers());
+
+  const byId = (el: HTMLElement, id: string): HTMLElement =>
+    el.querySelector<HTMLElement>(`[data-testid="${id}"]`)!;
+  const tabStops = (el: HTMLElement): HTMLElement[] =>
+    Array.from(el.querySelectorAll<HTMLElement>('[forTableCell], [forTableHeaderCell]')).filter(
+      (cell) => cell.getAttribute('tabindex') === '0',
+    );
+
+  it('moves focus to the header cell of the next column when a focused column is removed', async () => {
+    const { el, instance, flush } = renderHost(GridColumnsHost);
+    await flush();
+    byId(el, 'h-role').focus();
+    await flush();
+
+    instance.columns.set(['name', 'team']);
+    await flush();
+
+    expect(document.activeElement).toBe(byId(el, 'h-team'));
+    expect(tabStops(el)).toEqual([byId(el, 'h-team')]);
+  });
+
+  it('moves focus to the header cell of the previous column when the focused last column is removed', async () => {
+    const { el, instance, flush } = renderHost(GridColumnsHost);
+    await flush();
+    byId(el, 'h-team').focus();
+    await flush();
+
+    instance.columns.set(['name', 'role']);
+    await flush();
+
+    expect(document.activeElement).toBe(byId(el, 'h-role'));
+    expect(tabStops(el)).toEqual([byId(el, 'h-role')]);
+  });
+
+  it('moves focus to the cell of the same row in the column now at the removed position', async () => {
+    const { el, instance, flush } = renderHost(GridColumnsHost);
+    await flush();
+    byId(el, 'role-2').focus();
+    await flush();
+
+    instance.columns.set(['name', 'team']);
+    await flush();
+
+    expect(document.activeElement).toBe(byId(el, 'team-2'));
+    expect(tabStops(el)).toEqual([byId(el, 'team-2')]);
+  });
+
+  it('moves focus to the same column of the row above when the focused last row is removed', async () => {
+    const { el, instance, flush } = renderHost(GridColumnsHost);
+    await flush();
+    byId(el, 'role-3').focus();
+    await flush();
+
+    instance.rows.update((rows) => rows.filter((row) => row.id !== 3));
+    await flush();
+
+    expect(document.activeElement).toBe(byId(el, 'role-2'));
+    expect(tabStops(el)).toEqual([byId(el, 'role-2')]);
+  });
+
+  it('moves focus to the same column of the next row when a focused middle row is removed', async () => {
+    const { el, instance, flush } = renderHost(GridColumnsHost);
+    await flush();
+    byId(el, 'team-2').focus();
+    await flush();
+
+    instance.rows.update((rows) => rows.filter((row) => row.id !== 2));
+    await flush();
+
+    expect(document.activeElement).toBe(byId(el, 'team-3'));
+    expect(tabStops(el)).toEqual([byId(el, 'team-3')]);
+  });
+
+  it('moves focus to the cell when the row of a focused widget inside it is removed', async () => {
+    const { el, instance, flush } = renderHost(GridColumnsHost);
+    await flush();
+    byId(el, 'btn-role-3').focus();
+    await flush();
+
+    instance.rows.update((rows) => rows.filter((row) => row.id !== 3));
+    await flush();
+
+    expect(document.activeElement).toBe(byId(el, 'role-2'));
+  });
+
+  it('moves no focus when a cell that does not hold focus is removed', async () => {
+    const { el, instance, flush } = renderHost(GridColumnsHost);
+    await flush();
+    const focused = byId(el, 'name-1');
+    focused.focus();
+    await flush();
+
+    instance.rows.update((rows) => rows.filter((row) => row.id !== 3));
+    instance.columns.set(['name', 'team']);
+    await flush();
+
+    expect(document.activeElement).toBe(focused);
+    expect(tabStops(el)).toEqual([focused]);
+  });
+
+  it('moves no focus when the focused cell is removed after focus left the grid', async () => {
+    const { el, instance, flush } = renderHost(GridColumnsHost);
+    await flush();
+    byId(el, 'role-3').focus();
+    await flush();
+    const outside = byId(el, 'outside');
+    outside.focus();
+    await flush();
+
+    instance.rows.update((rows) => rows.filter((row) => row.id !== 3));
+    await flush();
+
+    expect(document.activeElement).toBe(outside);
   });
 });

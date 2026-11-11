@@ -283,6 +283,8 @@ Two regimes, chosen by `mode`. The default `mode="table"` adds no navigation of 
 
 `PageUp` from within the first page of data rows clamps to the header row, for the same reason `ArrowUp` crosses into it. Under [`[forTableVirtualized]`](../table-virtualization/README.md) a move resolving a row outside the rendered window scrolls that row into view and lands focus on the target cell once it mounts; a move onto the header row also scrolls the window back to row 0, so the grid is never left focused on its header while the window sits at the end of the dataset. When the header does not join the grid (an incomplete header row), `Ctrl/Cmd+Home` lands on the first data cell instead and `ArrowUp` / `PageUp` stop there.
 
+When the focused cell is removed, focus stays in the grid and moves to the cell that takes over the tab stop. Removing its column moves focus to the cell of the same row in the next column, or in the previous column when the last column was removed. Removing its row moves focus to the cell of the same column in the next row, or in the previous row when the last row was removed. A disabled target hands over to the nearest enabled cell of its row. This also applies when the focus was on a widget inside the cell. If focus had already left the grid, or the removed cell did not hold focus, nothing moves. Under `[forTableVirtualized]`, a focused row leaving the rendered window is left alone, because moving focus would scroll it back into view.
+
 ### Cell entry
 
 `grid` / `treegrid`. The APG cell-entry mode that reaches a widget rendered inside a cell.
