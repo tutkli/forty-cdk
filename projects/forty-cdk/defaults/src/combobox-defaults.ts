@@ -52,9 +52,10 @@ export interface ForComboboxDefaults {
    */
   openHighlight: ForComboboxOpenHighlight;
   /**
-   * Whether a single-select editable combobox restores the selected option's
-   * label into `query` when its listbox closes without a pick, for comboboxes
-   * that don't set `restoreQueryOnClose` locally. Library fallback `false`.
+   * Whether an editable combobox rewrites `query` when its listbox closes without
+   * a pick (the selected label in single mode, `''` in multi mode), for
+   * comboboxes that don't set `restoreQueryOnClose` locally. Library fallback
+   * `false`.
    */
   restoreQueryOnClose: boolean;
   /**

@@ -250,7 +250,7 @@ Focus stays on the `<input>` the whole time the listbox is open, so options neve
 | `sideOffset`          | `4`                                | Main-axis gap (px) for comboboxes that don't set `sideOffset` themselves.                                                                                                                       |
 | `collisionPadding`    | `8`                                | Collision-middleware padding (px) for comboboxes that don't set it themselves.                                                                                                                  |
 | `openHighlight`       | `'first'`                          | Where the editable anatomy's highlight lands on open (`'first'` or `'selected'`), for comboboxes that don't set `openHighlight` themselves. See [Open / close behavior](#open--close-behavior). |
-| `restoreQueryOnClose` | `false`                            | Whether a single-select editable combobox writes the selected option's label back into `query` when the listbox closes without a pick, for comboboxes that don't set it themselves.             |
+| `restoreQueryOnClose` | `false`                            | Whether an editable combobox rewrites `query` when the listbox closes without a pick (the selected label in single mode, `''` in multi mode), for comboboxes that don't set it themselves.      |
 | `loop`                | `true`                             | Whether arrow navigation wraps past the first / last enabled option, for comboboxes that don't set `loop` themselves.                                                                           |
 | `toggleAriaLabel`     | `'Show options'`                   | Accessible name of a `[forComboboxToggle]` that sets no `[ariaLabel]`.                                                                                                                          |
 | `chipsAriaLabel`      | `'Selected items'`                 | Accessible name of a multi-mode `[forComboboxChips]` group that sets no `[ariaLabel]`.                                                                                                          |
@@ -490,7 +490,7 @@ They diverge while the user types and resync on activation:
   - **Multi mode** → option's value is toggled in/out of `value`. If `commitOnSelect` is on (default), `query` is **cleared** so the user can search the next item. Listbox stays open.
 - Clear button → both reset.
 - `clearOnQueryChange` (off by default, **single mode only**): flip on to drop `value` automatically whenever the query is edited (useful when the user editing means "I'm picking a new one").
-- `restoreQueryOnClose` (off by default, **single mode only**): flip on to put the selected label back into the input when the listbox closes without a pick. See [`restoreQueryOnClose`](#restorequeryonclose).
+- `restoreQueryOnClose` (off by default): flip on to rewrite the input when the listbox closes without a pick, putting the selected label back in single mode and clearing the typed filter in multi mode. See [`restoreQueryOnClose`](#restorequeryonclose).
 
 ### `commitOnSelect`: single vs multi
 
@@ -529,7 +529,18 @@ Single, restoreQueryOnClose=true
   user presses Escape     → query="Banana" value=["banana"]   ← label restored, listbox closes
 ```
 
-The label is the one `selected()` resolves: the option's own label once it has rendered, `[itemToStringLabel]` before that (a value bound before the listbox ever opened). Multi mode and the picker anatomy ignore the input. Enable it for the whole scope with `provideForComboboxDefaults({ restoreQueryOnClose: true })`.
+The label is the one `selected()` resolves: the option's own label once it has rendered, `[itemToStringLabel]` before that (a value bound before the listbox ever opened).
+
+In multi mode the input is the search field for the next chip rather than a display of the value, so there is no label to restore: the same closes clear the typed filter instead, and an option press keeps the listbox open as before.
+
+```text
+Multi, restoreQueryOnClose=true
+  user activates "Banana" → query=""   value=["banana"]   ← listbox stays open
+  user types "ap"         → query="ap" value=["banana"]
+  user presses Escape     → query=""   value=["banana"]   ← filter cleared, listbox closes
+```
+
+The picker anatomy ignores the input, since it already clears its in-panel filter on every close. Enable it for the whole scope with `provideForComboboxDefaults({ restoreQueryOnClose: true })`.
 
 ## Multi mode
 
@@ -598,7 +609,7 @@ When the input is empty (no query) and the user presses Backspace, focus jumps t
 | Commit label / clear query on select    | `true`  | `[commitOnSelect]="false"`                                       |
 | Clear value on query edit (single only) | `false` | `[clearOnQueryChange]="true"`                                    |
 | Highlight the selection on open         | `first` | `openHighlight="selected"`                                       |
-| Restore label on close (single only)    | `false` | `[restoreQueryOnClose]="true"`                                   |
+| Restore label / clear query on close    | `false` | `[restoreQueryOnClose]="true"`                                   |
 
 `openHighlight` decides where the editable anatomy's highlight lands when the listbox opens from focus, click, ArrowDown / ArrowUp or `openOverlay()` without an argument. With `'selected'`, a single-select combobox showing "Spain" reopens on "Spain" rather than on the first option; with nothing selected, ArrowDown still lands on the first option and ArrowUp on the last. Opening from a typed query always highlights the first match, because the list is a filter result there, and the picker anatomy always opens on the selection. With [virtualization](#virtualization) the selection is not honoured: an open that would land on it highlights the first rendered enabled option instead. Both inputs take their default from the scope: `provideForComboboxDefaults({ openHighlight: 'selected', restoreQueryOnClose: true })`.
 

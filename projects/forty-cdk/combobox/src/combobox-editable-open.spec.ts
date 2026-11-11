@@ -681,15 +681,76 @@ describe('ForCombobox editable anatomy', () => {
       expect(input.value).toBe('Ap');
     });
 
-    it('is ignored in multi mode', async () => {
-      const r = renderHost(RestoreHost);
-      r.instance.multiple.set(true);
-      const input = await typeOverSelection(r);
+    describe('in multi mode', () => {
+      async function typeOverChips(r: RenderResult<RestoreHost>): Promise<HTMLInputElement> {
+        r.instance.multiple.set(true);
+        const input = await typeOverSelection(r);
+        expect(input.value).toBe('Ap');
+        return input;
+      }
 
-      pressKey(input, 'Escape');
-      await flush(r.fixture);
+      it('clears the typed query on Escape, with focus still in the input', async () => {
+        const r = renderHost(RestoreHost);
+        const input = await typeOverChips(r);
 
-      expect(r.instance.query()).toBe('Ap');
+        pressKey(input, 'Escape');
+        await flush(r.fixture);
+
+        expect(r.instance.open()).toBe(false);
+        expect(r.instance.query()).toBe('');
+        expect(input.value).toBe('');
+        expect(r.instance.value()).toEqual(['banana']);
+        expect(document.activeElement).toBe(input);
+      });
+
+      it('clears the typed query on an outside press', async () => {
+        const r = renderHost(RestoreHost);
+        const input = await typeOverChips(r);
+
+        pressOutside();
+        await flush(r.fixture);
+
+        expect(r.instance.open()).toBe(false);
+        expect(r.instance.query()).toBe('');
+        expect(input.value).toBe('');
+      });
+
+      it('clears the typed query on Tab', async () => {
+        const r = renderHost(RestoreHost);
+        const input = await typeOverChips(r);
+
+        pressKey(input, 'Tab');
+        await flush(r.fixture);
+
+        expect(r.instance.open()).toBe(false);
+        expect(r.instance.query()).toBe('');
+        expect(input.value).toBe('');
+      });
+
+      it('keeps the listbox open on an option press, as without the input', async () => {
+        const r = renderHost(RestoreHost);
+        await typeOverChips(r);
+
+        pressWithMouse(getByTestId('apricot'));
+        await flush(r.fixture);
+
+        expect(r.instance.value()).toEqual(['banana', 'apricot']);
+        expect(r.instance.open()).toBe(true);
+        expect(r.instance.query()).toBe('');
+      });
+
+      it('leaves the typed query alone when the input is off', async () => {
+        const r = renderHost(RestoreHost);
+        r.instance.restore.set(false);
+        const input = await typeOverChips(r);
+
+        pressKey(input, 'Escape');
+        await flush(r.fixture);
+
+        expect(r.instance.open()).toBe(false);
+        expect(r.instance.query()).toBe('Ap');
+        expect(input.value).toBe('Ap');
+      });
     });
 
     it('restores a seeded string id through [itemToStringLabel] before its option renders', async () => {
