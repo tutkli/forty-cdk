@@ -684,5 +684,21 @@ test.describe('Combobox', () => {
       await expect(input).toHaveValue('banana');
       await expectFocused(input);
     });
+
+    test('Escape clears the typed query in multi mode while focus stays in the input', async ({
+      page,
+    }) => {
+      await gotoFixture(page, 'combobox', { multi: '1', restore: '1' });
+      const input = el(page, 'combo-input');
+      await input.click();
+      await input.pressSequentially('bl');
+      await expect(el(page, 'opt-blueberry')).toBeVisible();
+      await input.press('Escape');
+
+      await expect(el(page, 'content')).toHaveCount(0);
+      await expect(input).toHaveValue('');
+      await expect(el(page, 'value')).toHaveText('apple,banana');
+      await expectFocused(input);
+    });
   });
 });

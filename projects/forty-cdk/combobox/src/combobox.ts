@@ -228,12 +228,12 @@ export class ForCombobox<T = string>
   readonly commitOnSelect = input(true, { transform: booleanAttribute });
 
   /**
-   * In single mode, restore the selected option's label into `query` whenever the
-   * listbox closes without a pick (Escape, an outside press, Tab, a toggle press,
-   * or `closeOverlay()`), and clear it when nothing is selected. A pick keeps the
-   * `commitOnSelect` behavior. Ignored in multi mode and in the picker anatomy.
-   * Defaults to the scope's `restoreQueryOnClose` (`false` unless overridden via
-   * `provideForComboboxDefaults`).
+   * Rewrite `query` whenever the listbox closes without a pick (Escape, an outside
+   * press, Tab, a toggle press, or `closeOverlay()`). In single mode it restores
+   * the selected option's label, or clears it when nothing is selected; in multi
+   * mode it clears the typed filter. A pick keeps the `commitOnSelect` behavior.
+   * Ignored in the picker anatomy. Defaults to the scope's `restoreQueryOnClose`
+   * (`false` unless overridden via `provideForComboboxDefaults`).
    */
   readonly restoreQueryOnClose = input(this.#defaults.restoreQueryOnClose, {
     transform: booleanAttribute,
@@ -1035,9 +1035,9 @@ export class ForCombobox<T = string>
    * Close side effects, run after the open state flips: the activedescendant is
    * dropped, the virtualized navigator's pending move discarded, and — in the
    * picker anatomy, where the in-panel input is a transient filter rather than
-   * the value display — the query reset. A single-select editable combobox with
-   * `restoreQueryOnClose` instead restores the selected label on any close but a
-   * pick.
+   * the value display — the query reset. An editable combobox with
+   * `restoreQueryOnClose` rewrites the query on any close but a pick: the
+   * selected label in single mode, `''` in multi mode.
    */
   #resetAfterClose(reason: ForComboboxCloseReason): void {
     this.#activeId.set(null);
@@ -1053,8 +1053,8 @@ export class ForCombobox<T = string>
       this.#syncInputValue('');
       return;
     }
-    if (this.restoreQueryOnClose() && !this.multiple() && reason !== 'select') {
-      const label = this.selected()[0]?.label ?? '';
+    if (this.restoreQueryOnClose() && reason !== 'select') {
+      const label = this.multiple() ? '' : (this.selected()[0]?.label ?? '');
       this.query.set(label);
       this.#syncInputValue(label);
     }

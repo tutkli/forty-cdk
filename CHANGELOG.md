@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Combobox — BREAKING.** `restoreQueryOnClose` now applies in multi mode too
+  ([#2819](https://github.com/tutkli/forty-cdk/issues/2819)). In the editable anatomy, a close for
+  any reason but a pick (Escape, an outside press, Tab, a `[forComboboxToggle]` press,
+  `closeOverlay()`) clears the typed filter, so the input no longer shows text that filters nothing
+  next to the chips. An option press keeps the listbox open as before, and single mode and the
+  picker anatomy are unchanged. A multi-select combobox that sets the input, or inherits it from
+  `provideForComboboxDefaults({ restoreQueryOnClose: true })`, used to keep the typed query on
+  close; bind `[restoreQueryOnClose]="false"` on it to keep that.
+
 ## [0.44.0] - 2026-11-10
 
 ### Added

@@ -110,6 +110,7 @@ const LONG_FRUITS = Array.from({ length: 60 }, (_, i) => `item-${i}`);
         [(query)]="query"
         [(value)]="value"
         [(open)]="open"
+        [restoreQueryOnClose]="restore"
         ariaLabel="Fruit search"
       >
         <div forComboboxChips>
