@@ -1,4 +1,4 @@
-import { el, expect, expectFocused, gotoFixture, rovingFirst, test } from './_helpers';
+import { el, expect, expectFocused, expectStays, gotoFixture, rovingFirst, test } from './_helpers';
 
 test.describe('Accordion', () => {
   test('Tab into the accordion lands on the first enabled trigger', async ({ page }) => {
@@ -85,5 +85,33 @@ test.describe('Accordion', () => {
     await page.keyboard.press('Enter');
     await expect(a).toHaveAttribute('data-state', 'open');
     await expect(b).toHaveAttribute('data-state', 'open');
+  });
+
+  test.describe('hiddenUntilFound', () => {
+    test('fragment navigation into a collapsed panel expands its item', async ({ page }) => {
+      await gotoFixture(page, 'accordion', { untilFound: '1' });
+      await expect(el(page, 'content-b')).toHaveAttribute('hidden', 'until-found');
+      await expect(el(page, 'trigger-b')).toHaveAttribute('aria-controls', /.+/);
+
+      await page.evaluate(() => (location.hash = '#found-b'));
+
+      await expect(el(page, 'trigger-b')).toHaveAttribute('aria-expanded', 'true');
+      await expect(el(page, 'content-b')).not.toHaveAttribute('hidden', /.*/);
+      await expect(page.locator('#found-b')).toBeVisible();
+    });
+
+    test('fragment navigation into a disabled item leaves it collapsed and hidden', async ({
+      page,
+    }) => {
+      await gotoFixture(page, 'accordion', { untilFound: '1', disabled: '2' });
+      await expect(el(page, 'content-b')).toHaveAttribute('hidden', 'until-found');
+
+      await page.evaluate(() => (location.hash = '#found-b'));
+
+      await expectStays(page, async () => {
+        await expect(el(page, 'trigger-b')).toHaveAttribute('aria-expanded', 'false');
+        await expect(el(page, 'content-b')).toHaveAttribute('hidden', 'until-found');
+      });
+    });
   });
 });

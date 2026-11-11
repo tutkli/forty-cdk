@@ -3,7 +3,9 @@ import { type Type } from '@angular/core';
 import {
   AccordionFixture,
   AccordionRtlFixture,
+  AccordionUntilFoundFixture,
   DisclosureFixture,
+  DisclosureUntilFoundFixture,
   StepperCompletedFixture,
   StepperFixture,
   StepperServerFixture,
@@ -251,6 +253,35 @@ export const SSR_FIXTURES: readonly SsrFixture[] = [
       {
         select: '[forAccordionContent]',
         present: ['id'],
+        pairs: { 'aria-labelledby': '[forAccordionTrigger]' },
+      },
+    ],
+  },
+  {
+    component: DisclosureUntilFoundFixture,
+    markup: [
+      {
+        select: '[forDisclosureTrigger]',
+        attributes: { 'aria-expanded': 'false' },
+        pairs: { 'aria-controls': '[forDisclosureContent]' },
+      },
+      {
+        select: '[forDisclosureContent]',
+        attributes: { hidden: 'until-found', 'aria-hidden': null, inert: null },
+      },
+    ],
+  },
+  {
+    component: AccordionUntilFoundFixture,
+    markup: [
+      {
+        select: '[forAccordionTrigger]',
+        attributes: { 'aria-expanded': 'false' },
+        pairs: { 'aria-controls': '[forAccordionContent]' },
+      },
+      {
+        select: '[forAccordionContent]',
+        attributes: { hidden: 'until-found', 'aria-hidden': null, inert: null },
         pairs: { 'aria-labelledby': '[forAccordionTrigger]' },
       },
     ],

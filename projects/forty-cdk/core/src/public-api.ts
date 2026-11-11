@@ -257,6 +257,7 @@ export { reflectRequired } from './host-attributes/required-reflection';
 export { hostAriaLabel, hostDescribedBy, hostLabelledBy } from './host-attributes/host-aria';
 export { adoptHostId, hostId, resolveHostId, staticHostId } from './host-attributes/host-id';
 export { hostStaticAttribute } from './host-attributes/host-static-attribute';
+export { HIDDEN_UNTIL_FOUND, keepHiddenUntilFound } from './host-attributes/hidden-until-found';
 export { hostButtonType } from './host-attributes/host-type';
 export { MODAL_EXEMPT_ATTRIBUTE, MODAL_PEER_ATTRIBUTE } from './host-attributes/modal-attributes';
 export { EscapeArbiter } from './escape-arbiter/escape-arbiter';
