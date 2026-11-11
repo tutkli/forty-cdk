@@ -1,5 +1,6 @@
 import { Directive, ElementRef, inject } from '@angular/core';
 
+import { registerHandle } from 'forty-cdk/core';
 import { injectDisclosureContext } from './disclosure-context';
 
 /**
@@ -27,6 +28,12 @@ export class ForDisclosureContent {
   private readonly ctx = injectDisclosureContext('ForDisclosureContent');
 
   constructor() {
-    this.ctx.adoptContentId(inject<ElementRef<HTMLElement>>(ElementRef).nativeElement);
+    const host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
+    this.ctx.adoptContentId(host);
+    registerHandle(
+      host,
+      (el) => this.ctx.registerContent(el),
+      (el) => this.ctx.unregisterContent(el),
+    );
   }
 }

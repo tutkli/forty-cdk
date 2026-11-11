@@ -1,4 +1,4 @@
-import { booleanAttribute, Directive, input, model } from '@angular/core';
+import { booleanAttribute, Directive, input, model, signal } from '@angular/core';
 
 import {
   Collection,
@@ -11,6 +11,7 @@ import {
 import {
   FOR_ACCORDION_CONTEXT,
   type ForAccordionContext,
+  type ForAccordionItemContext,
   type ForAccordionTriggerHandle,
 } from './accordion-context';
 
@@ -48,6 +49,7 @@ import {
 })
 export class ForAccordion implements ForAccordionContext {
   readonly #triggers = new Collection<ForAccordionTriggerHandle>();
+  readonly #contents = signal<readonly ForAccordionItemContext[]>([]);
 
   /** When true, multiple items can be expanded simultaneously. */
   readonly multiple = input(false, { transform: booleanAttribute });
@@ -153,5 +155,20 @@ export class ForAccordion implements ForAccordionContext {
 
   private unregisterTrigger(handle: ForAccordionTriggerHandle): void {
     this.#triggers.unregister(handle);
+  }
+
+  private registerContent(item: ForAccordionItemContext): void {
+    this.#contents.update((contents) => [...contents, item]);
+  }
+
+  private unregisterContent(item: ForAccordionItemContext): void {
+    this.#contents.update((contents) => {
+      const index = contents.lastIndexOf(item);
+      return index < 0 ? contents : [...contents.slice(0, index), ...contents.slice(index + 1)];
+    });
+  }
+
+  private hasContent(item: ForAccordionItemContext): boolean {
+    return this.#contents().includes(item);
   }
 }

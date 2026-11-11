@@ -11,6 +11,7 @@ import { FOR_CAROUSEL_CONTEXT, ForCarouselPrevious } from 'forty-cdk/carousel';
 import { FOR_CONTEXT_MENU_CONTEXT, ForContextMenuTrigger } from 'forty-cdk/context-menu';
 import { FOR_DATE_PICKER_CONTEXT, ForDatePickerTrigger } from 'forty-cdk/date-picker';
 import { FOR_DIALOG_CONTEXT, ForDialogTitle } from 'forty-cdk/dialog';
+import { FOR_DISCLOSURE_CONTEXT, ForDisclosureTrigger } from 'forty-cdk/disclosure';
 import { FOR_DRAGGABLE_CONTEXT, ForDragHandle } from 'forty-cdk/drag-drop';
 import { FOR_DRAWER_CONTEXT, ForDrawerTitle } from 'forty-cdk/drawer';
 import {
@@ -139,6 +140,14 @@ class ImpostorAccordionHost {}
   template: `<span forAvatarFallback></span>`,
 })
 class ImpostorAvatarHost {}
+
+@Component({
+  imports: [ForDisclosureTrigger],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  providers: [{ provide: FOR_DISCLOSURE_CONTEXT, useValue: {} }],
+  template: `<button type="button" forDisclosureTrigger></button>`,
+})
+class ImpostorDisclosureHost {}
 
 @Component({
   imports: [ForDragHandle],
@@ -398,6 +407,15 @@ const GUARDED: readonly GuardedRoot[] = [
     root: '[forDialog]',
     piece: 'ForDialogTitle',
     host: ImpostorDialogHost,
+  },
+  {
+    entryPoint: 'disclosure',
+    source: 'disclosure/src/disclosure-context.ts',
+    calls: 1,
+    token: 'FOR_DISCLOSURE_CONTEXT',
+    root: '[forDisclosure]',
+    piece: 'ForDisclosureTrigger',
+    host: ImpostorDisclosureHost,
   },
   {
     entryPoint: 'drag-drop',

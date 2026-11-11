@@ -171,7 +171,7 @@ picker read a subclassed calendar's selections and focus its active cell. A wrap
 the token itself.
 
 Several of these roots (`ForAccordion`, `ForAvatar`, `ForCalendar`, `ForCarousel`,
-`ForContextMenu`, `ForDialog`, `ForDraggable`, `ForFreeDrag`, `ForDrawer`, `ForHoverCard`,
+`ForContextMenu`, `ForDialog`, `ForDisclosure`, `ForDraggable`, `ForFreeDrag`, `ForDrawer`, `ForHoverCard`,
 `ForNavigationMenu`, `ForPopover`, `ForScrollArea`, `ForStepper`, `ForTabs`, `ForToast`,
 `ForTooltip`, `ForTree`, plus the `ForTable` and `ForVirtualViewport` covered below) split their coordination
 surface in two: the

@@ -26,6 +26,39 @@ class DisclosureHost {
 @Component({
   imports: [ForDisclosure, ForDisclosureTrigger, ForDisclosureContent],
   template: `
+    <div forDisclosure [(open)]="isOpen">
+      <button type="button" forDisclosureTrigger>Toggle</button>
+      @if (isOpen()) {
+        <section forDisclosureContent id="details">Panel</section>
+      }
+    </div>
+  `,
+})
+class ConditionalDisclosureHost {
+  readonly isOpen = signal(false);
+}
+
+@Component({
+  imports: [ForDisclosure, ForDisclosureTrigger, ForDisclosureContent],
+  template: `
+    <div forDisclosure>
+      <button type="button" forDisclosureTrigger>Toggle</button>
+      @if (swapped()) {
+        <section forDisclosureContent>B</section>
+      }
+      @if (!swapped()) {
+        <section forDisclosureContent>A</section>
+      }
+    </div>
+  `,
+})
+class SwappedDisclosureContentHost {
+  readonly swapped = signal(false);
+}
+
+@Component({
+  imports: [ForDisclosure, ForDisclosureTrigger, ForDisclosureContent],
+  template: `
     <div forDisclosure>
       <button type="button" forDisclosureTrigger>A</button>
       <section forDisclosureContent>A</section>
@@ -83,33 +116,53 @@ describe('ForDisclosure', () => {
       expect(fixture.componentInstance.submitted).toBe(false);
     });
 
-    it('links the trigger to the content via aria-controls once open', async () => {
+    it('references a mounted content from the trigger whether closed or open', async () => {
       const { fixture, query, flush } = renderHost(DisclosureHost);
 
       const trigger = query<HTMLButtonElement>('button')!;
       const content = query<HTMLElement>('section')!;
 
-      expect(trigger.hasAttribute('aria-controls')).toBe(false);
-
-      fixture.componentInstance.isOpen.set(true);
-      await flush();
-
+      expect(trigger.getAttribute('aria-expanded')).toBe('false');
       expect(trigger.getAttribute('aria-controls')).toBe(content.id);
-    });
-
-    it('gates aria-controls to the open state, mirroring the overlay triggers', async () => {
-      const { fixture, query, flush } = renderHost(DisclosureHost);
-      const trigger = query<HTMLButtonElement>('button')!;
-
-      expect(trigger.hasAttribute('aria-controls')).toBe(false);
 
       fixture.componentInstance.isOpen.set(true);
       await flush();
-      expect(trigger.hasAttribute('aria-controls')).toBe(true);
+      expect(trigger.getAttribute('aria-controls')).toBe(content.id);
 
       fixture.componentInstance.isOpen.set(false);
       await flush();
+      expect(trigger.getAttribute('aria-controls')).toBe(content.id);
+    });
+
+    it('drops aria-controls while the content is unmounted by @if, and references its static id once mounted', async () => {
+      const { fixture, query, flush } = renderHost(ConditionalDisclosureHost);
+      const trigger = query<HTMLButtonElement>('button')!;
+
+      expect(query('section')).toBeNull();
       expect(trigger.hasAttribute('aria-controls')).toBe(false);
+
+      fixture.componentInstance.isOpen.set(true);
+      await flush();
+      expect(query<HTMLElement>('section')!.id).toBe('details');
+      expect(trigger.getAttribute('aria-controls')).toBe('details');
+
+      fixture.componentInstance.isOpen.set(false);
+      await flush();
+      expect(query('section')).toBeNull();
+      expect(trigger.hasAttribute('aria-controls')).toBe(false);
+    });
+
+    it('keeps aria-controls on the incoming content when two sibling @if blocks swap it', async () => {
+      const { fixture, el, query, flush } = renderHost(SwappedDisclosureContentHost);
+      const trigger = query<HTMLButtonElement>('button')!;
+
+      fixture.componentInstance.swapped.set(true);
+      await flush();
+
+      const content = query<HTMLElement>('section')!;
+      expect(content.textContent).toBe('B');
+      expect(trigger.getAttribute('aria-controls')).toBe(content.id);
+      expect(el.querySelector(`#${content.id}`)).toBe(content);
     });
 
     it('produces unique ids across instances', () => {

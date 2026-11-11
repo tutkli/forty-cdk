@@ -8,9 +8,9 @@ import { injectDisclosureContext } from './disclosure-context';
  * toggling come from native button behavior. The directive host-binds
  * `type="button"` so a trigger inside a `<form>` never submits it on toggle.
  *
- * `aria-controls` is emitted only while open — mirroring the overlay triggers'
- * open-only gating — so the reference never dangles at an unmounted panel
- * under the recommended `@if (open())` mount pattern.
+ * `aria-controls` references the content while open, and while closed with the
+ * content kept mounted. A panel unmounted by `@if (open())` is not referenced
+ * while closed.
  *
  * Disabling: the trigger merges its own `disabled` input OR the root's
  * `disabled` into `effectiveDisabled`, which drives the native `disabled`
@@ -26,7 +26,7 @@ import { injectDisclosureContext } from './disclosure-context';
     '[attr.type]': 'buttonType()',
     '[id]': 'ctx.triggerId()',
     '[attr.aria-expanded]': 'ctx.open() ? "true" : "false"',
-    '[attr.aria-controls]': 'ctx.open() ? ctx.contentId() : null',
+    '[attr.aria-controls]': 'ctx.open() || ctx.hasContent() ? ctx.contentId() : null',
     '[attr.data-state]': 'ctx.open() ? "open" : "closed"',
     '[attr.data-disabled]': 'effectiveDisabled() ? "" : null',
     '(click)': 'onClick()',

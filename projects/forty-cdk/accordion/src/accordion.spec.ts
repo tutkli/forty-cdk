@@ -68,6 +68,47 @@ class FormAccordionHost {
   submitted = false;
 }
 
+@Component({
+  imports: [...ACCORDION_IMPORTS],
+  template: `
+    <div forAccordion [(value)]="value">
+      <div forAccordionItem value="a" #item="forAccordionItem">
+        <h3>
+          <button type="button" forAccordionTrigger data-test-id="a">A</button>
+        </h3>
+        @if (item.expanded()) {
+          <section forAccordionContent data-test-content-id="a">Panel A</section>
+        }
+      </div>
+    </div>
+  `,
+})
+class ConditionalAccordionHost {
+  readonly value = signal<readonly string[]>([]);
+}
+
+@Component({
+  imports: [...ACCORDION_IMPORTS],
+  template: `
+    <div forAccordion [value]="['a']">
+      <div forAccordionItem value="a">
+        <h3>
+          <button type="button" forAccordionTrigger data-test-id="a">A</button>
+        </h3>
+        @if (swapped()) {
+          <section forAccordionContent id="panel-b" data-test-content-id="a">B</section>
+        }
+        @if (!swapped()) {
+          <section forAccordionContent id="panel-a" data-test-content-id="a">A</section>
+        }
+      </div>
+    </div>
+  `,
+})
+class SwappedAccordionContentHost {
+  readonly swapped = signal(false);
+}
+
 const triggerOf = (host: HTMLElement, id: string) =>
   host.querySelector<HTMLButtonElement>(`button[data-test-id="${id}"]`)!;
 
@@ -124,13 +165,14 @@ describe('ForAccordion', () => {
       }
     });
 
-    it('gates aria-controls to the expanded panel, mirroring the overlay triggers', async () => {
+    it('references a mounted panel from its trigger whether the item is collapsed or expanded', async () => {
       const { el, flush } = renderHost(AccordionHost);
 
       const trigger = triggerOf(el, 'a');
       const content = contentOf(el, 'a')!;
 
-      expect(trigger.hasAttribute('aria-controls')).toBe(false);
+      expect(trigger.getAttribute('aria-expanded')).toBe('false');
+      expect(trigger.getAttribute('aria-controls')).toBe(content.id);
 
       trigger.click();
       await flush();
@@ -138,7 +180,41 @@ describe('ForAccordion', () => {
 
       triggerOf(el, 'b').click();
       await flush();
+      expect(trigger.getAttribute('aria-expanded')).toBe('false');
+      expect(trigger.getAttribute('aria-controls')).toBe(content.id);
+    });
+
+    it('drops aria-controls while the panel is unmounted by @if, so it never names a missing id', async () => {
+      const { el, fixture, flush } = renderHost(ConditionalAccordionHost);
+      const trigger = triggerOf(el, 'a');
+
+      expect(contentOf(el, 'a')).toBeNull();
       expect(trigger.hasAttribute('aria-controls')).toBe(false);
+
+      fixture.componentInstance.value.set(['a']);
+      await flush();
+      const content = contentOf(el, 'a')!;
+      expect(trigger.getAttribute('aria-controls')).toBe(content.id);
+
+      fixture.componentInstance.value.set([]);
+      await flush();
+      expect(contentOf(el, 'a')).toBeNull();
+      expect(trigger.hasAttribute('aria-controls')).toBe(false);
+    });
+
+    it('keeps aria-controls on the incoming panel when two sibling @if blocks swap the content', async () => {
+      const { el, fixture, flush } = renderHost(SwappedAccordionContentHost);
+      const trigger = triggerOf(el, 'a');
+
+      expect(trigger.getAttribute('aria-controls')).toBe('panel-a');
+
+      fixture.componentInstance.swapped.set(true);
+      await flush();
+
+      const content = contentOf(el, 'a')!;
+      expect(content.textContent).toBe('B');
+      expect(trigger.getAttribute('aria-controls')).toBe(content.id);
+      expect(el.querySelector(`#${content.id}`)).toBe(content);
     });
   });
 

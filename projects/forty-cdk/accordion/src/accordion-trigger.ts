@@ -17,9 +17,9 @@ import { injectAccordionContext, injectAccordionItemContext } from './accordion-
  * Handles ARIA wiring, click-to-toggle, and the recommended keyboard
  * navigation (ArrowDown / ArrowUp / Home / End).
  *
- * `aria-controls` is emitted only while the item is expanded — mirroring the
- * overlay triggers' open-only gating — so the reference never dangles at an
- * unmounted panel under the recommended `@if (item.expanded())` mount pattern.
+ * `aria-controls` references the item's content while the item is expanded,
+ * and while it is collapsed with the content kept mounted. A panel unmounted
+ * by `@if (item.expanded())` is not referenced while collapsed.
  */
 @Directive({
   selector: '[forAccordionTrigger]',
@@ -28,7 +28,7 @@ import { injectAccordionContext, injectAccordionItemContext } from './accordion-
     '[attr.type]': 'buttonType()',
     '[id]': 'item.triggerId()',
     '[attr.aria-expanded]': 'item.expanded() ? "true" : "false"',
-    '[attr.aria-controls]': 'item.expanded() ? item.contentId() : null',
+    '[attr.aria-controls]': 'item.expanded() || parent.hasContent(item) ? item.contentId() : null',
     '[attr.aria-disabled]': 'ariaDisabled() ? "true" : null',
     '[attr.data-state]': 'item.expanded() ? "open" : "closed"',
     '[attr.data-disabled]': 'item.disabled() ? "" : null',

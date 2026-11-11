@@ -1,6 +1,6 @@
 import { Directive, ElementRef, inject } from '@angular/core';
 
-import { hostLabelledBy } from 'forty-cdk/core';
+import { hostLabelledBy, registerHandle } from 'forty-cdk/core';
 import { injectAccordionContext, injectAccordionItemContext } from './accordion-context';
 
 /**
@@ -38,5 +38,10 @@ export class ForAccordionContent {
 
   constructor() {
     this.item.adoptContentId(inject<ElementRef<HTMLElement>>(ElementRef).nativeElement);
+    registerHandle(
+      this.item,
+      (item) => this.parent.registerContent(item),
+      (item) => this.parent.unregisterContent(item),
+    );
   }
 }
