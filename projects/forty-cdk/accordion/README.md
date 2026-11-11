@@ -149,6 +149,10 @@ A disabled item cannot be toggled and is skipped by the arrow keys, while stayin
 
 ### `ForAccordionContent`
 
+| Property           | Type             | Description                                                                                                                                                                                                                              |
+| ------------------ | ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `hiddenUntilFound` | `input<boolean>` | Hides a closed, mounted panel with `hidden="until-found"` in place of `aria-hidden` + `inert`. A find-in-page match or a fragment link inside it expands the item, as a trigger click would. Closing is instant.<br>**Default:** `false` |
+
 | Data attribute     | Values                     |
 | ------------------ | -------------------------- |
 | `data-state`       | `open` \| `closed`         |
@@ -156,6 +160,14 @@ A disabled item cannot be toggled and is skipped by the arrow keys, while stayin
 | `data-orientation` | `horizontal` \| `vertical` |
 
 `data-disabled` on the item, trigger and content reflects the item's own `[disabled]` or the root's, whichever is set.
+
+#### Searchable closed panels with `hiddenUntilFound`
+
+Set `hiddenUntilFound` on a panel you leave mounted, and the browser hides the closed panel with `hidden="until-found"`: no consumer CSS is needed to hide it, and find-in-page can still reach its text. A match, or a fragment link to an id inside it, expands the item, collapsing the open one in single mode, exactly as a trigger click would, and the trigger reports `aria-expanded="true"`. A disabled item, or a disabled accordion, stays collapsed and the panel stays hidden.
+
+- **No exit animation.** The panel is hidden the moment it closes, so pair the opt-in with an open transition only, if any.
+- **Padding and border stay visible.** `until-found` hides the panel's content with `content-visibility: hidden`, not `display: none`, so the host's own box still renders. Put padding and borders on an inner element.
+- **Browser support.** `hidden="until-found"` is Baseline since December 2025. An older engine treats the value as plain `hidden`, so the panel stays hidden but find-in-page cannot open it.
 
 ## Keyboard
 
@@ -172,9 +184,10 @@ A disabled item cannot be toggled and is skipped by the arrow keys, while stayin
 - **Heading wrapper is your job.** The library does not render a heading around the trigger, so wrap it in the heading level (`<h2>`–`<h6>`) appropriate to your document outline. Without it, screen-reader landmark navigation is broken.
 - **Use a real `<button type="button">` for the trigger.** Native Enter / Space activation and focus come for free; the directive does not synthesize them.
 - **`role="region"`** is added to every panel automatically. APG recommends suppressing it on accordions with 6+ panels to avoid landmark proliferation; there is currently no opt-out.
-- **Closed panels leave the accessibility tree.** While closed, `ForAccordionContent` sets `aria-hidden="true"` and `inert` on the panel, removing it from both the accessibility tree and the focus order. The directive does **not** apply `[hidden]`, so pick how to hide it visually:
+- **Closed panels leave the accessibility tree.** While closed, `ForAccordionContent` sets `aria-hidden="true"` and `inert` on the panel, removing it from both the accessibility tree and the focus order. The directive does **not** apply `[hidden]` unless you opt in with `hiddenUntilFound`, so pick how to hide it visually:
   - **Mount / unmount with `@if (item.expanded())`**: the panel is absent from the DOM while closed; the cleanest path for `animate.enter` / `animate.leave`. The trigger drops `aria-controls` while the panel is unmounted, because a reference to an id that is not in the DOM is worse than none.
   - **Leave it mounted**: preserve internal state or run CSS-only transitions off `data-state`. Add `display: none` (or your own collapse animation) keyed on `[data-state="closed"]` to also hide it visually. The trigger keeps `aria-controls` on the closed panel, since it is still in the DOM.
+  - **Leave it mounted with `hiddenUntilFound`**: the browser hides the closed panel, removes it from the accessibility tree and the focus order, and lets find-in-page open it. The directive drops `aria-hidden` and `inert` there, since an inert panel is out of reach of find-in-page. See [Searchable closed panels](#searchable-closed-panels-with-hiddenuntilfound).
 - **`aria-disabled`** is applied to the open trigger only when single mode is active and `collapsible=false`, indicating the user cannot collapse it from this trigger.
 - **A truly disabled item (`[disabled]` on `[forAccordionItem]`) uses the native `disabled` attribute on the trigger, by design.** The trigger is a real single-purpose `<button>`, not a roving-tabindex collection item (each trigger stays independently in the Tab order; arrow-key navigation is the APG-optional enhancement on top). The disabled trigger leaves the Tab order and the arrow-key navigation (which already skips it), but stays in the accessibility tree so screen readers announce it as unavailable in browse mode. The [APG Accordion pattern](https://www.w3.org/WAI/ARIA/apg/patterns/accordion/) does not require disabled headers to remain focusable.
 

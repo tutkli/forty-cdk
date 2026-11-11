@@ -1,4 +1,4 @@
-import { el, expect, expectFocused, gotoFixture, test } from './_helpers';
+import { el, expect, expectFocused, expectStays, gotoFixture, test } from './_helpers';
 
 test.describe('Disclosure', () => {
   test('Enter on the trigger toggles open / closed', async ({ page }) => {
@@ -89,5 +89,35 @@ test.describe('Disclosure', () => {
 
     await page.keyboard.press('Tab');
     await expectFocused(el(page, 'panel-focusable'));
+  });
+
+  test.describe('hiddenUntilFound', () => {
+    test('fragment navigation into the closed panel opens it', async ({ page }) => {
+      await gotoFixture(page, 'disclosure', { untilFound: '1' });
+      await expect(el(page, 'panel')).toHaveAttribute('hidden', 'until-found');
+      await expect(el(page, 'panel')).not.toHaveAttribute('inert', /.*/);
+      await expect(el(page, 'trigger')).toHaveAttribute('aria-controls', /.+/);
+
+      await page.evaluate(() => (location.hash = '#found-target'));
+
+      await expect(el(page, 'trigger')).toHaveAttribute('aria-expanded', 'true');
+      await expect(el(page, 'panel')).toHaveAttribute('data-state', 'open');
+      await expect(el(page, 'panel')).not.toHaveAttribute('hidden', /.*/);
+      await expect(el(page, 'found-target')).toBeVisible();
+    });
+
+    test('fragment navigation into a disabled disclosure leaves the panel closed and hidden', async ({
+      page,
+    }) => {
+      await gotoFixture(page, 'disclosure', { untilFound: '1', disabled: '1' });
+      await expect(el(page, 'panel')).toHaveAttribute('hidden', 'until-found');
+
+      await page.evaluate(() => (location.hash = '#found-target'));
+
+      await expectStays(page, async () => {
+        await expect(el(page, 'trigger')).toHaveAttribute('aria-expanded', 'false');
+        await expect(el(page, 'panel')).toHaveAttribute('hidden', 'until-found');
+      });
+    });
   });
 });

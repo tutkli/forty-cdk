@@ -96,17 +96,29 @@ Use a native `<button type="button">` so Enter / Space activation come for free.
 
 ### `ForDisclosureContent`
 
+| Property           | Type             | Description                                                                                                                                                                                                                                  |
+| ------------------ | ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `hiddenUntilFound` | `input<boolean>` | Hides a closed, mounted panel with `hidden="until-found"` in place of `aria-hidden` + `inert`. A find-in-page match or a fragment link inside it opens the disclosure, as a trigger click would. Closing is instant.<br>**Default:** `false` |
+
 | Data attribute  | Values             |
 | --------------- | ------------------ |
 | `data-state`    | `open` \| `closed` |
 | `data-disabled` | present \| absent  |
 
-Reflects on its host: `id`, `data-state`, `data-disabled`, `aria-hidden` (when closed), `inert` (when closed).
+Reflects on its host: `id`, `data-state`, `data-disabled`, `aria-hidden` (when closed), `inert` (when closed), or `hidden="until-found"` in place of the last two when `hiddenUntilFound` is set.
 
 The directive does **not** apply `[hidden]` or otherwise control DOM presence. Two patterns work:
 
 - **Mount/unmount with `@if (open())`**: the panel is absent from the DOM while closed; idiomatic for `animate.enter` / `animate.leave`.
 - **Leave it mounted**: preserve scroll/input state or run CSS-only transitions off `data-state`. While closed, the directive sets `aria-hidden="true"` and `inert` on the host so the panel is removed from the accessibility tree and focus order. Add `display: none` (or your own collapse animation) keyed on `[data-state="closed"]` to also hide it visually.
+
+#### Searchable closed panels with `hiddenUntilFound`
+
+Set `hiddenUntilFound` on a panel you leave mounted, and the browser hides the closed panel with `hidden="until-found"`: no consumer CSS is needed to hide it, and find-in-page can still reach its text. A match, or a fragment link to an id inside it, opens the disclosure exactly as a trigger click would, and the trigger reports `aria-expanded="true"`. A disabled disclosure stays closed and the panel stays hidden.
+
+- **No exit animation.** The panel is hidden the moment it closes, so pair the opt-in with an open transition only, if any.
+- **Padding and border stay visible.** `until-found` hides the panel's content with `content-visibility: hidden`, not `display: none`, so the host's own box still renders. Put padding and borders on an inner element.
+- **Browser support.** `hidden="until-found"` is Baseline since December 2025. An older engine treats the value as plain `hidden`, so the panel stays hidden but find-in-page cannot open it.
 
 If the panel is a semantic region, add `role="region"` and `aria-labelledby="..."` pointing to the trigger.
 
@@ -115,7 +127,7 @@ If the panel is a semantic region, add `role="region"` and `aria-labelledby="...
 Implements the [WAI-ARIA Disclosure pattern](https://www.w3.org/WAI/ARIA/apg/patterns/disclosure/).
 
 - The library does not auto-add `role="button"` or keyboard handlers when the trigger is not a `<button>`. Always use a real button.
-- The directive does not apply the native `hidden` attribute to the content. Either wrap it with `@if (open())` so it unmounts when closed, or leave it mounted and rely on the `aria-hidden="true"` + `inert` reflection that keeps the closed panel out of the accessibility tree and focus order. Visual hiding (and enter/leave transitions) are still on you. Drive them off `[data-state]`.
+- The directive does not apply the native `hidden` attribute to the content unless you opt in with `hiddenUntilFound`. Either wrap it with `@if (open())` so it unmounts when closed, or leave it mounted and rely on the `aria-hidden="true"` + `inert` reflection that keeps the closed panel out of the accessibility tree and focus order. Visual hiding (and enter/leave transitions) are still on you. Drive them off `[data-state]`.
 - Disabled state sets the native `disabled` attribute on the trigger (effective on `<button>` elements). Click is also ignored at the directive level as a defensive measure. The trigger can be disabled from the root (`[forDisclosure] [disabled]`) or per trigger (`[forDisclosureTrigger] [disabled]`); either source disables it.
 
 ## Styling

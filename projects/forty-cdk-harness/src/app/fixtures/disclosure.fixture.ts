@@ -19,6 +19,10 @@ import { queryFlag } from './_query-flag';
         <section data-testid="panel" forDisclosureContent>
           <button data-testid="panel-focusable" type="button">Inside</button>
         </section>
+      } @else if (untilFound) {
+        <section data-testid="panel" forDisclosureContent hiddenUntilFound>
+          <p id="found-target" data-testid="found-target">Searchable text</p>
+        </section>
       } @else if (open()) {
         <!--
           Default mode: the consumer wraps the content piece in @if so it mounts
@@ -37,4 +41,5 @@ export class DisclosureFixture {
 
   protected readonly always = queryFlag('always');
   protected readonly disabled = queryFlag('disabled');
+  protected readonly untilFound = queryFlag('untilFound');
 }

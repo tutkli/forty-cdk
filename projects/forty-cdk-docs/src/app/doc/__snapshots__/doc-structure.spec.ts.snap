@@ -985,6 +985,10 @@ exports[`document structure > projects/forty-cdk/accordion/README.md declares th
         "depth": 3,
         "slug": "foraccordioncontent",
       },
+      {
+        "depth": 4,
+        "slug": "searchable-closed-panels-with-hiddenuntilfound",
+      },
     ],
     "slug": "api",
     "tables": [
@@ -1029,6 +1033,15 @@ exports[`document structure > projects/forty-cdk/accordion/README.md declares th
         ],
         "role": "plain",
         "rows": 3,
+      },
+      {
+        "columns": [
+          "Property",
+          "Type",
+          "Description",
+        ],
+        "role": "api",
+        "rows": 1,
       },
       {
         "columns": [
@@ -3327,6 +3340,10 @@ exports[`document structure > projects/forty-cdk/disclosure/README.md declares t
         "depth": 3,
         "slug": "fordisclosurecontent",
       },
+      {
+        "depth": 4,
+        "slug": "searchable-closed-panels-with-hiddenuntilfound",
+      },
     ],
     "slug": "api",
     "tables": [
@@ -3363,6 +3380,15 @@ exports[`document structure > projects/forty-cdk/disclosure/README.md declares t
         ],
         "role": "plain",
         "rows": 2,
+      },
+      {
+        "columns": [
+          "Property",
+          "Type",
+          "Description",
+        ],
+        "role": "api",
+        "rows": 1,
       },
       {
         "columns": [

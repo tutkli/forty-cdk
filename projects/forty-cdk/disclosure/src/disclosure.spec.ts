@@ -86,6 +86,28 @@ class FormDisclosureHost {
   submitted = false;
 }
 
+@Component({
+  imports: [ForDisclosure, ForDisclosureTrigger, ForDisclosureContent],
+  host: { 'data-fixture': 'until-found' },
+  template: `
+    <div
+      forDisclosure
+      [(open)]="isOpen"
+      (openChange)="emitted.push($event)"
+      [disabled]="isDisabled()"
+    >
+      <button type="button" forDisclosureTrigger>Toggle</button>
+      <section forDisclosureContent [hiddenUntilFound]="untilFound()">Panel</section>
+    </div>
+  `,
+})
+class UntilFoundDisclosureHost {
+  readonly isOpen = signal(false);
+  readonly emitted: boolean[] = [];
+  readonly untilFound = signal(true);
+  readonly isDisabled = signal(false);
+}
+
 describe('ForDisclosure', () => {
   assertDataStateContract({
     vocabulary: ['closed', 'open'],
@@ -524,6 +546,98 @@ describe('ForDisclosure', () => {
       await flush();
 
       expect(query<HTMLElement>('section')).toBeNull();
+    });
+  });
+
+  describe('hiddenUntilFound', () => {
+    const beforeMatch = (content: HTMLElement) => content.dispatchEvent(new Event('beforematch'));
+
+    it('hides a closed panel with hidden="until-found" in place of aria-hidden + inert, and an open one with none of the three', async () => {
+      const { fixture, query, flush } = renderHost(UntilFoundDisclosureHost);
+      await flush();
+      const content = query<HTMLElement>('section')!;
+
+      expect(content.getAttribute('hidden')).toBe('until-found');
+      expect(content.hasAttribute('aria-hidden')).toBe(false);
+      expect(content.hasAttribute('inert')).toBe(false);
+
+      fixture.componentInstance.isOpen.set(true);
+      await flush();
+
+      expect(content.hasAttribute('hidden')).toBe(false);
+      expect(content.hasAttribute('aria-hidden')).toBe(false);
+      expect(content.hasAttribute('inert')).toBe(false);
+    });
+
+    it('keeps aria-controls on the trigger of a closed until-found panel', async () => {
+      const { query, flush } = renderHost(UntilFoundDisclosureHost);
+      await flush();
+
+      expect(query('button')!.getAttribute('aria-controls')).toBe(query('section')!.id);
+    });
+
+    it('falls back to aria-hidden + inert when the input is unset', async () => {
+      const { fixture, query, flush } = renderHost(UntilFoundDisclosureHost);
+      fixture.componentInstance.untilFound.set(false);
+      await flush();
+      const content = query<HTMLElement>('section')!;
+
+      expect(content.hasAttribute('hidden')).toBe(false);
+      expect(content.getAttribute('aria-hidden')).toBe('true');
+      expect(content.hasAttribute('inert')).toBe(true);
+    });
+
+    it('opens on beforematch like a trigger click and emits openChange', async () => {
+      const { fixture, query, flush } = renderHost(UntilFoundDisclosureHost);
+      await flush();
+
+      beforeMatch(query<HTMLElement>('section')!);
+      await flush();
+
+      expect(fixture.componentInstance.isOpen()).toBe(true);
+      expect(fixture.componentInstance.emitted).toEqual([true]);
+      expect(query('button')!.getAttribute('aria-expanded')).toBe('true');
+      expect(query('section')!.hasAttribute('hidden')).toBe(false);
+    });
+
+    it('ignores beforematch on an open panel', async () => {
+      const { fixture, query, flush } = renderHost(UntilFoundDisclosureHost);
+      fixture.componentInstance.isOpen.set(true);
+      await flush();
+
+      beforeMatch(query<HTMLElement>('section')!);
+      await flush();
+
+      expect(fixture.componentInstance.isOpen()).toBe(true);
+      expect(fixture.componentInstance.emitted).toEqual([]);
+    });
+
+    it('leaves a disabled disclosure closed and puts hidden="until-found" back after the browser strips it', async () => {
+      const { fixture, query, flush } = renderHost(UntilFoundDisclosureHost);
+      fixture.componentInstance.isDisabled.set(true);
+      await flush();
+      const content = query<HTMLElement>('section')!;
+
+      beforeMatch(content);
+      content.removeAttribute('hidden');
+      await flush();
+
+      expect(fixture.componentInstance.isOpen()).toBe(false);
+      expect(query('button')!.getAttribute('aria-expanded')).toBe('false');
+      expect(content.getAttribute('hidden')).toBe('until-found');
+    });
+
+    it('does not re-hide a panel opened after a declined beforematch', async () => {
+      const { fixture, query, flush } = renderHost(UntilFoundDisclosureHost);
+      fixture.componentInstance.isDisabled.set(true);
+      await flush();
+
+      beforeMatch(query<HTMLElement>('section')!);
+      fixture.componentInstance.isDisabled.set(false);
+      fixture.componentInstance.isOpen.set(true);
+      await flush();
+
+      expect(query('section')!.hasAttribute('hidden')).toBe(false);
     });
   });
 });

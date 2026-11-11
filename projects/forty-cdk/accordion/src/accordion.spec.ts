@@ -109,6 +109,41 @@ class SwappedAccordionContentHost {
   readonly swapped = signal(false);
 }
 
+@Component({
+  imports: [...ACCORDION_IMPORTS],
+  host: { 'data-fixture': 'until-found' },
+  template: `
+    <div
+      forAccordion
+      [(value)]="value"
+      (valueChange)="emitted.push($event)"
+      [disabled]="rootDisabled()"
+    >
+      @for (id of ['a', 'b']; track id) {
+        <div forAccordionItem [value]="id" [disabled]="disabledItem() === id">
+          <h3>
+            <button type="button" forAccordionTrigger [attr.data-test-id]="id">{{ id }}</button>
+          </h3>
+          <section
+            forAccordionContent
+            [hiddenUntilFound]="untilFound()"
+            [attr.data-test-content-id]="id"
+          >
+            Panel {{ id }}
+          </section>
+        </div>
+      }
+    </div>
+  `,
+})
+class UntilFoundAccordionHost {
+  readonly value = signal<readonly string[]>(['a']);
+  readonly emitted: (readonly string[])[] = [];
+  readonly untilFound = signal(true);
+  readonly disabledItem = signal<string | null>(null);
+  readonly rootDisabled = signal(false);
+}
+
 const triggerOf = (host: HTMLElement, id: string) =>
   host.querySelector<HTMLButtonElement>(`button[data-test-id="${id}"]`)!;
 
@@ -907,6 +942,103 @@ describe('ForAccordion', () => {
       await flush();
 
       expect(el.querySelector('[data-test-content="a"]')).toBeNull();
+    });
+  });
+
+  describe('hiddenUntilFound', () => {
+    const beforeMatch = (content: HTMLElement) => content.dispatchEvent(new Event('beforematch'));
+
+    it('hides a collapsed panel with hidden="until-found" in place of aria-hidden + inert, and an expanded one with none of the three', async () => {
+      const { el, flush } = renderHost(UntilFoundAccordionHost);
+      await flush();
+
+      const open = contentOf(el, 'a')!;
+      const closed = contentOf(el, 'b')!;
+
+      expect(closed.getAttribute('hidden')).toBe('until-found');
+      expect(closed.hasAttribute('aria-hidden')).toBe(false);
+      expect(closed.hasAttribute('inert')).toBe(false);
+
+      expect(open.hasAttribute('hidden')).toBe(false);
+      expect(open.hasAttribute('aria-hidden')).toBe(false);
+      expect(open.hasAttribute('inert')).toBe(false);
+    });
+
+    it('keeps aria-controls on the trigger of a collapsed until-found panel', async () => {
+      const { el, flush } = renderHost(UntilFoundAccordionHost);
+      await flush();
+
+      expect(triggerOf(el, 'b').getAttribute('aria-controls')).toBe(contentOf(el, 'b')!.id);
+    });
+
+    it('falls back to aria-hidden + inert when the input is unset', async () => {
+      const { el, fixture, flush } = renderHost(UntilFoundAccordionHost);
+      fixture.componentInstance.untilFound.set(false);
+      await flush();
+
+      const closed = contentOf(el, 'b')!;
+      expect(closed.hasAttribute('hidden')).toBe(false);
+      expect(closed.getAttribute('aria-hidden')).toBe('true');
+      expect(closed.hasAttribute('inert')).toBe(true);
+    });
+
+    it('expands the item on beforematch like a trigger click, collapsing the other in single mode and emitting valueChange', async () => {
+      const { el, fixture, flush } = renderHost(UntilFoundAccordionHost);
+      await flush();
+
+      beforeMatch(contentOf(el, 'b')!);
+      await flush();
+
+      expect(fixture.componentInstance.value()).toEqual(['b']);
+      expect(fixture.componentInstance.emitted).toEqual([['b']]);
+      expect(triggerOf(el, 'b').getAttribute('aria-expanded')).toBe('true');
+      expect(contentOf(el, 'b')!.hasAttribute('hidden')).toBe(false);
+      expect(contentOf(el, 'a')!.getAttribute('hidden')).toBe('until-found');
+    });
+
+    it('ignores beforematch on an expanded panel', async () => {
+      const { el, fixture, flush } = renderHost(UntilFoundAccordionHost);
+      await flush();
+
+      beforeMatch(contentOf(el, 'a')!);
+      await flush();
+
+      expect(fixture.componentInstance.value()).toEqual(['a']);
+      expect(fixture.componentInstance.emitted).toEqual([]);
+    });
+
+    it.each([
+      ['a disabled item', (host: UntilFoundAccordionHost) => host.disabledItem.set('b')],
+      ['a disabled root', (host: UntilFoundAccordionHost) => host.rootDisabled.set(true)],
+    ])(
+      'leaves %s collapsed and puts hidden="until-found" back after the browser strips it',
+      async (_label, disable) => {
+        const { el, fixture, flush } = renderHost(UntilFoundAccordionHost);
+        disable(fixture.componentInstance);
+        await flush();
+
+        const content = contentOf(el, 'b')!;
+        beforeMatch(content);
+        content.removeAttribute('hidden');
+        await flush();
+
+        expect(fixture.componentInstance.value()).toEqual(['a']);
+        expect(triggerOf(el, 'b').getAttribute('aria-expanded')).toBe('false');
+        expect(content.getAttribute('hidden')).toBe('until-found');
+      },
+    );
+
+    it('does not re-hide a panel opened after a declined beforematch', async () => {
+      const { el, fixture, flush } = renderHost(UntilFoundAccordionHost);
+      fixture.componentInstance.disabledItem.set('b');
+      await flush();
+
+      beforeMatch(contentOf(el, 'b')!);
+      fixture.componentInstance.disabledItem.set(null);
+      fixture.componentInstance.value.set(['b']);
+      await flush();
+
+      expect(contentOf(el, 'b')!.hasAttribute('hidden')).toBe(false);
     });
   });
 });

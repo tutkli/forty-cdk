@@ -46,6 +46,30 @@ export class DisclosureFixture {}
 export class AccordionFixture {}
 
 @Component({
+  imports: [ForDisclosure, ForDisclosureTrigger, ForDisclosureContent],
+  template: `
+    <div forDisclosure>
+      <button forDisclosureTrigger>Toggle</button>
+      <section forDisclosureContent hiddenUntilFound>content</section>
+    </div>
+  `,
+})
+export class DisclosureUntilFoundFixture {}
+
+@Component({
+  imports: [ForAccordion, ForAccordionItem, ForAccordionTrigger, ForAccordionContent],
+  template: `
+    <div forAccordion>
+      <div forAccordionItem value="one">
+        <button forAccordionTrigger>One</button>
+        <section forAccordionContent hiddenUntilFound>one body</section>
+      </div>
+    </div>
+  `,
+})
+export class AccordionUntilFoundFixture {}
+
+@Component({
   imports: [ForAccordion, ForAccordionItem, ForAccordionTrigger, ForAccordionContent],
   template: `
     <div dir="rtl">

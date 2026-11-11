@@ -19,6 +19,7 @@ import {
  *    (overrides the default disabled item).
  *  - `?orientation=horizontal` — switch arrow keys to Left/Right.
  *  - `?dir=rtl` — flip Left/Right meaning under horizontal orientation.
+ *  - `?untilFound=1` — hide collapsed panels with `hidden="until-found"`.
  */
 @Component({
   selector: 'app-accordion-fixture',
@@ -42,7 +43,13 @@ import {
               {{ id }}
             </button>
           </h3>
-          <section [attr.data-testid]="'content-' + id" forAccordionContent>Panel {{ id }}</section>
+          <section
+            [attr.data-testid]="'content-' + id"
+            forAccordionContent
+            [hiddenUntilFound]="untilFound"
+          >
+            <p [id]="'found-' + id">Panel {{ id }}</p>
+          </section>
         </div>
       }
     </div>
@@ -67,6 +74,8 @@ export class AccordionFixture {
   protected readonly disabled: ReadonlySet<number> = parseDisabled(
     this.#route.snapshot.queryParamMap.get('disabled'),
   );
+
+  protected readonly untilFound = this.#route.snapshot.queryParamMap.get('untilFound') === '1';
 
   protected readonly value = signal<readonly string[]>([]);
 }
