@@ -1,6 +1,8 @@
 import {
+  afterNextRender,
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   Directive,
   ElementRef,
   inject,
@@ -51,12 +53,9 @@ class ProbeContent {
 class ProbeLateContent {
   constructor() {
     const root = inject(ProbeRoot);
-    registerHandle(
-      inject<ElementRef<HTMLElement>>(ElementRef).nativeElement,
-      (el) => root.content.set(el),
-      () => root.content.set(null),
-      'afterNextRender',
-    );
+    const el = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
+    afterNextRender(() => root.content.set(el));
+    inject(DestroyRef).onDestroy(() => root.content.set(null));
   }
 }
 

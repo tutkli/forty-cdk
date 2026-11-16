@@ -11,7 +11,6 @@ import {
 } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
-import { flush } from '../../../src/test-utils';
 import { registerA11yDescription, registerA11yName, registerHandle } from './register-handle';
 
 interface Handle {
@@ -156,74 +155,6 @@ describe('registerHandle', () => {
     fixture.componentInstance.keys.set([]);
     fixture.detectChanges();
     expect(owner.handlesRemoved.length).toBe(5);
-  });
-
-  it('defers register to afterNextRender when scheduling is "afterNextRender"', async () => {
-    const { owner } = setup();
-
-    @Directive({ selector: '[child]' })
-    class ChildDir {
-      constructor() {
-        registerHandle(
-          { id: 'a' } as Handle,
-          (h) => owner.registerHandle(h),
-          (h) => owner.unregisterHandle(h),
-          'afterNextRender',
-        );
-      }
-    }
-
-    @Component({
-      selector: 'host-cmp',
-      imports: [ChildDir],
-      changeDetection: ChangeDetectionStrategy.OnPush,
-      template: `<div child></div>`,
-    })
-    class HostCmp {}
-
-    const fixture = TestBed.createComponent(HostCmp);
-    // Construction runs but `afterNextRender` hasn't fired yet.
-    expect(owner.handlesAdded).toEqual([]);
-
-    await flush(fixture);
-    expect(owner.handlesAdded.length).toBe(1);
-  });
-
-  it('still calls unregister on destroy when deferred register has already fired', async () => {
-    const { owner } = setup();
-
-    @Directive({ selector: '[child]' })
-    class ChildDir {
-      constructor() {
-        registerHandle(
-          { id: 'a' } as Handle,
-          (h) => owner.registerHandle(h),
-          (h) => owner.unregisterHandle(h),
-          'afterNextRender',
-        );
-      }
-    }
-
-    @Component({
-      selector: 'host-cmp',
-      imports: [ChildDir],
-      changeDetection: ChangeDetectionStrategy.OnPush,
-      template: `@if (mounted()) {
-        <div child></div>
-      }`,
-    })
-    class HostCmp {
-      readonly mounted = signal(true);
-    }
-
-    const fixture = TestBed.createComponent(HostCmp);
-    await flush(fixture);
-    expect(owner.handlesAdded.length).toBe(1);
-
-    fixture.componentInstance.mounted.set(false);
-    fixture.detectChanges();
-    expect(owner.handlesRemoved.length).toBe(1);
-    expect(owner.handlesAdded[0]).toBe(owner.handlesRemoved[0]);
   });
 });
 

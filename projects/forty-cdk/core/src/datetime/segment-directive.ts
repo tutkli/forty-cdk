@@ -1,6 +1,13 @@
-import { computed, Directive, ElementRef, inject, type Signal } from '@angular/core';
+import {
+  afterNextRender,
+  computed,
+  DestroyRef,
+  Directive,
+  ElementRef,
+  inject,
+  type Signal,
+} from '@angular/core';
 
-import { registerHandle } from '../collection/register-handle';
 import { isImeComposing } from '../keyboard-navigation/ime-composition';
 import { isHistoryChord, isShortcutChord } from '../keyboard-navigation/modifier-chord';
 import type { WritingDirection } from '../keyboard-navigation/keyboard-navigation';
@@ -129,12 +136,8 @@ export abstract class ForDateTimeSegmentBase {
 
   protected registerSegment(): void {
     const handle = { host: this.host.nativeElement, type: this.segment };
-    registerHandle(
-      handle,
-      (h) => this.ctx.delegate.registerSegment(h),
-      (h) => this.ctx.delegate.unregisterSegment(h),
-      'afterNextRender',
-    );
+    afterNextRender(() => this.ctx.delegate.registerSegment(handle));
+    inject(DestroyRef).onDestroy(() => this.ctx.delegate.unregisterSegment(handle));
   }
 
   private onFocus(): void {
