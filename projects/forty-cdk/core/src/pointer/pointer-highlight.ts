@@ -21,18 +21,14 @@ export function injectPointerMove(handler: (event: PointerEvent) => void): void 
   const host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
   const moves = inject(StationaryPointerMoves);
   const release = moves.acquire();
-  const controller = new AbortController();
-  host.addEventListener(
-    'pointermove',
-    (event) => {
-      if (!moves.isStationary(event)) {
-        handler(event);
-      }
-    },
-    { signal: controller.signal },
-  );
+  const listener = (event: PointerEvent): void => {
+    if (!moves.isStationary(event)) {
+      handler(event);
+    }
+  };
+  host.addEventListener('pointermove', listener);
   inject(DestroyRef).onDestroy(() => {
-    controller.abort();
+    host.removeEventListener('pointermove', listener);
     release();
   });
 }
