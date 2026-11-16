@@ -3,6 +3,7 @@ import type { ReferenceElement } from '@floating-ui/dom';
 
 import type { OverlayShellPositioner } from '../overlay-controller/overlay-shell';
 import { type FloatingAlign, floatingPositioner, type FloatingSide } from './floating';
+import { floatingArrowMiddleware } from './floating-arrow';
 
 /**
  * Single source of truth for the floating-ui positioning defaults shared by
@@ -89,5 +90,6 @@ export function toFloatingPositioner(
     hideWhenDetached: ctx.hideWhenDetached,
     clipUntilPositioned: ctx.clipUntilPositioned,
     arrow: ctx.arrow,
+    arrowMiddleware: floatingArrowMiddleware,
   });
 }

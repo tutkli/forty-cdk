@@ -41,6 +41,7 @@ export {
   floatingPositioner,
   type FloatingSide,
 } from './floating/floating';
+export { type FloatingArrowMiddleware, floatingArrowMiddleware } from './floating/floating-arrow';
 export { itemAlignedPositioner } from './floating/item-aligned';
 export {
   createHoverIntent,

@@ -309,6 +309,10 @@ const FLOATING_POSITIONER_SITES: readonly string[] = [
  * forward the padding until
  * [#1776](https://github.com/tutkli/forty-cdk/issues/1776), because the base
  * handed every root the input along with the rest of the block (#1726).
+ *
+ * **`arrowMiddleware` follows the same rule**: the block forwarding `arrow` passes
+ * `floatingArrowMiddleware`, and no other block names it, so only the three
+ * arrow-capable roots retain floating-ui's `arrow`.
  */
 const FORWARDED_POSITIONING_INPUTS = [
   'side',
@@ -704,8 +708,16 @@ describe('anchored positioning contract adoption (meta-guard)', () => {
         !padsAnArrow && forwarded(block, 'arrowPadding') !== null
           ? [`${path}: forwards arrowPadding with no arrow to pad`]
           : [];
+      const middleware = forwarded(block, 'arrowMiddleware');
+      const arrowMiddleware =
+        padsAnArrow && middleware !== 'floatingArrowMiddleware'
+          ? [`${path}: forwards an arrow without floatingArrowMiddleware`]
+          : !padsAnArrow && middleware !== null
+            ? [`${path}: passes arrowMiddleware with no arrow to position`]
+            : [];
       return [
         ...stray,
+        ...arrowMiddleware,
         ...required.flatMap((key) => {
           const expression = forwarded(block, key);
           if (expression === null) {
