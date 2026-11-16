@@ -1,6 +1,5 @@
 import { type Signal } from '@angular/core';
 import {
-  arrow,
   type ComputePositionReturn,
   flip,
   type FlipOptions,
@@ -15,6 +14,7 @@ import {
 } from '@floating-ui/dom';
 
 import type { OverlayShellPositioner } from '../overlay-controller/overlay-shell';
+import type { FloatingArrowMiddleware } from './floating-arrow';
 import {
   type FloatingCustomProperties,
   injectFloatingCustomProperties,
@@ -90,8 +90,8 @@ export interface FloatingConfig {
   readonly alignOffset?: Signal<number | undefined>;
 
   /**
-   * Optional arrow element. When non-null, the `arrow` middleware is
-   * registered and the helper writes `position: absolute`, the resolved
+   * Optional arrow element. When non-null and `arrowMiddleware` is set, the
+   * middleware it builds is registered and the helper writes `position: absolute`, the resolved
    * `left` / `top` from floating-ui, and a side-aware
    * `var(--for-floating-arrow-offset, 0px)` on the *opposite* axis once floating-ui
    * resolves a position. Consumers control how far the arrow pokes out of
@@ -100,6 +100,12 @@ export interface FloatingConfig {
    * default visual.
    */
   readonly arrow?: Signal<HTMLElement | null>;
+
+  /**
+   * Builds the middleware that positions `arrow`; pass `floatingArrowMiddleware`.
+   * Without it an arrow element is never positioned.
+   */
+  readonly arrowMiddleware?: FloatingArrowMiddleware;
 
   /**
    * When `true` (default), the floating element is moved to `document.body`
@@ -289,7 +295,7 @@ export function floatingPositioner(config: FloatingConfig): OverlayShellPosition
  * portal, anti-flash baseline, `autoUpdate` loop, and symmetric cleanup to
  * the shared {@link runPositioning} scaffold, and supplies the anchored
  * positioner's own per-run body: the `offset` / `flip` / `shift` / `size` /
- * `hide` / `arrow` middleware stack, plus the writes that follow each resolved
+ * `hide` middleware stack and the `arrowMiddleware` the config supplies, plus the writes that follow each resolved
  * position — `data-placement`, `data-side`, `data-align`, `data-occluded`
  * (when the `hide` middleware reports the reference is off-screen),
  * `data-detached` (when `hideWhenDetached` is on and the reference escaped its
@@ -325,7 +331,7 @@ export function injectFloating(config: FloatingConfig): void {
     clipUntilPositioned: config.clipUntilPositioned,
     onFirstPosition: config.onFirstPosition,
     computeAndApply: (el, reference) => {
-      const arrowEl = config.arrow?.() ?? null;
+      const arrowEl = config.arrowMiddleware ? (config.arrow?.() ?? null) : null;
 
       // Resolve placement from `side` + `align` with sensible defaults.
       const sideInput = config.side?.() ?? 'bottom';
@@ -390,8 +396,8 @@ export function injectFloating(config: FloatingConfig): void {
         middleware.push(hide({ strategy: 'escaped' }));
       }
 
-      if (arrowEl) {
-        middleware.push(arrow({ element: arrowEl, padding: arrowPaddingVal }));
+      if (arrowEl && config.arrowMiddleware) {
+        middleware.push(config.arrowMiddleware(arrowEl, arrowPaddingVal));
       }
 
       return {

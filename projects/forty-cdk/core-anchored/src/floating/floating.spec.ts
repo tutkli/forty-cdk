@@ -14,6 +14,7 @@ import { installObserverPolyfills } from 'forty-cdk/testing';
 
 import { flushPositioning } from '../../../src/test-utils';
 import { buildFlipOptions, injectFloating } from './floating';
+import { type FloatingArrowMiddleware, floatingArrowMiddleware } from './floating-arrow';
 import { runPositioning } from './run-positioning';
 
 @Component({
@@ -35,6 +36,7 @@ class FloatingBubble {
       side: this.side,
       sideOffset: this.sideOffset,
       arrow: this.arrow,
+      arrowMiddleware: floatingArrowMiddleware,
       portal: this.portal,
     });
   }
@@ -167,6 +169,72 @@ class BubbleHost {
   readonly anchor = viewChild.required<ElementRef<HTMLElement>>('anchor');
   readonly bubble = viewChild.required<FloatingBubble>('bubble');
   readonly arrowEl = viewChild.required<ElementRef<HTMLElement>>('arrow');
+}
+
+const arrowMiddlewareCalls: [HTMLElement, number][] = [];
+const recordingArrowMiddleware: FloatingArrowMiddleware = (element, padding) => {
+  arrowMiddlewareCalls.push([element, padding]);
+  return floatingArrowMiddleware(element, padding);
+};
+
+@Component({
+  selector: 'arrow-factory-bubble',
+  template: '<ng-content />',
+})
+class ArrowFactoryBubble {
+  readonly reference = signal<HTMLElement | null>(null);
+  readonly open = signal(false);
+  readonly arrowEl = signal<HTMLElement | null>(null);
+
+  constructor() {
+    injectFloating({
+      reference: this.reference,
+      open: this.open,
+      arrow: this.arrowEl,
+      arrowPadding: signal(6),
+      arrowMiddleware: recordingArrowMiddleware,
+      portal: false,
+    });
+  }
+}
+
+@Component({
+  selector: 'arrowless-bubble',
+  template: '<ng-content />',
+})
+class ArrowlessBubble {
+  readonly reference = signal<HTMLElement | null>(null);
+  readonly open = signal(false);
+  readonly arrowEl = signal<HTMLElement | null>(null);
+
+  constructor() {
+    injectFloating({
+      reference: this.reference,
+      open: this.open,
+      arrow: this.arrowEl,
+      portal: false,
+    });
+  }
+}
+
+@Component({
+  imports: [ArrowFactoryBubble, ArrowlessBubble],
+  template: `
+    <button #anchor type="button">Anchor</button>
+    <arrow-factory-bubble #withFactory>
+      <span #factoryArrow></span>
+    </arrow-factory-bubble>
+    <arrowless-bubble #withoutFactory>
+      <span #barrenArrow></span>
+    </arrowless-bubble>
+  `,
+})
+class ArrowFactoryHost {
+  readonly anchor = viewChild.required<ElementRef<HTMLElement>>('anchor');
+  readonly withFactory = viewChild.required<ArrowFactoryBubble>('withFactory');
+  readonly withoutFactory = viewChild.required<ArrowlessBubble>('withoutFactory');
+  readonly factoryArrow = viewChild.required<ElementRef<HTMLElement>>('factoryArrow');
+  readonly barrenArrow = viewChild.required<ElementRef<HTMLElement>>('barrenArrow');
 }
 
 @Component({
@@ -643,6 +711,41 @@ describe('injectFloating', () => {
       // consumer-controlled CSS var, never the legacy `-4px` literal.
       expect(arrowEl.style.bottom).toBe('var(--for-floating-arrow-offset, 0px)');
       expect(arrowEl.style.bottom).not.toBe('-4px');
+    });
+
+    it('builds the arrow middleware through the configured factory with the arrow element and padding', async () => {
+      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+      const fixture = TestBed.createComponent(ArrowFactoryHost);
+      await flushPositioning(fixture);
+      const host = fixture.componentInstance;
+      const arrowEl = host.factoryArrow().nativeElement;
+
+      host.withFactory().reference.set(host.anchor().nativeElement);
+      host.withFactory().arrowEl.set(arrowEl);
+      host.withFactory().open.set(true);
+      await flushPositioning(fixture);
+
+      expect(arrowMiddlewareCalls.at(-1)).toEqual([arrowEl, 6]);
+      expect(arrowEl.style.position).toBe('absolute');
+      expect(arrowEl.dataset['side']).toBe('bottom');
+    });
+
+    it('leaves the arrow element untouched when no arrow middleware factory is configured', async () => {
+      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+      const fixture = TestBed.createComponent(ArrowFactoryHost);
+      await flushPositioning(fixture);
+      const host = fixture.componentInstance;
+      const surface = fixture.nativeElement.querySelector('arrowless-bubble') as HTMLElement;
+      const arrowEl = host.barrenArrow().nativeElement;
+
+      host.withoutFactory().reference.set(host.anchor().nativeElement);
+      host.withoutFactory().arrowEl.set(arrowEl);
+      host.withoutFactory().open.set(true);
+      await flushPositioning(fixture);
+
+      expect(surface.dataset['side']).toBe('bottom');
+      expect(arrowEl.style.position).toBe('');
+      expect(arrowEl.dataset['side']).toBeUndefined();
     });
   });
 
