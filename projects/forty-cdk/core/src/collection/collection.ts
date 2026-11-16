@@ -22,6 +22,8 @@ export interface CollectionHandle {
   readonly host: Node;
 }
 
+const MIN_HANDLES_FOR_SIBLING_WALK = 16;
+
 function sameSequence<T>(a: readonly T[], b: readonly T[]): boolean {
   if (a === b) {
     return true;
@@ -78,8 +80,8 @@ export class Collection<H extends CollectionHandle> {
   /**
    * All registered handles, in DOM document order.
    *
-   * Order is resolved from each handle's `host` via `compareDocumentPosition`
-   * and refreshed reactively when membership changes or a node on the hosts'
+   * Order is resolved from each handle's `host` document position and
+   * refreshed reactively when membership changes or a node on the hosts'
    * common-ancestor chain reorders its children, so it stays correct under
    * runtime reordering (`@for` sort / drag-reorder), not just under static
    * `@for` / `@if`.
@@ -176,6 +178,46 @@ export class Collection<H extends CollectionHandle> {
     if (handles.length < 2) {
       return handles;
     }
+    return this.#sortBySiblingRank(handles) ?? this.#sortByComparison(handles);
+  }
+
+  #sortBySiblingRank(handles: H[]): readonly H[] | null {
+    if (handles.length < MIN_HANDLES_FOR_SIBLING_WALK) {
+      return null;
+    }
+    let parent: Node | null = null;
+    const pending = new Set<Node>();
+    for (const handle of handles) {
+      const host = handle.host;
+      if (!host.isConnected) {
+        continue;
+      }
+      const hostParent = host.parentNode;
+      if (hostParent === null || (parent !== null && hostParent !== parent)) {
+        return null;
+      }
+      parent = hostParent;
+      pending.add(host);
+    }
+    if (parent === null) {
+      return null;
+    }
+    const rank = new Map<Node, number>();
+    for (let node = parent.firstChild; node !== null && pending.size > 0; node = node.nextSibling) {
+      if (pending.delete(node)) {
+        rank.set(node, rank.size);
+      }
+    }
+    if (pending.size > 0) {
+      return null;
+    }
+    const detachedRank = rank.size;
+    return handles.sort(
+      (a, b) => (rank.get(a.host) ?? detachedRank) - (rank.get(b.host) ?? detachedRank),
+    );
+  }
+
+  #sortByComparison(handles: H[]): readonly H[] {
     const position = new Map<H, number>(handles.map((h, i) => [h, i]));
     const indexOrder = (a: H, b: H): number => position.get(a)! - position.get(b)!;
     return handles.sort((a, b) => {

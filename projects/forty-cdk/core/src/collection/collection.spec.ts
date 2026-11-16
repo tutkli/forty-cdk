@@ -561,20 +561,40 @@ describe('Collection', () => {
     });
   });
 
-  describe('document-position comparisons per recomputation (#2809)', () => {
-    function appendHosts(count: number): HTMLElement[] {
+  describe('document-position comparisons per recomputation (#2809, #2831)', () => {
+    function appendHosts(count: number, parent: HTMLElement = host): HTMLElement[] {
+      const prefix = parent === host ? 'n' : `${parent.id}-n`;
       const hosts: HTMLElement[] = [];
       for (let i = 0; i < count; i++) {
         const el = document.createElement('div');
-        el.id = `n${i}`;
-        host.appendChild(el);
+        el.id = `${prefix}${i}`;
+        parent.appendChild(el);
         hosts.push(el);
       }
       return hosts;
     }
 
+    function appendHostsUnderTwoParents(count: number): HTMLElement[] {
+      const first = document.createElement('section');
+      first.id = 'p';
+      const second = document.createElement('section');
+      second.id = 'q';
+      host.append(first, second);
+      const half = Math.floor(count / 2);
+      return [...appendHosts(half, first), ...appendHosts(count - half, second)];
+    }
+
     function idsOf(hosts: readonly HTMLElement[]): string[] {
       return hosts.map((el) => el.id);
+    }
+
+    function shuffled<T>(values: readonly T[]): T[] {
+      const out = [...values];
+      for (let i = out.length - 1; i > 0; i--) {
+        const j = (i * 7919) % (i + 1);
+        [out[i], out[j]] = [out[j]!, out[i]!];
+      }
+      return out;
     }
 
     function countComparisons(): { readonly calls: number } {
@@ -586,19 +606,30 @@ describe('Collection', () => {
       };
     }
 
-    it('orders a set registered in DOM order with N − 1 comparisons', () => {
+    function countSiblingSteps(): { readonly reads: number } {
+      const spy = vi.spyOn(Node.prototype, 'nextSibling', 'get');
+      return {
+        get reads() {
+          return spy.mock.calls.length;
+        },
+      };
+    }
+
+    it('orders a 1000-sibling bulk register with no document-position comparison', () => {
       const hosts = appendHosts(1000);
       const col = createCollection();
-      for (const el of hosts) {
+      for (const el of shuffled(hosts)) {
         col.register(handle(el.id, el));
       }
       const comparisons = countComparisons();
+      const steps = countSiblingSteps();
 
       expect(col.items().map((h) => h.id)).toEqual(idsOf(hosts));
-      expect(comparisons.calls).toBe(hosts.length - 1);
+      expect(comparisons.calls).toBe(0);
+      expect(steps.reads).toBeLessThanOrEqual(host.childNodes.length);
     });
 
-    it('re-orders the members a filter keeps with N − 1 comparisons', () => {
+    it('re-orders the siblings a filter keeps with no document-position comparison', () => {
       const hosts = appendHosts(1000);
       const col = createCollection();
       const handles = hosts.map((el) => handle(el.id, el));
@@ -615,10 +646,10 @@ describe('Collection', () => {
       const comparisons = countComparisons();
 
       expect(col.items().map((h) => h.id)).toEqual(idsOf(kept));
-      expect(comparisons.calls).toBe(kept.length - 1);
+      expect(comparisons.calls).toBe(0);
     });
 
-    it('orders members re-mounted after the ones a filter kept in linear comparisons', () => {
+    it('orders siblings re-mounted after the ones a filter kept with no document-position comparison', () => {
       const hosts = appendHosts(1000);
       const col = createCollection();
       const kept = hosts.filter((_, i) => i % 4 === 0);
@@ -629,7 +660,132 @@ describe('Collection', () => {
       const comparisons = countComparisons();
 
       expect(col.items().map((h) => h.id)).toEqual(idsOf(hosts));
+      expect(comparisons.calls).toBe(0);
+    });
+
+    it('orders hosts under two parents registered in DOM order with N − 1 comparisons', () => {
+      const hosts = appendHostsUnderTwoParents(1000);
+      const col = createCollection();
+      for (const el of hosts) {
+        col.register(handle(el.id, el));
+      }
+      const comparisons = countComparisons();
+
+      expect(col.items().map((h) => h.id)).toEqual(idsOf(hosts));
+      expect(comparisons.calls).toBe(hosts.length - 1);
+    });
+
+    it('orders hosts under two parents re-mounted after the kept ones in linear comparisons', () => {
+      const hosts = appendHostsUnderTwoParents(1000);
+      const col = createCollection();
+      const kept = hosts.filter((_, i) => i % 4 === 0);
+      const remounted = hosts.filter((_, i) => i % 4 !== 0);
+      for (const el of [...kept, ...remounted]) {
+        col.register(handle(el.id, el));
+      }
+      const comparisons = countComparisons();
+
+      expect(col.items().map((h) => h.id)).toEqual(idsOf(hosts));
       expect(comparisons.calls).toBeLessThan(3 * hosts.length);
+    });
+
+    it('does not walk a wide parent to order a few handles', () => {
+      const hosts = appendHosts(1000);
+      const col = createCollection();
+      for (const el of [hosts[900]!, hosts[10]!, hosts[500]!]) {
+        col.register(handle(el.id, el));
+      }
+      const steps = countSiblingSteps();
+
+      expect(col.items().map((h) => h.id)).toEqual(['n10', 'n500', 'n900']);
+      expect(steps.reads).toBe(0);
+    });
+
+    it('stops the sibling walk at the last registered host', () => {
+      const hosts = appendHosts(10_000);
+      const registered = hosts.slice(0, 20);
+      const col = createCollection();
+      for (const el of shuffled(registered)) {
+        col.register(handle(el.id, el));
+      }
+      const comparisons = countComparisons();
+      const steps = countSiblingSteps();
+
+      expect(col.items().map((h) => h.id)).toEqual(idsOf(registered));
+      expect(comparisons.calls).toBe(0);
+      expect(steps.reads).toBeLessThan(2 * registered.length);
+    });
+
+    it('keeps detached hosts last in registration order when the others share a parent', () => {
+      const hosts = appendHosts(20);
+      const detachedFirst = document.createElement('div');
+      const detachedLast = document.createElement('div');
+      const col = createCollection();
+      col.register(handle('detached-first', detachedFirst));
+      for (const el of shuffled(hosts)) {
+        col.register(handle(el.id, el));
+      }
+      col.register(handle('detached-last', detachedLast));
+      const comparisons = countComparisons();
+
+      expect(col.items().map((h) => h.id)).toEqual([
+        ...idsOf(hosts),
+        'detached-first',
+        'detached-last',
+      ]);
+      expect(comparisons.calls).toBe(0);
+    });
+
+    it('keeps two handles on one host in registration order among many siblings', () => {
+      const hosts = appendHosts(20);
+      const col = createCollection();
+      col.register(handle('shared', hosts[5]!));
+      for (const el of shuffled(hosts)) {
+        col.register(handle(el.id, el));
+      }
+      const comparisons = countComparisons();
+
+      expect(col.items().map((h) => h.id)).toEqual([
+        ...idsOf(hosts.slice(0, 5)),
+        'shared',
+        ...idsOf(hosts.slice(5)),
+      ]);
+      expect(comparisons.calls).toBe(0);
+    });
+
+    it('orders a comment anchor among many element siblings by its position', () => {
+      const hosts = appendHosts(20);
+      const anchor = document.createComment('anchor');
+      host.insertBefore(anchor, hosts[3]!);
+      const col = TestBed.runInInjectionContext(
+        () => new Collection<{ readonly id: string; readonly host: Node }>(),
+      );
+      col.register({ id: 'anchor', host: anchor });
+      for (const el of shuffled(hosts)) {
+        col.register(handle(el.id, el));
+      }
+
+      expect(col.items().map((h) => h.id)).toEqual([
+        ...idsOf(hosts.slice(0, 3)),
+        'anchor',
+        ...idsOf(hosts.slice(3)),
+      ]);
+    });
+
+    it('re-orders many siblings after their parent reverses its children', async () => {
+      const hosts = appendHosts(20);
+      const col = createCollection();
+      for (const el of hosts) {
+        col.register(handle(el.id, el));
+      }
+      expect(col.items().map((h) => h.id)).toEqual(idsOf(hosts));
+      await waitForMutationObserver();
+
+      const reversed = [...hosts].reverse();
+      host.append(...reversed);
+      await waitForMutationObserver();
+
+      expect(col.items().map((h) => h.id)).toEqual(idsOf(reversed));
     });
 
     it('orders a structural swap whose replacement registers after its later siblings', () => {
