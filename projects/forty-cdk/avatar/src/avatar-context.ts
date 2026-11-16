@@ -61,16 +61,6 @@ export interface AvatarContext extends ForAvatarContext, AvatarPieceContext {}
 export const FOR_AVATAR_CONTEXT = new InjectionToken<ForAvatarContext>('FOR_AVATAR_CONTEXT');
 
 /**
- * The constant half of both resolvers' {@link assertRootContext} calls, so the
- * fallback and the image state the same requirement.
- */
-const ROOT_ASSERTION = {
-  entryPoint: 'avatar',
-  token: 'FOR_AVATAR_CONTEXT',
-  root: '[forAvatar]',
-};
-
-/**
  * Injects the nearest {@link ForAvatarContext}, throwing a descriptive error
  * when used outside a `[forAvatar]` element.
  *
@@ -88,7 +78,9 @@ export function injectAvatarContext(piece: string): AvatarContext {
   }
   const widened = ctx as AvatarContext;
   assertRootContext({
-    ...ROOT_ASSERTION,
+    entryPoint: 'avatar',
+    token: 'FOR_AVATAR_CONTEXT',
+    root: '[forAvatar]',
     piece,
     probe: () => widened.reportStatus,
   });
@@ -113,7 +105,9 @@ export function injectAvatarImageContext(): AvatarContext {
   }
   const widened = ctx as AvatarContext;
   assertRootContext({
-    ...ROOT_ASSERTION,
+    entryPoint: 'avatar',
+    token: 'FOR_AVATAR_CONTEXT',
+    root: '[forAvatar]',
     piece: 'ForAvatarImage',
     probe: () => widened.reportStatus,
   });

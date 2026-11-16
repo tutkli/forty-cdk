@@ -578,16 +578,6 @@ export interface ComboboxContext<T = unknown>
   extends ForComboboxContext<T>, ComboboxPieceContext<T>, ComboboxRegistrationContext<T> {}
 
 /**
- * The constant half of both resolvers' {@link assertRootContext} calls, so the
- * injected and the explicit path state the same requirement.
- */
-const ROOT_ASSERTION = {
-  entryPoint: 'combobox',
-  token: 'FOR_COMBOBOX_CONTEXT',
-  root: '[forCombobox]',
-};
-
-/**
  * Resolve the surrounding combobox context, re-applying the caller's `T`. The
  * cast through `unknown` is unavoidable (see {@link FOR_COMBOBOX_CONTEXT}): the
  * token can't carry the per-instance generic, so `T` correctness is a
@@ -605,7 +595,9 @@ export function injectComboboxContext<T = unknown>(piece: string): ComboboxConte
   }
   const widened = ctx as unknown as ComboboxContext<T>;
   assertRootContext({
-    ...ROOT_ASSERTION,
+    entryPoint: 'combobox',
+    token: 'FOR_COMBOBOX_CONTEXT',
+    root: '[forCombobox]',
     piece,
     probe: () => widened.registerInput,
   });
@@ -650,7 +642,9 @@ export function injectComboboxTriggerContext<T = unknown>(
     }
     const widened = resolved as unknown as ComboboxContext<T>;
     assertRootContext({
-      ...ROOT_ASSERTION,
+      entryPoint: 'combobox',
+      token: 'FOR_COMBOBOX_CONTEXT',
+      root: '[forCombobox]',
       piece: 'ForComboboxTrigger',
       probe: () => widened.registerInput,
     });

@@ -56,7 +56,8 @@ function readProbe(probe: () => unknown): unknown {
  * class to the internal interface are mutually exclusive.
  *
  * The gate lives inside the helper, so it travels with the check and no call
- * site can forget it. The resolver runs from a piece's constructor, so the
+ * site can forget it. Pass an object literal with no spread: a production build
+ * then drops the whole call, argument included. The resolver runs from a piece's constructor, so the
  * throw aborts the render and a consumer's `try` sees it — unlike an assertion
  * routed through an `effect()`.
  */

@@ -491,18 +491,6 @@ export interface SelectContext<T = unknown> extends ForSelectContext<T>, SelectP
   readonly overlay: ForSelectOverlayContext<T>;
 }
 
-/**
- * The constant half of both resolvers' {@link assertRootContext} calls, so the
- * injected and the explicit path state the same requirement. `SelectContext`
- * adds no method of its own — it widens `overlay` from the consumer facade to
- * the full controller — so the probe each call site supplies is nested.
- */
-const ROOT_ASSERTION = {
-  entryPoint: 'select',
-  token: 'FOR_SELECT_CONTEXT',
-  root: '[forSelect]',
-};
-
 export function injectSelectContext<T = unknown>(piece: string): SelectContext<T> {
   const ctx = inject(FOR_SELECT_CONTEXT, { optional: true });
   if (!ctx) {
@@ -515,7 +503,9 @@ export function injectSelectContext<T = unknown>(piece: string): SelectContext<T
   }
   const widened = ctx as unknown as SelectContext<T>;
   assertRootContext({
-    ...ROOT_ASSERTION,
+    entryPoint: 'select',
+    token: 'FOR_SELECT_CONTEXT',
+    root: '[forSelect]',
     piece,
     probe: () => widened.overlay.setInitialFocus,
   });
@@ -561,7 +551,9 @@ export function injectSelectTriggerContext<T = unknown>(
     }
     const widened = resolved as unknown as SelectContext<T>;
     assertRootContext({
-      ...ROOT_ASSERTION,
+      entryPoint: 'select',
+      token: 'FOR_SELECT_CONTEXT',
+      root: '[forSelect]',
       piece: 'ForSelectTrigger',
       probe: () => widened.overlay.setInitialFocus,
     });
