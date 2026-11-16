@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.45.1] - 2026-11-16
+
+### Performance
+
+- **Combobox**, **Select**, **Listbox**, **Menu**, **Context menu**, **Tree**, **Table**, **Time
+  picker** — each highlightable item no longer allocates an `AbortController` to remove its
+  `pointermove` listener ([#2830](https://github.com/tutkli/forty-cdk/issues/2830)). Filtering a
+  long non-virtualized list no longer runs one `abort()` per destroyed item.
+
+- **Every collection-based primitive** — when 16 or more items share one parent, their document
+  order is resolved with a single walk of that parent's children instead of one
+  `compareDocumentPosition` per comparison
+  ([#2831](https://github.com/tutkli/forty-cdk/issues/2831)). Smaller sets and items spread across
+  several parents keep the previous path, and the order is unchanged.
+
+- **Avatar**, **Combobox**, **Select** — the dev-mode guard that reports a piece used outside its
+  root is now dropped from production builds, as it already was for every other primitive
+  ([#2832](https://github.com/tutkli/forty-cdk/issues/2832)). Before, a production build kept the
+  guard's argument and probe and ran them once per piece.
+
+- **Every primitive whose pieces register with their root** — registration is synchronous, so these
+  entry points no longer pull in `afterNextRender` and Angular's after-render manager for it
+  ([#2833](https://github.com/tutkli/forty-cdk/issues/2833)). Date field, Time field and the pickers
+  built on them still defer their segments' registration to after the first render.
+
+- **Popover**, **Tooltip**, **Hover card** — only these overlays, the ones whose surface can render
+  an arrow, now bundle floating-ui's `arrow` middleware; the other anchored overlays, such as
+  Select, Combobox, Dropdown menu, Date picker and Time picker, drop it
+  ([#2834](https://github.com/tutkli/forty-cdk/issues/2834)).
+
 ## [0.45.0] - 2026-11-11
 
 ### Added
@@ -5815,7 +5845,8 @@ primitives.
 - **Display** — avatar, progress, meter, tree.
 - `forty-cdk/internationalized-date` secondary entry point exposing the `@internationalized/date` adapters for the date and time primitives.
 
-[Unreleased]: https://github.com/tutkli/forty-cdk/compare/v0.45.0...HEAD
+[Unreleased]: https://github.com/tutkli/forty-cdk/compare/v0.45.1...HEAD
+[0.45.1]: https://github.com/tutkli/forty-cdk/compare/v0.45.0...v0.45.1
 [0.45.0]: https://github.com/tutkli/forty-cdk/compare/v0.44.0...v0.45.0
 [0.44.0]: https://github.com/tutkli/forty-cdk/compare/v0.43.0...v0.44.0
 [0.43.0]: https://github.com/tutkli/forty-cdk/compare/v0.42.0...v0.43.0
