@@ -699,6 +699,37 @@ function guardCalls(): Map<string, number> {
   return calls;
 }
 
+/**
+ * Every `assertRootContext` argument with the source calling it. The helper
+ * empties itself in a production build, so a bundler drops the call only when
+ * its argument is provably free of side effects; a spread, or a value built
+ * anywhere but at the call, survives the build and runs once per piece.
+ */
+function guardArguments(): { readonly source: string; readonly argument: string }[] {
+  const args: { source: string; argument: string }[] = [];
+  for (const [path, code] of LIBRARY_CODE) {
+    if (path === HELPER_SOURCE) {
+      continue;
+    }
+    for (const match of code.matchAll(/assertRootContext\(/g)) {
+      const start = match.index + match[0].length;
+      let depth = 1;
+      let end = start;
+      while (depth > 0 && end < code.length) {
+        const char = code[end];
+        if (char === '(' || char === '{' || char === '[') {
+          depth++;
+        } else if (char === ')' || char === '}' || char === ']') {
+          depth--;
+        }
+        end++;
+      }
+      args.push({ source: path, argument: code.slice(start, end - 1).trim() });
+    }
+  }
+  return args;
+}
+
 function rootedTriggerResolvers(): { readonly id: string; readonly guarded: boolean }[] {
   const resolvers: { id: string; guarded: boolean }[] = [];
   for (const [path, code] of LIBRARY_CODE) {
@@ -836,6 +867,16 @@ describe('split-root context guard (meta-guard)', () => {
     ).map((exclusion) => `${exclusion.id}: ${exclusion.reason}`);
 
     expect(stale).toEqual([]);
+  });
+
+  it('passes every guard an object literal with no spread, so production drops the call', () => {
+    const args = guardArguments();
+    const shaped = args
+      .filter(({ argument }) => !/^\{[\s\S]*\}$/.test(argument) || argument.includes('...'))
+      .map(({ source, argument }) => `${source}: ${argument}`);
+
+    expect(args.length).toBe(GUARDED.reduce((sum, entry) => sum + entry.calls, 0));
+    expect(sorted(shaped)).toEqual([]);
   });
 
   it('declares the number of guarded resolvers each module has', () => {
