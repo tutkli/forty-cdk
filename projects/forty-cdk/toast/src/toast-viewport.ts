@@ -8,6 +8,7 @@ import {
   ElementRef,
   inject,
   input,
+  linkedSignal,
   numberAttribute,
   PLATFORM_ID,
   type Signal,
@@ -144,46 +145,80 @@ import { ForToastTitle } from './toast-title';
   },
   template: `
     @for (toast of visible(); track toast.id; let i = $index) {
-      <div
-        forToast
-        [class]="rowClass(toast)"
-        [animate.enter]="toastAnimateEnter(toast)"
-        [animate.leave]="toastAnimateLeave(toast)"
-        [variant]="toast.config.variant ?? 'info'"
-        [duration]="toast.config.duration ?? defaultDuration"
-        [restartToken]="toast.generation"
-        [dismissible]="toast.config.dismissible !== false"
-        [swipeDirection]="toast.config.swipeDirection ?? swipeDirection()"
-        [swipeThreshold]="toast.config.swipeThreshold ?? swipeThreshold()"
-        [attr.data-front-stack-index]="i"
-        (dismiss)="onClose(toast, $event)"
-      >
-        @if (rowTemplate(toast); as tpl) {
+      @if (rowLeaves().get(toast.id)) {
+        <div
+          forToast
+          [class]="rowClass(toast)"
+          [animate.enter]="toastAnimateEnter(toast)"
+          [animate.leave]="toastAnimateLeave(toast)"
+          [variant]="toast.config.variant ?? 'info'"
+          [duration]="toast.config.duration ?? defaultDuration"
+          [restartToken]="toast.generation"
+          [dismissible]="toast.config.dismissible !== false"
+          [swipeDirection]="toast.config.swipeDirection ?? swipeDirection()"
+          [swipeThreshold]="toast.config.swipeThreshold ?? swipeThreshold()"
+          [attr.data-front-stack-index]="i"
+          (dismiss)="onClose(toast, $event)"
+        >
           <ng-container
             forToastOutlet
-            #outlet="forToastOutlet"
-            [ngTemplateOutlet]="tpl"
-            [ngTemplateOutletContext]="{ $implicit: toast, data: toast.config.data }"
-            [ngTemplateOutletInjector]="outlet.injector"
+            #body="forToastOutlet"
+            [ngTemplateOutlet]="rowBody"
+            [ngTemplateOutletContext]="{ $implicit: toast }"
+            [ngTemplateOutletInjector]="body.injector"
           />
-        } @else {
-          @if (toast.config.title) {
-            <div forToastTitle>{{ toast.config.title }}</div>
-          }
-          @if (toast.config.description) {
-            <div forToastDescription>{{ toast.config.description }}</div>
-          }
-          @if (toast.config.action; as action) {
-            <button forToastAction [altText]="action.altText ?? ''" (click)="action.activate()">
-              {{ action.label }}
-            </button>
-          }
-          @if (toast.config.dismissible !== false) {
-            <button forToastClose>×</button>
-          }
-        }
-      </div>
+        </div>
+      } @else {
+        <div
+          forToast
+          [class]="rowClass(toast)"
+          [animate.enter]="toastAnimateEnter(toast)"
+          [variant]="toast.config.variant ?? 'info'"
+          [duration]="toast.config.duration ?? defaultDuration"
+          [restartToken]="toast.generation"
+          [dismissible]="toast.config.dismissible !== false"
+          [swipeDirection]="toast.config.swipeDirection ?? swipeDirection()"
+          [swipeThreshold]="toast.config.swipeThreshold ?? swipeThreshold()"
+          [attr.data-front-stack-index]="i"
+          (dismiss)="onClose(toast, $event)"
+        >
+          <ng-container
+            forToastOutlet
+            #body="forToastOutlet"
+            [ngTemplateOutlet]="rowBody"
+            [ngTemplateOutletContext]="{ $implicit: toast }"
+            [ngTemplateOutletInjector]="body.injector"
+          />
+        </div>
+      }
     }
+
+    <ng-template #rowBody let-toast>
+      @if (rowTemplate(toast); as tpl) {
+        <ng-container
+          forToastOutlet
+          #outlet="forToastOutlet"
+          [ngTemplateOutlet]="tpl"
+          [ngTemplateOutletContext]="{ $implicit: toast, data: toast.config.data }"
+          [ngTemplateOutletInjector]="outlet.injector"
+        />
+      } @else {
+        @if (toast.config.title) {
+          <div forToastTitle>{{ toast.config.title }}</div>
+        }
+        @if (toast.config.description) {
+          <div forToastDescription>{{ toast.config.description }}</div>
+        }
+        @if (toast.config.action; as action) {
+          <button forToastAction [altText]="action.altText ?? ''" (click)="action.activate()">
+            {{ action.label }}
+          </button>
+        }
+        @if (toast.config.dismissible !== false) {
+          <button forToastClose>×</button>
+        }
+      }
+    </ng-template>
   `,
 })
 export class ForToastViewport {
@@ -285,7 +320,10 @@ export class ForToastViewport {
    * doesn't set `animateLeave` in its own config. Empty (default) unmounts the
    * toast synchronously on dismiss; set it (or per-toast `animateLeave`) to
    * keep the toast mounted until its exit animation settles before it leaves
-   * the DOM.
+   * the DOM. Whether a toast plays an exit animation at all is fixed when it
+   * mounts: a toast mounted without a class unmounts synchronously even if one
+   * is set later, while a toast mounted with one plays whichever class is
+   * current when it is dismissed.
    */
   readonly animateLeave = input<string>('');
 
@@ -358,6 +396,26 @@ export class ForToastViewport {
     }
     // Newest toasts win; older ones drop out of the visible window.
     return all.slice(all.length - limit);
+  });
+
+  /**
+   * Whether each visible row renders through the branch that binds `animate.leave`, decided
+   * when the row mounts and kept for its lifetime so a later class change never remounts it.
+   * A row with no class at mount carries no `animate.leave` binding at all, since Angular never
+   * releases a node it was told to animate out with an empty class list.
+   */
+  private readonly rowLeaves = linkedSignal<
+    readonly ForToastInstance[],
+    ReadonlyMap<string, boolean>
+  >({
+    source: this.visible,
+    computation: (toasts, previous) =>
+      new Map(
+        toasts.map((toast) => [
+          toast.id,
+          previous?.value.get(toast.id) ?? this.toastAnimateLeave(toast) !== '',
+        ]),
+      ),
   });
 
   constructor() {

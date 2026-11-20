@@ -320,7 +320,7 @@ A viewport-level default applies to every toast that omits its own; a per-toast 
 <for-toast-viewport animateLeave="toast-out" animateEnter="toast-in" />
 ```
 
-`animateLeave` is the load-bearing hook. A pure-CSS exit cannot defer the `@for` unmount, so `animateLeave` is the only way to play an exit animation on the programmatic path. `animateEnter` is optional: a plain `@keyframes` on `[forToast]` already plays on mount without it (this is why programmatic toasts have always animated _in_). Leaving `animateLeave` unset keeps the existing synchronous unmount on dismiss. `prefers-reduced-motion` is honored by your own CSS exactly as with the enter hook, because the directive adds no animation of its own.
+`animateLeave` is the load-bearing hook. A pure-CSS exit cannot defer the `@for` unmount, so `animateLeave` is the only way to play an exit animation on the programmatic path. `animateEnter` is optional: a plain `@keyframes` on `[forToast]` already plays on mount without it (this is why programmatic toasts have always animated _in_). Leaving `animateLeave` unset keeps the existing synchronous unmount on dismiss. Whether a toast animates out is decided when it mounts: a toast mounted with no class unmounts synchronously even if one is set afterwards, and a toast mounted with one plays whichever class is current when it is dismissed. `prefers-reduced-motion` is honored by your own CSS exactly as with the enter hook, because the directive adds no animation of its own.
 
 The **declarative** path is unchanged: write `animate.leave` directly on your `<div forToast>` (see [Declarative usage](#declarative-usage)).
 

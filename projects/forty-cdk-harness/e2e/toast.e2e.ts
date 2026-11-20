@@ -569,3 +569,71 @@ test.describe('Toast stack shift (#1680)', () => {
     expect(intermediates(tops)).toEqual([]);
   });
 });
+
+/** Toasts shown and dismissed before the first reading, so lazy allocations settle out of the measurement. */
+const RETENTION_WARMUP_CYCLES = 5;
+
+/**
+ * Toasts shown and dismissed between the two readings. A retained toast keeps its whole row
+ * subtree, so growth of less than one node per toast is the counter's own wobble rather than
+ * retention.
+ */
+const RETENTION_CYCLES = 20;
+
+/**
+ * Shows and dismisses `cycles` toasts through the fixture's buttons, waiting for each row to leave
+ * the DOM, exit animation included, before the next one mounts.
+ */
+async function cycleToasts(page: Page, from: number, cycles: number): Promise<void> {
+  for (let i = from; i < from + cycles; i++) {
+    await el(page, 'enqueue').click();
+    await expect(el(page, `toast-${i}`)).toBeVisible();
+    await el(page, 'dismiss-all').click();
+    await expect(el(page, `toast-${i}`)).toHaveCount(0, { timeout: 3000 });
+  }
+  await expect(el(page, 'toast-count')).toHaveText('0');
+}
+
+/**
+ * The page's DOM node and JavaScript listener counts after a forced garbage collection, attached
+ * and detached nodes alike.
+ */
+async function domCountersAfterGc(page: Page): Promise<{ nodes: number; listeners: number }> {
+  const cdp = await page.context().newCDPSession(page);
+  try {
+    await cdp.send('HeapProfiler.collectGarbage');
+    await cdp.send('HeapProfiler.collectGarbage');
+    const { nodes, jsEventListeners } = await cdp.send('Memory.getDOMCounters');
+    return { nodes, listeners: jsEventListeners };
+  } finally {
+    await cdp.detach();
+  }
+}
+
+test.describe('Toast retention after dismissal (#2843)', () => {
+  test.skip(({ browserName }) => browserName !== 'chromium', 'reads the DOM counters through CDP');
+
+  for (const [name, query] of [
+    ['without animateLeave', {}],
+    ['with the viewport [animateLeave]', { vpAnimateLeave: 'leaving-vp' }],
+    ['with a per-toast animateLeave', { animateLeave: 'leaving-own' }],
+  ] as const) {
+    test(`a dismissed toast retains no DOM node ${name}`, async ({ page }) => {
+      await gotoFixture(page, 'toast', query);
+      await cycleToasts(page, 0, RETENTION_WARMUP_CYCLES);
+      const before = await domCountersAfterGc(page);
+
+      await cycleToasts(page, RETENTION_WARMUP_CYCLES, RETENTION_CYCLES);
+      const after = await domCountersAfterGc(page);
+
+      expect(
+        after.nodes - before.nodes,
+        `DOM nodes ${before.nodes} → ${after.nodes} over ${RETENTION_CYCLES} toasts`,
+      ).toBeLessThan(RETENTION_CYCLES);
+      expect(
+        after.listeners - before.listeners,
+        `listeners ${before.listeners} → ${after.listeners} over ${RETENTION_CYCLES} toasts`,
+      ).toBeLessThan(RETENTION_CYCLES);
+    });
+  }
+});

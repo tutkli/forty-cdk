@@ -126,7 +126,9 @@ export interface ForToastConfig<D = unknown> {
    * path: the viewport renders the toast inside its own `@for`, and a pure-CSS
    * exit cannot defer the unmount — Angular needs `animate.leave` on the node to
    * keep it mounted until the animation settles. Leaving it unset keeps the
-   * existing synchronous unmount on dismiss.
+   * existing synchronous unmount on dismiss. Whether a toast animates out is
+   * fixed when it mounts, so `update({ animateLeave })` on a toast mounted
+   * without a class does not give it an exit animation.
    */
   animateLeave?: string;
   /** Arbitrary payload passed to `template` context as `data`. */
