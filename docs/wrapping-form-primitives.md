@@ -243,15 +243,15 @@ import { FOR_SELECT_OPTION, ForSelectOption } from 'forty-cdk/select';
 export class MySelectOption extends ForSelectOption {}
 ```
 
-| Subclassed part       | Indicator that resolves it    | Token to re-provide      |
-| --------------------- | ----------------------------- | ------------------------ |
-| `ForSelectOption`     | `[forSelectIndicator]`        | `FOR_SELECT_OPTION`      |
-| `ForComboboxOption`   | `[forComboboxIndicator]`      | `FOR_COMBOBOX_OPTION`    |
-| `ForListboxOption`    | `[forListboxOptionIndicator]` | `FOR_LISTBOX_OPTION`     |
-| `ForCheckbox`         | `[forCheckboxIndicator]`      | `FOR_CHECKBOX`           |
-| `ForRadio`            | `[forRadioIndicator]`         | `FOR_RADIO`              |
-| `ForMenuCheckboxItem` | `[forMenuItemIndicator]`      | `FOR_MENU_CHECKBOX_ITEM` |
-| `ForMenuRadioItem`    | `[forMenuItemIndicator]`      | `FOR_MENU_RADIO_ITEM`    |
+| Subclassed part       | Indicator that resolves it                                  | Token to re-provide      |
+| --------------------- | ----------------------------------------------------------- | ------------------------ |
+| `ForSelectOption`     | `[forSelectIndicator]`                                      | `FOR_SELECT_OPTION`      |
+| `ForComboboxOption`   | `[forComboboxIndicator]`                                    | `FOR_COMBOBOX_OPTION`    |
+| `ForListboxOption`    | `[forListboxOptionIndicator]`, `[forListboxOptionCheckbox]` | `FOR_LISTBOX_OPTION`     |
+| `ForCheckbox`         | `[forCheckboxIndicator]`                                    | `FOR_CHECKBOX`           |
+| `ForRadio`            | `[forRadioIndicator]`                                       | `FOR_RADIO`              |
+| `ForMenuCheckboxItem` | `[forMenuItemIndicator]`                                    | `FOR_MENU_CHECKBOX_ITEM` |
+| `ForMenuRadioItem`    | `[forMenuItemIndicator]`                                    | `FOR_MENU_RADIO_ITEM`    |
 
 `ForCheckbox` is the one part that is both a leaf form control and an indicator parent: a bare
 `MyCheckbox extends ForCheckbox` is enough on its own, and the re-provide is only needed when

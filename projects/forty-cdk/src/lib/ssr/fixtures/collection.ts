@@ -27,6 +27,7 @@ import {
   ForListboxGroup,
   ForListboxGroupLabel,
   ForListboxOption,
+  ForListboxOptionCheckbox,
   ForListboxOptionIndicator,
   ForListboxReorder,
   ForListboxVirtualized,
@@ -433,6 +434,7 @@ export class ComboboxVirtualizedOpenFixture {}
     ForListboxGroup,
     ForListboxGroupLabel,
     ForListboxOption,
+    ForListboxOptionCheckbox,
     ForListboxOptionIndicator,
   ],
   template: `
@@ -441,7 +443,9 @@ export class ComboboxVirtualizedOpenFixture {}
         <div forListboxGroupLabel>Citrus</div>
         <button type="button" forListboxOption value="lemon">
           Lemon
-          <span forListboxOptionIndicator>✓</span>
+          <span forListboxOptionCheckbox>
+            <span forListboxOptionIndicator>✓</span>
+          </span>
         </button>
       </div>
     </div>

@@ -29,7 +29,7 @@ import {
 import { injectListboxContext } from './listbox-context';
 
 /**
- * Injection key the `[forListboxOptionIndicator]` uses to resolve its parent
+ * Injection key `[forListboxOptionIndicator]` and `[forListboxOptionCheckbox]` use to resolve their parent
  * option, decoupled from the concrete `ForListboxOption` class.
  * `ForListboxOption` provides itself under this token, so a design system
  * wrapping the option by subclassing re-points it at the subclass with a

@@ -29,6 +29,7 @@ import { ForListboxGroup } from './listbox-group';
 import { ForListboxGroupLabel } from './listbox-group-label';
 import { FOR_LISTBOX_OPTION, ForListboxOption } from './listbox-option';
 import { ForListboxOptionIndicator } from './listbox-option-indicator';
+import { ForListboxOptionCheckbox } from './listbox-option-checkbox';
 import { captureHandledErrors } from '../../src/test-utils/handled-errors';
 
 const LISTBOX_IMPORTS = [ForListbox, ForListboxOption] as const;
@@ -2105,6 +2106,215 @@ describe('ForListbox', () => {
       const { el } = renderHost(SubclassHost);
       const ind = el.querySelector<HTMLElement>('[data-ind="a"]')!;
       expect(ind.getAttribute('data-state')).toBe('checked');
+    });
+  });
+
+  describe('ForListboxOptionCheckbox', () => {
+    @Component({
+      imports: [...LISTBOX_IMPORTS, ForListboxOptionCheckbox, ForListboxOptionIndicator],
+      template: `
+        <div forListbox [(value)]="picked" [multiple]="true" ariaLabel="Filters">
+          <button type="button" forListboxOption value="a" data-test-id="opt-a">
+            A
+            <span forListboxOptionCheckbox data-box="a">
+              <span forListboxOptionIndicator data-ind="a">✓</span>
+            </span>
+          </button>
+          <button
+            type="button"
+            forListboxOption
+            value="b"
+            [disabled]="bDisabled()"
+            data-test-id="opt-b"
+          >
+            B
+            <span forListboxOptionCheckbox data-box="b"></span>
+          </button>
+        </div>
+      `,
+    })
+    class CheckboxHost {
+      readonly picked = signal<readonly string[]>([]);
+      readonly bDisabled = signal(false);
+    }
+
+    const boxOf = (el: HTMLElement, v: string) =>
+      el.querySelector<HTMLElement>(`[data-box="${v}"]`)!;
+
+    assertDataStateContract({
+      vocabulary: ['checked', 'unchecked'],
+      mount: () => {
+        const r = renderHost(CheckboxHost);
+        return {
+          pieces: () => ({
+            option: r.query<HTMLElement>('[data-test-id="opt-a"]'),
+            checkbox: r.query<HTMLElement>('[data-box="a"]'),
+          }),
+          setState: (state) => r.instance.picked.set(state === 'checked' ? ['a'] : []),
+          flush: r.flush,
+        };
+      },
+    });
+
+    it('stays rendered and visible whether its option is selected or not', async () => {
+      const { el, fixture, flush } = renderHost(CheckboxHost);
+      const box = boxOf(el, 'a');
+      expect(box.hasAttribute('hidden')).toBe(false);
+      expect(box.style.display).toBe('');
+      expect(box.getAttribute('data-state')).toBe('unchecked');
+
+      fixture.componentInstance.picked.set(['a']);
+      await flush();
+      expect(boxOf(el, 'a')).toBe(box);
+      expect(box.hasAttribute('hidden')).toBe(false);
+      expect(box.getAttribute('data-state')).toBe('checked');
+
+      fixture.componentInstance.picked.set([]);
+      await flush();
+      expect(boxOf(el, 'a')).toBe(box);
+      expect(box.getAttribute('data-state')).toBe('unchecked');
+    });
+
+    it('is hidden from assistive tech and adds no tab stop or role of its own', () => {
+      const { el } = renderHost(CheckboxHost);
+      for (const v of ['a', 'b']) {
+        const box = boxOf(el, v);
+        expect(box.getAttribute('aria-hidden')).toBe('true');
+        expect(box.hasAttribute('tabindex')).toBe(false);
+        expect(box.hasAttribute('role')).toBe(false);
+      }
+      const opt = el.querySelector<HTMLElement>('[data-test-id="opt-a"]')!;
+      expect(opt.getAttribute('role')).toBe('option');
+      expect(el.querySelectorAll('[tabindex="0"]')).toHaveLength(1);
+    });
+
+    it('toggles its option exactly once when the box itself is clicked', async () => {
+      const { el, fixture, flush } = renderHost(CheckboxHost);
+      boxOf(el, 'a').click();
+      await flush();
+      expect(fixture.componentInstance.picked()).toEqual(['a']);
+      expect(boxOf(el, 'a').getAttribute('data-state')).toBe('checked');
+
+      boxOf(el, 'a').click();
+      await flush();
+      expect(fixture.componentInstance.picked()).toEqual([]);
+    });
+
+    it('hosts the indicator as its check mark, shown only while checked', async () => {
+      const { el, fixture, flush } = renderHost(CheckboxHost);
+      const ind = el.querySelector<HTMLElement>('[data-ind="a"]')!;
+      expect(ind.hasAttribute('hidden')).toBe(true);
+
+      fixture.componentInstance.picked.set(['a']);
+      await flush();
+      expect(ind.hasAttribute('hidden')).toBe(false);
+      expect(ind.getAttribute('data-state')).toBe('checked');
+    });
+
+    it('reflects data-disabled while its option is disabled', async () => {
+      const { el, fixture, flush } = renderHost(CheckboxHost);
+      expect(boxOf(el, 'b').hasAttribute('data-disabled')).toBe(false);
+
+      fixture.componentInstance.bDisabled.set(true);
+      await flush();
+      expect(boxOf(el, 'b').getAttribute('data-disabled')).toBe('');
+    });
+
+    it('reflects data-disabled when the whole listbox is disabled', () => {
+      @Component({
+        imports: [...LISTBOX_IMPORTS, ForListboxOptionCheckbox],
+        template: `
+          <div forListbox [disabled]="true">
+            <button type="button" forListboxOption value="a">
+              A <span forListboxOptionCheckbox data-box="a"></span>
+            </button>
+          </div>
+        `,
+      })
+      class DisabledHost {}
+
+      const { el } = renderHost(DisabledHost);
+      expect(boxOf(el, 'a').getAttribute('data-disabled')).toBe('');
+    });
+
+    it('follows the option inside a virtualized listbox', async () => {
+      @Component({
+        imports: [ForListbox, ForListboxOption, ForListboxVirtualized, ForListboxOptionCheckbox],
+        template: `
+          <div
+            forListbox
+            forListboxVirtualized
+            [(value)]="picked"
+            [multiple]="true"
+            [totalCount]="20"
+            [visibleRange]="[0, 5]"
+          >
+            @for (row of rows; track row.index) {
+              <button
+                type="button"
+                forListboxOption
+                [value]="'item-' + row.index"
+                [posInSet]="row.index"
+              >
+                Item {{ row.index }}
+                <span forListboxOptionCheckbox [attr.data-box]="row.index"></span>
+              </button>
+            }
+          </div>
+        `,
+      })
+      class VirtualCheckboxHost {
+        readonly picked = signal<readonly string[]>(['item-2']);
+        readonly rows = Array.from({ length: 5 }, (_, index) => ({ index }));
+      }
+
+      const { el, fixture, flush } = renderHost(VirtualCheckboxHost);
+      await flush();
+      expect(boxOf(el, '2').getAttribute('data-state')).toBe('checked');
+      expect(boxOf(el, '3').getAttribute('data-state')).toBe('unchecked');
+      expect(boxOf(el, '3').getAttribute('aria-hidden')).toBe('true');
+
+      boxOf(el, '3').click();
+      await flush();
+      expect(fixture.componentInstance.picked()).toEqual(['item-2', 'item-3']);
+      expect(boxOf(el, '3').getAttribute('data-state')).toBe('checked');
+    });
+
+    it('throws when used outside [forListboxOption]', () => {
+      @Component({
+        imports: [ForListboxOptionCheckbox],
+        template: `<span forListboxOptionCheckbox></span>`,
+      })
+      class Orphan {}
+
+      expect(() => renderHost(Orphan)).toThrow(
+        /\[forty-cdk\/listbox\] FORCDK-LISTBOX-004: ForListboxOptionCheckbox must be used inside a \[forListboxOption\] element\./,
+      );
+    });
+
+    it('resolves a subclassed option via the re-provided FOR_LISTBOX_OPTION token', () => {
+      @Directive({
+        selector: '[testCheckboxOption]',
+        providers: [{ provide: FOR_LISTBOX_OPTION, useExisting: TestCheckboxOption }],
+      })
+      class TestCheckboxOption extends ForListboxOption {}
+
+      @Component({
+        imports: [ForListbox, TestCheckboxOption, ForListboxOptionCheckbox],
+        template: `
+          <div forListbox [(value)]="picked">
+            <button type="button" testCheckboxOption value="a">
+              A <span forListboxOptionCheckbox data-box="a"></span>
+            </button>
+          </div>
+        `,
+      })
+      class SubclassCheckboxHost {
+        readonly picked = signal<readonly string[]>(['a']);
+      }
+
+      const { el } = renderHost(SubclassCheckboxHost);
+      expect(boxOf(el, 'a').getAttribute('data-state')).toBe('checked');
     });
   });
 

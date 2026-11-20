@@ -2,6 +2,7 @@ export { ForListbox } from './listbox';
 export { ForListboxVirtualized } from './listbox-virtualized';
 export { FOR_LISTBOX_OPTION, ForListboxOption } from './listbox-option';
 export { ForListboxOptionIndicator } from './listbox-option-indicator';
+export { ForListboxOptionCheckbox } from './listbox-option-checkbox';
 export { ForListboxGroup } from './listbox-group';
 export { ForListboxGroupLabel } from './listbox-group-label';
 export { ForListboxReorder, type ForListboxReorderEvent } from './listbox-reorder';
