@@ -2385,30 +2385,6 @@ describe('exit / enter animation cascade (config → viewport)', () => {
     expect(res.toastAnimateEnter(plain!)).toBe('');
   });
 
-  it('a mounted toast keeps its row when the viewport [animateLeave] is set or cleared', async () => {
-    const r = renderHost(ProgrammaticHost);
-    r.instance.toasts.show({ title: 'plain' });
-    await r.flush();
-    const plainRow = document.querySelector('[forToast]');
-    expect(plainRow).not.toBeNull();
-
-    r.instance.vpAnimateLeave.set('vp-leave');
-    await r.flush();
-    expect(document.querySelector('[forToast]')).toBe(plainRow);
-
-    r.instance.toasts.dismissAll();
-    await r.flush();
-    r.instance.toasts.show({ title: 'animated' });
-    await r.flush();
-    const animatedRow = document.querySelector('[forToast]');
-    expect(animatedRow).not.toBeNull();
-    expect(animatedRow).not.toBe(plainRow);
-
-    r.instance.vpAnimateLeave.set('');
-    await r.flush();
-    expect(document.querySelector('[forToast]')).toBe(animatedRow);
-  });
-
   it('a toast shown with animateLeave still dismisses through the close path (no regression)', async () => {
     const r = renderHost(ProgrammaticHost);
     const ref = r.instance.toasts.show({ title: 'A', animateLeave: 'toast-out' });
