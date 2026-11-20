@@ -30,6 +30,19 @@ It also supports typeahead and `FormValueControl<readonly T[]>` integration. `[f
 </div>
 ```
 
+For options drawn as a checkbox list, add `[forListboxOptionCheckbox]` inside the option as the box and keep `[forListboxOptionIndicator]` inside it as the check mark. The box stays rendered while the option is unselected, so it can paint an empty box, and it is decorative: the option keeps `role="option"`, `aria-selected`, the tab stop and the click that toggles it.
+
+```html
+<div forListbox [(value)]="filters" [multiple]="true" aria-label="Filters">
+  <button type="button" forListboxOption value="open">
+    <span forListboxOptionCheckbox class="box">
+      <span forListboxOptionIndicator>✓</span>
+    </span>
+    Open
+  </button>
+</div>
+```
+
 Wrap options in a `[forListboxGroup]` (labelled by `[forListboxGroupLabel]`) for advisory grouping, or add `[forListboxReorder]` on the same element as `[forListbox]` to make the options pointer- and keyboard-sortable (see [Reordering](#reordering)).
 
 ## Examples
@@ -612,6 +625,15 @@ Optional slot inside an option. Mirrors `data-state` and self-hides while the op
 | Data attribute | Values                   |
 | -------------- | ------------------------ |
 | `data-state`   | `checked` \| `unchecked` |
+
+### `ForListboxOptionCheckbox`
+
+Optional checkbox box inside an option. Always rendered, `aria-hidden="true"` and never focusable; place a `[forListboxOptionIndicator]` inside it for the check mark. Clicking it toggles the option through the option's own click.
+
+| Data attribute  | Values                   |
+| --------------- | ------------------------ |
+| `data-state`    | `checked` \| `unchecked` |
+| `data-disabled` | present \| absent        |
 
 ## Keyboard
 

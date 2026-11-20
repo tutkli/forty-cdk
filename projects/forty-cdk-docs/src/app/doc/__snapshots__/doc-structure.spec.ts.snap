@@ -4856,6 +4856,10 @@ exports[`document structure > projects/forty-cdk/listbox/README.md declares the 
         "depth": 3,
         "slug": "forlistboxoptionindicator",
       },
+      {
+        "depth": 3,
+        "slug": "forlistboxoptioncheckbox",
+      },
     ],
     "slug": "api",
     "tables": [
@@ -4910,6 +4914,14 @@ exports[`document structure > projects/forty-cdk/listbox/README.md declares the 
         ],
         "role": "plain",
         "rows": 1,
+      },
+      {
+        "columns": [
+          "Data attribute",
+          "Values",
+        ],
+        "role": "plain",
+        "rows": 2,
       },
     ],
     "title": "API",

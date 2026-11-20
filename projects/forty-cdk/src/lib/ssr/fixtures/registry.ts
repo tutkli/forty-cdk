@@ -1849,6 +1849,15 @@ export const SSR_FIXTURES: readonly SsrFixture[] = [
         pairs: { 'aria-labelledby': '[forListboxGroupLabel]' },
       },
       {
+        select: '[forListboxOptionCheckbox]',
+        attributes: {
+          'aria-hidden': 'true',
+          'data-state': 'unchecked',
+          hidden: null,
+          tabindex: null,
+        },
+      },
+      {
         select: '[forListboxOptionIndicator]',
         attributes: { 'aria-hidden': 'true', 'data-state': 'unchecked', hidden: '' },
       },
