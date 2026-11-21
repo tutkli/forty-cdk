@@ -10,6 +10,7 @@ import {
 import type { FormValueControl } from '@angular/forms/signals';
 
 import {
+  bucketedFind,
   Collection,
   firstEnabledHost,
   FormUiControlBase,
@@ -165,19 +166,14 @@ export class ForToggleGroup
 
   readonly #items = new Collection<ForToggleGroupItemHandle>();
 
-  readonly #firstSelectedHost = computed<HTMLElement | null>(() => {
-    const selected = this.value();
-    if (selected.length === 0) {
-      return null;
-    }
-    for (const item of this.#items.items()) {
-      const value = item.value();
-      if (!isUnset(value) && !item.disabled() && selected.includes(value)) {
-        return item.host;
-      }
-    }
-    return null;
+  readonly #firstSelectedItem = bucketedFind(this.#items.items, (item) => {
+    const value = item.value();
+    return !isUnset(value) && !item.disabled() && this.value().includes(value);
   });
+
+  readonly #firstSelectedHost = computed<HTMLElement | null>(() =>
+    this.value().length === 0 ? null : (this.#firstSelectedItem()?.host ?? null),
+  );
 
   readonly #firstEnabledHost = computed(() => firstEnabledHost(this.#items.items()));
 

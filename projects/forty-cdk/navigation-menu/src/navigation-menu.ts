@@ -16,6 +16,7 @@ import {
 } from '@angular/core';
 
 import {
+  bucketedLookup,
   Collection,
   createPointerSuppression,
   type ListNavigationAction,
@@ -464,56 +465,43 @@ export class ForNavigationMenu implements ForNavigationMenuContext {
   private readonly viewport: Signal<ForNavigationMenuViewportHandle | null> =
     this.#viewport.asReadonly();
 
+  readonly #hostedContentIdByValue = bucketedLookup(this.#contents.items, (c) => {
+    const value = c.value();
+    return isUnset(value) || !c.hosted() ? null : ([value, c.id()] as const);
+  });
+
+  readonly #contentByValue = bucketedLookup(this.#contents.items, (c) => {
+    const value = c.value();
+    return isUnset(value) ? null : ([value, c] as const);
+  });
+
+  readonly #triggerHostByValue = bucketedLookup(this.#triggers.items, (t) => {
+    const value = t.value();
+    return isUnset(value) ? null : ([value, t.host] as const);
+  });
+
   private hostedContentIdFor(value: string | Unset): string | null {
-    for (const c of this.#contents.items()) {
-      const candidate = c.value();
-      if (!isUnset(candidate) && candidate === value && c.hosted()) {
-        return c.id();
-      }
-    }
-    return null;
+    return isUnset(value) ? null : (this.#hostedContentIdByValue(value) ?? null);
   }
 
   contentIdFor(value: string | Unset): string | null {
-    for (const c of this.#contents.items()) {
-      const candidate = c.value();
-      if (!isUnset(candidate) && candidate === value) {
-        return c.id();
-      }
-    }
-    return null;
+    return isUnset(value) ? null : (this.#contentByValue(value)?.id() ?? null);
   }
 
   triggerHostFor(value: string | Unset): HTMLElement | null {
-    for (const t of this.#triggers.items()) {
-      const candidate = t.value();
-      if (!isUnset(candidate) && candidate === value) {
-        return t.host;
-      }
-    }
-    return null;
+    return isUnset(value) ? null : (this.#triggerHostByValue(value) ?? null);
   }
 
   /** Layout-oriented selectors for indicator positioning. */
   readonly activeTriggerHost = computed<HTMLElement | null>(() => {
     const v = this.value();
-    if (v === null) return null;
-    for (const t of this.#triggers.items()) {
-      const candidate = t.value();
-      if (!isUnset(candidate) && candidate === v) return t.host;
-    }
-    return null;
+    return v === null ? null : this.triggerHostFor(v);
   });
 
   /** Currently-active content's host element, if mounted. */
   readonly activeContentHost = computed<HTMLElement | null>(() => {
     const v = this.value();
-    if (v === null) return null;
-    for (const c of this.#contents.items()) {
-      const candidate = c.value();
-      if (!isUnset(candidate) && candidate === v) return c.host;
-    }
-    return null;
+    return v === null ? null : (this.#contentByValue(v)?.host ?? null);
   });
 
   /**

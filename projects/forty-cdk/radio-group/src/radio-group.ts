@@ -10,6 +10,7 @@ import {
 import type { FormValueControl } from '@angular/forms/signals';
 
 import {
+  bucketedFind,
   Collection,
   firstEnabledHost,
   FormUiControlBase,
@@ -125,16 +126,17 @@ export class ForRadioGroup
 
   readonly #firstEnabledHost = computed(() => firstEnabledHost(this.#items.items()));
 
-  readonly #selectedItem = computed(() => {
-    const v = this.value();
-    if (v === null) {
-      return undefined;
+  readonly #firstMatchingItem = bucketedFind(this.#items.items, (item) => {
+    if (item.disabled()) {
+      return false;
     }
-    return this.#items.items().find((item) => {
-      const candidate = item.value();
-      return !item.disabled() && !isUnset(candidate) && candidate === v;
-    });
+    const candidate = item.value();
+    return !isUnset(candidate) && candidate === this.value();
   });
+
+  readonly #selectedItem = computed(() =>
+    this.value() === null ? undefined : this.#firstMatchingItem(),
+  );
 
   /** True when some registered, enabled radio's value matches the group's current value. */
   readonly hasSelectedRadio = computed(() => this.#selectedItem() !== undefined);

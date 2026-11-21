@@ -68,6 +68,7 @@
 
 export { accessibleTextContent } from './accessible-text/accessible-text';
 export { afterNextRenderCancellable } from './after-next-render-cancellable/after-next-render-cancellable';
+export { bucketedFind, bucketedLookup } from './collection/bucketed-find';
 export { Collection, type CollectionHandle } from './collection/collection';
 export {
   firstEnabledHandle,

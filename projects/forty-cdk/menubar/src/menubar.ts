@@ -11,6 +11,7 @@ import {
 
 import {
   accessibleTextContent,
+  bucketedLookup,
   Collection,
   firstEnabledHost,
   findTypeaheadMatch,
@@ -201,12 +202,14 @@ export class ForMenubar implements ForMenubarContext {
   readonly #triggerCollection = new Collection<ForMenubarTriggerHandle>();
   readonly triggers = this.#triggerCollection.items;
 
+  readonly #triggerByValue = bucketedLookup(this.#triggerCollection.items, (t) => {
+    const value = t.value();
+    return isUnset(value) ? null : ([value, t] as const);
+  });
+
   readonly activeTrigger = computed<ForMenubarTriggerHandle | null>(() => {
     const v = this.value();
-    if (v === null) {
-      return null;
-    }
-    return this.#triggerCollection.items().find((t) => t.value() === v) ?? null;
+    return v === null ? null : this.triggerFor(v);
   });
 
   /**
@@ -244,10 +247,7 @@ export class ForMenubar implements ForMenubarContext {
    */
   readonly lastTrigger = computed<ForMenubarTriggerHandle | null>(() => {
     const v = this.#lastValue();
-    if (v === null) {
-      return null;
-    }
-    return this.#triggerCollection.items().find((t) => t.value() === v) ?? null;
+    return v === null ? null : this.triggerFor(v);
   });
 
   /**
@@ -312,7 +312,7 @@ export class ForMenubar implements ForMenubarContext {
   }
 
   triggerFor(value: string): ForMenubarTriggerHandle | null {
-    return this.#triggerCollection.items().find((t) => t.value() === value) ?? null;
+    return this.#triggerByValue(value) ?? null;
   }
 
   tabindexFor(el: HTMLElement): 0 | -1 {
