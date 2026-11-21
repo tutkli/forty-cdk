@@ -8,6 +8,8 @@ import {
   MODAL_PEER_ATTRIBUTE,
 } from 'forty-cdk/core';
 
+import { ModalPeerRegistry, type PeerAnchors } from './modal-peer-registry';
+
 interface SnapshotEntry {
   readonly el: HTMLElement;
   readonly hadInert: boolean;
@@ -27,8 +29,6 @@ interface RootState {
   appliedSnapshot: SnapshotEntry[];
   observer: MutationObserver | null;
 }
-
-type PeerAnchors = readonly Element[] | 'always';
 
 /**
  * Marks every direct child of a **root element** (default `document.body`,
@@ -52,7 +52,7 @@ type PeerAnchors = readonly Element[] | 'always';
  * enclosing app shell interactive. That walk climbs the composed tree, so an owner rendered inside
  * a shadow root still resolves to the root-level child hosting it.
  *
- * **Peers.** An overlay registered through {@link InertSiblingsStack.registerPeer} is excluded from
+ * **Peers.** An overlay registered through `ModalPeerRegistry.registerPeer` is excluded from
  * the snapshot only while it belongs to the topmost owner of the root it sits in, so the peer of a
  * background modal is inerted again under a nested one. The stack reflects that state as
  * `data-for-modal-peer` on the registered host. An element carrying the attribute without being
@@ -72,7 +72,14 @@ export class InertSiblingsStack {
   readonly #isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
 
   readonly #roots = new Map<HTMLElement, RootState>();
-  readonly #peers = new Map<HTMLElement, PeerAnchors>();
+  readonly #peers = inject(ModalPeerRegistry).peers;
+
+  constructor() {
+    inject(ModalPeerRegistry).connect((released) => {
+      released?.removeAttribute(MODAL_PEER_ATTRIBUTE);
+      this.#reapplyAll();
+    });
+  }
 
   /**
    * Push `owner` onto the inert-siblings stack for `root` (default
@@ -153,22 +160,6 @@ export class InertSiblingsStack {
       }
     }
     return false;
-  }
-
-  registerPeer(host: HTMLElement, anchors: PeerAnchors): () => void {
-    if (!this.#isBrowser) {
-      return () => {};
-    }
-    this.#peers.set(host, anchors);
-    this.#reapplyAll();
-    return () => {
-      if (this.#peers.get(host) !== anchors) {
-        return;
-      }
-      this.#peers.delete(host);
-      host.removeAttribute(MODAL_PEER_ATTRIBUTE);
-      this.#reapplyAll();
-    };
   }
 
   #stateFor(root: HTMLElement): RootState {

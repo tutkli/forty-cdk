@@ -14,7 +14,7 @@ import {
 import {
   buildOutsideVetoOptions,
   injectDismissibleLayer,
-  InertSiblingsStack,
+  ModalPeerRegistry,
   ModalActivationOrder,
   outsideVetoChannels,
   type DismissibleLayerActivateOptions,
@@ -236,7 +236,7 @@ export interface OverlayShellConfig {
 export function injectOverlayShell(config: OverlayShellConfig): OverlayShell {
   const host = inject<ElementRef<HTMLElement>>(ElementRef);
   const el = host.nativeElement;
-  const inertStack = inject(InertSiblingsStack);
+  const peerRegistry = inject(ModalPeerRegistry);
   const order = inject(ModalActivationOrder);
 
   // 1. Dismissible layer. Created BEFORE the positioner so its
@@ -285,7 +285,7 @@ export function injectOverlayShell(config: OverlayShellConfig): OverlayShell {
   const activate = (anchor: Element | null): void => {
     // Modal-peer registration (#676). The positioner's portal ran in an
     // earlier hook of this same render batch, so the host is already in
-    // `body`. Registering it with the anchor lets `InertSiblingsStack` leave it
+    // `body`. Registering it with the anchor lets the inert-siblings stack leave it
     // live while the anchor belongs to the topmost modal — opened from inside a
     // Dialog / Drawer (a Select in a form, a context menu on dialog content) —
     // and inert it under any other owner, so a toast / background overlay stays
@@ -293,7 +293,7 @@ export function injectOverlayShell(config: OverlayShellConfig): OverlayShell {
     // nested modal. The registration lands before the inert observer's
     // microtask inspects the portaled host.
     if (anchor !== null) {
-      releasePeer = inertStack.registerPeer(el, [anchor]);
+      releasePeer = peerRegistry.registerPeer(el, [anchor]);
     }
 
     if (layer && dismissCfg) {

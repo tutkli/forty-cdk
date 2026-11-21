@@ -28,6 +28,7 @@ import {
 import { BodyScrollLock } from '../body-scroll-lock/body-scroll-lock';
 import { injectDismissibleLayer } from '../dismissible-layer/dismissible-layer';
 import { type InertSiblingsHandle, InertSiblingsStack } from '../inert-siblings/inert-siblings';
+import { ModalPeerRegistry } from '../inert-siblings/modal-peer-registry';
 import { buildOutsideVetoOptions, outsideVetoChannels } from '../dismissible-layer/outside-veto';
 import { ModalActivationOrder } from './modal-activation-order';
 
@@ -208,6 +209,7 @@ export function injectModalShell(config: ModalShellConfig): ModalShellHandle {
   const focusTrap = injectFocusTrap();
   const dismissible = injectDismissibleLayer();
   const inertStack = inject(InertSiblingsStack);
+  const peerRegistry = inject(ModalPeerRegistry);
   const scrollLock = inject(BodyScrollLock);
   const returnFocus = inject(ReturnFocusResolver);
   const modalOwnedRegions = inject(ModalOwnedRegions);
@@ -379,7 +381,7 @@ export function injectModalShell(config: ModalShellConfig): ModalShellHandle {
       //     the configured initial focus: the primitive's `move()` algorithm
       //     (falling back to the first focusable on a miss), the first
       //     focusable descendant ('first'), or the host ('container').
-      releasePeer = inertStack.registerPeer(
+      releasePeer = peerRegistry.registerPeer(
         host.nativeElement,
         [origin, returnFocusTarget].filter((anchor): anchor is Element => anchor !== null),
       );

@@ -41,11 +41,27 @@ describe('modal peer adoption', () => {
     expect(filesWhere((code) => PEER_REFERENCE.test(code))).toEqual(expected);
   });
 
-  it('registers every portaled overlay through the stack', () => {
+  it('registers every portaled overlay through the registry', () => {
     expect(filesWhere((code) => code.includes('.registerPeer('))).toEqual([
       'core-anchored/src/overlay-controller/overlay-shell.ts',
       'core-overlay/src/modal-shell/modal-shell.ts',
       'core-overlay/src/overlay-manager/overlay-manager.ts',
+    ]);
+  });
+
+  it('keeps the inert-siblings stack out of the trigger-anchored entry point', () => {
+    const anchored = filesWhere((code) => code.includes('InertSiblingsStack')).filter((path) =>
+      path.startsWith('core-anchored/'),
+    );
+
+    expect(anchored).toEqual([]);
+  });
+
+  it('derives the stack users the anchored check would see', () => {
+    expect(filesWhere((code) => code.includes('InertSiblingsStack'))).toEqual([
+      'core-overlay/src/inert-siblings/inert-siblings.ts',
+      'core-overlay/src/modal-shell/modal-shell.ts',
+      'core-overlay/src/public-api.ts',
     ]);
   });
 });

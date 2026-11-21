@@ -25,7 +25,7 @@ import {
   IdGenerator,
   resolveActiveElement,
 } from 'forty-cdk/core';
-import { InertSiblingsStack } from '../inert-siblings/inert-siblings';
+import { ModalPeerRegistry } from '../inert-siblings/modal-peer-registry';
 import type { OverlayRef } from './overlay-ref';
 
 /**
@@ -152,7 +152,7 @@ export class OverlayManagerCore<TEntry extends OverlayManagerEntry> {
   readonly #envInjector = inject(EnvironmentInjector);
   readonly #document = inject(DOCUMENT);
   readonly #isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
-  readonly #inertStack = inject(InertSiblingsStack);
+  readonly #peerRegistry = inject(ModalPeerRegistry);
   private readonly idGen = inject(IdGenerator);
 
   readonly #entries = signal<readonly TEntry[]>([]);
@@ -484,7 +484,7 @@ export class OverlayManagerCore<TEntry extends OverlayManagerEntry> {
     if (this.#isBrowser) {
       const outletHost = outletRef.location.nativeElement as HTMLElement;
       outletHost.style.display = 'contents';
-      const releasePeer = this.#inertStack.registerPeer(outletHost, 'always');
+      const releasePeer = this.#peerRegistry.registerPeer(outletHost, 'always');
       this.#document.body.appendChild(outletHost);
       outletRef.onDestroy(() => {
         releasePeer();
