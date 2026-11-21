@@ -1,6 +1,7 @@
 import { isPlatformBrowser } from '@angular/common';
 import {
   booleanAttribute,
+  computed,
   DestroyRef,
   Directive,
   DOCUMENT,
@@ -24,6 +25,7 @@ import {
   resolveLiftedDragControl,
   createKeyboardDragMediator,
   createPointerDragSession,
+  findOwningHandle,
   focusWhenMounted,
   type FocusWhenMountedRef,
   type PointerDragSession,
@@ -135,6 +137,11 @@ function resolveReorderAction(event: KeyboardEvent, dir: WritingDirection): Reor
 export class ForListboxReorder {
   readonly #ctx: ForListboxContext = injectListboxContext('ForListboxReorder');
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
+  readonly #optionsByHost = computed(() => {
+    const index = new Map<Node, { option: ForListboxOptionHandle<unknown>; index: number }>();
+    this.#ctx.options().forEach((option, i) => index.set(option.host, { option, index: i }));
+    return index;
+  });
   readonly #document = inject(DOCUMENT);
   readonly #isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
   readonly #destroyRef = inject(DestroyRef);
@@ -231,14 +238,9 @@ export class ForListboxReorder {
     if (!(target instanceof Node)) {
       return null;
     }
-    const options = this.#ctx.options();
-    for (let i = 0; i < options.length; i++) {
-      const option = options[i]!;
-      if (option.host === target || option.host.contains(target)) {
-        return { option, index: i };
-      }
-    }
-    return null;
+    return (
+      findOwningHandle(this.#optionsByHost(), target, this.#host, { includeSelf: true }) ?? null
+    );
   }
 
   #canStartPointer(event: PointerEvent): boolean {

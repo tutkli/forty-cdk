@@ -1,3 +1,5 @@
+import { findOwningHandle, indexByHost } from '../composed-tree/composed-tree';
+
 /** A registered element a press can land in: a drag item, a table row. */
 export interface PressTarget {
   readonly host: HTMLElement;
@@ -26,13 +28,7 @@ export function findPressedDragItem<T extends PressTarget>(
   if (!(target instanceof Node)) {
     return null;
   }
-  let pressed: T | null = null;
-  for (const item of items) {
-    if (item.host.contains(target) && (pressed === null || pressed.host.contains(item.host))) {
-      pressed = item;
-    }
-  }
-  return pressed;
+  return findOwningHandle(indexByHost(items), target, null, { includeSelf: true }) ?? null;
 }
 
 /**

@@ -15,6 +15,8 @@ import {
 import {
   injectElementSize,
   composedContains,
+  findOwningHandle,
+  indexByHost,
   createPointerHighlight,
   defaultCompareWith,
   EscapeArbiter,
@@ -327,6 +329,18 @@ export class ForTable<T = unknown> implements ForTableContext {
       ? [...this.#headerCellHosts(), ...this.#dataCells()]
       : this.#dataCells(),
   );
+  /** Every cell of the composite grid keyed by its host, for resolving the cell a node sits in. */
+  readonly #cellsByHost = computed(() => indexByHost(this.#flatCells()));
+
+  /** The grid position of every cell of the composite grid, keyed by its host. */
+  readonly #positionsByHost = computed(() => {
+    const positions = new Map<Node, { row: number; column: number }>();
+    this.#gridRows().forEach((cells, row) => {
+      cells.forEach((cell, column) => positions.set(cell.host, { row, column }));
+    });
+    return positions;
+  });
+
   readonly #cols = computed(() => {
     const dataCols = this.#dataCols();
     return dataCols > 0 ? dataCols : this.#headerCellHosts().length;
@@ -491,16 +505,8 @@ export class ForTable<T = unknown> implements ForTableContext {
     if (this.mode() === 'table') {
       return;
     }
-    const rows = this.#gridRows();
-    for (let row = 0; row < rows.length; row++) {
-      const column = rows[row]!.findIndex(
-        (cell) => cell.host === el || composedContains(cell.host, el),
-      );
-      if (column >= 0) {
-        this.#focusedPosition = { row, column };
-        return;
-      }
-    }
+    this.#focusedPosition =
+      findOwningHandle(this.#positionsByHost(), el, this.#host, { includeSelf: true }) ?? null;
   }
 
   /**
@@ -756,9 +762,7 @@ export class ForTable<T = unknown> implements ForTableContext {
     if (this.mode() === 'table') {
       return;
     }
-    const cell = this.#flatCells().find(
-      (handle) => handle.host !== target && composedContains(handle.host, target),
-    );
+    const cell = findOwningHandle(this.#cellsByHost(), target, this.#host);
     if (cell !== undefined && !cell.disabled() && this.#roving.active() !== cell.host) {
       this.#pointer.release();
       this.#roving.setActive(cell.host);

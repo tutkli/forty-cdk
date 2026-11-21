@@ -1212,6 +1212,34 @@ class SelectionInteractiveHost {
 }
 
 @Component({
+  imports: [ForTable, ForTableRow, ForTableCell],
+  host: { 'data-fixture': 'nested-table' },
+  template: `
+    <div forTable mode="grid">
+      @for (row of [1, 2]; track row) {
+        <div forTableRow [value]="row">
+          <div forTableCell name="a" [attr.data-testid]="'outer-' + row + 'a'">a</div>
+          <div forTableCell name="b" [attr.data-testid]="'outer-' + row + 'b'">
+            @if (row === 2) {
+              <div forTable mode="grid">
+                @for (inner of [1, 2]; track inner) {
+                  <div forTableRow [value]="inner">
+                    <div forTableCell name="x" [attr.data-testid]="'inner-' + inner">
+                      <button type="button" [attr.data-testid]="'inner-button-' + inner">Go</button>
+                    </div>
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        </div>
+      }
+    </div>
+  `,
+})
+class NestedTableHost {}
+
+@Component({
   imports: [ForTable, ForTableRow, ForTableCell, ForTableRowSelector, ForTableSelectAll],
   template: `
     <div
@@ -4253,6 +4281,21 @@ describe('ForTable', () => {
 
       expect(byId(el, 'cell-sel-3').getAttribute('tabindex')).toBe('0');
       expect(byId(el, 'cell-sel-1').getAttribute('tabindex')).toBe('-1');
+    });
+
+    it('resolves each nested table to its own cell', async () => {
+      const { el, flush } = renderHost(NestedTableHost);
+      await flush();
+      expect(byId(el, 'outer-1a').getAttribute('tabindex')).toBe('0');
+      expect(byId(el, 'inner-1').getAttribute('tabindex')).toBe('0');
+
+      byId(el, 'inner-button-2').focus();
+      await flush();
+
+      expect(byId(el, 'outer-2b').getAttribute('tabindex')).toBe('0');
+      expect(byId(el, 'outer-1a').getAttribute('tabindex')).toBe('-1');
+      expect(byId(el, 'inner-2').getAttribute('tabindex')).toBe('0');
+      expect(byId(el, 'inner-1').getAttribute('tabindex')).toBe('-1');
     });
 
     it('does not enter interaction mode, so Escape stays the widget key', async () => {

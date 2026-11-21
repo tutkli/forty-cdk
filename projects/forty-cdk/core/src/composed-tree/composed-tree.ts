@@ -121,6 +121,46 @@ export function composedPrecedes(a: Node, b: Node): boolean {
   return false;
 }
 
+/**
+ * The entry of `index` keyed by the nearest composed-tree ancestor of `node`, crossing open shadow
+ * boundaries, or `undefined` when no ancestor below `boundary` is a key. `node` itself is a
+ * candidate only with `includeSelf`; `boundary` never is, and the walk stops there. When several
+ * keys enclose `node`, the innermost wins.
+ *
+ * It costs one lookup per ancestor rather than one containment test per entry, so resolving which
+ * registered piece owns an event target stays independent of the collection's size.
+ */
+export function findOwningHandle<V>(
+  index: ReadonlyMap<Node, V>,
+  node: Node,
+  boundary: Node | null,
+  options?: { readonly includeSelf?: boolean },
+): V | undefined {
+  let current = options?.includeSelf ? node : composedParentNode(node);
+  while (current !== null && current !== boundary) {
+    const owner = index.get(current);
+    if (owner !== undefined) {
+      return owner;
+    }
+    current = composedParentNode(current);
+  }
+  return undefined;
+}
+
+/** Keys each entry of `items` by its `host`, the index {@link findOwningHandle} reads. */
+export function indexByHost<H extends { readonly host: Node }>(items: readonly H[]): Map<Node, H> {
+  const index = new Map<Node, H>();
+  for (const item of items) {
+    index.set(item.host, item);
+  }
+  return index;
+}
+
+function composedParentNode(node: Node): Node | null {
+  const parent = node.parentNode;
+  return parent !== null && isShadowRoot(parent) ? parent.host : parent;
+}
+
 function hostChainOf(node: Node): Node[] {
   const chain: Node[] = [node];
   let host = shadowHostOf(node);
