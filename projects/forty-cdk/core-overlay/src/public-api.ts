@@ -30,8 +30,9 @@
  * THIS ENTRY POINT IS NOT PUBLIC. Like `forty-cdk/core` it carries no semver
  * guarantees and is exported only so forty-cdk's own entry points share one
  * compiled module — never duplicated per primitive, which would split the DI
- * singletons (`DismissibleLayerStack`, `InertSiblingsStack`, `BodyScrollLock`,
- * `ForDrawerStack`, `ModalActivationOrder`) into multiple instances and break
+ * singletons (`DismissibleLayerStack`, `InertSiblingsStack`,
+ * `ModalPeerRegistry`, `BodyScrollLock`, `ForDrawerStack`,
+ * `ModalActivationOrder`) into multiple instances and break
  * cross-primitive coordination. `scripts/check-entrypoint-dedup.mjs` asserts
  * that each of them is defined in exactly one FESM.
  *
@@ -61,6 +62,7 @@ export {
 } from './drawer-stack/drawer-stack';
 export { createDebouncedAction, type DebouncedAction } from './debounced-action/debounced-action';
 export { type InertSiblingsHandle, InertSiblingsStack } from './inert-siblings/inert-siblings';
+export { ModalPeerRegistry, type PeerAnchors } from './inert-siblings/modal-peer-registry';
 export { ModalActivationOrder } from './modal-shell/modal-activation-order';
 export {
   injectModalBackdrop,
