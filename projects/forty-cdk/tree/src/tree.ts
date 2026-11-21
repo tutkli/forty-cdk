@@ -13,11 +13,11 @@ import {
 
 import {
   assertVirtualizedSelectionFollowsFocusSupported,
+  bucketedFind,
   Collection,
   createPointerHighlight,
   createVetoableNativeEvent,
   defaultCompareWith,
-  firstEnabledHost,
   isInArray,
   isUnset,
   selectionMembership,
@@ -315,23 +315,23 @@ export class ForTree<T = string> implements ForTreeContext<T>, ForTreeContainerC
 
   readonly #isNonSelectable = selectionMembership(this.#nonSelectableValues, this.compareWith);
 
-  readonly #firstEnabledVisible = computed(() => firstEnabledHost(this.#visibleHandles()));
+  /**
+   * The first enabled visible item, found by a pre-order walk that returns at the first hit, so it
+   * depends only on the items it visited rather than on every visible item.
+   */
+  readonly #firstEnabledVisible = computed(() =>
+    this.#firstEnabledVisibleIn(this, this.#isExpanded()),
+  );
 
-  readonly #firstSelectedHost = computed<HTMLElement | null>(() => {
-    if (this.value().length === 0) {
-      return null;
-    }
-    const isSelected = this.#isSelected();
-    for (const { handle, value } of this.#visibleEntries()) {
-      if (handle.disabled()) {
-        continue;
-      }
-      if (isSelected(value)) {
-        return handle.host;
-      }
-    }
-    return null;
-  });
+  /** Per container, the first selected enabled visible host under it; built on first read. */
+  readonly #firstSelectedByContainer = new WeakMap<
+    ForTreeContainerContext<T>,
+    Signal<HTMLElement | null>
+  >();
+
+  readonly #firstSelectedHost = computed<HTMLElement | null>(() =>
+    this.value().length === 0 ? null : this.#firstSelectedIn(this),
+  );
 
   readonly #virtualization = signal<TreeVirtualization<T> | null>(null);
 
@@ -591,6 +591,58 @@ export class ForTree<T = string> implements ForTreeContext<T>, ForTreeContainerC
     return this.#focusModel().handleTypeahead(event, () =>
       this.#assertSelectionFollowsFocusSupported(),
     );
+  }
+
+  #firstEnabledVisibleIn(
+    container: ForTreeContainerContext<T>,
+    isOpen: (value: T) => boolean,
+  ): HTMLElement | null {
+    for (const handle of container.items()) {
+      const value = handle.value();
+      if (isUnset(value)) {
+        continue;
+      }
+      if (!handle.disabled()) {
+        return handle.host;
+      }
+      const child = isOpen(value) ? handle.childContainer() : null;
+      const host = child ? this.#firstEnabledVisibleIn(child, isOpen) : null;
+      if (host) {
+        return host;
+      }
+    }
+    return null;
+  }
+
+  #firstSelectedIn(container: ForTreeContainerContext<T>): HTMLElement | null {
+    let found = this.#firstSelectedByContainer.get(container);
+    if (!found) {
+      const first = bucketedFind(
+        container.items,
+        (handle) => this.#selectedHostUnder(handle) !== null,
+      );
+      found = computed(() => {
+        const handle = first();
+        return handle ? this.#selectedHostUnder(handle) : null;
+      });
+      this.#firstSelectedByContainer.set(container, found);
+    }
+    return found();
+  }
+
+  #selectedHostUnder(handle: ForTreeItemHandle<T>): HTMLElement | null {
+    const value = handle.value();
+    if (isUnset(value)) {
+      return null;
+    }
+    if (!handle.disabled() && this.#isSelected()(value)) {
+      return handle.host;
+    }
+    if (!this.#isExpanded()(value)) {
+      return null;
+    }
+    const child = handle.childContainer();
+    return child ? this.#firstSelectedIn(child) : null;
   }
 
   isFirstFocusableItem(el: HTMLElement): boolean {

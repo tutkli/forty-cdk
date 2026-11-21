@@ -78,9 +78,9 @@ export interface ForTabsContext {
    * Distinguishes "another trigger owns the tab stop" from "the selected
    * value points at a removed / disabled trigger" so the per-trigger
    * tabindex fallback can re-engage the first-enabled entry point instead of
-   * stranding the tablist. Reactive.
+   * stranding the tablist.
    */
-  hasSelectedTrigger(): boolean;
+  readonly hasSelectedTrigger: Signal<boolean>;
 }
 
 /**

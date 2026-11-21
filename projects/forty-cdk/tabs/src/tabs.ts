@@ -1,6 +1,8 @@
 import { booleanAttribute, computed, Directive, inject, input, model } from '@angular/core';
 
 import {
+  bucketedFind,
+  bucketedLookup,
   Collection,
   firstEnabledHost,
   type ListNavigationAction,
@@ -21,6 +23,13 @@ import {
   type TabsActivationMode,
 } from './tabs-context';
 import { FOR_TABS_DEFAULTS } from 'forty-cdk/defaults';
+
+function valueIdEntry(
+  handle: ForTabsTriggerHandle | ForTabsContentHandle,
+): readonly [string, string] | null {
+  const value = handle.value();
+  return isUnset(value) ? null : [value, handle.id()];
+}
 
 /**
  * Root of the Tabs primitive. Owns the selected value, activation mode,
@@ -143,41 +152,31 @@ export class ForTabs implements ForTabsContext {
     this.#contents.unregister(handle);
   }
 
+  readonly #triggerIdByValue = bucketedLookup(this.#triggers.items, valueIdEntry);
+  readonly #contentIdByValue = bucketedLookup(this.#contents.items, valueIdEntry);
+
   triggerIdFor(value: string | Unset): string | null {
-    for (const t of this.#triggers.items()) {
-      const candidate = t.value();
-      if (!isUnset(candidate) && candidate === value) {
-        return t.id();
-      }
-    }
-    return null;
+    return isUnset(value) ? null : (this.#triggerIdByValue(value) ?? null);
   }
 
   contentIdFor(value: string | Unset): string | null {
-    for (const c of this.#contents.items()) {
-      const candidate = c.value();
-      if (!isUnset(candidate) && candidate === value) {
-        return c.id();
-      }
-    }
-    return null;
+    return isUnset(value) ? null : (this.#contentIdByValue(value) ?? null);
   }
 
   isFirstEnabledTrigger(el: HTMLElement): boolean {
     return this.#firstEnabledTriggerHost() === el;
   }
 
-  hasSelectedTrigger(): boolean {
-    const value = this.value();
-    if (value === null) {
+  readonly #firstSelectedTrigger = bucketedFind(this.#triggers.items, (t) => {
+    if (t.disabled()) {
       return false;
     }
-    return this.#triggers.items().some((t) => {
-      if (t.disabled()) {
-        return false;
-      }
-      const candidate = t.value();
-      return !isUnset(candidate) && candidate === value;
-    });
-  }
+    const candidate = t.value();
+    return !isUnset(candidate) && candidate === this.value();
+  });
+
+  /** True when some registered, enabled trigger's value matches the group's current value. */
+  readonly hasSelectedTrigger = computed(
+    () => this.value() !== null && this.#firstSelectedTrigger() !== undefined,
+  );
 }

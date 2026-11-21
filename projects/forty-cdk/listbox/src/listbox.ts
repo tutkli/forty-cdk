@@ -14,6 +14,7 @@ import type { FormValueControl } from '@angular/forms/signals';
 import {
   accessibleTextContent,
   assertVirtualizedSelectionFollowsFocusSupported,
+  bucketedFind,
   Collection,
   createPointerHighlight,
   firstEnabledHost,
@@ -251,25 +252,17 @@ export class ForListbox<T = string>
 
   readonly #isSelected = selectionMembership(this.value, this.compareWith);
 
-  readonly #firstSelectedHost = computed<HTMLElement | null>(() => {
-    if (this.value().length === 0) {
-      return null;
+  readonly #firstSelectedOption = bucketedFind(this.#options.items, (option) => {
+    if (option.disabled()) {
+      return false;
     }
-    const isSelected = this.#isSelected();
-    for (const option of this.#options.items()) {
-      if (option.disabled()) {
-        continue;
-      }
-      const value = option.value();
-      if (isUnset(value)) {
-        continue;
-      }
-      if (isSelected(value)) {
-        return option.host;
-      }
-    }
-    return null;
+    const value = option.value();
+    return !isUnset(value) && this.#isSelected()(value);
   });
+
+  readonly #firstSelectedHost = computed<HTMLElement | null>(() =>
+    this.value().length === 0 ? null : (this.#firstSelectedOption()?.host ?? null),
+  );
 
   readonly #virtualization = signal<ListboxVirtualization<T> | null>(null);
 
