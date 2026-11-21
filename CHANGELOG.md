@@ -7,6 +7,50 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.46.0] - 2026-11-21
+
+### Added
+
+- **Listbox** — an always-visible checkbox part for multi-select options
+  ([#2841](https://github.com/tutkli/forty-cdk/issues/2841)). `[forListboxOptionCheckbox]`,
+  published from `forty-cdk/listbox` as `ForListboxOptionCheckbox`, goes inside a
+  `[forListboxOption]` and stays rendered whatever the selection, so it can paint the empty box; it
+  reflects `data-state="checked" | "unchecked"` and `data-disabled` while its option is disabled. It
+  is `aria-hidden`, adds no tab stop and has no click handler: the option keeps `role="option"`,
+  `aria-selected`, the tab stop and the toggle. Put a `[forListboxOptionIndicator]` inside it for
+  the check mark. Used outside an option it throws `FORCDK-LISTBOX-004`. The recipe is in the
+  listbox README's introduction, and the part is listed under its API reference.
+
+### Changed
+
+- **Tabs — BREAKING.** `ForTabsContext.hasSelectedTrigger` and `ForTabs.hasSelectedTrigger` change
+  from a method returning `boolean` to a `Signal<boolean>`
+  ([#2844](https://github.com/tutkli/forty-cdk/issues/2844)). Code that reads it,
+  `ctx.hasSelectedTrigger()`, compiles unchanged; a consumer that provides `FOR_TABS_CONTEXT` by
+  hand, such as a test double, must **pass a signal, for example `computed(() => …)`, instead of a
+  function**.
+
+### Performance
+
+- **Listbox**, **Radio group**, **Tabs**, **Toggle group**, **Menubar**, **Navigation menu**,
+  **Tree** — mounting a collection is linear in its item count instead of quadratic
+  ([#2844](https://github.com/tutkli/forty-cdk/issues/2844)). Each item's bindings asked the root a
+  question answered by scanning every item's `value()`, so a list of N items made N² value reads on
+  mount; the lookups are now split into memoized buckets, Tabs resolves whether a trigger is
+  selected once per value change instead of once per trigger, and the Tree finds its first focusable
+  item with a walk that stops at the first hit.
+
+- **Table** — a focus move resolves the cell that owns its target by walking up from the target
+  instead of calling `contains()` on every cell
+  ([#2846](https://github.com/tutkli/forty-cdk/issues/2846)), so an ArrowDown costs the same at 100
+  and 1000 rows. The pointerdown lookups of **Drag and drop** (drag items and handles), **Listbox**
+  and **Table** reordering and the **Slider** thumb resolve their owner the same way.
+
+- **Popover**, **Tooltip**, **Hover card**, **Menu**, **Combobox**, **Select** and every other
+  non-modal anchored overlay — registering as a modal peer no longer retains the inert-siblings
+  engine ([#2845](https://github.com/tutkli/forty-cdk/issues/2845)). A route that opens anchored
+  overlays but never a modal no longer bundles the code that makes the rest of the page inert.
+
 ## [0.45.1] - 2026-11-16
 
 ### Performance
@@ -5845,7 +5889,8 @@ primitives.
 - **Display** — avatar, progress, meter, tree.
 - `forty-cdk/internationalized-date` secondary entry point exposing the `@internationalized/date` adapters for the date and time primitives.
 
-[Unreleased]: https://github.com/tutkli/forty-cdk/compare/v0.45.1...HEAD
+[Unreleased]: https://github.com/tutkli/forty-cdk/compare/v0.46.0...HEAD
+[0.46.0]: https://github.com/tutkli/forty-cdk/compare/v0.45.1...v0.46.0
 [0.45.1]: https://github.com/tutkli/forty-cdk/compare/v0.45.0...v0.45.1
 [0.45.0]: https://github.com/tutkli/forty-cdk/compare/v0.44.0...v0.45.0
 [0.44.0]: https://github.com/tutkli/forty-cdk/compare/v0.43.0...v0.44.0
