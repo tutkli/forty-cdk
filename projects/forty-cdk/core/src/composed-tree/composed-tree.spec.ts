@@ -3,6 +3,8 @@ import {
   composedContains,
   composedParentElement,
   composedPrecedes,
+  findOwningHandle,
+  indexByHost,
   resolveActiveElement,
   resolveEventTarget,
 } from './composed-tree';
@@ -114,6 +116,39 @@ describe('composed-tree', () => {
 
       expect(composedContains(container, container)).toBe(true);
       expect(composedContains(container, null)).toBe(false);
+    });
+  });
+
+  describe('findOwningHandle', () => {
+    it('resolves the registered ancestor of a node inside a nested shadow root', () => {
+      const { container, host, inner } = mountShadowFixture();
+      const index = indexByHost([{ host: container }]);
+
+      expect(findOwningHandle(index, inner, document.body)?.host).toBe(container);
+      expect(findOwningHandle(index, host, document.body)?.host).toBe(container);
+    });
+
+    it('considers the node itself only with includeSelf', () => {
+      const { container } = mountShadowFixture();
+      const index = indexByHost([{ host: container }]);
+
+      expect(findOwningHandle(index, container, null)).toBeUndefined();
+      expect(findOwningHandle(index, container, null, { includeSelf: true })?.host).toBe(container);
+    });
+
+    it('resolves the innermost of two registered ancestors', () => {
+      const { container, host, inner } = mountShadowFixture();
+      const index = indexByHost([{ host: container }, { host }]);
+
+      expect(findOwningHandle(index, inner, null)?.host).toBe(host);
+    });
+
+    it('stops at the boundary without considering it', () => {
+      const { container, host, inner } = mountShadowFixture();
+      const index = indexByHost([{ host: container }]);
+
+      expect(findOwningHandle(index, inner, container)).toBeUndefined();
+      expect(findOwningHandle(index, inner, host)).toBeUndefined();
     });
   });
 

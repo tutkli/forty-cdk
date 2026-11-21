@@ -99,6 +99,8 @@ export {
   composedClosest,
   composedContains,
   composedParentElement,
+  findOwningHandle,
+  indexByHost,
   resolveActiveElement,
   resolveEventTarget,
 } from './composed-tree/composed-tree';

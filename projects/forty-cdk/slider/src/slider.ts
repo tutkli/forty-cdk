@@ -21,7 +21,9 @@ import {
   Collection,
   createPointerDragSession,
   decimalPlaces,
+  findOwningHandle,
   FormUiControlBase,
+  indexByHost,
   fortyWarn,
   injectHiddenInput,
   injectNativeFormResetToInitial,
@@ -194,6 +196,7 @@ export class ForSlider
   readonly valueCommit = output<readonly number[]>();
 
   readonly #thumbs = new Collection<ForSliderThumbHandle>();
+  readonly #thumbsByHost = computed(() => indexByHost(this.#thumbs.items()));
   readonly #trackEl = signal<HTMLElement | null>(null);
   readonly #destroyRef = inject(DestroyRef);
   #pointerSession: PointerDragSession | null = null;
@@ -445,12 +448,11 @@ export class ForSlider
     if (!(target instanceof Node)) {
       return null;
     }
-    for (const handle of this.#thumbs.items()) {
-      if (handle.host === target || handle.host.contains(target)) {
-        return handle;
-      }
-    }
-    return null;
+    return (
+      findOwningHandle(this.#thumbsByHost(), target, this.#host.nativeElement, {
+        includeSelf: true,
+      }) ?? null
+    );
   }
 
   #onDragStart(event: PointerEvent): boolean {

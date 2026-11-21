@@ -1,4 +1,5 @@
 import {
+  computed,
   DestroyRef,
   Directive,
   DOCUMENT,
@@ -27,8 +28,10 @@ import {
   type DragAnnouncedItem,
   type DragAnnouncedPosition,
   DragAnnouncer,
+  findOwningHandle,
   findPressedDragItem,
   focusWhenMounted,
+  indexByHost,
   type FocusWhenMountedRef,
   isDragLiftKey,
   layoutPlaceholderInSlot,
@@ -179,6 +182,7 @@ export class ForTableRowReorder {
     cancel: this.#dragDefaults.announceCancel,
   }));
   readonly #injector = inject(Injector);
+  readonly #rowsByHost = computed(() => indexByHost(this.#registration.rows()));
 
   #mode: ReorderMode = 'idle';
   #kbLiftedHost: HTMLElement | null = null;
@@ -311,7 +315,7 @@ export class ForTableRowReorder {
     if (!(target instanceof Node)) {
       return null;
     }
-    const row = this.#registration.rows().find((r) => r.host === target || r.host.contains(target));
+    const row = findOwningHandle(this.#rowsByHost(), target, this.#host, { includeSelf: true });
     if (row === undefined || isInteractiveDescendant(target, row.host)) {
       return null;
     }
@@ -471,8 +475,9 @@ export class ForTableRowReorder {
     if (focused === null || focused === rowHost) {
       return -1;
     }
-    const row = this.#registration.rows().find((r) => r.host === rowHost);
-    return row?.cells().findIndex((c) => c.host === focused || c.host.contains(focused)) ?? -1;
+    const cells = this.#rowsByHost().get(rowHost)?.cells() ?? [];
+    const columns = new Map<Node, number>(cells.map((cell, column) => [cell.host, column]));
+    return findOwningHandle(columns, focused, rowHost, { includeSelf: true }) ?? -1;
   }
 
   #focusTargetIn(index: number, column: number): HTMLElement | null {

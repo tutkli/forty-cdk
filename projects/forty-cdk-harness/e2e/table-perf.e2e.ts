@@ -23,6 +23,7 @@ declare global {
   interface Window {
     __fortyCdkTablePerf?: { measureMount(): number };
     __fortyCdkComparePositionCalls?: number;
+    __fortyCdkContainsCalls?: number;
   }
 }
 
@@ -87,6 +88,44 @@ test.describe('table mount cost', () => {
         `${rows} rows mounted with ${calls} compareDocumentPosition calls`,
       ).toBeLessThan(2);
     }
+  });
+
+  test('an arrow key resolves the focused cell without a containment test per cell', async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      window.__fortyCdkContainsCalls = 0;
+      const original = Node.prototype.contains;
+      Node.prototype.contains = function (other: Node | null): boolean {
+        window.__fortyCdkContainsCalls = (window.__fortyCdkContainsCalls ?? 0) + 1;
+        return original.call(this, other);
+      };
+    });
+
+    const counts: { rows: number; calls: number }[] = [];
+    for (const rows of [100, 1000]) {
+      await gotoFixture(page, 'table-perf', { rows: String(rows), cols: '4' });
+      await page.getByTestId('mount').click();
+      const cells = page.getByTestId('table').getByRole('gridcell');
+      await cells.first().click();
+      await expect(cells.first()).toBeFocused();
+      await expect(cells.first()).toHaveAttribute('tabindex', '0');
+
+      await page.evaluate(() => {
+        window.__fortyCdkContainsCalls = 0;
+      });
+      await page.keyboard.press('ArrowDown');
+      await expect(cells.nth(4)).toBeFocused();
+      await expect(cells.nth(4)).toHaveAttribute('tabindex', '0');
+      counts.push({ rows, calls: await page.evaluate(() => window.__fortyCdkContainsCalls ?? 0) });
+    }
+
+    const [small, large] = counts;
+    expect(
+      large!.calls,
+      `ArrowDown made ${small!.calls} contains calls at ${small!.rows} rows and ` +
+        `${large!.calls} at ${large!.rows}`,
+    ).toBe(small!.calls);
   });
 
   test('@perf mount time grows sub-quadratically in row count', async ({ page }, testInfo) => {

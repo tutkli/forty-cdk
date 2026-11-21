@@ -4,6 +4,7 @@ import {
   BOTH_DRAG_AXES,
   dragHandleTouchAction,
   dragSurfaceTouchAction,
+  findOwningHandle,
   type DragTouchAction,
   NO_DRAG_AXES,
   registerHandle,
@@ -54,7 +55,15 @@ export function createPointerHandleGuard(disabled: Signal<boolean>): PointerHand
   const handles = signal<readonly HTMLElement[]>([]);
   const nested = signal<readonly HTMLElement[]>([]);
 
-  const owns = (node: Node): boolean => !nested().some((host) => host.contains(node));
+  const nestedIndex = computed(
+    () => new Map<Node, HTMLElement>(nested().map((host) => [host, host])),
+  );
+  const handleIndex = computed(
+    () => new Map<Node, HTMLElement>(handles().map((handle) => [handle, handle])),
+  );
+
+  const owns = (node: Node): boolean =>
+    findOwningHandle(nestedIndex(), node, null, { includeSelf: true }) === undefined;
 
   const accepts = (eventTarget: EventTarget | null): boolean => {
     const target = eventTarget as Node | null;
@@ -64,7 +73,8 @@ export function createPointerHandleGuard(disabled: Signal<boolean>): PointerHand
     const registered = handles();
     return (
       registered.length === 0 ||
-      (target !== null && registered.some((handle) => handle.contains(target)))
+      (target !== null &&
+        findOwningHandle(handleIndex(), target, null, { includeSelf: true }) !== undefined)
     );
   };
 
